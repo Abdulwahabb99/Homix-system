@@ -1,0 +1,6 @@
+.linkRenderer {
+  cursor: pointer;
+}
+.linkRenderer:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,21 @@
+.ag-paging-panel {
+  font-size: 14px !important;
+  justify-content: flex-start !important;
+}
+
+.ag-paging-page-summary-panel {
+  font-size: 13px !important;
+}
+.ag-paging-page-size {
+  display: none;
+}
+
+@media (max-width: 430px) {
+  .ag-paging-panel {
+    font-size: 10px !important;
+  }
+
+  .ag-paging-page-summary-panel {
+    font-size: 10px !important;
+  }
+}

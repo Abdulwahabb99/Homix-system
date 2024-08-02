@@ -1,0 +1,12 @@
+.searchContainer {
+  margin: 0px 25px 16px 0;
+}
+.productCard {
+  max-width: 345px;
+  max-height: 100PX;
+}
+@media screen and (min-width: 600px) {
+  .productCard {
+    max-height: none;
+  }
+}

@@ -1,0 +1,8 @@
+.searchContainer {
+  margin: 0px 25px 16px 0;
+}
+.orderDetailsHeader {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}
