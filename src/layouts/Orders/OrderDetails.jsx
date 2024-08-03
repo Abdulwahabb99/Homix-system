@@ -12,6 +12,7 @@ import MDTypography from "components/MDTypography";
 import Spinner from "components/Spinner/Spinner";
 import CustomerDetails from "./components/CustomerDetails";
 import { Card, FormControl, Grid, IconButton, InputLabel, MenuItem, Select } from "@mui/material";
+import OrderProducts from "./OrderProducts";
 
 const statusoptions = [
   { label: "معلق", value: 1 },
@@ -31,6 +32,10 @@ function OrderDetails() {
   const [orderStatus, setOrderStatus] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
+
+  const changeOrderStatus = (value) => {
+    setOrderStatus(value);
+  };
   axios.interceptors.request.use(
     (config) => {
       if (user.token) {
@@ -42,9 +47,7 @@ function OrderDetails() {
       return Promise.reject(error);
     }
   );
-  const changeOrderStatus = (value) => {
-    setOrderStatus(value);
-  };
+
   useEffect(() => {
     const getOrderDetails = async () => {
       setIsLoading(true);
@@ -118,7 +121,7 @@ function OrderDetails() {
                   </Card>
                 </Grid>
                 <Grid item xs={12} md={8} lg={8}>
-                  <OrdersOverview />
+                  {orderDetails && <OrderProducts products={orderDetails.orderLines} />}
                 </Grid>
               </Grid>
             </MDBox>

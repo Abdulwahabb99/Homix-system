@@ -28,50 +28,52 @@ function CustomerDetails({ customerName, email, address, phoneNumber }) {
           </MDTypography>
         </MDBox>
       </MDBox>
-      <MDBox pt={1} px={3}>
-        <MDTypography variant="h6" fontWeight="medium">
-          معلومات العميل
-        </MDTypography>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              <Icon sx={{ color: "#333" }}>
-                <EmailIcon />
-              </Icon>
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="regular">
-              {email}
-            </MDTypography>
+      <div style={{ borderBottom: "solid 1px #ffc" }}>
+        <MDBox pt={1} px={3}>
+          <MDTypography variant="h6" fontWeight="medium">
+            معلومات العميل
           </MDTypography>
+          <MDBox mt={0} mb={2}>
+            <MDTypography variant="button" fontWeight="regular">
+              <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                <Icon sx={{ color: "#333" }}>
+                  <EmailIcon />
+                </Icon>
+              </MDTypography>
+              &nbsp;
+              <MDTypography variant="button" color="text" fontWeight="regular">
+                {email}
+              </MDTypography>
+            </MDTypography>
+          </MDBox>
+          <MDBox mt={0} mb={2}>
+            <MDTypography variant="button" fontWeight="regular">
+              <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                <Icon sx={{ color: "#333" }}>
+                  <Home />
+                </Icon>
+              </MDTypography>
+              &nbsp;
+              <MDTypography variant="button" color="text" fontWeight="regular">
+                {address}
+              </MDTypography>
+            </MDTypography>
+          </MDBox>
+          <MDBox mt={0} mb={2}>
+            <MDTypography variant="button" fontWeight="regular">
+              <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                <Icon sx={{ color: "#333" }}>
+                  <Phone />
+                </Icon>
+              </MDTypography>
+              &nbsp;
+              <MDTypography variant="button" color="text" fontWeight="regular">
+                {phoneNumber ? phoneNumber : ""}
+              </MDTypography>
+            </MDTypography>
+          </MDBox>
         </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              <Icon sx={{ color: "#333" }}>
-                <Home />
-              </Icon>
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="regular">
-              {address}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              <Icon sx={{ color: "#333" }}>
-                <Phone />
-              </Icon>
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="regular">
-              {phoneNumber ? phoneNumber : ""}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-      </MDBox>
+      </div>
       <MDBox p={2}></MDBox>
     </>
   );

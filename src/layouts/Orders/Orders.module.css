@@ -6,3 +6,19 @@
   align-items: center;
   margin: 10px 0;
 }
+.imageContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.productimage {
+  display: flex;
+  align-items: center;
+}
+.productname {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.productname:hover {
+  text-decoration: underline;
+}

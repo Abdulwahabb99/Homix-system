@@ -18,6 +18,7 @@ import homix from "assets/images/homix.jpg";
 import { AuthProvider } from "context";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import OrderDetails from "layouts/Orders/OrderDetails";
+import ProductDetails from "layouts/Products/components/ProductDetails";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
@@ -129,6 +130,7 @@ export default function App() {
               element={<SignIn to="/authentication/sign-in" />}
             />
             <Route path="/orders/:id" element={<OrderDetails to="/orders/:id" />} />
+            <Route path="/products/:id" element={<ProductDetails to="/products/:id" />} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>
