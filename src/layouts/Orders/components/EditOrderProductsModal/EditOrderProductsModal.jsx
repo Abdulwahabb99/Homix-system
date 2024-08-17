@@ -1,9 +1,8 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
@@ -17,12 +16,10 @@ const statusoptions = [
   { label: "مسترجع", value: 7 },
   { label: "ملغي", value: 8 },
 ];
-const EditOrderModal = ({ open, onEdit, onClose, data }) => {
-  const [orderCost, setOrderCost] = useState(null);
-  const [orderStatus, setOrderStatus] = useState(data.status);
-  const [commission, setCommission] = useState(null);
-  const [notes, setNotes] = useState("");
-  const [manufacturingDate, setManufacturingDate] = useState("");
+const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
+  const [orderCost, setOrderCost] = useState(data.unitCost);
+  const [status, setStatus] = useState(data.status);
+  const [notes, setNotes] = useState(data.notes);
   console.log(data);
   // useEffect(() => {
   //   setOrderStatus(data.status);
@@ -30,18 +27,18 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
-      <DialogTitle>تعديل طلب {data.orderData.name}</DialogTitle>
+      <DialogTitle>تعديل {data.name}</DialogTitle>
       <DialogContent>
         <div>
           <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="orderStatus">حالة الطلب</InputLabel>
+            <InputLabel id="orderStatus">حالة المنتج</InputLabel>
             <Select
               fullWidth
               labelId="orderStatus"
               id="orderStatus-select"
-              value={orderStatus}
-              label="حالة الطلب"
-              onChange={(e) => setOrderStatus(e.target.value)}
+              value={status}
+              label="حالة المنتج"
+              onChange={(e) => setStatus(e.target.value)}
               sx={{ height: 35 }}
             >
               {statusoptions.map((option) => {
@@ -55,18 +52,10 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
           </FormControl>
           <TextField
             fullWidth
-            label="التكلفة"
+            label="تكلفة القطعة"
             type="number"
             value={orderCost}
             onChange={(e) => setOrderCost(e.target.value)}
-            style={{ margin: "5px 0" }}
-          />
-          <TextField
-            fullWidth
-            label="العمولة"
-            value={commission}
-            onChange={(e) => setCommission(e.target.value)}
-            type="number"
             style={{ margin: "5px 0" }}
           />
           <TextField
@@ -78,19 +67,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
             multiline
             style={{ margin: "5px 0" }}
           />
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
-              تاريخ امر التصنيع
-            </InputLabel>
-            <TextField
-              fullWidth
-              // label="تاريخ امر التصنيع"
-              value={manufacturingDate}
-              onChange={(e) => setManufacturingDate(e.target.value)}
-              style={{ margin: "5px 0" }}
-              type="date"
-            />
-          </FormControl>
         </div>
       </DialogContent>
       <DialogActions>
@@ -99,7 +75,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
         </Button>
         <Button
           //  color="error"
-          onClick={onEdit}
+          onClick={() => onEdit(status, notes, orderCost, data.id)}
           variant="contained"
           style={{ color: "#fff" }}
         >
@@ -110,4 +86,4 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   );
 };
 
-export default EditOrderModal;
+export default EditOrderProductsModal;

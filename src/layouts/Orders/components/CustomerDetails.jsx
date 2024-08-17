@@ -17,7 +17,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber }) {
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              <Icon sx={{ color: ({ palette: { success } }) => success.main }}>
+              <Icon sx={{ color: "#333" }}>
                 <PersonIcon />
               </Icon>
             </MDTypography>

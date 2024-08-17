@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 // eslint-disable-next-line react/prop-types
 function OrderProducts({ products }) {
   const navigate = useNavigate();
-  console.log(products);
   const navigateToProduct = (id) => {
     navigate(`/products/${id}`);
   };
@@ -17,16 +16,16 @@ function OrderProducts({ products }) {
     <Card sx={{ height: "100%" }}>
       <MDBox pt={3} px={2}>
         <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="medium">
-            المنتجات
-          </MDTypography>
           {products?.map((product) => (
             <div className={styles.imageContainer} key={product.id}>
               <div className={styles.productimage}>
                 <CardMedia
                   component="img"
                   image={product.product.image}
-                  sx={{ objectFit: "cover", maxHeight: "50px" }}
+                  sx={{
+                    objectFit: "cover",
+                    maxHeight: "50px",
+                  }}
                 />
                 <span
                   onClick={() => navigateToProduct(product.product.id)}

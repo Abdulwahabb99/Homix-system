@@ -2,9 +2,13 @@
 // src/components/ProductCard.js
 import React from "react";
 import { Card, CardContent, CardMedia, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 const ProductCard = ({ product }) => {
-  console.log(product);
+  const navigate = useNavigate();
+  const navigateToProduct = () => {
+    navigate(`/products/${product.id}`);
+  };
   return (
     <Card
       sx={{
@@ -14,13 +18,15 @@ const ProductCard = ({ product }) => {
         "@media (max-width: 600px)": {
           maxHeight: "none",
         },
+        cursor: "pointer",
       }}
+      onClick={navigateToProduct}
     >
       <CardMedia
         component="img"
         image={product?.image}
         alt={product?.title}
-        sx={{ objectFit: "cover", maxHeight: "200px" }}
+        sx={{ objectFit: "fill", maxHeight: "200px" }}
       />
       <CardContent>
         <Typography gutterBottom variant="h6" component="div">

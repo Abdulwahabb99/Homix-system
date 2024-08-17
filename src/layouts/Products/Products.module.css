@@ -10,3 +10,8 @@
     max-height: none;
   }
 }
+.productDetailsHeader {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}

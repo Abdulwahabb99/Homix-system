@@ -1,15 +1,13 @@
-// Orders.js
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import AgGrid from "components/AgGrid/AgGrid";
 import Spinner from "components/Spinner/Spinner";
 import ActionRenderer from "components/ActionRenderer/ActionRenderer";
-import ConfirmDeleteModal from "components/ConfirmDeleteModal/ConfirmDeleteModal";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { IconButton, Pagination } from "@mui/material";
+import { FormControl, IconButton, InputLabel, MenuItem, Pagination, Select } from "@mui/material";
 import SearchDialog from "./components/SearchDialog/SearchDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOrdarModal from "./components/EditOrderModal";
@@ -25,18 +23,26 @@ const statusValues = {
   7: "مسترجع",
   8: "ملغي",
 };
+const statusoptions = [
+  { label: "معلق", value: 1 },
+  { label: "قيد التنفيذ", value: 2 },
+  { label: "رفض", value: 3 },
+  { label: "تم التنفيذ", value: 4 },
+  { label: "خارج للتوصيل", value: 5 },
+  { label: "تم التسليم", value: 6 },
+  { label: "مسترجع", value: 7 },
+  { label: "ملغي", value: 8 },
+];
+
 function Orders() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [rowData, setRowData] = useState([]);
-  const [selectedRowData, setSelectedRowData] = useState({});
   const [selectedEditOrder, setSelectedEditOrder] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const [orders, setOrders] = useState([]);
+  const [orderStatus, setOrderStatus] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const page = parseInt(searchParams.get("page")) || 1;
   const orderNumberParam = searchParams.get("orderNumber");
   const vendorNameParam = searchParams.get("vendorName");
@@ -45,15 +51,14 @@ function Orders() {
   const [totalPages, setTotalPages] = useState(0);
   const handlePageChange = (event, value) => {
     setSearchParams({ page: value.toString() });
-    // navigate(
-    //   `/orders?page=${value}&orderNumber=${orderNumberParam ? orderNumberParam : ""}&vendorName=${
-    //     vendorNameParam ? vendorNameParam : ""
-    //   }&status=${orderStatusParam ? orderStatusParam : ""}`
-    // );
   };
   const getStatusValue = (status) => {
     const resultValue = statusValues[status];
     return resultValue;
+  };
+  const handleChangeStatus = (value) => {
+    setOrderStatus(value);
+    setSearchParams({ status: value });
   };
 
   axios.interceptors.request.use(
@@ -96,11 +101,13 @@ function Orders() {
       setIsLoading(false);
     }
   };
-  const onDeleteConfirm = (row) => {
-    setRowData((prevRowData) =>
-      prevRowData.filter((r) => r.orderNumber !== selectedRowData.orderNumber)
-    );
-    setIsConfirmModalOpen(false);
+  const onEditConfirm = (row) => {
+    console.log("hiii");
+
+    // setRowData((prevRowData) =>
+    //   prevRowData.filter((r) => r.orderNumber !== selectedRowData.orderNumber)
+    // );
+    // setIsConfirmModalOpen(false);
   };
   const openEditModal = (value) => {
     setSelectedEditOrder(value);
@@ -173,16 +180,9 @@ function Orders() {
     <DashboardLayout>
       <DashboardNavbar />
 
-      {isConfirmModalOpen && (
-        <ConfirmDeleteModal
-          onConfirm={onDeleteConfirm}
-          open={isConfirmModalOpen}
-          onClose={() => setIsConfirmModalOpen(false)}
-        />
-      )}
       {isSearchModalOpen && (
         <SearchDialog
-          onConfirm={onDeleteConfirm}
+          onConfirm={onEditConfirm}
           open={isSearchModalOpen}
           onClose={() => setIsSearchModalOpen(false)}
           setSearchParams={setSearchParams}
@@ -192,9 +192,32 @@ function Orders() {
         <EditOrdarModal
           data={selectedEditOrder}
           open={isEditModalOpen}
+          onEdit={onEditConfirm}
           onClose={() => setIsEditModalOpen(false)}
         />
       )}
+      <FormControl fullWidth style={{ margin: "0 0 -30px 0", width: "50%" }}>
+        <InputLabel id="orderStatus">حالة الطلب</InputLabel>
+        <Select
+          fullWidth
+          labelId="orderStatus"
+          id="orderStatus-select"
+          // variant="filled"
+          value={orderStatus}
+          label="حالة الطلب"
+          onChange={(e) => handleChangeStatus(e.target.value)}
+          sx={{ height: 35 }} // Adjust the height as needed
+        >
+          {statusoptions.map((option) => {
+            return (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      </FormControl>
+
       {!isLoading && orders ? (
         <>
           <AgGrid
@@ -203,8 +226,6 @@ function Orders() {
             defaultColDef={{
               resizable: true,
             }}
-            setColDefs={setColDefs}
-            setRowData={setRowData}
             searchText={searchText}
             handleSearchClick={() => setIsSearchModalOpen(true)}
           />
@@ -212,7 +233,7 @@ function Orders() {
             count={totalPages}
             page={page}
             onChange={handlePageChange}
-            sx={{ display: "flex", justifyContent: "center", marginTop: "77px" }}
+            sx={{ display: "flex", justifyContent: "center", marginTop: "55px" }}
           />
         </>
       ) : (
