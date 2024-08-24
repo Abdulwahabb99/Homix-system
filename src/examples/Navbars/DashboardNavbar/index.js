@@ -31,38 +31,14 @@ import {
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState("static");
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
-  const [openMenu, setOpenMenu] = useState(false);
+  const { miniSidenav, transparentNavbar, openConfigurator, darkMode } = controller;
+  // const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
-
-  // useEffect(() => {
-  //   if (fixedNavbar) {
-  //     setNavbarType("sticky");
-  //   } else {
-  //     setNavbarType("static");
-  //   }
-
-  //   function handleTransparentNavbar() {
-  //     setTransparentNavbar(dispatch, (fixedNavbar && window.scrollY === 0) || !fixedNavbar);
-  //   }
-
-  //   /**
-  //    The event listener that's calling the handleTransparentNavbar function when
-  //    scrolling the window.
-  //   */
-  //   window.addEventListener("scroll", handleTransparentNavbar);
-
-  //   // Call the handleTransparentNavbar function to set the state with the initial value.
-  //   handleTransparentNavbar();
-
-  //   // Remove event listener on cleanup
-  //   return () => window.removeEventListener("scroll", handleTransparentNavbar);
-  // }, [dispatch, fixedNavbar]);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
-  const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
-  const handleCloseMenu = () => setOpenMenu(false);
+  // const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
+  // const handleCloseMenu = () => setOpenMenu(false);
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {

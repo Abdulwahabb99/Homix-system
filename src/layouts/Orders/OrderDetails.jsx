@@ -57,7 +57,6 @@ function OrderDetails() {
   const [orderlines, setOrderlines] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
-  console.log(orderDetails);
 
   axios.interceptors.request.use(
     (config) => {
@@ -80,7 +79,6 @@ function OrderDetails() {
         status: status,
       })
       .then((res) => {
-        console.log(res);
         setOrderStatus(status);
       })
       .catch((error) => {
@@ -148,7 +146,7 @@ function OrderDetails() {
       {!isLoading ? (
         <>
           <div className={styles.orderDetailsHeader}>
-            <IconButton color="#344767" onClick={() => navigate(-1)}>
+            <IconButton color="#344767" onClick={() => navigate("/orders")}>
               <ArrowNextIcon />
             </IconButton>
             <MDTypography variant="h5" fontWeight="medium">

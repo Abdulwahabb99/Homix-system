@@ -43,21 +43,12 @@ import {
   setOpenConfigurator,
   setTransparentSidenav,
   setWhiteSidenav,
-  setFixedNavbar,
   setSidenavColor,
-  setDarkMode,
 } from "context";
 
 function Configurator() {
   const [controller, dispatch] = useMaterialUIController();
-  const {
-    openConfigurator,
-    fixedNavbar,
-    sidenavColor,
-    transparentSidenav,
-    whiteSidenav,
-    darkMode,
-  } = controller;
+  const { openConfigurator, sidenavColor, transparentSidenav, whiteSidenav, darkMode } = controller;
   const [disabled, setDisabled] = useState(false);
   const sidenavColors = ["primary", "dark", "info", "success", "warning", "error"];
 
@@ -91,10 +82,6 @@ function Configurator() {
     setWhiteSidenav(dispatch, false);
     setTransparentSidenav(dispatch, false);
   };
-  const handleFixedNavbar = () => setFixedNavbar(dispatch, !fixedNavbar);
-  const handleDarkMode = () => setDarkMode(dispatch, !darkMode);
-
-  // sidenav type buttons styles
   const sidenavTypeButtonsStyles = ({
     functions: { pxToRem },
     palette: { white, dark, background },
@@ -160,8 +147,7 @@ function Configurator() {
 
       <MDBox pt={0.5} pb={3} px={3}>
         <MDBox>
-          <MDTypography variant="h6">Sidenav Colors</MDTypography>
-
+          {/* <MDTypography variant="h6">Sidenav Colors</MDTypography> */}
           <MDBox mb={0.5}>
             {sidenavColors.map((color) => (
               <IconButton
@@ -264,23 +250,7 @@ function Configurator() {
             </MDButton>
           </MDBox>
         </MDBox>
-        <MDBox
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mt={3}
-          lineHeight={1}
-        >
-          <MDTypography variant="h6">Navbar Fixed</MDTypography>
-
-          <Switch checked={fixedNavbar} onChange={handleFixedNavbar} />
-        </MDBox>
         <Divider />
-        {/* <MDBox display="flex" justifyContent="space-between" alignItems="center" lineHeight={1}>
-          <MDTypography variant="h6">Light / Dark</MDTypography>
-
-          <Switch checked={darkMode} onChange={handleDarkMode} />
-        </MDBox> */}
       </MDBox>
     </ConfiguratorRoot>
   );

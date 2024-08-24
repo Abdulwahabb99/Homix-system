@@ -17,16 +17,28 @@ const statusoptions = [
   { label: "مسترجع", value: 7 },
   { label: "ملغي", value: 8 },
 ];
+const PAYMENT_STATUS = [
+  { label: "مدفوع", value: 1 },
+  { label: "دفع عند الاستلام", value: 2 },
+];
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  return `${year}-${month}-${day}`;
+};
+
 const EditOrderModal = ({ open, onEdit, onClose, data }) => {
-  const [orderCost, setOrderCost] = useState(null);
   const [orderStatus, setOrderStatus] = useState(data.status);
-  const [commission, setCommission] = useState(null);
-  const [notes, setNotes] = useState("");
-  const [manufacturingDate, setManufacturingDate] = useState("");
-  console.log(data);
-  // useEffect(() => {
-  //   setOrderStatus(data.status);
-  // }, []);
+  const [commission, setCommission] = useState(data.commission);
+  const [receivedAmount, setReceivedAmount] = useState(data.receivedAmount);
+  const [notes, setNotes] = useState(data.notes);
+  const [manufacturingDate, setManufacturingDate] = useState(
+    formatDate(`${data.PoDate ? data.PoDate : null}`)
+  );
+  const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -53,12 +65,32 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               })}
             </Select>
           </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="orderStatus">حالة الدفع</InputLabel>
+            <Select
+              fullWidth
+              labelId="PAYMENT_STATUS"
+              id="PAYMENT_STATUS-select"
+              value={paymentStatus}
+              label="حالة الدفع"
+              onChange={(e) => setPaymentStatus(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {PAYMENT_STATUS.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
           <TextField
             fullWidth
-            label="التكلفة"
+            label="المبلغ المستلم"
+            value={receivedAmount}
+            onChange={(e) => setReceivedAmount(e.target.value)}
             type="number"
-            value={orderCost}
-            onChange={(e) => setOrderCost(e.target.value)}
             style={{ margin: "5px 0" }}
           />
           <TextField
@@ -69,22 +101,12 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
             type="number"
             style={{ margin: "5px 0" }}
           />
-          <TextField
-            fullWidth
-            label="ملاحظات"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-            multiline
-            style={{ margin: "5px 0" }}
-          />
           <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
               تاريخ امر التصنيع
             </InputLabel>
             <TextField
               fullWidth
-              // label="تاريخ امر التصنيع"
               value={manufacturingDate}
               onChange={(e) => setManufacturingDate(e.target.value)}
               style={{ margin: "5px 0" }}
@@ -98,8 +120,17 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
           إلغاء
         </Button>
         <Button
-          //  color="error"
-          onClick={onEdit}
+          onClick={() =>
+            onEdit(
+              data.orderId,
+              orderStatus,
+              commission,
+              notes,
+              manufacturingDate,
+              receivedAmount,
+              paymentStatus
+            )
+          }
           variant="contained"
           style={{ color: "#fff" }}
         >

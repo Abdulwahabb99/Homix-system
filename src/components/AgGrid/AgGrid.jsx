@@ -14,29 +14,11 @@ function AgGrid({
   columnDefs,
   rowData,
   defaultColDef,
-  setRowData,
-  setColDefs,
+  handleReset,
   handleSearchClick,
   onCellValueChanged,
 }) {
   const gridRef = useRef();
-  const [searchText, setSearchText] = useState("");
-
-  const resetToDefaults = () => {
-    gridRef.current.api.setQuickFilter("");
-    gridRef.current.columnApi.applyColumnState({
-      state: [],
-      applyOrder: true,
-    });
-    gridRef.current.api.setQuickFilter("");
-    setSearchText("");
-    setRowData((old) => old);
-    setColDefs((old) => old);
-  };
-  const onSearchChange = (event) => {
-    setSearchText(event.target.value);
-    gridRef.current.api.setQuickFilter(event.target.value);
-  };
   const onExportClick = () => {
     gridRef.current.api.exportDataAsCsv();
   };
@@ -55,10 +37,6 @@ function AgGrid({
     >
       <div className={styles.upperGridBtn}>
         <div className={styles.resetBtnBox}>
-          <Button className={`${styles.resetBtn}`} onClick={resetToDefaults}>
-            Reset to Defaults
-          </Button>
-
           <IconButton
             fontSize="small"
             style={{ marginLeft: "20px" }}
@@ -68,16 +46,14 @@ function AgGrid({
             <DownloadIcon />
           </IconButton>
         </div>
-        {/* <TextField
-          variant="standard"
-          label="البحث"
-          value={searchText}
-          onChange={onSearchChange}
-          style={{ marginBottom: "10px" }}
-        /> */}
-        <Button sx={{}} onClick={handleSearchClick}>
-          البحث
-        </Button>
+        <div>
+          <Button sx={{ padding: "0" }} onClick={handleReset}>
+            اعادة ضبط
+          </Button>
+          <Button sx={{ padding: "0" }} onClick={handleSearchClick}>
+            البحث
+          </Button>
+        </div>
       </div>
       <AgGridReact
         rowData={rowData}
@@ -89,30 +65,13 @@ function AgGrid({
         ref={gridRef}
         enableRtl
         domLayout="normal"
-        // pagination
-        // paginationPageSize={20}
         enableCellTextSelection
         rowHeight={"35rem"}
         headerHeight={"35rem"}
         modules={[CsvExportModule]}
         onGridReady={onGridReady}
         onCellValueChanged={onCellValueChange}
-        // localeText={{
-        //   // Custom localization text
-        //   nextPage: "الصفحة التالية",
-        //   previousPage: "الصفحة السابقة",
-        //   first: "الأولى",
-        //   last: "الأخيرة",
-        //   of: "من",
-        //   page: "صفحة",
-        //   more: "المزيد",
-        //   to: "إلى",
-        // }}
       />
-      {/* <Button onClick={() => handlePageChange(page - 1)} disabled={page <= 1}>
-        Previous
-      </Button>
-      <Button onClick={() => handlePageChange(page + 1)}>Next</Button> */}
     </div>
   );
 }

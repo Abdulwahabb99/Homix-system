@@ -3,9 +3,8 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import AgGrid from "components/AgGrid/AgGrid";
 import Spinner from "components/Spinner/Spinner";
-import ActionRenderer from "components/ActionRenderer/ActionRenderer";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { FormControl, IconButton, InputLabel, MenuItem, Pagination, Select } from "@mui/material";
 import SearchDialog from "./components/SearchDialog/SearchDialog";
@@ -49,6 +48,7 @@ function Orders() {
   const orderStatusParam = searchParams.get("status");
   const [searchText, setSearchText] = useState();
   const [totalPages, setTotalPages] = useState(0);
+  const navigate = useNavigate();
   const handlePageChange = (event, value) => {
     setSearchParams({ page: value.toString() });
   };
@@ -82,17 +82,26 @@ function Orders() {
       const response = await axios.get(
         `https://homix.onrender.com/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
       );
-      const newOrders = response.data.data.orders.map((order) => ({
-        orderNumber: order.orderNumber,
-        items: order.orderLines,
-        totalPrice: order.totalPrice,
-        subTotalPrice: order.subTotalPrice,
-        status: order.status,
-        customerName: `${order.customer.firstName} ${order.customer.lastName}`,
-        orderId: order.id,
-        date: formatDateStringToArabic(order.createdAt),
-        orderData: order,
-      }));
+      const newOrders = response.data.data.orders.map((order) => {
+        return {
+          orderNumber: order.orderNumber,
+          items: order.orderLines,
+          totalPrice: order.totalPrice,
+          subTotalPrice: order.subTotalPrice,
+          status: order.status,
+          customerName: `${order.customer.firstName} ${order.customer.lastName}`,
+          orderId: order.id,
+          date: formatDateStringToArabic(order.createdAt),
+          receivedAmount: order.receivedAmount,
+          shippingFees: order.shippingFees,
+          paymentStatus: order.paymentStatus,
+          notes: order.notes,
+          commission: order.commission,
+          PoDate: order.PoDate,
+          totalCost: Number(order.totalCost).toFixed(1),
+          orderData: order,
+        };
+      });
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
     } catch (error) {
@@ -101,16 +110,49 @@ function Orders() {
       setIsLoading(false);
     }
   };
-  const onEditConfirm = (row) => {
-    console.log("hiii");
+  const onEditConfirm = (
+    id,
+    orderStatus,
+    commission,
+    manufacturingDate,
+    receivedAmount,
+    paymentStatus
+  ) => {
+    axios
+      .put(`https://homix.onrender.com/orders/${id}`, {
+        status: orderStatus,
+        commission: commission,
+        receivedAmount: receivedAmount,
+        paymentStatus: paymentStatus,
+        PoDate: manufacturingDate,
+      })
+      .then(({ data: { data } }) => {
+        const newOrders = orders.map((order) => {
+          if (order.orderId === data.id) {
+            return {
+              ...order,
+              status: data.status,
+              commission: data.commission,
+              receivedAmount: data.receivedAmount,
+              paymentStatus: data.paymentStatus,
+              PoDate: data.PoDate,
+            };
+          }
+          return order;
+        });
+        setOrders(newOrders);
+      })
+      .catch((error) => {
+        console.error("Error updating order status:", error);
+      });
 
-    // setRowData((prevRowData) =>
-    //   prevRowData.filter((r) => r.orderNumber !== selectedRowData.orderNumber)
-    // );
-    // setIsConfirmModalOpen(false);
+    setIsEditModalOpen(false);
   };
   const openEditModal = (value) => {
     setSelectedEditOrder(value);
+  };
+  const handleReset = () => {
+    navigate("/orders");
   };
   function formatDateStringToArabic(dateString) {
     const date = new Date(dateString);
@@ -149,13 +191,19 @@ function Orders() {
       minWidth: 100,
       valueGetter: ({ data }) => {
         let totalPrice = 0;
-        data.items.forEach((item) => (totalPrice += Number(item.price)));
+        data.items?.forEach((item) => (totalPrice += Number(item.price)));
         return totalPrice;
       },
     },
+    {
+      field: "totalCost",
+      headerName: "مجموع التكلفة",
+      sortable: true,
+      minWidth: 100,
+    },
     { field: "date", headerName: "التاريخ", sortable: true, minWidth: 100 },
     {
-      headerName: "الإعدادات",
+      headerName: "",
       width: 140,
       sortable: false,
       cellRenderer: (params) => (
@@ -196,30 +244,30 @@ function Orders() {
           onClose={() => setIsEditModalOpen(false)}
         />
       )}
-      <FormControl fullWidth style={{ margin: "0 0 -30px 0", width: "50%" }}>
-        <InputLabel id="orderStatus">حالة الطلب</InputLabel>
-        <Select
-          fullWidth
-          labelId="orderStatus"
-          id="orderStatus-select"
-          // variant="filled"
-          value={orderStatus}
-          label="حالة الطلب"
-          onChange={(e) => handleChangeStatus(e.target.value)}
-          sx={{ height: 35 }} // Adjust the height as needed
-        >
-          {statusoptions.map((option) => {
-            return (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            );
-          })}
-        </Select>
-      </FormControl>
 
       {!isLoading && orders ? (
         <>
+          <FormControl fullWidth style={{ margin: "0 0 -30px 0", width: "50%" }}>
+            <InputLabel id="orderStatus">حالة الطلب</InputLabel>
+            <Select
+              fullWidth
+              labelId="orderStatus"
+              id="orderStatus-select"
+              value={orderStatus}
+              label="حالة الطلب"
+              onChange={(e) => handleChangeStatus(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {statusoptions.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+
           <AgGrid
             rowData={orders}
             columnDefs={colDefs}
@@ -228,6 +276,7 @@ function Orders() {
             }}
             searchText={searchText}
             handleSearchClick={() => setIsSearchModalOpen(true)}
+            handleReset={handleReset}
           />
           <Pagination
             count={totalPages}

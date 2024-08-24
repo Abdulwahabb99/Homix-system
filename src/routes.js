@@ -1,9 +1,6 @@
 import Dashboard from "layouts/dashboard";
 import Notifications from "layouts/notifications";
 import Profile from "layouts/profile";
-import SignUp from "layouts/authentication/sign-up";
-
-// @mui icons
 import Icon from "@mui/material/Icon";
 import Orders from "layouts/Orders";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
@@ -83,14 +80,6 @@ const routes = [
     icon: <Icon fontSize="small">business</Icon>,
     route: "/vendors",
     component: <Profile />,
-  },
-  {
-    type: "collapse",
-    name: "Sign Up",
-    key: "sign-up",
-    icon: <Icon fontSize="small">assignment</Icon>,
-    route: "/authentication/sign-up",
-    component: <SignUp />,
   },
 ];
 

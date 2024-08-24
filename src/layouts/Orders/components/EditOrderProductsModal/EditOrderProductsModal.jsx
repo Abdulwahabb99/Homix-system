@@ -20,10 +20,6 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
   const [orderCost, setOrderCost] = useState(data.unitCost);
   const [status, setStatus] = useState(data.status);
   const [notes, setNotes] = useState(data.notes);
-  console.log(data);
-  // useEffect(() => {
-  //   setOrderStatus(data.status);
-  // }, []);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -74,7 +70,6 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
           إلغاء
         </Button>
         <Button
-          //  color="error"
           onClick={() => onEdit(status, notes, orderCost, data.id)}
           variant="contained"
           style={{ color: "#fff" }}
