@@ -1,5 +1,5 @@
 import { Home, Phone } from "@mui/icons-material";
-import { Card, Icon } from "@mui/material";
+import { Icon } from "@mui/material";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";

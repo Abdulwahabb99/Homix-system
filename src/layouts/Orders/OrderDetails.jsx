@@ -22,9 +22,11 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import OrderProducts from "./OrderProducts";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
 import { Edit } from "@mui/icons-material";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { ToastContainer } from "react-toastify";
+import OrderInfoCard from "./components/OrderInfoCard";
 
 const statusValues = {
   1: "معلق",
@@ -78,11 +80,12 @@ function OrderDetails() {
       .put(`https://homix.onrender.com/orders/${orderDetails.id}`, {
         status: status,
       })
-      .then((res) => {
+      .then(() => {
+        NotificationMeassage("success", "تم التعديل بنجاح");
         setOrderStatus(status);
       })
-      .catch((error) => {
-        console.error("Error updating order status:", error);
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
       });
   };
   const onEdit = (status, notes, cost, id) => {
@@ -101,9 +104,10 @@ function OrderDetails() {
           );
         });
         setIsEditModalOpenned(false);
+        NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch((error) => {
-        console.error("Error updating order status:", error);
+        NotificationMeassage("error", "حدث خطأ");
       });
   };
 
@@ -133,6 +137,7 @@ function OrderDetails() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
+      <ToastContainer />
       {isEditModalOpenned && slectedOrderLine && (
         <EditOrderProductsModal
           open={isEditModalOpenned}
@@ -156,7 +161,7 @@ function OrderDetails() {
           <MDBox py={3}>
             <MDBox>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={12} lg={12}>
+                <Grid item xs={12} md={6} lg={6}>
                   <Card sx={{ height: "100%" }}>
                     {orderDetails?.customer && (
                       <CustomerDetails
@@ -173,6 +178,13 @@ function OrderDetails() {
                             : ""
                         }
                       />
+                    )}
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={6} lg={6}>
+                  <Card sx={{ height: "100%" }}>
+                    {Object.keys(orderDetails).length && (
+                      <OrderInfoCard orderDetails={orderDetails} />
                     )}
                     {user?.userType === "1" && (
                       <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>

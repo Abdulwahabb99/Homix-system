@@ -10,6 +10,8 @@ import { FormControl, IconButton, InputLabel, MenuItem, Pagination, Select } fro
 import SearchDialog from "./components/SearchDialog/SearchDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOrdarModal from "./components/EditOrderModal";
+import { ToastContainer } from "react-toastify";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 const ITEMS_PER_PAGE = 30;
 const statusValues = {
@@ -32,6 +34,7 @@ const statusoptions = [
   { label: "مسترجع", value: 7 },
   { label: "ملغي", value: 8 },
 ];
+const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
 
 function Orders() {
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +49,6 @@ function Orders() {
   const orderNumberParam = searchParams.get("orderNumber");
   const vendorNameParam = searchParams.get("vendorName");
   const orderStatusParam = searchParams.get("status");
-  const [searchText, setSearchText] = useState();
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
   const handlePageChange = (event, value) => {
@@ -54,6 +56,10 @@ function Orders() {
   };
   const getStatusValue = (status) => {
     const resultValue = statusValues[status];
+    return resultValue;
+  };
+  const getPaymentValue = (status) => {
+    const resultValue = PAYMENT_STATUS[status];
     return resultValue;
   };
   const handleChangeStatus = (value) => {
@@ -105,7 +111,7 @@ function Orders() {
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      NotificationMeassage("error", "حدث خطأ");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +130,7 @@ function Orders() {
         commission: commission,
         receivedAmount: receivedAmount,
         paymentStatus: paymentStatus,
-        PoDate: manufacturingDate,
+        PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -141,9 +147,10 @@ function Orders() {
           return order;
         });
         setOrders(newOrders);
+        NotificationMeassage("success", "تم التعديل بنجاح");
       })
-      .catch((error) => {
-        console.error("Error updating order status:", error);
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
       });
 
     setIsEditModalOpen(false);
@@ -161,12 +168,12 @@ function Orders() {
     return formatter.format(date);
   }
 
-  const [colDefs, setColDefs] = useState([
+  const colDefs = [
     {
       field: "orderNumber",
       headerName: "رقم الطلب",
       sortable: true,
-      minWidth: 90,
+      minWidth: 110,
       cellRenderer: (params) => (
         <LinkRenderer
           data={params.data}
@@ -176,12 +183,12 @@ function Orders() {
         />
       ),
     },
-    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 100 },
+    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 140 },
     {
       field: "status",
       headerName: "حالة الطلب",
       sortable: true,
-      minWidth: 100,
+      minWidth: 120,
       valueGetter: (node) => getStatusValue(node.data.status),
     },
     {
@@ -199,12 +206,28 @@ function Orders() {
       field: "totalCost",
       headerName: "مجموع التكلفة",
       sortable: true,
-      minWidth: 100,
+      minWidth: 140,
+    },
+    {
+      field: "receivedAmount",
+      headerName: "المبلغ المستلم",
+      minWidth: 140,
+    },
+    {
+      field: "commission",
+      headerName: "عمولة المنصة",
+      minWidth: 130,
+    },
+    {
+      field: "paymentStatus",
+      headerName: "طريقة الدفع",
+      minWidth: 170,
+      valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
     { field: "date", headerName: "التاريخ", sortable: true, minWidth: 100 },
     {
       headerName: "",
-      width: 140,
+      minWidth: 120,
       sortable: false,
       cellRenderer: (params) => (
         <IconButton
@@ -218,7 +241,7 @@ function Orders() {
         </IconButton>
       ),
     },
-  ]);
+  ];
 
   useEffect(() => {
     fetchOrders();
@@ -227,7 +250,7 @@ function Orders() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
-
+      <ToastContainer />
       {isSearchModalOpen && (
         <SearchDialog
           onConfirm={onEditConfirm}
@@ -267,14 +290,12 @@ function Orders() {
               })}
             </Select>
           </FormControl>
-
           <AgGrid
             rowData={orders}
             columnDefs={colDefs}
             defaultColDef={{
               resizable: true,
             }}
-            searchText={searchText}
             handleSearchClick={() => setIsSearchModalOpen(true)}
             handleReset={handleReset}
           />

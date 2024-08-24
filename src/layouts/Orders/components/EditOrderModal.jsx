@@ -34,10 +34,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
   const [receivedAmount, setReceivedAmount] = useState(data.receivedAmount);
-  const [notes, setNotes] = useState(data.notes);
-  const [manufacturingDate, setManufacturingDate] = useState(
-    formatDate(`${data.PoDate ? data.PoDate : null}`)
-  );
+  const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
 
   return (
@@ -125,7 +122,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               data.orderId,
               orderStatus,
               commission,
-              notes,
               manufacturingDate,
               receivedAmount,
               paymentStatus

@@ -9,7 +9,6 @@ import ArrowNextIcon from "@mui/icons-material/ArrowForward";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import styles from "../Products.module.css";
-import { Home, Phone } from "@mui/icons-material";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -55,14 +54,11 @@ function ProductDetails() {
             <IconButton color="#344767" onClick={() => navigate(-1)}>
               <ArrowNextIcon />
             </IconButton>
-            {/* <MDTypography variant="h5" fontWeight="medium">
-              {orderDetails?.title}
-            </MDTypography> */}
           </div>
           <MDBox py={3}>
             <MDBox>
               <Grid container spacing={2} justifyContent={"center"}>
-                <Grid item xs={12} md={5} lg={5}>
+                <Grid item xs={12} md={8} lg={8}>
                   <Card sx={{ height: "100%", width: "100%" }}>
                     <>
                       <MDBox pt={2} px={3}>
@@ -123,7 +119,7 @@ function ProductDetails() {
                     </>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={7} lg={7}>
+                <Grid item xs={12} md={4} lg={4}>
                   <Card
                     sx={{
                       maxWidth: 345,
