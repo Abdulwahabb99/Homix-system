@@ -18,7 +18,7 @@ import {
 } from "context";
 import { Button } from "@mui/material";
 import { AuthContext } from "context";
-import axios from "axios";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
@@ -169,7 +169,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           type="button"
           onClick={logOut}
         >
-          تسجيل خروج
+          <LogoutIcon />
         </Button>
       </div>
     </SidenavRoot>

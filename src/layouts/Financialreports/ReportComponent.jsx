@@ -3,7 +3,6 @@ import React from "react";
 import { Grid } from "@mui/material";
 import MDBox from "components/MDBox";
 import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import PaidIcon from "@mui/icons-material/Paid";
 
