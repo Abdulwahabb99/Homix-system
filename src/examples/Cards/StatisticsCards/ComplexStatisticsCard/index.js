@@ -109,7 +109,7 @@ ComplexStatisticsCard.propTypes = {
     amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     label: PropTypes.string,
   }),
-  icon: PropTypes.node.isRequired,
+  icon: !PropTypes.node.isRequired,
 };
 
 export default ComplexStatisticsCard;
