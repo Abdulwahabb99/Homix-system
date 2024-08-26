@@ -1,11 +1,11 @@
 import Dashboard from "layouts/dashboard";
-import Notifications from "layouts/notifications";
 import Profile from "layouts/profile";
 import Icon from "@mui/material/Icon";
 import Orders from "layouts/Orders";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
+import Financialreports from "layouts/Financialreports/Financialreports";
 const Products = lazy(() => import("layouts/Products/Products"));
 
 const routes = [
@@ -71,7 +71,7 @@ const routes = [
     key: "financialReports",
     icon: <Icon fontSize="small">description</Icon>,
     route: "/financialReports",
-    component: <Notifications />,
+    component: <Financialreports />,
   },
   {
     type: "collapse",

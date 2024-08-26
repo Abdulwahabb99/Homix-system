@@ -7,17 +7,17 @@ import GoogleIcon from "@mui/icons-material/Google";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
-import { Button, Snackbar, TextField } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "context";
 import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { ToastContainer } from "react-toastify";
 
 function Basic() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isErrorAlertOpen, setIsErrorAlertOpen] = useState();
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { setUserData } = useContext(AuthContext);
@@ -36,14 +36,13 @@ function Basic() {
           JSON.stringify({ ...response.data.data.user, token: response.data.data.token })
         );
         setUserData({ ...response.data.data.user, token: response.data.data.token });
+        navigate("/home");
       })
       .catch(() => {
-        setIsErrorAlertOpen((prev) => !prev);
-        NotificationMeassage("error", "حدث خطأ");
+        NotificationMeassage("error", "البريد الإلكتروني أو كلمة السر غير صحيحة");
       })
       .finally(() => {
         setIsLoading(false);
-        navigate("/home");
       });
   };
   const handleEmailChange = (e) => {
@@ -53,22 +52,9 @@ function Basic() {
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
   };
-  const handleClose = () => {
-    setIsErrorAlertOpen(false);
-  };
   return (
     <BasicLayout>
-      {isErrorAlertOpen && (
-        <Snackbar
-          anchorOrigin={{ vertical: "top", horizontal: "left" }}
-          open={isErrorAlertOpen}
-          onClose={setTimeout(() => {
-            handleClose();
-          }, 3000)}
-          message={"البريد الإلكتروني أو كلمة السر غير صحيحة"}
-          key={{ vertical: "top", horizontal: "right" }}
-        />
-      )}
+      <ToastContainer />
       {!isLoading ? (
         <Card>
           <MDBox
