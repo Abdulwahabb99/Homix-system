@@ -71,6 +71,8 @@ function Orders() {
     (config) => {
       if (user.token) {
         config.headers["Authorization"] = `Bearer ${user.token}`;
+      } else {
+        delete config.headers.Authorization;
       }
       return config;
     },

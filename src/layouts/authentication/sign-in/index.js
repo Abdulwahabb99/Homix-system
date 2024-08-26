@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "context";
 import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 function Basic() {
   const [email, setEmail] = useState("");
@@ -38,35 +39,19 @@ function Basic() {
       })
       .catch(() => {
         setIsErrorAlertOpen((prev) => !prev);
+        NotificationMeassage("error", "حدث خطأ");
       })
       .finally(() => {
         setIsLoading(false);
         navigate("/home");
       });
-
-    // if (email === testEmail && password === testPass) {
-    //   navigate("/home");
-    // } else if (!email) {
-    //   setEmailErrorMessage("يرجى إدخال البريد الإلكتروني");
-    // } else if (!password) {
-    //   setErrorMessage("يرجى إدخال كلمة المرور");
-    // } else {
-    //   setErrorMessage("كلمة المرور غير صحيحة");
-    // }
   };
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
-    // Clear email error message if user starts typing again
-    // if (emailErrorMessage) {
-    //   setEmailErrorMessage("");
-    // }
   };
 
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
-    // if (errorMessage) {
-    //   setErrorMessage("");
-    // }
   };
   const handleClose = () => {
     setIsErrorAlertOpen(false);
@@ -130,8 +115,6 @@ function Basic() {
                   variant="outlined"
                   fullWidth
                   autoFocus
-                  // error={!!emailErrorMessage}
-                  // helperText={emailErrorMessage ? emailErrorMessage : ""}
                 />
               </MDBox>
               <MDBox mb={2}>
@@ -143,8 +126,6 @@ function Basic() {
                   type="password"
                   variant="outlined"
                   fullWidth
-                  // error={!!errorMessage}
-                  // helperText={errorMessage}
                 />
               </MDBox>
               <MDBox mt={4} mb={1}>
