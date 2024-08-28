@@ -11,6 +11,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import styles from "./Factories.module.css";
 const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
 function Factories() {
   const [isloading, setIsLoading] = useState(false);
@@ -75,6 +76,28 @@ function Factories() {
     { field: "factoryCategory", headerName: "تخصص المصنع", sortable: true, minWidth: 140 },
     { field: "contactPersonName", headerName: "اسم المسؤول", sortable: true, minWidth: 140 },
     { field: "contactPersonPhoneNumber", headerName: "رقم المسؤول", sortable: true, minWidth: 140 },
+    {
+      headerName: "مصاريف الشحن",
+      headerClass: styles.header,
+
+      children: [
+        {
+          field: "cairoGizaShipping",
+          headerName: "القاهرة والجيزة",
+          sortable: true,
+          pivot: true,
+          minWidth: 120,
+        },
+        {
+          field: "otherCitiesShipping",
+          headerName: "باقي المحافظات",
+          sortable: false,
+          pivot: true,
+          minWidth: 130,
+        },
+      ],
+      minWidth: 140,
+    },
     {
       field: "status",
       headerName: "الحالة",

@@ -32,6 +32,8 @@ function AddEditFactory({ type }) {
   const [factoryCategory, setFactoryCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [cairoGizaShipping, setCairoGizaShipping] = useState("");
+  const [otherCitiesShipping, setOtherCitiesShipping] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const { id } = useParams();
   const user = JSON.parse(localStorage.getItem("user"));
@@ -85,6 +87,8 @@ function AddEditFactory({ type }) {
         contactPersonPhoneNumber: contactPersonPhoneNumber,
         contactPersonName: contactPersonName,
         website: website,
+        cairoGizaShipping: cairoGizaShipping,
+        otherCitiesShipping: otherCitiesShipping,
       })
       .then(({ data }) => {
         console.log(data);
@@ -112,6 +116,8 @@ function AddEditFactory({ type }) {
         contactPersonPhoneNumber: contactPersonPhoneNumber,
         contactPersonName: contactPersonName,
         website: website,
+        cairoGizaShipping: cairoGizaShipping,
+        otherCitiesShipping: otherCitiesShipping,
       })
       .then(({ data }) => {
         NotificationMeassage("success", "تم التعديل بنجاح");
@@ -210,6 +216,24 @@ function AddEditFactory({ type }) {
                 label="الويب سايت"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
+                style={{ margin: "5px 0" }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <TextField
+                fullWidth
+                label="شحن قاهرة وجيزة"
+                value={cairoGizaShipping}
+                onChange={(e) => setCairoGizaShipping(e.target.value)}
+                style={{ margin: "5px 0" }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6} lg={6}>
+              <TextField
+                fullWidth
+                label="شحن باقي المحافظات"
+                value={otherCitiesShipping}
+                onChange={(e) => setOtherCitiesShipping(e.target.value)}
                 style={{ margin: "5px 0" }}
               />
             </Grid>

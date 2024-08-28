@@ -4,14 +4,19 @@ import React from "react";
 
 function ConfirmDeleteModal({ open, onClose, handleConfirmDelete }) {
   return (
-    <Dialog fullWidth open={open} onClose={onClose}>
-      <DialogTitle>تعديل طلب</DialogTitle>
-      <DialogContent></DialogContent>
-      <DialogActions>
+    <Dialog open={open} onClose={onClose}>
+      <DialogContent>
+        <h2 style={{ textAlign: "center", color: "#000" }}>هل متأكد من حذف المصنع ؟</h2>
+      </DialogContent>
+      <DialogActions style={{ display: "flex", justifyContent: "center" }}>
         <Button onClick={onClose} variant="contained" style={{ background: "#000", color: "#fff" }}>
           إلغاء
         </Button>
-        <Button onClick={handleConfirmDelete} variant="contained" style={{ color: "#fff" }}>
+        <Button
+          onClick={handleConfirmDelete}
+          variant="contained"
+          style={{ color: "#fff", background: "red" }}
+        >
           تأكيد
         </Button>
       </DialogActions>
