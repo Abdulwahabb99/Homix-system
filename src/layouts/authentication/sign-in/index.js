@@ -9,7 +9,6 @@ import MDTypography from "components/MDTypography";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
 import { Button, TextField } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "context";
 import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -20,7 +19,6 @@ function Basic() {
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setUserData } = useContext(AuthContext);
   const handleSignInClick = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -35,7 +33,6 @@ function Basic() {
           "user",
           JSON.stringify({ ...response.data.data.user, token: response.data.data.token })
         );
-        setUserData({ ...response.data.data.user, token: response.data.data.token });
         navigate("/home");
       })
       .catch(() => {

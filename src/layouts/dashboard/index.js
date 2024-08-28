@@ -37,16 +37,23 @@ function Dashboard() {
 
     axios
       .get(url)
-      .then(({ data: { data } }) => {
+      .then(({ data }) => {
+        if (data.message === "No token provided.") {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+        }
+
         setFinancialreportData({
-          ordersCount: data.ordersCount,
-          totalCost: data.totalCost,
-          totalProfit: data.totalProfit,
-          totalRevenue: data.totalRevenue,
-          totalCommission: data.totalCommission,
+          ordersCount: data.data.ordersCount,
+          totalCost: data.data.totalCost,
+          totalProfit: data.data.totalProfit,
+          totalRevenue: data.data.totalRevenue,
+          totalCommission: data.data.totalCommission,
         });
       })
-      .catch(() => {
+      .catch((res) => {
+        console.log(res);
+
         NotificationMeassage("error", "حدث خطأ");
       })
       .finally(() => {

@@ -50,6 +50,10 @@ function Products() {
           searchFilter ? searchFilter : ""
         }`
       );
+      if (response.data.message === "No token provided.") {
+        localStorage.removeItem("user");
+        navigate("/authentication/sign-in");
+      }
       setProducts(response.data.data.products);
       setTotalPages(response.data.data.totalPages);
     } catch (error) {

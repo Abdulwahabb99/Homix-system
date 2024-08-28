@@ -103,120 +103,122 @@ function Financialreports() {
   }, []);
 
   return (
-    <DashboardLayout>
-      <DashboardNavbar />
-      <ToastContainer />
-      <Grid container spacing={2}>
-        <Grid item xs={6} md={3} lg={3}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            }}
-          >
-            <Typography
-              variant="h6"
-              component="label"
-              htmlFor="start-date"
-              sx={{ marginBottom: "8px" }}
-            >
-              تاريخ البدأ
-            </Typography>
-
-            <TextField
-              id="start-date"
-              variant="outlined"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              fullWidth
-            />
-          </Box>
-        </Grid>
-        <Grid item xs={6} md={3} lg={3}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            }}
-          >
-            <Typography
-              variant="h6"
-              component="label"
-              htmlFor="start-date"
-              sx={{ marginBottom: "8px" }}
-            >
-              تاريخ الانتهاء{" "}
-            </Typography>
-
-            <TextField
-              id="start-date"
-              variant="outlined"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              fullWidth
-            />
-          </Box>
-        </Grid>
-        {isAdmin && (
+    <div style={{ margin: "20px 0" }}>
+      <DashboardLayout>
+        <DashboardNavbar />
+        <ToastContainer />
+        <Grid container spacing={2}>
           <Grid item xs={6} md={3} lg={3}>
             <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
-                minWidth: "150px",
               }}
             >
               <Typography
                 variant="h6"
                 component="label"
-                htmlFor="vendors"
+                htmlFor="start-date"
                 sx={{ marginBottom: "8px" }}
               >
-                المصنعين{" "}
+                تاريخ البدأ
               </Typography>
-              <Select
-                labelId="vendors"
-                id="vendors"
-                value={selectedVendor}
-                label="حالة الطلب"
+
+              <TextField
+                id="start-date"
+                variant="outlined"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
                 fullWidth
-                onChange={(e) => setSelectedVendor(e.target.value)}
-                sx={{ height: 43 }}
-              >
-                {vendors.map((option) => {
-                  return (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  );
-                })}
-              </Select>
+              />
             </Box>
           </Grid>
-        )}
-        <Grid item xs={6} md={3} lg={3} justifyContent={"center"}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={getFinancialreport}
-            style={{ color: "#fff", marginTop: "2.1rem" }}
-          >
-            بحث
-          </Button>
-        </Grid>
-      </Grid>
+          <Grid item xs={6} md={3} lg={3}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              }}
+            >
+              <Typography
+                variant="h6"
+                component="label"
+                htmlFor="start-date"
+                sx={{ marginBottom: "8px" }}
+              >
+                تاريخ الانتهاء{" "}
+              </Typography>
 
-      {financialreportData && !isLoading ? (
-        <ReportComponent financialreportData={financialreportData} />
-      ) : (
-        <Spinner />
-      )}
-    </DashboardLayout>
+              <TextField
+                id="start-date"
+                variant="outlined"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                fullWidth
+              />
+            </Box>
+          </Grid>
+          {isAdmin && (
+            <Grid item xs={6} md={3} lg={3}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  minWidth: "150px",
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  component="label"
+                  htmlFor="vendors"
+                  sx={{ marginBottom: "8px" }}
+                >
+                  المصنعين{" "}
+                </Typography>
+                <Select
+                  labelId="vendors"
+                  id="vendors"
+                  value={selectedVendor}
+                  label="حالة الطلب"
+                  fullWidth
+                  onChange={(e) => setSelectedVendor(e.target.value)}
+                  sx={{ height: 43 }}
+                >
+                  {vendors.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </Box>
+            </Grid>
+          )}
+          <Grid item xs={6} md={3} lg={3} justifyContent={"center"}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={getFinancialreport}
+              style={{ color: "#fff", marginTop: "2.1rem" }}
+            >
+              بحث
+            </Button>
+          </Grid>
+        </Grid>
+
+        {financialreportData && !isLoading ? (
+          <ReportComponent financialreportData={financialreportData} />
+        ) : (
+          <Spinner />
+        )}
+      </DashboardLayout>
+    </div>
   );
 }
 

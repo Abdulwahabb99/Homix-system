@@ -90,6 +90,10 @@ function Orders() {
       const response = await axios.get(
         `https://homix.onrender.com/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
       );
+      if (response.data.message === "No token provided.") {
+        localStorage.removeItem("user");
+        navigate("/authentication/sign-in");
+      }
       const newOrders = response.data.data.orders.map((order) => {
         return {
           orderNumber: order.orderNumber,
@@ -112,7 +116,9 @@ function Orders() {
       });
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
-    } catch (error) {
+    } catch (res) {
+      console.log(res);
+
       NotificationMeassage("error", "حدث خطأ");
     } finally {
       setIsLoading(false);
@@ -300,6 +306,7 @@ function Orders() {
             }}
             handleSearchClick={() => setIsSearchModalOpen(true)}
             handleReset={handleReset}
+            enableExcel
           />
           <Pagination
             count={totalPages}

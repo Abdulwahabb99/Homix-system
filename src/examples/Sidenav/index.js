@@ -26,7 +26,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
   const navigate = useNavigate();
-  const { setUserData } = useContext(AuthContext);
   let textColor = "white";
   if (transparentSidenav || (whiteSidenav && !darkMode)) {
     textColor = "dark";
@@ -37,11 +36,8 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const closeSidenav = () => setMiniSidenav(dispatch, true);
 
   const logOut = () => {
-    setUserData(null);
     localStorage.removeItem("user");
     navigate("/authentication/sign-in");
-    window.location.reload();
-    sessionStorage.clear();
   };
   useEffect(() => {
     function handleMiniSidenav() {

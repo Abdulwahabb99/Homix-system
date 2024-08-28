@@ -1,12 +1,18 @@
-import Dashboard from "layouts/dashboard";
-import Profile from "layouts/profile";
 import Icon from "@mui/material/Icon";
-import Orders from "layouts/Orders";
-import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
-import { lazy, Suspense } from "react";
+import React, { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
-import Financialreports from "layouts/Financialreports/Financialreports";
-const Products = lazy(() => import("layouts/Products/Products"));
+const Products = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Products/Products"));
+const Dashboard = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/dashboard"));
+const Orders = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Orders"));
+const ProtectedRoutes = React.lazy(() =>
+  import(/* webpackPrefetch: true */ "components/ProtectedRoutes/ProtectedRoutes")
+);
+const Financialreports = React.lazy(() =>
+  import(/* webpackPrefetch: true */ "layouts/Financialreports/Financialreports")
+);
+const Factories = React.lazy(() =>
+  import(/* webpackPrefetch: true */ "layouts/Factories/Factories")
+);
 
 const routes = [
   {
@@ -29,15 +35,7 @@ const routes = [
     route: "/products",
     component: (
       <ProtectedRoutes>
-        <Suspense
-          fallback={
-            <div>
-              <Spinner />
-            </div>
-          }
-        >
-          <Products />
-        </Suspense>
+        <Products />
       </ProtectedRoutes>
     ),
   },
@@ -49,7 +47,15 @@ const routes = [
     route: "/orders",
     component: (
       <ProtectedRoutes>
-        <Orders />
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Orders />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },
@@ -61,7 +67,15 @@ const routes = [
     route: "/factories",
     component: (
       <ProtectedRoutes>
-        <Orders />
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Factories />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },
@@ -71,7 +85,11 @@ const routes = [
     key: "financialReports",
     icon: <Icon fontSize="small">description</Icon>,
     route: "/financialReports",
-    component: <Financialreports />,
+    component: (
+      <ProtectedRoutes>
+        <Financialreports />
+      </ProtectedRoutes>
+    ),
   },
   {
     type: "collapse",
@@ -79,7 +97,11 @@ const routes = [
     key: "vendors",
     icon: <Icon fontSize="small">business</Icon>,
     route: "/vendors",
-    component: <Profile />,
+    component: (
+      <ProtectedRoutes>
+        <Financialreports />
+      </ProtectedRoutes>
+    ),
   },
 ];
 

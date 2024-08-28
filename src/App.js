@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, createContext } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -11,16 +11,18 @@ import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 import routes from "routes";
 import SignIn from "layouts/authentication/sign-in";
-import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
+import { useMaterialUIController, setMiniSidenav } from "context";
 import homix from "assets/images/homix.jpg";
-import { AuthProvider } from "context";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import OrderDetails from "layouts/Orders/OrderDetails";
 import ProductDetails from "layouts/Products/components/ProductDetails";
+import AddEditFactory from "layouts/Factories/AddEditFactory";
+import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
+import Spinner from "components/Spinner/Spinner";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, layout, openConfigurator, sidenavColor, darkMode } = controller;
+  const { miniSidenav, layout, sidenavColor, darkMode } = controller;
 
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
@@ -51,7 +53,6 @@ export default function App() {
   };
 
   // Change the openConfigurator state
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
   // Setting the dir attribute for the body element
   useEffect(() => {
@@ -80,21 +81,21 @@ export default function App() {
   return (
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
-        <AuthProvider>
-          <CssBaseline />
-          {layout === "dashboard" && (
-            <>
-              <Sidenav
-                color={sidenavColor}
-                brand={homix}
-                brandName="HOMIX"
-                routes={routes}
-                onMouseEnter={handleOnMouseEnter}
-                onMouseLeave={handleOnMouseLeave}
-              />
-              <Configurator />
-            </>
-          )}
+        <CssBaseline />
+        {layout === "dashboard" && (
+          <>
+            <Sidenav
+              color={sidenavColor}
+              brand={homix}
+              brandName="HOMIX"
+              routes={routes}
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+            />
+            <Configurator />
+          </>
+        )}
+        <Suspense fallback={<Spinner />}>
           <Routes>
             {getRoutes(routes)}
             <Route path="/" index element={<Navigate to="/home" />} />
@@ -103,10 +104,40 @@ export default function App() {
               path="/authentication/sign-in"
               element={<SignIn to="/authentication/sign-in" />}
             />
-            <Route path="/orders/:id" element={<OrderDetails to="/orders/:id" />} />
-            <Route path="/products/:id" element={<ProductDetails to="/products/:id" />} />
+            <Route
+              path="/orders/:id"
+              element={
+                <ProtectedRoutes>
+                  <OrderDetails to="/orders/:id" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/products/:id"
+              element={
+                <ProtectedRoutes>
+                  <ProductDetails to="/products/:id" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/factories/add"
+              element={
+                <ProtectedRoutes>
+                  <AddEditFactory type="add" to="/factories/add" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/factories/edit/:id"
+              element={
+                <ProtectedRoutes>
+                  <AddEditFactory type="edit" to="/factories/edit/:id" />{" "}
+                </ProtectedRoutes>
+              }
+            />
           </Routes>
-        </AuthProvider>
+        </Suspense>
       </ThemeProvider>
     </CacheProvider>
   );
