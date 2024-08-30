@@ -169,6 +169,11 @@ function Financialreports() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 fullWidth
+                InputProps={{
+                  inputProps: {
+                    max: formattedDate,
+                  },
+                }}
               />
             </Box>
           </Grid>
