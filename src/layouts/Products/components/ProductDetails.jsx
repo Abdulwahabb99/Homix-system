@@ -82,7 +82,7 @@ function ProductDetails() {
                             </MDTypography>
                           </MDBox>
                           {productDetails.variants.map((variant, inedx) => (
-                            <>
+                            <div key={variant.id}>
                               <MDTypography variant="button" fontWeight="regular">
                                 <div>
                                   {variant.title !== "Default Title" && <div>{variant.title}</div>}
@@ -106,7 +106,7 @@ function ProductDetails() {
                                   </div>
                                 </div>
                               </MDTypography>
-                            </>
+                            </div>
                           ))}
                         </MDBox>
 
