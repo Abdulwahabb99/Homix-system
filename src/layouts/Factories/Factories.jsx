@@ -12,6 +12,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import styles from "./Factories.module.css";
+import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
 function Factories() {
   const [isloading, setIsLoading] = useState(false);
@@ -71,7 +72,19 @@ function Factories() {
   }, []);
 
   const colDefs = [
-    { field: "name", headerName: "اسم المصنع", sortable: true, minWidth: 140 },
+    {
+      field: "name",
+      headerName: "اسم المصنع",
+      sortable: true,
+      minWidth: 140,
+      cellRenderer: (params) => (
+        <LinkRenderer
+          data={params.data}
+          value={params.data.name}
+          url={`/factories/${params.data.id}`}
+        />
+      ),
+    },
     { field: "address", headerName: "العنوان", minWidth: 140, sortable: false },
     { field: "factoryCategory", headerName: "تخصص المصنع", sortable: true, minWidth: 140 },
     { field: "contactPersonName", headerName: "اسم المسؤول", sortable: true, minWidth: 140 },

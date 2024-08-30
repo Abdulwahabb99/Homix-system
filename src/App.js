@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -19,6 +19,7 @@ import ProductDetails from "layouts/Products/components/ProductDetails";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
+const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
@@ -133,6 +134,14 @@ export default function App() {
               element={
                 <ProtectedRoutes>
                   <AddEditFactory type="edit" to="/factories/edit/:id" />{" "}
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/factories/:id"
+              element={
+                <ProtectedRoutes>
+                  <FactoryDetails type="edit" to="/factories/:id" />
                 </ProtectedRoutes>
               }
             />
