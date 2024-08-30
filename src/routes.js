@@ -104,5 +104,63 @@ const routes = [
     ),
   },
 ];
+export const vendorsRoutes = [
+  {
+    type: "collapse",
+    name: "الرئيسية",
+    key: "home",
+    icon: <Icon fontSize="small">home</Icon>,
+    route: "/home",
+    component: (
+      <ProtectedRoutes>
+        <Dashboard />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "المنتجات",
+    key: "products",
+    icon: <Icon fontSize="small">shopping_cart</Icon>,
+    route: "/products",
+    component: (
+      <ProtectedRoutes>
+        <Products />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "أوامر التصنيع",
+    key: "orders",
+    icon: <Icon fontSize="small">build</Icon>,
+    route: "/orders",
+    component: (
+      <ProtectedRoutes>
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Orders />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "تقارير مالية",
+    key: "financialReports",
+    icon: <Icon fontSize="small">description</Icon>,
+    route: "/financialReports",
+    component: (
+      <ProtectedRoutes>
+        <Financialreports />
+      </ProtectedRoutes>
+    ),
+  },
+];
 
 export default routes;

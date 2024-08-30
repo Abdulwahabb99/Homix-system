@@ -17,16 +17,18 @@ import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
+import { vendorsRoutes } from "routes";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 
 export default function App() {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, layout, sidenavColor, darkMode } = controller;
-
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
+  const isAdmin = user?.userType === "1";
 
   const rtlCache = useMemo(
     () =>
@@ -89,7 +91,7 @@ export default function App() {
               color={sidenavColor}
               brand={homix}
               brandName="HOMIX"
-              routes={routes}
+              routes={isAdmin ? routes : vendorsRoutes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />

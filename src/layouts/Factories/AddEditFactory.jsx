@@ -55,7 +55,10 @@ function AddEditFactory({ type }) {
       axios
         .get(`https://homix.onrender.com/factories/${id}`)
         .then(({ data }) => {
-          if (data.force_logout) {
+          if (data === null) {
+            navigate("/factories");
+          }
+          if (data?.force_logout) {
             localStorage.removeItem("user");
             navigate("/authentication/sign-in");
           }
@@ -68,7 +71,7 @@ function AddEditFactory({ type }) {
           setFactoryCategory(data.factoryCategory);
           setSelectedStatus(data.status);
         })
-        .catch(() => {
+        .catch((res) => {
           NotificationMeassage("error", "حدث خطأ");
         })
         .finally(() => {
@@ -95,7 +98,7 @@ function AddEditFactory({ type }) {
         cairoGizaShipping: cairoGizaShipping,
         otherCitiesShipping: otherCitiesShipping,
       })
-      .then(({ data }) => {
+      .then(() => {
         NotificationMeassage("success", "تم اضافة مصنع");
         setTimeout(() => {
           navigate("/factories");
@@ -126,9 +129,6 @@ function AddEditFactory({ type }) {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
-      })
-      .finally(() => {
-        //   setIsLoading(false);
       });
   };
   const handleFileChange = (event) => {

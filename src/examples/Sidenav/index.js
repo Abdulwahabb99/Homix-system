@@ -17,7 +17,6 @@ import {
   setWhiteSidenav,
 } from "context";
 import { Button } from "@mui/material";
-import { AuthContext } from "context";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
@@ -38,6 +37,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const logOut = () => {
     localStorage.removeItem("user");
     navigate("/authentication/sign-in");
+    window.location.reload();
   };
   useEffect(() => {
     function handleMiniSidenav() {
