@@ -96,7 +96,6 @@ function AddEditFactory({ type }) {
         otherCitiesShipping: otherCitiesShipping,
       })
       .then(({ data }) => {
-        console.log(data);
         NotificationMeassage("success", "تم اضافة مصنع");
         setTimeout(() => {
           navigate("/factories");

@@ -51,9 +51,7 @@ function Dashboard() {
           totalCommission: data.data.totalCommission,
         });
       })
-      .catch((res) => {
-        console.log(res);
-
+      .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
       })
       .finally(() => {

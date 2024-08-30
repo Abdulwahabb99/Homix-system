@@ -41,7 +41,7 @@ function ProductDetails() {
 
         setProductDetails(data.data);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        NotificationMeassage("error", "حدث خطأ");
       } finally {
         setIsLoading(false);
       }

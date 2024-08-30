@@ -117,8 +117,6 @@ function Orders() {
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
     } catch (res) {
-      console.log(res);
-
       NotificationMeassage("error", "حدث خطأ");
     } finally {
       setIsLoading(false);
