@@ -42,8 +42,13 @@ function Factories() {
     setIsLoading(true);
     axios
       .get(`https://homix.onrender.com/factories`)
-      .then(({ data: { data } }) => {
-        const newData = data.sort((a, b) => a.id - b.id);
+      .then(({ data }) => {
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+        }
+
+        const newData = data.data.sort((a, b) => a.id - b.id);
         setFactories(newData);
       })
       .catch(() => {

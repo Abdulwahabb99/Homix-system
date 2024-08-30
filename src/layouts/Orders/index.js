@@ -90,7 +90,7 @@ function Orders() {
       const response = await axios.get(
         `https://homix.onrender.com/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
       );
-      if (response.data.message === "No token provided.") {
+      if (response.data.force_logout) {
         localStorage.removeItem("user");
         navigate("/authentication/sign-in");
       }

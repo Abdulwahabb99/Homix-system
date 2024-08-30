@@ -55,6 +55,11 @@ function AddEditFactory({ type }) {
       axios
         .get(`https://homix.onrender.com/factories/${id}`)
         .then(({ data }) => {
+          if (data.force_logout) {
+            localStorage.removeItem("user");
+            navigate("/authentication/sign-in");
+          }
+
           setName(data.name);
           setAddress(data.address);
           setContactPersonName(data.contactPersonName);
@@ -99,14 +104,9 @@ function AddEditFactory({ type }) {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
-      })
-      .finally(() => {
-        //   setIsLoading(false);
       });
   };
   const UpdateFactory = () => {
-    console.log("hyy");
-
     axios
       .put(`https://homix.onrender.com/factories/${id}`, {
         name: name,

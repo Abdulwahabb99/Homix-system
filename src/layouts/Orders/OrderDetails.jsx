@@ -115,7 +115,11 @@ function OrderDetails() {
     const getOrderDetails = async () => {
       setIsLoading(true);
       try {
-        const { data: data } = await axios.get(`https://homix.onrender.com/orders/${id}`);
+        const { data } = await axios.get(`https://homix.onrender.com/orders/${id}`);
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+        }
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
         setOrderStatus(data.data.status);
@@ -127,11 +131,6 @@ function OrderDetails() {
     };
 
     getOrderDetails();
-  }, []);
-  useEffect(() => {
-    return () => {
-      user === null;
-    };
   }, []);
 
   return (

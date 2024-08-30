@@ -14,12 +14,12 @@ import SignIn from "layouts/authentication/sign-in";
 import { useMaterialUIController, setMiniSidenav } from "context";
 import homix from "assets/images/homix.jpg";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
-import OrderDetails from "layouts/Orders/OrderDetails";
-import ProductDetails from "layouts/Products/components/ProductDetails";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
+const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
+const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();

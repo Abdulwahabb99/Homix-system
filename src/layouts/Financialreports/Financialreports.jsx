@@ -57,13 +57,18 @@ function Financialreports() {
         .get(
           `https://homix.onrender.com/orders/financialReport/?vendorId=${user.vendorId}&endDate=${endDate}&startDate=${startDate}`
         )
-        .then(({ data: { data } }) => {
+        .then(({ data }) => {
+          if (data.force_logout) {
+            localStorage.removeItem("user");
+            navigate("/authentication/sign-in");
+          }
+
           setFinancialreportData({
-            ordersCount: data.ordersCount,
-            totalCost: data.totalCost,
-            totalProfit: data.totalProfit,
-            totalRevenue: data.totalRevenue,
-            totalCommission: data.totalCommission,
+            ordersCount: data.data.ordersCount,
+            totalCost: data.data.totalCost,
+            totalProfit: data.data.totalProfit,
+            totalRevenue: data.data.totalRevenue,
+            totalCommission: data.data.totalCommission,
           });
         })
         .catch(() => {
@@ -79,13 +84,18 @@ function Financialreports() {
 
       axios
         .get(url)
-        .then(({ data: { data } }) => {
+        .then(({ data }) => {
+          if (data.force_logout) {
+            localStorage.removeItem("user");
+            navigate("/authentication/sign-in");
+          }
+
           setFinancialreportData({
-            ordersCount: data.ordersCount,
-            totalCost: data.totalCost,
-            totalProfit: data.totalProfit,
-            totalRevenue: data.totalRevenue,
-            totalCommission: data.totalCommission,
+            ordersCount: data.data.ordersCount,
+            totalCost: data.data.totalCost,
+            totalProfit: data.data.totalProfit,
+            totalRevenue: data.data.totalRevenue,
+            totalCommission: data.data.totalCommission,
           });
         })
         .catch(() => {

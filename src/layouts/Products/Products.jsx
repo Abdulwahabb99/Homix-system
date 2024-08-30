@@ -50,7 +50,7 @@ function Products() {
           searchFilter ? searchFilter : ""
         }`
       );
-      if (response.data.message === "No token provided.") {
+      if (response.data.force_logout) {
         localStorage.removeItem("user");
         navigate("/authentication/sign-in");
       }

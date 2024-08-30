@@ -38,7 +38,7 @@ function Dashboard() {
     axios
       .get(url)
       .then(({ data }) => {
-        if (data.message === "No token provided.") {
+        if (data.force_logout) {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");
         }

@@ -54,6 +54,10 @@ function FactoryDetails() {
     axios
       .get(`${url}/factories/${id}`)
       .then(({ data }) => {
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+        }
         setFactoryData(data);
       })
       .catch(() => {

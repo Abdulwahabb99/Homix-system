@@ -1,4 +1,4 @@
-import { Card, CardMedia, Grid, Icon, IconButton } from "@mui/material";
+import { Card, CardMedia, Grid, IconButton } from "@mui/material";
 import axios from "axios";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -33,7 +33,12 @@ function ProductDetails() {
     const getProductDetails = async () => {
       setIsLoading(true);
       try {
-        const { data: data } = await axios.get(`https://homix.onrender.com/products/${id}`);
+        const { data } = await axios.get(`https://homix.onrender.com/products/${id}`);
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+        }
+
         setProductDetails(data.data);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -48,13 +53,14 @@ function ProductDetails() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      {!isLoading ? (
+      <div className={styles.productDetailsHeader}>
+        <IconButton color="#344767" onClick={() => navigate(-1)}>
+          <ArrowNextIcon />
+        </IconButton>
+      </div>
+
+      {!isLoading && productDetails ? (
         <>
-          <div className={styles.productDetailsHeader}>
-            <IconButton color="#344767" onClick={() => navigate(-1)}>
-              <ArrowNextIcon />
-            </IconButton>
-          </div>
           <MDBox py={3}>
             <MDBox>
               <Grid container spacing={2} justifyContent={"center"}>
@@ -126,12 +132,10 @@ function ProductDetails() {
                       maxHeight: 387,
                       minHeight: 370,
                     }}
-                    // onClick={navigateToProduct}
                   >
                     <CardMedia
                       component="img"
                       image={productDetails?.image}
-                      // alt={product?.title}
                       sx={{ objectFit: "cover", maxHeight: "387" }}
                     />
                   </Card>
