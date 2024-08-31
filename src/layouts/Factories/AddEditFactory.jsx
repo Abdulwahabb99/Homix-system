@@ -32,8 +32,8 @@ function AddEditFactory({ type }) {
   const [factoryCategory, setFactoryCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [cairoGizaShipping, setCairoGizaShipping] = useState("");
-  const [otherCitiesShipping, setOtherCitiesShipping] = useState("");
+  const [cairoGizaShipping, setCairoGizaShipping] = useState(null);
+  const [otherCitiesShipping, setOtherCitiesShipping] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const { id } = useParams();
   const user = JSON.parse(localStorage.getItem("user"));

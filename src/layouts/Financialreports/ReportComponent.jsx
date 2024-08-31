@@ -14,7 +14,7 @@ function ReportComponent({
     totalProfit,
     totalCost,
     ordersCount,
-    DeliveredOrders,
+    deliveredOrders,
   },
 }) {
   return (
@@ -55,7 +55,7 @@ function ReportComponent({
               color="error"
               icon={<CheckCircleIcon />}
               title="السعر الاجمالي للطلبات التي تم تسليمها"
-              count={DeliveredOrders?.totalRevenue.toFixed(0) || 0}
+              count={deliveredOrders?.totalRevenue.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>

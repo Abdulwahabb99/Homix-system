@@ -69,6 +69,7 @@ function Financialreports() {
             totalProfit: data.data.totalProfit,
             totalRevenue: data.data.totalRevenue,
             totalCommission: data.data.totalCommission,
+            deliveredOrders: data.data.DeliveredOrders,
           });
         })
         .catch(() => {
@@ -96,6 +97,7 @@ function Financialreports() {
             totalProfit: data.data.totalProfit,
             totalRevenue: data.data.totalRevenue,
             totalCommission: data.data.totalCommission,
+            deliveredOrders: data.data.DeliveredOrders,
           });
         })
         .catch(() => {
