@@ -19,7 +19,7 @@ function Basic() {
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const handleSignInClick = async (e) => {
+  const handleSignInClick = (e) => {
     e.preventDefault();
     setIsLoading(true);
 

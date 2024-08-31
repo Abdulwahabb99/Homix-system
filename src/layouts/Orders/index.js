@@ -94,26 +94,28 @@ function Orders() {
         localStorage.removeItem("user");
         navigate("/authentication/sign-in");
       }
-      const newOrders = response.data.data.orders.map((order) => {
-        return {
-          orderNumber: order.orderNumber,
-          items: order.orderLines,
-          totalPrice: order.totalPrice,
-          subTotalPrice: order.subTotalPrice,
-          status: order.status,
-          customerName: `${order.customer.firstName} ${order.customer.lastName}`,
-          orderId: order.id,
-          date: formatDateStringToArabic(order.createdAt),
-          receivedAmount: order.receivedAmount,
-          shippingFees: order.shippingFees,
-          paymentStatus: order.paymentStatus,
-          notes: order.notes,
-          commission: order.commission,
-          PoDate: order.PoDate,
-          totalCost: Number(order.totalCost).toFixed(1),
-          orderData: order,
-        };
-      });
+      const newOrders = response.data.data.orders
+        .map((order) => {
+          return {
+            orderNumber: order.orderNumber,
+            items: order.orderLines,
+            totalPrice: order.totalPrice,
+            subTotalPrice: order.subTotalPrice,
+            status: order.status,
+            customerName: `${order.customer.firstName} ${order.customer.lastName}`,
+            orderId: order.id,
+            date: formatDateStringToArabic(order.createdAt),
+            receivedAmount: order.receivedAmount,
+            shippingFees: order.shippingFees,
+            paymentStatus: order.paymentStatus,
+            notes: order.notes,
+            commission: order.commission,
+            PoDate: order.PoDate,
+            totalCost: Number(order.totalCost).toFixed(1),
+            orderData: order,
+          };
+        })
+        .sort((a, b) => a.orderNumber - b.orderNumber);
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
     } catch (res) {
