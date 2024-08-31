@@ -64,15 +64,17 @@ function AgGrid({
               <DownloadIcon />
             </IconButton>
           ) : (
-            <Button
-              variant="contained"
-              fontSize="large"
-              style={{ margin: "0 0 10px 20px", color: "#fff" }}
-              className={styles.downloadBtn}
-              onClick={handleAdd}
-            >
-              <AddIcon />
-            </Button>
+            handleAdd && (
+              <Button
+                variant="contained"
+                fontSize="large"
+                style={{ margin: "0 0 10px 20px", color: "#fff" }}
+                className={styles.downloadBtn}
+                onClick={handleAdd}
+              >
+                <AddIcon />
+              </Button>
+            )
           )}{" "}
         </div>
         {enableQuickFilter ? (

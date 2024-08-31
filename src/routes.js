@@ -1,6 +1,7 @@
 import Icon from "@mui/material/Icon";
 import React, { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
+import Vendors from "layouts/Vendors/Vendors";
 const Products = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Products/Products"));
 const Dashboard = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/dashboard"));
 const Orders = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Orders"));
@@ -99,7 +100,7 @@ const routes = [
     route: "/vendors",
     component: (
       <ProtectedRoutes>
-        <Financialreports />
+        <Vendors />
       </ProtectedRoutes>
     ),
   },
