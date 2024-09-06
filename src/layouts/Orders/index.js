@@ -66,7 +66,17 @@ function Orders() {
     setOrderStatus(value);
     setSearchParams({ status: value });
   };
+  function formatDateStringToArabic(dateString) {
+    const dateParts = dateString.split("-");
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const day = parseInt(dateParts[2], 10);
+    const date = new Date(year, month, day);
+    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
+    const formatter = new Intl.DateTimeFormat("ar-EG", options);
 
+    return formatter.format(date);
+  }
   axios.interceptors.request.use(
     (config) => {
       if (user.token) {
@@ -104,7 +114,7 @@ function Orders() {
             status: order.status,
             customerName: `${order.customer.firstName} ${order.customer.lastName}`,
             orderId: order.id,
-            date: formatDateStringToArabic(order.orderDate),
+            date: order.orderDate,
             receivedAmount: order.receivedAmount,
             shippingFees: order.shippingFees,
             paymentStatus: order.paymentStatus,
@@ -169,12 +179,6 @@ function Orders() {
   const handleReset = () => {
     navigate("/orders");
   };
-  function formatDateStringToArabic(dateString) {
-    const date = new Date(dateString);
-    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
-    const formatter = new Intl.DateTimeFormat("ar-EG", options);
-    return formatter.format(date);
-  }
 
   const colDefs = [
     {
@@ -230,7 +234,13 @@ function Orders() {
       minWidth: 170,
       valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
-    { field: "date", headerName: "التاريخ", sortable: true, minWidth: 100 },
+    {
+      field: "date",
+      headerName: "التاريخ",
+      sortable: true,
+      minWidth: 100,
+      valueGetter: (node) => formatDateStringToArabic(node.data.date),
+    },
     {
       headerName: "",
       minWidth: 120,
