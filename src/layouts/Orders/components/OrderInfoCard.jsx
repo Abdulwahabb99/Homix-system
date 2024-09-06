@@ -4,6 +4,13 @@ import MDTypography from "components/MDTypography";
 import React from "react";
 
 function OrderInfoCard({ orderDetails }) {
+  function formatDateStringToArabic(dateString) {
+    const date = new Date(dateString);
+    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
+    const formatter = new Intl.DateTimeFormat("ar-EG", options);
+    return formatter.format(date);
+  }
+
   return (
     <>
       <MDBox pt={2} px={3}>
@@ -62,6 +69,17 @@ function OrderInfoCard({ orderDetails }) {
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
               {Number(orderDetails.totalPrice).toFixed(1) || 0}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="body2" verticalAlign="middle">
+              تاريخ امر التصنيع :{" "}
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {formatDateStringToArabic(orderDetails.PoDate) || "لا يوجد"}
             </MDTypography>
           </MDTypography>
         </MDBox>

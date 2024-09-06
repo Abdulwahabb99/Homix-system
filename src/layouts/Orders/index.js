@@ -104,7 +104,7 @@ function Orders() {
             status: order.status,
             customerName: `${order.customer.firstName} ${order.customer.lastName}`,
             orderId: order.id,
-            date: formatDateStringToArabic(order.createdAt),
+            date: formatDateStringToArabic(order.orderDate),
             receivedAmount: order.receivedAmount,
             shippingFees: order.shippingFees,
             paymentStatus: order.paymentStatus,
@@ -205,9 +205,7 @@ function Orders() {
       sortable: false,
       minWidth: 100,
       valueGetter: ({ data }) => {
-        let totalPrice = 0;
-        data.items?.forEach((item) => (totalPrice += Number(item.price)));
-        return totalPrice;
+        return Number(data.totalPrice);
       },
     },
     {

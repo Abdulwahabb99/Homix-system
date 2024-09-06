@@ -57,20 +57,36 @@ function Vendors() {
         setIsLoading(false);
       });
   };
-  const deleteVendor = () => {
+  // const deleteVendor = () => {
+  //   axios
+  //     .delete(`https://homix.onrender.com/vendors/${selectedVendorId}`)
+  //     .then(() => {
+  //       setIsDeleteModalOpenned(false);
+  //       const newData = vendors.filter((factory) => factory.id !== selectedVendorId);
+  //       setVendors(newData);
+  //       NotificationMeassage("success", "تم مسح البائع");
+  //     })
+  //     .catch(() => {
+  //       NotificationMeassage("error", "حدث خطأ");
+  //     });
+  // };
+
+  const handleChange = (id, value) => {
     axios
-      .delete(`https://homix.onrender.com/vendors/${selectedVendorId}`)
+      .put(`https://homix.onrender.com/vendors/${id}/activeStatus`)
       .then(() => {
-        setIsDeleteModalOpenned(false);
-        const newData = vendors.filter((factory) => factory.id !== selectedVendorId);
+        const newData = vendors.map((vendor) => {
+          if (vendor.id === id) {
+            return { ...vendor, active: !value };
+          }
+          return vendor;
+        });
         setVendors(newData);
-        NotificationMeassage("success", "تم مسح البائع");
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
-
   useEffect(() => {
     getVendors();
   }, []);
@@ -81,13 +97,6 @@ function Vendors() {
       headerName: "اسم البائع",
       sortable: true,
       minWidth: 140,
-      cellRenderer: (params) => (
-        <LinkRenderer
-          data={params.data}
-          value={params.data.name}
-          url={`/factories/${params.data.id}`}
-        />
-      ),
     },
     { field: "user.email", headerName: "البريد الالكتروني", minWidth: 190, sortable: false },
     {
@@ -97,11 +106,8 @@ function Vendors() {
       minWidth: 90,
       maxWidth: 90,
       valueGetter: ({ data }) => getStatusValue(data.status),
-      cellRenderer: (params) => (
-        <Switch
-        //  checked={props.value}
-        //  onChange={handleChange}
-        />
+      cellRenderer: ({ data }) => (
+        <Switch checked={data.active} onChange={() => handleChange(data.id, data.active)} />
       ),
     },
     //  {
@@ -115,23 +121,23 @@ function Vendors() {
     //      </IconButton>
     //    ),
     //  },
-    {
-      headerName: "حذف",
-      minWidth: 80,
-      maxWidth: 80,
-      sortable: false,
-      cellRenderer: ({ data: { id } }) => (
-        <IconButton
-          onClick={() => {
-            // setIsDeleteModalOpenned(true);
-            setSelectedVendorId(id);
-          }}
-          sx={{ fontSize: "1.2rem", color: "red" }}
-        >
-          <DeleteIcon />
-        </IconButton>
-      ),
-    },
+    // {
+    //   headerName: "حذف",
+    //   minWidth: 80,
+    //   maxWidth: 80,
+    //   sortable: false,
+    //   cellRenderer: ({ data: { id } }) => (
+    //     <IconButton
+    //       onClick={() => {
+    //         // setIsDeleteModalOpenned(true);
+    //         setSelectedVendorId(id);
+    //       }}
+    //       sx={{ fontSize: "1.2rem", color: "red" }}
+    //     >
+    //       <DeleteIcon />
+    //     </IconButton>
+    //   ),
+    // },
   ];
   return (
     <DashboardLayout>

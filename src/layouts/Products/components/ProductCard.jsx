@@ -33,7 +33,7 @@ const ProductCard = ({ product }) => {
           {product?.title}
         </Typography>
         <Typography variant="h6" color="black">
-          {Number(product?.variants.at(0).price).toFixed(0)}
+          {Number(product?.variants.at(0)?.price).toFixed(0) || 0}
           <span style={{ margin: "0 2px" }}> ج.م</span>
         </Typography>
         <Typography variant="body2" color="text.secondary">

@@ -70,6 +70,8 @@ function AddEditFactory({ type }) {
           setWebsite(data.website);
           setFactoryCategory(data.factoryCategory);
           setSelectedStatus(data.status);
+          setCairoGizaShipping(data.cairoGizaShipping);
+          setOtherCitiesShipping(data.otherCitiesShipping);
         })
         .catch((res) => {
           NotificationMeassage("error", "حدث خطأ");
