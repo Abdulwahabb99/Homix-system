@@ -81,6 +81,7 @@ function Vendors() {
           return vendor;
         });
         setVendors(newData);
+        NotificationMeassage("success", "تم تغير الحالة");
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
