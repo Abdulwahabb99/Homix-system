@@ -77,7 +77,7 @@ function OrderDetails() {
   };
   const changeOrderStatus = (status) => {
     axios
-      .put(`https://homix.onrender.com/orders/${orderDetails.id}`, {
+      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
         status: status,
       })
       .then(() => {
@@ -90,7 +90,7 @@ function OrderDetails() {
   };
   const onEdit = (status, notes, cost, id) => {
     axios
-      .put(`https://homix.onrender.com/orderLines/${id}`, {
+      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
         notes: notes,
         status: status,
         cost: Number(cost),
@@ -115,7 +115,7 @@ function OrderDetails() {
     const getOrderDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axios.get(`https://homix.onrender.com/orders/${id}`);
+        const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/orders/${id}`);
         if (data.force_logout) {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");

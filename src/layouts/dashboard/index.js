@@ -33,8 +33,7 @@ function Dashboard() {
 
   const getFinancialreport = () => {
     setIsLoading(true);
-    const url = `https://homix.onrender.com/orders/financialReport/?endDate=${date}&startDate=${date}`;
-
+    const url = `${process.env.REACT_APP_API_URL}/orders/financialReport/?endDate=${date}&startDate=${date}`;
     axios
       .get(url)
       .then(({ data }) => {

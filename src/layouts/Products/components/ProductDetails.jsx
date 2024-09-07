@@ -33,7 +33,7 @@ function ProductDetails() {
     const getProductDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axios.get(`https://homix.onrender.com/products/${id}`);
+        const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/products/${id}`);
         if (data.force_logout) {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");

@@ -37,7 +37,7 @@ function Financialreports() {
   );
   const getVendors = () => {
     axios
-      .get(`https://homix.onrender.com/vendors`)
+      .get(`${process.env.REACT_APP_API_URL}/vendors`)
       .then(({ data: { data } }) => {
         const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
         setVendors([{ label: "هومكس", value: "0" }, ...newData]);
@@ -55,7 +55,7 @@ function Financialreports() {
     if (user.vendorId) {
       axios
         .get(
-          `https://homix.onrender.com/orders/financialReport/?vendorId=${user.vendorId}&endDate=${endDate}&startDate=${startDate}`
+          `${process.env.REACT_APP_API_URL}/orders/financialReport/?vendorId=${user.vendorId}&endDate=${endDate}&startDate=${startDate}`
         )
         .then(({ data }) => {
           if (data.force_logout) {
@@ -80,8 +80,8 @@ function Financialreports() {
         });
     } else {
       const url = selectedVendor
-        ? `https://homix.onrender.com/orders/financialReport/?vendorId=${selectedVendor}&endDate=${endDate}&startDate=${startDate}`
-        : `https://homix.onrender.com/orders/financialReport/?endDate=${endDate}&startDate=${startDate}`;
+        ? `${process.env.REACT_APP_API_URL}/orders/financialReport/?vendorId=${selectedVendor}&endDate=${endDate}&startDate=${startDate}`
+        : `${process.env.REACT_APP_API_URL}/orders/financialReport/?endDate=${endDate}&startDate=${startDate}`;
 
       axios
         .get(url)

@@ -41,7 +41,7 @@ function Factories() {
   const getFactories = () => {
     setIsLoading(true);
     axios
-      .get(`https://homix.onrender.com/factories`)
+      .get(`${process.env.REACT_APP_API_URL}/factories`)
       .then(({ data }) => {
         if (data.force_logout) {
           localStorage.removeItem("user");
@@ -60,7 +60,7 @@ function Factories() {
   };
   const deleteFactory = () => {
     axios
-      .delete(`https://homix.onrender.com/factories/${selectedFactoryId}`)
+      .delete(`${process.env.REACT_APP_API_URL}/factories/${selectedFactoryId}`)
       .then(() => {
         setIsDeleteModalOpenned(false);
         const newData = factories.filter((factory) => factory.id !== selectedFactoryId);

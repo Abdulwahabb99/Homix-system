@@ -40,7 +40,7 @@ function Vendors() {
   const getVendors = () => {
     setIsLoading(true);
     axios
-      .get(`https://homix.onrender.com/vendors`)
+      .get(`${process.env.REACT_APP_API_URL}/vendors`)
       .then(({ data }) => {
         if (data.force_logout) {
           localStorage.removeItem("user");
@@ -59,7 +59,7 @@ function Vendors() {
   };
   // const deleteVendor = () => {
   //   axios
-  //     .delete(`https://homix.onrender.com/vendors/${selectedVendorId}`)
+  //     .delete(`${process.env.REACT_APP_API_URL}/vendors/${selectedVendorId}`)
   //     .then(() => {
   //       setIsDeleteModalOpenned(false);
   //       const newData = vendors.filter((factory) => factory.id !== selectedVendorId);
@@ -73,7 +73,7 @@ function Vendors() {
 
   const handleChange = (id, value) => {
     axios
-      .put(`https://homix.onrender.com/vendors/${id}/activeStatus`)
+      .put(`${process.env.REACT_APP_API_URL}/vendors/${id}/activeStatus`)
       .then(() => {
         const newData = vendors.map((vendor) => {
           if (vendor.id === id) {

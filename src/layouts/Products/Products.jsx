@@ -46,7 +46,9 @@ function Products() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `https://homix.onrender.com/products?page=${page}&size=${ITEMS_PER_PAGE}&searchQuery=${
+        `${
+          process.env.REACT_APP_API_URL
+        }/products?page=${page}&size=${ITEMS_PER_PAGE}&searchQuery=${
           searchFilter ? searchFilter : ""
         }`
       );

@@ -35,6 +35,7 @@ const statusoptions = [
   { label: "ملغي", value: 8 },
 ];
 const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
+const baseURI = `${process.env.REACT_APP_API_URL}/`;
 
 function Orders() {
   const [isLoading, setIsLoading] = useState(true);
@@ -98,7 +99,7 @@ function Orders() {
       const vendorName = vendorNameParam ? `&vendorName=${vendorNameParam}` : "";
       const orderStatus = orderStatusParam ? `&status=${orderStatusParam}` : "";
       const response = await axios.get(
-        `https://homix.onrender.com/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
+        `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
       );
       if (response.data.force_logout) {
         localStorage.removeItem("user");
@@ -143,7 +144,7 @@ function Orders() {
     paymentStatus
   ) => {
     axios
-      .put(`https://homix.onrender.com/orders/${id}`, {
+      .put(`${baseURI}/orders/${id}`, {
         status: orderStatus,
         commission: commission,
         receivedAmount: receivedAmount,

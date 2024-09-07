@@ -53,7 +53,7 @@ function AddEditFactory({ type }) {
     if (type === "edit") {
       setIsLoading(true);
       axios
-        .get(`https://homix.onrender.com/factories/${id}`)
+        .get(`${process.env.REACT_APP_API_URL}/factories/${id}`)
         .then(({ data }) => {
           if (data === null) {
             navigate("/factories");
@@ -89,7 +89,7 @@ function AddEditFactory({ type }) {
     }
 
     axios
-      .post(`https://homix.onrender.com/factories`, {
+      .post(`${process.env.REACT_APP_API_URL}/factories`, {
         name: name,
         status: selectedStatus,
         address: address,
@@ -112,7 +112,7 @@ function AddEditFactory({ type }) {
   };
   const UpdateFactory = () => {
     axios
-      .put(`https://homix.onrender.com/factories/${id}`, {
+      .put(`${process.env.REACT_APP_API_URL}/factories/${id}`, {
         name: name,
         status: selectedStatus,
         address: address,
@@ -143,7 +143,7 @@ function AddEditFactory({ type }) {
       formData.append("files", event.target.files[i]);
     }
     axios
-      .post(`https://homix.onrender.com/factories/${id}/upload`, formData)
+      .post(`${process.env.REACT_APP_API_URL}/factories/${id}/upload`, formData)
       .then(() => {
         NotificationMeassage("success", "تم اضافة الصورة بنجاح");
       })

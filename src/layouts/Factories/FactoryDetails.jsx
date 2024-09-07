@@ -18,7 +18,7 @@ function FactoryDetails() {
   const navigate = useNavigate();
   const [isloading, setIsLoading] = useState(false);
   const [factoryData, setFactoryData] = useState(null);
-  const url = "https://homix.onrender.com";
+  const url = process.env.REACT_APP_API_URL;
   const user = JSON.parse(localStorage.getItem("user"));
 
   const isImage = (url) => {
