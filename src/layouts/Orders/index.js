@@ -13,7 +13,7 @@ import EditOrdarModal from "./components/EditOrderModal";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
-const ITEMS_PER_PAGE = 30;
+const ITEMS_PER_PAGE = 150;
 const statusValues = {
   1: "معلق",
   2: "قيد التنفيذ",
@@ -35,7 +35,7 @@ const statusoptions = [
   { label: "ملغي", value: 8 },
 ];
 const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
-const baseURI = `${process.env.REACT_APP_API_URL}/`;
+const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function Orders() {
   const [isLoading, setIsLoading] = useState(true);
@@ -235,29 +235,26 @@ function Orders() {
       minWidth: 170,
       valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
-    {
-      field: "date",
-      headerName: "التاريخ",
-      sortable: true,
-      minWidth: 100,
-      valueGetter: (node) => formatDateStringToArabic(node.data.date),
-    },
-    {
-      headerName: "",
-      minWidth: 120,
-      sortable: false,
-      cellRenderer: (params) => (
-        <IconButton
-          onClick={() => {
-            openEditModal(params.data);
-            setIsEditModalOpen(true);
-          }}
-          sx={{ fontSize: "1.2rem" }}
-        >
-          <EditIcon />
-        </IconButton>
-      ),
-    },
+    ...(user?.userType === "1"
+      ? [
+          {
+            headerName: "",
+            minWidth: 120,
+            sortable: false,
+            cellRenderer: (params) => (
+              <IconButton
+                onClick={() => {
+                  openEditModal(params.data);
+                  setIsEditModalOpen(true);
+                }}
+                sx={{ fontSize: "1.2rem" }}
+              >
+                <EditIcon />
+              </IconButton>
+            ),
+          },
+        ]
+      : []),
   ];
 
   useEffect(() => {

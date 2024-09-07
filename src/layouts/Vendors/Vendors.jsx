@@ -11,7 +11,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "../Factories/ConfirmDeleteModal";
-import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
 function Vendors() {
   const [isloading, setIsLoading] = useState(false);
