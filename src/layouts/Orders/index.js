@@ -126,7 +126,7 @@ function Orders() {
             orderData: order,
           };
         })
-        .sort((a, b) => a.orderNumber - b.orderNumber);
+        .sort((a, b) => b.orderNumber - a.orderNumber);
       setOrders(newOrders);
       setTotalPages(response.data.data.totalPages);
     } catch (res) {
