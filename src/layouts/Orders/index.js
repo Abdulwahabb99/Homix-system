@@ -235,6 +235,13 @@ function Orders() {
       minWidth: 170,
       valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
+    {
+      field: "date",
+      headerName: "التاريخ",
+      sortable: true,
+      minWidth: 100,
+      valueGetter: (node) => formatDateStringToArabic(node.data.date),
+    },
     ...(user?.userType === "1"
       ? [
           {
