@@ -32,3 +32,36 @@
   text-overflow: ellipsis;
   height: 56px;
 }
+.pdfLogoContainer {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 2rem 0 0 1rem;
+}
+.invoice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 1rem 1rem 0 0;
+}
+.billingDetails {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 1rem 0 0 1rem;
+}
+.billingPrice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 1rem 1rem 0 0;
+}
+.DescriptionContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0 1rem 0;
+}
