@@ -101,7 +101,25 @@ function ProductDetails() {
                                       fontWeight="regular"
                                       key={inedx}
                                     >
-                                      {Number(variant.price).toFixed(0)}ج.م
+                                      {Number(variant.price).toFixed(0)} ج.م
+                                    </MDTypography>
+                                  </div>
+                                  <div>
+                                    <MDTypography
+                                      display="inline"
+                                      variant="h6"
+                                      verticalAlign="middle"
+                                    >
+                                      التكلفة :
+                                    </MDTypography>
+                                    &nbsp;
+                                    <MDTypography
+                                      variant="button"
+                                      color="text"
+                                      fontWeight="regular"
+                                      key={inedx}
+                                    >
+                                      {Number(variant.cost).toFixed(0)} ج.م
                                     </MDTypography>
                                   </div>
                                 </div>
