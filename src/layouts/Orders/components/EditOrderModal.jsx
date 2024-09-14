@@ -33,7 +33,6 @@ const formatDate = (dateString) => {
 const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
-  const [receivedAmount, setReceivedAmount] = useState(data.receivedAmount);
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
   const [downPayment, setDownPayment] = useState(data.downPayment);
@@ -84,14 +83,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               })}
             </Select>
           </FormControl>
-          <TextField
-            fullWidth
-            label="المبلغ المستلم"
-            value={receivedAmount}
-            onChange={(e) => setReceivedAmount(e.target.value)}
-            type="number"
-            style={{ margin: "5px 0" }}
-          />
+
           <TextField
             fullWidth
             label="جدية شراء"
@@ -141,7 +133,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               orderStatus,
               commission,
               manufacturingDate,
-              receivedAmount,
               paymentStatus,
               downPayment,
               toBeCollected

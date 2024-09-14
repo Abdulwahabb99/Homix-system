@@ -114,7 +114,7 @@ function Orders() {
             customerName: `${order.customer.firstName} ${order.customer.lastName}`,
             orderId: order.id,
             date: order.orderDate,
-            receivedAmount: order.receivedAmount,
+            toBeCollected: order.toBeCollected,
             shippingFees: order.shippingFees,
             paymentStatus: order.paymentStatus,
             notes: order.notes,
@@ -138,7 +138,6 @@ function Orders() {
     orderStatus,
     commission,
     manufacturingDate,
-    receivedAmount,
     paymentStatus,
     downPayment,
     toBeCollected
@@ -147,7 +146,6 @@ function Orders() {
       .put(`${baseURI}/orders/${id}`, {
         status: orderStatus,
         commission: commission,
-        receivedAmount: receivedAmount,
         paymentStatus: paymentStatus,
         downPayment: downPayment,
         toBeCollected: toBeCollected,
@@ -160,7 +158,7 @@ function Orders() {
               ...order,
               status: data.status,
               commission: data.commission,
-              receivedAmount: data.receivedAmount,
+              toBeCollected: data.toBeCollected,
               paymentStatus: data.paymentStatus,
               PoDate: data.PoDate,
             };
@@ -198,7 +196,7 @@ function Orders() {
         />
       ),
     },
-    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 140 },
+    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 200 },
     {
       field: "status",
       headerName: "حالة الطلب",
@@ -222,9 +220,9 @@ function Orders() {
       minWidth: 140,
     },
     {
-      field: "receivedAmount",
-      headerName: "المبلغ المستلم",
-      minWidth: 140,
+      field: "toBeCollected",
+      headerName: "المبلغ المطلوب تحصيله",
+      minWidth: 175,
     },
     {
       field: "commission",

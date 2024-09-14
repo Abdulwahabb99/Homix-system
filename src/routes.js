@@ -42,7 +42,7 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "أوامر التصنيع",
+    name: "الطلبات",
     key: "orders",
     icon: <Icon fontSize="small">build</Icon>,
     route: "/orders",
@@ -132,7 +132,7 @@ export const vendorsRoutes = [
   },
   {
     type: "collapse",
-    name: "أوامر التصنيع",
+    name: "الطلبات",
     key: "orders",
     icon: <Icon fontSize="small">build</Icon>,
     route: "/orders",
