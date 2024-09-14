@@ -7,15 +7,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+
 const statusoptions = [
   { label: "معلق", value: 1 },
   { label: "قيد التنفيذ", value: 2 },
-  { label: "رفض", value: 3 },
-  { label: "تم التنفيذ", value: 4 },
-  { label: "خارج للتوصيل", value: 5 },
-  { label: "تم التسليم", value: 6 },
-  { label: "مسترجع", value: 7 },
-  { label: "ملغي", value: 8 },
+  { label: "نصف مكتمل", value: 3 },
+  { label: "جاري التوصيل ", value: 4 },
+  { label: "تم التوصيل", value: 5 },
+  { label: "مسترجع ", value: 6 },
+  { label: "استبدال ", value: 7 },
 ];
 const PAYMENT_STATUS = [
   { label: "مدفوع", value: 1 },
@@ -36,6 +36,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [receivedAmount, setReceivedAmount] = useState(data.receivedAmount);
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
+  const [downPayment, setDownPayment] = useState(data.downPayment);
+  const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -92,6 +94,22 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
           />
           <TextField
             fullWidth
+            label="جدية شراء"
+            value={downPayment}
+            onChange={(e) => setDownPayment(e.target.value)}
+            type="number"
+            style={{ margin: "5px 0" }}
+          />
+          <TextField
+            fullWidth
+            label="المبلغ المطلوب تحصيله"
+            value={toBeCollected}
+            onChange={(e) => setToBeCollected(e.target.value)}
+            type="number"
+            style={{ margin: "5px 0" }}
+          />
+          <TextField
+            fullWidth
             label="العمولة"
             value={commission}
             onChange={(e) => setCommission(e.target.value)}
@@ -124,7 +142,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               commission,
               manufacturingDate,
               receivedAmount,
-              paymentStatus
+              paymentStatus,
+              downPayment,
+              toBeCollected
             )
           }
           variant="contained"

@@ -3,7 +3,6 @@ import { Card, CardMedia, Icon } from "@mui/material";
 import MDBox from "components/MDBox";
 import React from "react";
 import styles from "./Orders.module.css";
-import MDTypography from "components/MDTypography";
 import { useNavigate } from "react-router-dom";
 
 // eslint-disable-next-line react/prop-types

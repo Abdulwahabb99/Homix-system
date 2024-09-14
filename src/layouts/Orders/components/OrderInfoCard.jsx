@@ -39,14 +39,38 @@ function OrderInfoCard({ orderDetails }) {
             </MDTypography>
           </MDTypography>
         </MDBox>
+        {orderDetails.discount && (
+          <MDBox mt={0} mb={2}>
+            <MDTypography variant="button" fontWeight="regular">
+              <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                الخصم :{" "}
+              </MDTypography>
+              &nbsp;
+              <MDTypography variant="button" color="text" fontWeight="medium">
+                {orderDetails.discount || 0}
+              </MDTypography>
+            </MDTypography>
+          </MDBox>
+        )}{" "}
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              الخصم :{" "}
+              جدية الشراء :{" "}
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.discount || 0}
+              {orderDetails.downPayment || 0}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="body2" verticalAlign="middle">
+              المبلغ المطلوب تحصيله :{" "}
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {orderDetails.toBeCollected || 0}
             </MDTypography>
           </MDTypography>
         </MDBox>
@@ -84,7 +108,6 @@ function OrderInfoCard({ orderDetails }) {
           </MDTypography>
         </MDBox>
       </MDBox>
-      <MDBox p={2}></MDBox>
     </>
   );
 }

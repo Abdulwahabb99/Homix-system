@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import AgGrid from "components/AgGrid/AgGrid";
 import Spinner from "components/Spinner/Spinner";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -12,27 +11,26 @@ import EditIcon from "@mui/icons-material/Edit";
 import EditOrdarModal from "./components/EditOrderModal";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import OrdersGrid from "./components/OrdersGrid/OrdersGrid";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
   1: "معلق",
   2: "قيد التنفيذ",
-  3: "مرفوض",
-  4: "تم التنفيذ",
-  5: "خارج للتوصيل",
-  6: "تم التسليم",
-  7: "مسترجع",
-  8: "ملغي",
+  3: "نصف مكتمل",
+  4: "جاري التوصيل ",
+  5: "تم التوصيل",
+  6: "مسترجع ",
+  7: "استبدال ",
 };
 const statusoptions = [
   { label: "معلق", value: 1 },
   { label: "قيد التنفيذ", value: 2 },
-  { label: "رفض", value: 3 },
-  { label: "تم التنفيذ", value: 4 },
-  { label: "خارج للتوصيل", value: 5 },
-  { label: "تم التسليم", value: 6 },
-  { label: "مسترجع", value: 7 },
-  { label: "ملغي", value: 8 },
+  { label: "نصف مكتمل", value: 3 },
+  { label: "جاري التوصيل ", value: 4 },
+  { label: "تم التوصيل", value: 5 },
+  { label: "مسترجع ", value: 6 },
+  { label: "استبدال ", value: 7 },
 ];
 const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;
@@ -141,7 +139,9 @@ function Orders() {
     commission,
     manufacturingDate,
     receivedAmount,
-    paymentStatus
+    paymentStatus,
+    downPayment,
+    toBeCollected
   ) => {
     axios
       .put(`${baseURI}/orders/${id}`, {
@@ -149,6 +149,8 @@ function Orders() {
         commission: commission,
         receivedAmount: receivedAmount,
         paymentStatus: paymentStatus,
+        downPayment: downPayment,
+        toBeCollected: toBeCollected,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
@@ -311,7 +313,7 @@ function Orders() {
               })}
             </Select>
           </FormControl>
-          <AgGrid
+          <OrdersGrid
             rowData={orders}
             columnDefs={colDefs}
             defaultColDef={{

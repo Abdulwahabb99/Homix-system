@@ -18,34 +18,18 @@ const statusoptions = [
 ];
 const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
   const [orderCost, setOrderCost] = useState(data.unitCost);
-  const [status, setStatus] = useState(data.status);
+  const [color, setColor] = useState(data.color);
+  const [size, setSize] = useState(data.size);
+  const [material, setMaterial] = useState(data.material);
   const [notes, setNotes] = useState(data.notes);
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = user?.userType === "1";
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
       <DialogTitle>تعديل {data.name}</DialogTitle>
       <DialogContent>
         <div>
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="orderStatus">حالة المنتج</InputLabel>
-            <Select
-              fullWidth
-              labelId="orderStatus"
-              id="orderStatus-select"
-              value={status}
-              label="حالة المنتج"
-              onChange={(e) => setStatus(e.target.value)}
-              sx={{ height: 35 }}
-            >
-              {statusoptions.map((option) => {
-                return (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
           <TextField
             fullWidth
             label="تكلفة القطعة"
@@ -53,7 +37,36 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
             value={orderCost}
             onChange={(e) => setOrderCost(e.target.value)}
             style={{ margin: "5px 0" }}
+            disabled={!isAdmin}
           />
+          <TextField
+            fullWidth
+            label="اللون"
+            type="text"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            style={{ margin: "5px 0" }}
+            disabled={!isAdmin}
+          />
+          <TextField
+            fullWidth
+            label="المقاس"
+            type="text"
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            style={{ margin: "5px 0" }}
+            disabled={!isAdmin}
+          />
+          <TextField
+            fullWidth
+            label="الخامات"
+            type="text"
+            value={material}
+            onChange={(e) => setMaterial(e.target.value)}
+            style={{ margin: "5px 0" }}
+            disabled={!isAdmin}
+          />
+
           <TextField
             fullWidth
             label="ملاحظات"
@@ -70,7 +83,7 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
           إلغاء
         </Button>
         <Button
-          onClick={() => onEdit(status, notes, orderCost, data.id)}
+          onClick={() => onEdit(notes, orderCost, data.id, color, size, material)}
           variant="contained"
           style={{ color: "#fff" }}
         >

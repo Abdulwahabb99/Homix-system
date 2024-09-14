@@ -32,26 +32,30 @@ import OrderInfoCard from "./components/OrderInfoCard";
 import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
 
-const statusValues = {
-  1: "معلق",
-  2: "قيد التنفيذ",
-  3: "رفض",
-  4: "تم التنفيذ",
-  5: "خارج للتوصيل",
-  6: "تم التسليم",
-  7: "مسترجع",
-  8: "ملغي",
-};
+const itemStatusOptions = [
+  { label: "غير مؤكد", value: 1 },
+  { label: "مؤكد", value: 2 },
+  { label: "ملغي", value: 3 },
+];
+const lineStatusOptions = [
+  { label: "قيد التصنيع​", value: 1 },
+  { label: "مرفوض ", value: 2 },
+  { label: "جاهز للشحن​", value: 3 },
+  { label: "جاري التحصيل", value: 4 },
+  { label: "تم التوصيل​", value: 5 },
+];
+
 const statusoptions = [
   { label: "معلق", value: 1 },
   { label: "قيد التنفيذ", value: 2 },
-  { label: "رفض", value: 3 },
-  { label: "تم التنفيذ", value: 4 },
-  { label: "خارج للتوصيل", value: 5 },
-  { label: "تم التسليم", value: 6 },
-  { label: "مسترجع", value: 7 },
-  { label: "ملغي", value: 8 },
+  { label: "نصف مكتمل", value: 3 },
+  { label: "جاري التوصيل ", value: 4 },
+  { label: "تم التوصيل", value: 5 },
+  { label: "مسترجع ", value: 6 },
+  { label: "استبدال ", value: 7 },
 ];
+
+const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
 
 function OrderDetails() {
   const { id } = useParams();
@@ -81,9 +85,7 @@ function OrderDetails() {
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
-  const getProductStatus = (status) => {
-    return statusValues[status];
-  };
+
   const changeOrderStatus = (status) => {
     axios
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
@@ -97,18 +99,61 @@ function OrderDetails() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
-  const onEdit = (status, notes, cost, id) => {
+  const handleChangeLinesStatus = (value, id) => {
+    axios
+      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
+        status: value,
+      })
+      .then(() => {
+        setOrderlines((prevDetails) => {
+          return prevDetails?.map((item) => (item.id === id ? { ...item, status: value } : item));
+        });
+        NotificationMeassage("success", "تم التعديل بنجاح");
+      })
+      .catch((error) => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+
+  const handleChangeItemStatus = (value, id) => {
+    axios
+      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
+        itemStatus: value,
+      })
+      .then(() => {
+        setOrderlines((prevDetails) => {
+          return prevDetails?.map((item) =>
+            item.id === id ? { ...item, itemStatus: value } : item
+          );
+        });
+        NotificationMeassage("success", "تم التعديل بنجاح");
+      })
+      .catch((error) => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+
+  const onEdit = (notes, cost, id, color, size, material) => {
     axios
       .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
         notes: notes,
-        status: status,
+        color: color,
+        size: size,
+        material: material,
         cost: Number(cost),
       })
       .then((res) => {
         setOrderlines((prevDetails) => {
           return prevDetails?.map((item) =>
             item.id === id
-              ? { ...item, status: status, notes: notes, unitCost: Number(cost) }
+              ? {
+                  ...item,
+                  color: color,
+                  size: size,
+                  material: material,
+                  notes: notes,
+                  unitCost: Number(cost),
+                }
               : item
           );
         });
@@ -119,7 +164,10 @@ function OrderDetails() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
-
+  const getPaymentValue = (status) => {
+    const resultValue = PAYMENT_STATUS[status];
+    return resultValue;
+  };
   useEffect(() => {
     const getOrderDetails = async () => {
       setIsLoading(true);
@@ -173,13 +221,42 @@ function OrderDetails() {
                   {orderDetails?.name}
                 </MDTypography>
               </div>
-              {!isSmallScreen && (
-                <div onClick={handlePrint}>
-                  <Icon>
-                    <PictureAsPdf />
-                  </Icon>
-                </div>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                {orderDetails?.paymentStatus && (
+                  <div
+                    style={{
+                      background: "#4472C4",
+                      color: "#fff",
+                      padding: "5px 5px",
+                      borderRadius: "5px",
+                      fontSize: "16px",
+                    }}
+                  >
+                    {getPaymentValue(orderDetails?.paymentStatus)}
+                  </div>
+                )}
+                {!isSmallScreen && (
+                  <div
+                    onClick={handlePrint}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Icon>
+                      <PictureAsPdf />
+                    </Icon>
+                  </div>
+                )}
+              </div>
             </div>
             <MDBox py={3}>
               <MDBox>
@@ -232,15 +309,15 @@ function OrderDetails() {
                       )}{" "}
                     </Card>
                   </Grid>
-                  {orderlines.map((product) => {
+                  {orderlines?.map((product) => {
                     return (
                       <>
                         <Grid item xs={12} md={4} lg={4} key={product.id}>
                           <Card
                             sx={{
                               maxWidth: 345,
-                              maxHeight: 550,
-                              minHeight: 550,
+                              maxHeight: 800,
+                              minHeight: 800,
                               "@media (max-width: 600px)": {
                                 maxHeight: "none",
                                 maxWidth: "none",
@@ -257,6 +334,21 @@ function OrderDetails() {
                               <Typography gutterBottom variant="h6" component="div">
                                 {product?.product.title}
                               </Typography>
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  {product.product.vendor?.name}
+                                </Typography>
+                                <div
+                                  onClick={() => {
+                                    setSelectedOrderLine(product);
+                                    setIsEditModalOpenned(true);
+                                  }}
+                                >
+                                  <Icon sx={{ color: "#333", cursor: "pointer" }}>
+                                    <Edit />
+                                  </Icon>
+                                </div>
+                              </div>
                               <Typography variant="h6" component="div">
                                 السعر الاجمالي{" "}
                               </Typography>
@@ -283,36 +375,72 @@ function OrderDetails() {
                                   {product?.quantity}
                                 </span>
                               </Typography>
-                              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {product.product.vendor?.name}
-                                </Typography>
-                                <div
-                                  onClick={() => {
-                                    setSelectedOrderLine(product);
-                                    setIsEditModalOpenned(true);
-                                  }}
-                                >
-                                  <Icon sx={{ color: "#333", cursor: "pointer" }}>
-                                    <Edit />
-                                  </Icon>
-                                </div>
-                              </div>
-                              <Typography gutterBottom variant="h6" component="div">
-                                الحالة :
-                                <span
-                                  style={{
-                                    fontSize: "15px",
-                                    fontWeight: "normal",
-                                    margin: "0 5px",
-                                  }}
-                                >
-                                  {getProductStatus(product?.status)}
-                                </span>
+                              <Typography variant="h6" component="div">
+                                اللون{" "}
                               </Typography>
+                              <Typography variant="body2" color="black">
+                                {product?.color}
+                              </Typography>
+                              <Typography variant="h6" component="div">
+                                المقاس{" "}
+                              </Typography>
+                              <Typography variant="body2" color="black">
+                                {product?.size || ""}
+                              </Typography>
+                              <Typography variant="h6" component="div">
+                                الخامات{" "}
+                              </Typography>
+                              <Typography
+                                sx={{ fontSize: "14px", fontWeight: "300" }}
+                                color="black"
+                              >
+                                {product?.material || ""}
+                              </Typography>
+                              <FormControl style={{ margin: "12px 0 0 0", width: "100%" }}>
+                                <InputLabel id="lineStatus">حالة التصنيع</InputLabel>
+                                <Select
+                                  labelId="lineStatus"
+                                  id="lineStatus-select"
+                                  value={product.status}
+                                  label="حالة التصنيع"
+                                  onChange={(e) =>
+                                    handleChangeLinesStatus(e.target.value, product.id)
+                                  }
+                                  sx={{ height: 35, background: "#eee" }}
+                                >
+                                  {lineStatusOptions.map((option) => {
+                                    return (
+                                      <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </MenuItem>
+                                    );
+                                  })}
+                                </Select>
+                              </FormControl>
+                              <FormControl style={{ margin: "15px 0", width: "100%" }}>
+                                <InputLabel id="itemStatus">حالة الطلب</InputLabel>
+                                <Select
+                                  labelId="itemStatus"
+                                  id="itemStatus-select"
+                                  value={product.itemStatus}
+                                  label="حالة الطلب"
+                                  onChange={(e) =>
+                                    handleChangeItemStatus(e.target.value, product.id)
+                                  }
+                                  sx={{ height: 35, background: "#eee" }}
+                                  disabled={user?.userType !== "1"}
+                                >
+                                  {itemStatusOptions.map((option) => {
+                                    return (
+                                      <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </MenuItem>
+                                    );
+                                  })}
+                                </Select>
+                              </FormControl>
                               {product?.notes && (
                                 <>
-                                  {" "}
                                   <Typography variant="h6" component="div">
                                     الملاحظات
                                   </Typography>
