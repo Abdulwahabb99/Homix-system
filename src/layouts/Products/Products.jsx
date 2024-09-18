@@ -65,7 +65,7 @@ function Products() {
   };
   const changeVendor = (vendor) => {
     setSelectedVendor(vendor);
-    setSearchParams({ vendorId: vendor });
+    setSearchParams({ vendorId: Number(vendor) !== 0 ? vendor : "" });
   };
 
   const fetchProducts = async () => {
@@ -106,7 +106,7 @@ function Products() {
 
   useEffect(() => {
     fetchProducts();
-    if (!selectedVendor) getVendors();
+    getVendors();
   }, [page, searchFilter, vendorIdParam]);
 
   return (
