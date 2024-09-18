@@ -38,6 +38,14 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
 
+  const today = new Date();
+  const formattedDate =
+    today.getFullYear() +
+    "-" +
+    String(today.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(today.getDate()).padStart(2, "0");
+
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
       <DialogTitle>تعديل طلب {data.orderData.name}</DialogTitle>

@@ -69,7 +69,7 @@ function Orders() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diffTime = today - start;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     return today > start ? `منذ ${diffDays} يوم` : "";
   }
