@@ -12,7 +12,7 @@ import createCache from "@emotion/cache";
 import routes from "routes";
 import SignIn from "layouts/authentication/sign-in";
 import { useMaterialUIController, setMiniSidenav } from "context";
-import homix from "assets/images/homix.jpg";
+import homix from "assets/images/homix.png";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";

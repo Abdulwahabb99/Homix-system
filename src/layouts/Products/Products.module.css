@@ -3,7 +3,7 @@
 }
 .productCard {
   max-width: 345px;
-  max-height: 100PX;
+  max-height: 100px;
 }
 @media screen and (min-width: 600px) {
   .productCard {

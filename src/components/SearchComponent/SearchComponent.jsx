@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React from "react";
 import { TextField, Button, Box } from "@mui/material";
 
 const SearchComponent = ({ searchText, setSearchText, handleSearch }) => {

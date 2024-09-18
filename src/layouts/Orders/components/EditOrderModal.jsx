@@ -118,6 +118,11 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               onChange={(e) => setManufacturingDate(e.target.value)}
               style={{ margin: "5px 0" }}
               type="date"
+              InputProps={{
+                inputProps: {
+                  max: formattedDate,
+                },
+              }}
             />
           </FormControl>
         </div>
