@@ -48,7 +48,10 @@ function Dashboard() {
           totalProfit: data.data.totalProfit,
           totalRevenue: data.data.totalRevenue,
           totalCommission: data.data.totalCommission,
+          totalToBeCollected: data.data.totalToBeCollected,
+          totalDownPayment: data.data.totalDownPayment,
           deliveredOrders: data.data.DeliveredOrders,
+          halfCompletedOrders: data.data.halfCompletedOrders,
         });
       })
       .catch(() => {

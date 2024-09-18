@@ -63,6 +63,17 @@ function Orders() {
 
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
+
+  function calculateDaysFromPoDate(startDate) {
+    const start = new Date(startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = today - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    return today > start ? `منذ ${diffDays} يوم` : "";
+  }
+
   const handlePageChange = (event, value) => {
     setSearchParams({ page: value.toString() });
   };
@@ -275,6 +286,12 @@ function Orders() {
       sortable: true,
       minWidth: 100,
       valueGetter: (node) => formatDateStringToArabic(node.data.date),
+    },
+    {
+      headerName: "تاريخ أمر التصنيع",
+      sortable: true,
+      minWidth: 100,
+      valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
     },
     ...(user?.userType === "1"
       ? [

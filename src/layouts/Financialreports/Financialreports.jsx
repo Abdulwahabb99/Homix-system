@@ -69,6 +69,7 @@ function Financialreports() {
             totalRevenue: data.data.totalRevenue,
             totalCommission: data.data.totalCommission,
             deliveredOrders: data.data.DeliveredOrders,
+            halfCompletedOrders: data.data.halfCompletedOrders,
           });
         })
         .catch(() => {
