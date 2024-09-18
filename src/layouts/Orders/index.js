@@ -357,28 +357,30 @@ function Orders() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={6} md={5} lg={3}>
-              <FormControl fullWidth style={{ width: "100%" }}>
-                <InputLabel id="orderStatus">المصنعين</InputLabel>
-                <Select
-                  labelId="vendors"
-                  id="vendors"
-                  value={selectedVendor}
-                  label="المصنعين"
-                  fullWidth
-                  onChange={(e) => handleChangeVendor(e.target.value)}
-                  sx={{ height: 35 }}
-                >
-                  {vendors.map((option) => {
-                    return (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>{" "}
-            </Grid>
+            {isAdmin && (
+              <Grid item xs={6} md={5} lg={3}>
+                <FormControl fullWidth style={{ width: "100%" }}>
+                  <InputLabel id="orderStatus">المصنعين</InputLabel>
+                  <Select
+                    labelId="vendors"
+                    id="vendors"
+                    value={selectedVendor}
+                    label="المصنعين"
+                    fullWidth
+                    onChange={(e) => handleChangeVendor(e.target.value)}
+                    sx={{ height: 35 }}
+                  >
+                    {vendors.map((option) => {
+                      return (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>{" "}
+              </Grid>
+            )}
           </Grid>
 
           <OrdersGrid

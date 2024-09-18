@@ -1,15 +1,12 @@
 /* eslint-disable react/prop-types */
-// ConfirmDeleteDialog.js
 import React, { useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-// import styles from "./ConfirmDeleteModal.module.css";
-import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
-// import { useSearchParams } from "react-router-dom";
+import { TextField } from "@mui/material";
+
 const SearchDialog = ({ open, onClose, setSearchParams }) => {
   const [orderNumber, setOrderNumber] = useState("");
 
