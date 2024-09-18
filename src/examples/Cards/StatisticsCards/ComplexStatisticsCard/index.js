@@ -13,7 +13,7 @@ function ComplexStatisticsCard({ color, title, count, percentage, icon }) {
           variant="gradient"
           bgColor={color}
           color={color === "light" ? "dark" : "white"}
-          coloredShadow={color}
+          // coloredShadow={color}
           borderRadius="xl"
           display="flex"
           justifyContent="center"

@@ -62,7 +62,6 @@ function Financialreports() {
             localStorage.removeItem("user");
             navigate("/authentication/sign-in");
           }
-
           setFinancialreportData({
             ordersCount: data.data.ordersCount,
             totalCost: data.data.totalCost,
@@ -97,7 +96,10 @@ function Financialreports() {
             totalProfit: data.data.totalProfit,
             totalRevenue: data.data.totalRevenue,
             totalCommission: data.data.totalCommission,
+            totalToBeCollected: data.data.totalToBeCollected,
+            totalDownPayment: data.data.totalDownPayment,
             deliveredOrders: data.data.DeliveredOrders,
+            halfCompletedOrders: data.data.halfCompletedOrders,
           });
         })
         .catch(() => {

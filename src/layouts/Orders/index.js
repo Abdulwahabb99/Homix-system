@@ -5,7 +5,16 @@ import Spinner from "components/Spinner/Spinner";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { FormControl, IconButton, InputLabel, MenuItem, Pagination, Select } from "@mui/material";
+import {
+  Box,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Pagination,
+  Select,
+} from "@mui/material";
 import SearchDialog from "./components/SearchDialog/SearchDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOrdarModal from "./components/EditOrderModal";
@@ -42,12 +51,16 @@ function Orders() {
   const [selectedEditOrder, setSelectedEditOrder] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const [orders, setOrders] = useState([]);
-  const [orderStatus, setOrderStatus] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get("page")) || 1;
   const orderNumberParam = searchParams.get("orderNumber");
-  const vendorNameParam = searchParams.get("vendorName");
+  const vendorIdParam = searchParams.get("vendorId");
   const orderStatusParam = searchParams.get("status");
+  const [vendors, setVendors] = useState([]);
+  const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
+  const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
+  const isAdmin = user.userType === "1";
+
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
   const handlePageChange = (event, value) => {
@@ -63,7 +76,11 @@ function Orders() {
   };
   const handleChangeStatus = (value) => {
     setOrderStatus(value);
-    setSearchParams({ status: value });
+    setSearchParams({ ...(vendorIdParam ? { vendorId: vendorIdParam } : {}), status: value });
+  };
+  const handleChangeVendor = (value) => {
+    setSelectedVendor(value);
+    setSearchParams({ vendorId: value, ...(orderStatusParam ? { status: orderStatusParam } : {}) });
   };
   function formatDateStringToArabic(dateString) {
     const dateParts = dateString.split("-");
@@ -89,15 +106,30 @@ function Orders() {
       return Promise.reject(error);
     }
   );
-
+  const getVendors = () => {
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/vendors`)
+      .then(({ data: { data } }) => {
+        const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
+        setVendors([{ label: "هومكس", value: "0" }, ...newData]);
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const orderNumber = Boolean(orderNumberParam) ? `&orderNumber=${orderNumberParam}` : "";
-      const vendorName = vendorNameParam ? `&vendorName=${vendorNameParam}` : "";
+      const vendorId = vendorIdParam ? `&vendorId=${vendorIdParam}` : "";
       const orderStatus = orderStatusParam ? `&status=${orderStatusParam}` : "";
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${vendorName}${orderStatus}`
+        vendorId
+          ? `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}${vendorId}`
+          : `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}`
       );
       if (response.data.force_logout) {
         localStorage.removeItem("user");
@@ -178,6 +210,8 @@ function Orders() {
     setSelectedEditOrder(value);
   };
   const handleReset = () => {
+    setSelectedVendor("");
+    setOrderStatus("");
     navigate("/orders");
   };
 
@@ -266,7 +300,16 @@ function Orders() {
 
   useEffect(() => {
     fetchOrders();
-  }, [page, orderStatusParam, vendorNameParam, orderNumberParam]);
+    if (!vendors.length) {
+      getVendors();
+    }
+  }, [page, orderStatusParam, orderNumberParam, vendorIdParam]);
+
+  useEffect(() => {
+    if (vendorIdParam) {
+      fetchOrders();
+    }
+  }, [vendorIdParam]);
 
   return (
     <DashboardLayout>
@@ -289,28 +332,55 @@ function Orders() {
         />
       )}
 
-      {!isLoading && orders ? (
+      {!isLoading ? (
         <>
-          <FormControl fullWidth style={{ margin: "0 0 -30px 0", width: "50%" }}>
-            <InputLabel id="orderStatus">حالة الطلب</InputLabel>
-            <Select
-              fullWidth
-              labelId="orderStatus"
-              id="orderStatus-select"
-              value={orderStatus}
-              label="حالة الطلب"
-              onChange={(e) => handleChangeStatus(e.target.value)}
-              sx={{ height: 35 }}
-            >
-              {statusoptions.map((option) => {
-                return (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
+          <Grid container spacing={1}>
+            <Grid item xs={6} md={5} lg={3}>
+              <FormControl fullWidth style={{ width: "100%" }}>
+                <InputLabel id="orderStatus">حالة الطلب</InputLabel>
+                <Select
+                  fullWidth
+                  labelId="orderStatus"
+                  id="orderStatus-select"
+                  value={orderStatus}
+                  label="حالة الطلب"
+                  onChange={(e) => handleChangeStatus(e.target.value)}
+                  sx={{ height: 35 }}
+                >
+                  {statusoptions.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6} md={5} lg={3}>
+              <FormControl fullWidth style={{ width: "100%" }}>
+                <InputLabel id="orderStatus">المصنعين</InputLabel>
+                <Select
+                  labelId="vendors"
+                  id="vendors"
+                  value={selectedVendor}
+                  label="المصنعين"
+                  fullWidth
+                  onChange={(e) => handleChangeVendor(e.target.value)}
+                  sx={{ height: 35 }}
+                >
+                  {vendors.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>{" "}
+            </Grid>
+          </Grid>
+
           <OrdersGrid
             rowData={orders}
             columnDefs={colDefs}

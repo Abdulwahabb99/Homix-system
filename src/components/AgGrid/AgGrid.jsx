@@ -65,15 +65,25 @@ function AgGrid({
             </IconButton>
           ) : (
             handleAdd && (
-              <Button
-                variant="contained"
-                fontSize="large"
-                style={{ margin: "0 0 10px 20px", color: "#fff" }}
-                className={styles.downloadBtn}
-                onClick={handleAdd}
-              >
-                <AddIcon />
-              </Button>
+              <div>
+                <Button
+                  variant="contained"
+                  fontSize="large"
+                  style={{ margin: "0 0 10px 20px", color: "#fff" }}
+                  className={styles.downloadBtn}
+                  onClick={handleAdd}
+                >
+                  <AddIcon />
+                </Button>
+                <IconButton
+                  fontSize="small"
+                  style={{ marginLeft: "20px" }}
+                  className={styles.downloadBtn}
+                  onClick={onExportClick}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </div>
             )
           )}{" "}
         </div>

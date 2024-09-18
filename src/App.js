@@ -18,6 +18,7 @@ import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
 import { vendorsRoutes } from "routes";
+import styles from "../src/styles.css";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));

@@ -1,3 +1,7 @@
-.ag-theme-balham .ag-paging-panel .ag-page-size {
-   display: none; /* Hides the page size dropdown */
+/* .ag-theme-balham .ag-paging-panel .ag-page-size {
+   display: none;
+} */
+
+body {
+  background: #f8f8f8 !important;
 }
