@@ -165,6 +165,7 @@ function Orders() {
             PoDate: order.PoDate,
             totalCost: Number(order.totalCost).toFixed(1),
             orderData: order,
+            receivedAmount: order.receivedAmount,
           };
         })
         .sort((a, b) => b.orderNumber - a.orderNumber);
@@ -183,7 +184,8 @@ function Orders() {
     manufacturingDate,
     paymentStatus,
     downPayment,
-    toBeCollected
+    toBeCollected,
+    receivedAmount
   ) => {
     axios
       .put(`${baseURI}/orders/${id}`, {
@@ -191,6 +193,7 @@ function Orders() {
         commission: commission,
         paymentStatus: paymentStatus,
         downPayment: downPayment,
+        receivedAmount: receivedAmount,
         toBeCollected: toBeCollected,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
@@ -204,6 +207,7 @@ function Orders() {
               toBeCollected: data.toBeCollected,
               paymentStatus: data.paymentStatus,
               PoDate: data.PoDate,
+              receivedAmount: data.receivedAmount,
             };
           }
           return order;
@@ -261,6 +265,12 @@ function Orders() {
     {
       field: "totalCost",
       headerName: "مجموع التكلفة",
+      sortable: true,
+      minWidth: 140,
+    },
+    {
+      field: "receivedAmount",
+      headerName: "المبلغ المستلم",
       sortable: true,
       minWidth: 140,
     },

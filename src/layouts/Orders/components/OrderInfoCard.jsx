@@ -66,6 +66,17 @@ function OrderInfoCard({ orderDetails }) {
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="body2" verticalAlign="middle">
+              المبلغ المستلم :{" "}
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {orderDetails.receivedAmount || 0}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="body2" verticalAlign="middle">
               المبلغ المطلوب تحصيله :{" "}
             </MDTypography>
             &nbsp;
