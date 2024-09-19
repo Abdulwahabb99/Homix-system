@@ -6,7 +6,6 @@ import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
-  Box,
   FormControl,
   Grid,
   IconButton,
@@ -21,6 +20,9 @@ import EditOrdarModal from "./components/EditOrderModal";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import OrdersGrid from "./components/OrdersGrid/OrdersGrid";
+import moment from "moment";
+import "moment-timezone";
+import "moment/locale/ar";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -60,9 +62,9 @@ function Orders() {
   const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
   const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
   const isAdmin = user.userType === "1";
-
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
+  moment.locale("ar");
 
   function calculateDaysFromPoDate(startDate) {
     const start = new Date(startDate);
@@ -93,17 +95,7 @@ function Orders() {
     setSelectedVendor(value);
     setSearchParams({ vendorId: value, ...(orderStatusParam ? { status: orderStatusParam } : {}) });
   };
-  function formatDateStringToArabic(dateString) {
-    const dateParts = dateString.split("-");
-    const year = parseInt(dateParts[0], 10);
-    const month = parseInt(dateParts[1], 10) - 1;
-    const day = parseInt(dateParts[2], 10);
-    const date = new Date(year, month, day);
-    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
-    const formatter = new Intl.DateTimeFormat("ar-EG", options);
 
-    return formatter.format(date);
-  }
   axios.interceptors.request.use(
     (config) => {
       if (user.token) {
@@ -295,7 +287,7 @@ function Orders() {
       headerName: "التاريخ",
       sortable: true,
       minWidth: 100,
-      valueGetter: (node) => formatDateStringToArabic(node.data.date),
+      valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
     },
     {
       headerName: "تاريخ أمر التصنيع",
