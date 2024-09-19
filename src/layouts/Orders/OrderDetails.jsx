@@ -41,7 +41,7 @@ const lineStatusOptions = [
   { label: "قيد التصنيع​", value: 1 },
   { label: "مرفوض ", value: 2 },
   { label: "جاهز للشحن​", value: 3 },
-  { label: "جاري التحصيل", value: 4 },
+  { label: "جاري التوصيل", value: 4 },
   { label: "تم التوصيل​", value: 5 },
 ];
 

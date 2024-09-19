@@ -43,7 +43,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
           </Grid>
         </Grid>
         <Grid item xs={12} md={12}>
-          <Grid container spacing={2}>
+          <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto" }}>
             <Grid item xs={12} md={4} lg={4}>
               <div className={styles.billingDetails}>
                 <p style={{ fontSize: "1.5rem", fontWeight: "700", color: "#003045" }}>
