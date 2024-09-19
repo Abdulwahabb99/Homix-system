@@ -174,6 +174,18 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
           </Grid>
           <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}>
             <Grid item md={5}></Grid>
+            <Grid item md={3} sx={{ fontWeight: "600" }}>
+              Discount
+            </Grid>
+            <Grid item md={1}>
+              :
+            </Grid>
+            <Grid item md={2}>
+              {orderDetails.totalDiscounts} LE
+            </Grid>
+          </Grid>
+          <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}>
+            <Grid item md={5}></Grid>
             <Grid item md={3} sx={{ fontWeight: "600", color: "#024b6b" }}>
               Total
             </Grid>

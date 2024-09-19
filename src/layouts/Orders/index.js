@@ -158,6 +158,7 @@ function Orders() {
             totalCost: Number(order.totalCost).toFixed(1),
             orderData: order,
             receivedAmount: order.receivedAmount,
+            totalDiscounts: order.totalDiscounts,
           };
         })
         .sort((a, b) => b.orderNumber - a.orderNumber);
