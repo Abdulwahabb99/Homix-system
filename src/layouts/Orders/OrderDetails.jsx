@@ -69,6 +69,7 @@ function OrderDetails() {
   const navigate = useNavigate();
   const componentRef = useRef();
   const isSmallScreen = useMediaQuery("(max-width:600px)");
+  const isAdmin = user.userType === "1";
 
   axios.interceptors.request.use(
     (config) => {
@@ -242,7 +243,7 @@ function OrderDetails() {
                     {getPaymentValue(orderDetails?.paymentStatus)}
                   </div>
                 )}
-                {!isSmallScreen && (
+                {!isSmallScreen && isAdmin && (
                   <div
                     onClick={handlePrint}
                     style={{
