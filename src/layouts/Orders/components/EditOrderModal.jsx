@@ -36,7 +36,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
   const [downPayment, setDownPayment] = useState(data.downPayment);
-  const [receivedAmount, setReceivedAmount] = useState(data.receivedAmount);
+  const [shippingCost, setShippingCost] = useState(data.receivedAmount);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
 
   const today = new Date();
@@ -103,9 +103,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
           />
           <TextField
             fullWidth
-            label="المبلغ المستلم"
-            value={receivedAmount}
-            onChange={(e) => setReceivedAmount(e.target.value)}
+            label="تكلفة الشحن"
+            value={shippingCost}
+            onChange={(e) => setShippingCost(e.target.value)}
             type="number"
             style={{ margin: "5px 0" }}
           />
@@ -158,7 +158,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               paymentStatus,
               downPayment,
               toBeCollected,
-              receivedAmount
+              shippingCost
             )
           }
           variant="contained"

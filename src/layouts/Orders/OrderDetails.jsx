@@ -63,6 +63,8 @@ function OrderDetails() {
   const [orderDetails, setOrderDetails] = useState(null);
   const [orderStatus, setOrderStatus] = useState(null);
   const [slectedOrderLine, setSelectedOrderLine] = useState(null);
+  const [orderTotalPrice, setOrderTotalPrice] = useState(null);
+  const [orderTotalCost, setOrderTotalCost] = useState(null);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [orderlines, setOrderlines] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
@@ -178,6 +180,14 @@ function OrderDetails() {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");
         }
+        let orderPrice = 0;
+        let ordercost = 0;
+        data.data.orderLines.forEach((item) => {
+          orderPrice += Number(item.price) * Number(item.quantity);
+          ordercost += Number(item.unitCost) * Number(item.quantity);
+        });
+        setOrderTotalPrice(orderPrice);
+        setOrderTotalCost(ordercost);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
         setOrderStatus(data.data.status);
@@ -284,8 +294,12 @@ function OrderDetails() {
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
                     <Card sx={{ height: "100%" }}>
-                      {Object.keys(orderDetails).length && (
-                        <OrderInfoCard orderDetails={orderDetails} />
+                      {Object.keys(orderDetails).length && orderTotalPrice && orderTotalCost && (
+                        <OrderInfoCard
+                          orderDetails={orderDetails}
+                          orderTotalCost={orderTotalCost}
+                          orderTotalPrice={orderTotalPrice}
+                        />
                       )}
                       {user?.userType === "1" && (
                         <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>

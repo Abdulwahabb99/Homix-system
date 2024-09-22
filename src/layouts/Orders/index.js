@@ -134,6 +134,7 @@ function Orders() {
           ? `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}${vendorId}`
           : `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}`
       );
+
       if (response.data.force_logout) {
         localStorage.removeItem("user");
         navigate("/authentication/sign-in");
@@ -252,7 +253,11 @@ function Orders() {
       sortable: false,
       minWidth: 100,
       valueGetter: ({ data }) => {
-        return Number(data.totalPrice);
+        let orderPrice = 0;
+        data.items?.forEach((item) => {
+          orderPrice += Number(item.price) * Number(item.quantity);
+        });
+        return Number(orderPrice);
       },
     },
     {
@@ -260,10 +265,17 @@ function Orders() {
       headerName: "مجموع التكلفة",
       sortable: true,
       minWidth: 140,
+      valueGetter: ({ data }) => {
+        let ordercost = 0;
+        data.items?.forEach((item) => {
+          ordercost += Number(item.unitCost) * Number(item.quantity);
+        });
+        return Number(ordercost);
+      },
     },
     {
       field: "receivedAmount",
-      headerName: "المبلغ المستلم",
+      headerName: "تكلفة الشحن",
       sortable: true,
       minWidth: 140,
     },

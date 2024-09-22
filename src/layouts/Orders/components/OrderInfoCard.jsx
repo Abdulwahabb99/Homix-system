@@ -3,7 +3,10 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";
 
-function OrderInfoCard({ orderDetails }) {
+function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice }) {
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = user?.userType === "1";
+
   function formatDateStringToArabic(dateString) {
     const date = new Date(dateString);
     const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
@@ -24,7 +27,7 @@ function OrderInfoCard({ orderDetails }) {
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.totalCost).toFixed(0) || ""}
+              {Number(orderTotalCost).toFixed(0) || ""}
             </MDTypography>
           </MDTypography>
         </MDBox>
@@ -35,7 +38,7 @@ function OrderInfoCard({ orderDetails }) {
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.subTotalPrice).toFixed(0) || ""}
+              {Number(orderTotalPrice).toFixed(0) || ""}
             </MDTypography>
           </MDTypography>
         </MDBox>
@@ -66,17 +69,6 @@ function OrderInfoCard({ orderDetails }) {
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              المبلغ المستلم :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.receivedAmount || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
               المبلغ المطلوب تحصيله :{" "}
             </MDTypography>
             &nbsp;
@@ -85,28 +77,32 @@ function OrderInfoCard({ orderDetails }) {
             </MDTypography>
           </MDTypography>
         </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              تكلفة الشحن :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.shippingFees || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              السعر النهائي :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.totalPrice).toFixed(1) || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
+        {isAdmin && (
+          <>
+            <MDBox mt={0} mb={2}>
+              <MDTypography variant="button" fontWeight="regular">
+                <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                  تكلفة الشحن :{" "}
+                </MDTypography>
+                &nbsp;
+                <MDTypography variant="button" color="text" fontWeight="medium">
+                  {orderDetails.shippingFees || 0}
+                </MDTypography>
+              </MDTypography>
+            </MDBox>
+            <MDBox mt={0} mb={2}>
+              <MDTypography variant="button" fontWeight="regular">
+                <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                  السعر النهائي :{" "}
+                </MDTypography>
+                &nbsp;
+                <MDTypography variant="button" color="text" fontWeight="medium">
+                  {Number(orderDetails.totalPrice).toFixed(1) || 0}
+                </MDTypography>
+              </MDTypography>
+            </MDBox>
+          </>
+        )}{" "}
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="body2" verticalAlign="middle">
