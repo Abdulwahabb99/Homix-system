@@ -270,7 +270,7 @@ function Orders() {
         data.items?.forEach((item) => {
           ordercost += Number(item.unitCost) * Number(item.quantity);
         });
-        return Number(ordercost);
+        return Number(ordercost).toFixed(1);
       },
     },
     {
