@@ -1,9 +1,8 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
@@ -14,7 +13,7 @@ const statusoptions = [
   { label: "نصف مكتمل", value: 3 },
   { label: "جاري التوصيل ", value: 4 },
   { label: "تم التوصيل", value: 5 },
-  { label: "مسترجع ", value: 6 },
+  { label: "ملغي ", value: 6 },
   { label: "استبدال ", value: 7 },
 ];
 const PAYMENT_STATUS = [

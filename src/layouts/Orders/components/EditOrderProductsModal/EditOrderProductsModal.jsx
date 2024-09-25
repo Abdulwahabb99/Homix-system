@@ -5,28 +5,19 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
-const statusoptions = [
-  { label: "معلق", value: 1 },
-  { label: "قيد التنفيذ", value: 2 },
-  { label: "رفض", value: 3 },
-  { label: "تم التنفيذ", value: 4 },
-  { label: "خارج للتوصيل", value: 5 },
-  { label: "تم التسليم", value: 6 },
-  { label: "مسترجع", value: 7 },
-  { label: "ملغي", value: 8 },
-];
+import { TextField } from "@mui/material";
 const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
   const [orderCost, setOrderCost] = useState(data.unitCost);
   const [color, setColor] = useState(data.color);
   const [size, setSize] = useState(data.size);
   const [material, setMaterial] = useState(data.material);
   const [notes, setNotes] = useState(data.notes);
+  const [itemShipping, setItemShipping] = useState(data.itemShipping || "");
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user?.userType === "1";
 
   return (
-    <Dialog fullWidth open={open} onClose={onClose}>
+    <Dialog fullScreen open={open} onClose={onClose}>
       <DialogTitle>تعديل {data.name}</DialogTitle>
       <DialogContent>
         <div>
@@ -66,6 +57,15 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
             style={{ margin: "5px 0" }}
             disabled={!isAdmin}
           />
+          <TextField
+            fullWidth
+            label="تكاليف الشحن"
+            type="number"
+            value={itemShipping}
+            onChange={(e) => setItemShipping(e.target.value)}
+            style={{ margin: "5px 0" }}
+            disabled={!isAdmin}
+          />
 
           <TextField
             fullWidth
@@ -83,7 +83,7 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
           إلغاء
         </Button>
         <Button
-          onClick={() => onEdit(notes, orderCost, data.id, color, size, material)}
+          onClick={() => onEdit(notes, orderCost, data.id, color, size, material, itemShipping)}
           variant="contained"
           style={{ color: "#fff" }}
         >

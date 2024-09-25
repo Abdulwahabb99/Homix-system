@@ -51,7 +51,7 @@ const statusoptions = [
   { label: "نصف مكتمل", value: 3 },
   { label: "جاري التوصيل ", value: 4 },
   { label: "تم التوصيل", value: 5 },
-  { label: "مسترجع ", value: 6 },
+  { label: "ملغي ", value: 6 },
   { label: "استبدال ", value: 7 },
 ];
 
@@ -64,6 +64,7 @@ function OrderDetails() {
   const [orderStatus, setOrderStatus] = useState(null);
   const [slectedOrderLine, setSelectedOrderLine] = useState(null);
   const [orderTotalPrice, setOrderTotalPrice] = useState(null);
+  const [orderTotalShipping, setOrderTotalShipping] = useState(null);
   const [orderTotalCost, setOrderTotalCost] = useState(null);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [orderlines, setOrderlines] = useState([]);
@@ -136,13 +137,14 @@ function OrderDetails() {
       });
   };
 
-  const onEdit = (notes, cost, id, color, size, material) => {
+  const onEdit = (notes, cost, id, color, size, material, itemShipping) => {
     axios
       .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
         notes: notes,
         color: color,
         size: size,
         material: material,
+        itemShipping: itemShipping,
         cost: Number(cost),
       })
       .then((res) => {
@@ -155,13 +157,17 @@ function OrderDetails() {
                   size: size,
                   material: material,
                   notes: notes,
+                  itemShipping: itemShipping,
                   unitCost: Number(cost),
                 }
               : item
           );
         });
-        setIsEditModalOpenned(false);
         NotificationMeassage("success", "تم التعديل بنجاح");
+        setTimeout(() => {
+          window.location.reload();
+          setIsEditModalOpenned(false);
+        }, 1000);
       })
       .catch((error) => {
         NotificationMeassage("error", "حدث خطأ");
@@ -182,12 +188,15 @@ function OrderDetails() {
         }
         let orderPrice = 0;
         let ordercost = 0;
+        let itemShipping = 0;
         data.data.orderLines.forEach((item) => {
           orderPrice += Number(item.price) * Number(item.quantity);
           ordercost += Number(item.unitCost) * Number(item.quantity);
+          itemShipping += Number(item.itemShipping);
         });
         setOrderTotalPrice(orderPrice);
         setOrderTotalCost(ordercost);
+        setOrderTotalShipping(itemShipping);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
         setOrderStatus(data.data.status);
@@ -299,6 +308,7 @@ function OrderDetails() {
                           orderDetails={orderDetails}
                           orderTotalCost={orderTotalCost}
                           orderTotalPrice={orderTotalPrice}
+                          orderTotalShipping={orderTotalShipping}
                         />
                       )}
                       {user?.userType === "1" && (

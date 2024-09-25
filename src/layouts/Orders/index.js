@@ -31,7 +31,7 @@ const statusValues = {
   3: "نصف مكتمل",
   4: "جاري التوصيل ",
   5: "تم التوصيل",
-  6: "مسترجع ",
+  6: "ملغي ",
   7: "استبدال ",
 };
 const statusoptions = [
@@ -40,7 +40,7 @@ const statusoptions = [
   { label: "نصف مكتمل", value: 3 },
   { label: "جاري التوصيل ", value: 4 },
   { label: "تم التوصيل", value: 5 },
-  { label: "مسترجع ", value: 6 },
+  { label: "ملغي ", value: 6 },
   { label: "استبدال ", value: 7 },
 ];
 const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
