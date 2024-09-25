@@ -64,7 +64,6 @@ const EditOrderProductsModal = ({ open, onEdit, onClose, data }) => {
             value={itemShipping}
             onChange={(e) => setItemShipping(e.target.value)}
             style={{ margin: "5px 0" }}
-            disabled={!isAdmin}
           />
 
           <TextField
