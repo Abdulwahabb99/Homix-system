@@ -25,6 +25,7 @@ const status = [
 function AddEditFactory({ type }) {
   const navigate = useNavigate();
   const [isloading, setIsLoading] = useState(false);
+  const [isFileUploadingloading, setIsFileUploadingloading] = useState(false);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
@@ -134,6 +135,7 @@ function AddEditFactory({ type }) {
       });
   };
   const handleFileChange = (event) => {
+    setIsFileUploadingloading(true);
     setSelectedFiles(event.target.files);
     if (event.target.files.length === 0) {
       return;
@@ -149,7 +151,8 @@ function AddEditFactory({ type }) {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
-      });
+      })
+      .finally(() => setIsFileUploadingloading(false));
   };
 
   return (
@@ -288,6 +291,7 @@ function AddEditFactory({ type }) {
               onClick={type === "edit" ? UpdateFactory : addFactory}
               variant="contained"
               style={{ color: "#fff" }}
+              disabled={isFileUploadingloading}
             >
               {type === "edit" ? "حفظ" : "اضافة"}
             </Button>
