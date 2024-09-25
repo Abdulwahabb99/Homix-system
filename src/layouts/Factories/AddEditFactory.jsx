@@ -291,7 +291,7 @@ function AddEditFactory({ type }) {
               onClick={type === "edit" ? UpdateFactory : addFactory}
               variant="contained"
               style={{ color: "#fff" }}
-              disabled={isFileUploadingloading}
+              disabled={isFileUploadingloading || !name}
             >
               {type === "edit" ? "حفظ" : "اضافة"}
             </Button>
