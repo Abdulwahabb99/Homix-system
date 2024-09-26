@@ -273,12 +273,12 @@ function Orders() {
         return Number(ordercost).toFixed(1);
       },
     },
-    {
-      field: "receivedAmount",
-      headerName: "تكلفة الشحن",
-      sortable: true,
-      minWidth: 140,
-    },
+    // {
+    //   field: "receivedAmount",
+    //   headerName: "تكلفة الشحن",
+    //   sortable: true,
+    //   minWidth: 140,
+    // },
     {
       field: "toBeCollected",
       headerName: "المبلغ المطلوب تحصيله",
