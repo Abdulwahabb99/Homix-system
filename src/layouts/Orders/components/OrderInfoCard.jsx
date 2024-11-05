@@ -3,7 +3,13 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";
 
-function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, orderTotalShipping }) {
+function OrderInfoCard({
+  orderDetails,
+  orderTotalCost,
+  orderTotalPrice,
+  orderTotalShipping,
+  orderTotalToBeCollected,
+}) {
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user?.userType === "1";
 
@@ -86,7 +92,7 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, orderTot
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.toBeCollected || 0}
+              {orderTotalToBeCollected || 0}
             </MDTypography>
           </MDTypography>
         </MDBox>

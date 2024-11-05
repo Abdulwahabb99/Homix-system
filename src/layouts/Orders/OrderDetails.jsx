@@ -65,6 +65,7 @@ function OrderDetails() {
   const [slectedOrderLine, setSelectedOrderLine] = useState(null);
   const [orderTotalPrice, setOrderTotalPrice] = useState(null);
   const [orderTotalShipping, setOrderTotalShipping] = useState(null);
+  const [orderTotalToBeCollected, setOrderTotalToBeCollected] = useState(null);
   const [orderTotalCost, setOrderTotalCost] = useState(null);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [orderlines, setOrderlines] = useState([]);
@@ -137,7 +138,7 @@ function OrderDetails() {
       });
   };
 
-  const onEdit = (notes, cost, id, color, size, material, itemShipping) => {
+  const onEdit = (notes, cost, id, color, size, material, itemShipping, toBeCollected) => {
     axios
       .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
         notes: notes,
@@ -146,6 +147,7 @@ function OrderDetails() {
         material: material,
         itemShipping: itemShipping,
         cost: Number(cost),
+        toBeCollected: Number(toBeCollected),
       })
       .then((res) => {
         setOrderlines((prevDetails) => {
@@ -159,6 +161,7 @@ function OrderDetails() {
                   notes: notes,
                   itemShipping: itemShipping,
                   unitCost: Number(cost),
+                  toBeCollected: toBeCollected,
                 }
               : item
           );
@@ -189,14 +192,17 @@ function OrderDetails() {
         let orderPrice = 0;
         let ordercost = 0;
         let itemShipping = 0;
+        let toBeCollected = 0;
         data.data.orderLines.forEach((item) => {
           orderPrice += Number(item.price) * Number(item.quantity);
           ordercost += Number(item.unitCost) * Number(item.quantity);
           itemShipping += Number(item.itemShipping);
+          toBeCollected += Number(item.toBeCollected);
         });
         setOrderTotalPrice(orderPrice);
         setOrderTotalCost(ordercost);
         setOrderTotalShipping(itemShipping);
+        setOrderTotalToBeCollected(toBeCollected);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
         setOrderStatus(data.data.status);
@@ -309,6 +315,7 @@ function OrderDetails() {
                           orderTotalCost={orderTotalCost}
                           orderTotalPrice={orderTotalPrice}
                           orderTotalShipping={orderTotalShipping}
+                          orderTotalToBeCollected={orderTotalToBeCollected}
                         />
                       )}
                       {user?.userType === "1" && (
