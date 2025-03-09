@@ -16,7 +16,6 @@ const Factories = React.lazy(() =>
 );
 const Users = React.lazy(() => import("./layouts/Users/Users"));
 const user = JSON.parse(localStorage.getItem("user"));
-console.log(user);
 
 const routes = [
   {

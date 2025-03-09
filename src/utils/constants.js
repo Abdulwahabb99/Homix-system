@@ -19,3 +19,9 @@ export const getUserType = (type) => {
       return "";
   }
 };
+export const USER_TYPES_VALUES = [
+  { value: USER_TYPES.ADMIN, label: "مدير" },
+  { value: USER_TYPES.VENDOR, label: "مورد" },
+  { value: USER_TYPES.OPERATION, label: "عمليات" },
+  { value: USER_TYPES.LOGISTIC, label: "لوجستي" },
+];

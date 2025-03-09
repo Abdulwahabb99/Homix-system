@@ -10,17 +10,16 @@ import { ToastContainer } from "react-toastify";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
-// import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import styles from "./Users.module.css";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { getUserType } from "utils/constants";
 
-const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
 function Users() {
   const [isloading, setIsLoading] = useState(false);
   const [isDeleteModalOpenned, setIsDeleteModalOpenned] = useState(false);
   const [users, setUsers] = useState([]);
-  const [selectedFactoryId, setSelectedFactoryId] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -55,13 +54,13 @@ function Users() {
         setIsLoading(false);
       });
   };
-  const deleteFactory = () => {
+  const deleteUser = () => {
     axios
-      .delete(`${process.env.REACT_APP_API_URL}/factories/${selectedFactoryId}`)
+      .delete(`${process.env.REACT_APP_API_URL}/users/${selectedUserId}`)
       .then(() => {
         setIsDeleteModalOpenned(false);
-        const newData = factories.filter((factory) => factory.id !== selectedFactoryId);
-        setFactories(newData);
+        const newData = users.filter((user) => user.id !== selectedUserId);
+        setUsers(newData);
         NotificationMeassage("success", "تم مسح المصنع");
       })
       .catch(() => {
@@ -106,7 +105,7 @@ function Users() {
       maxWidth: 80,
       sortable: false,
       cellRenderer: ({ data: { id } }) => (
-        <IconButton onClick={() => navigate(`/factories/edit/${id}`)} sx={{ fontSize: "1.2rem" }}>
+        <IconButton onClick={() => navigate(`/users/edit/${id}`)} sx={{ fontSize: "1.2rem" }}>
           <EditIcon />
         </IconButton>
       ),
@@ -120,7 +119,7 @@ function Users() {
         <IconButton
           onClick={() => {
             setIsDeleteModalOpenned(true);
-            setSelectedFactoryId(id);
+            setSelectedUserId(id);
           }}
           sx={{ fontSize: "1.2rem", color: "red" }}
         >
@@ -129,19 +128,18 @@ function Users() {
       ),
     },
   ];
-  console.log(users);
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <ToastContainer />
-      {/* {isDeleteModalOpenned && selectedFactoryId && (
+      {isDeleteModalOpenned && selectedUserId && (
         <ConfirmDeleteModal
           open={isDeleteModalOpenned}
           onClose={() => setIsDeleteModalOpenned(false)}
-          handleConfirmDelete={deleteFactory}
+          handleConfirmDelete={deleteUser}
         />
-      )} */}
+      )}
       {isloading ? (
         <Spinner />
       ) : (
@@ -153,7 +151,7 @@ function Users() {
           }}
           enableQuickFilter
           gridHeight={"500px"}
-          handleAdd={() => navigate(`/factories/add`)}
+          handleAdd={() => navigate(`/users/add`)}
         />
       )}
     </DashboardLayout>

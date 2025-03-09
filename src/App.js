@@ -19,6 +19,7 @@ import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
 import { vendorsRoutes } from "routes";
 import styles from "../src/styles.css";
+import AddEditUser from "layouts/Users/AddEditUser";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -152,7 +153,15 @@ export default function App() {
               path="/users/add"
               element={
                 <ProtectedRoutes>
-                  <FactoryDetails type="add" to="/factories/add" />
+                  <AddEditUser type="add" to="/users/add" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/users/edit/:id"
+              element={
+                <ProtectedRoutes>
+                  <AddEditUser type="edit" to="/users/edit/:id" />
                 </ProtectedRoutes>
               }
             />
