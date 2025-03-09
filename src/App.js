@@ -148,6 +148,14 @@ export default function App() {
                 </ProtectedRoutes>
               }
             />
+            <Route
+              path="/users/add"
+              element={
+                <ProtectedRoutes>
+                  <FactoryDetails type="add" to="/factories/add" />
+                </ProtectedRoutes>
+              }
+            />
           </Routes>
         </Suspense>
       </ThemeProvider>

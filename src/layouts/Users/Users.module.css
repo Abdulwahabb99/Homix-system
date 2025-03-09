@@ -1,0 +1,10 @@
+.header {
+    background-color: #f0f2f5;
+    text-align: center !important;
+    display: flex;
+    justify-content: center;
+  }
+  .header:hover {
+    background-color: #f0f2f5 !important;
+  }
+  
