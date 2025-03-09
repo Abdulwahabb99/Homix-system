@@ -23,6 +23,7 @@ function AgGrid({
   gridHeight,
   enableExcel,
   handleAdd,
+  showExelIcon
 }) {
   const [quickFilterText, setQuickFilterText] = useState("");
   const gridRef = useRef();
@@ -75,14 +76,14 @@ function AgGrid({
                 >
                   <AddIcon />
                 </Button>
-                <IconButton
+                {showExelIcon && <IconButton
                   fontSize="small"
                   style={{ marginLeft: "20px" }}
                   className={styles.downloadBtn}
                   onClick={onExportClick}
                 >
                   <DownloadIcon />
-                </IconButton>
+                </IconButton>}
               </div>
             )
           )}{" "}

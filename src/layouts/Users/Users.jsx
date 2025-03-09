@@ -78,6 +78,7 @@ function Users() {
       headerName: "الاسم",
       sortable: true,
       minWidth: 140,
+      maxWidth: 160,
       valueGetter: ({ data }) => {
         return `${data.firstName} ${data.lastName}`;
       },
@@ -89,12 +90,18 @@ function Users() {
       //   />
       // ),
     },
-    { field: "email", headerName: "البريد الالكتروني", minWidth: 100, sortable: false },
+    {
+      field: "email",
+      headerName: "البريد الالكتروني",
+      minWidth: 100,
+      maxWidth: 250,
+      sortable: false,
+    },
     {
       field: "userType",
       headerName: "نوع المستخدم",
       sortable: false,
-      minWidth: 140,
+      maxWidth: 120,
       valueGetter: ({ data }) => {
         return getUserType(data.userType);
       },
