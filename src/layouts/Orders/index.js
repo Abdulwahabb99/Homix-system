@@ -77,7 +77,11 @@ function Orders() {
   }
 
   const handlePageChange = (event, value) => {
-    setSearchParams({ page: value.toString() });
+    setSearchParams({
+      page: value.toString(),
+      ...(vendorIdParam ? { vendorId: vendorIdParam } : {}),
+      ...(orderStatusParam ? { status: orderStatusParam } : {}),
+    });
   };
   const getStatusValue = (status) => {
     const resultValue = statusValues[status];
@@ -336,12 +340,6 @@ function Orders() {
       getVendors();
     }
   }, [page, orderStatusParam, orderNumberParam, vendorIdParam]);
-
-  useEffect(() => {
-    if (vendorIdParam) {
-      fetchOrders();
-    }
-  }, [vendorIdParam]);
 
   return (
     <DashboardLayout>

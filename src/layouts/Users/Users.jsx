@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import styles from "./Users.module.css";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
-import { getUserType } from "utils/constants";
+import { getUserType } from "shared/utils/constants";
+import apiRequest from "shared/functions/apiRequest";
 
 function Users() {
   const [isloading, setIsLoading] = useState(false);
@@ -37,14 +38,16 @@ function Users() {
 
   const getUsers = () => {
     setIsLoading(true);
-    axios
-      .get(`${process.env.REACT_APP_API_URL}/users`)
+
+    apiRequest(`${process.env.REACT_APP_API_URL}/users`, "GET", () =>
+      navigate("/authentication/sign-in")
+    )
       .then(({ data }) => {
         if (data.force_logout) {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");
         }
-        const newData = data.data.sort((a, b) => a.id - b.id);
+        const newData = data.sort((a, b) => a.id - b.id);
         setUsers(newData);
       })
       .catch(() => {

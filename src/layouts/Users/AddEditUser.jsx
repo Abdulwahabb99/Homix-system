@@ -18,7 +18,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
-import { USER_TYPES_VALUES } from "utils/constants";
+import { USER_TYPES_VALUES } from "shared/utils/constants";
 
 function AddEditUser({ type }) {
   const navigate = useNavigate();
