@@ -1,4 +1,4 @@
-import { Card, CardMedia, Grid, IconButton } from "@mui/material";
+import { Card, CardMedia, Chip, Grid, IconButton } from "@mui/material";
 import axios from "axios";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -69,21 +69,17 @@ function ProductDetails() {
                     <>
                       <MDBox pt={2} px={3}>
                         <MDBox mt={0} mb={2}>
-                          <MDTypography variant="h6" fontWeight="large">
-                            {productDetails.title}
-                          </MDTypography>
+                          <MDTypography variant="h6">{productDetails.title}</MDTypography>
                         </MDBox>
                       </MDBox>
                       <MDBox pt={1} px={3}>
                         <MDBox mt={0} mb={0}>
                           <MDBox mt={0} mb={0}>
-                            <MDTypography variant="h6" fontWeight="large">
-                              الخيارات
-                            </MDTypography>
+                            <MDTypography variant="h6">الخيارات</MDTypography>
                           </MDBox>
                           {productDetails.variants.map((variant, inedx) => (
-                            <div key={variant.id}>
-                              <MDTypography variant="button" fontWeight="regular">
+                            <div key={variant.shopifyId}>
+                              <MDTypography variant="button">
                                 <div>
                                   {variant.title !== "Default Title" && <div>{variant.title}</div>}
                                   <div>
@@ -95,12 +91,7 @@ function ProductDetails() {
                                       السعر :
                                     </MDTypography>
                                     &nbsp;
-                                    <MDTypography
-                                      variant="button"
-                                      color="text"
-                                      fontWeight="regular"
-                                      key={inedx}
-                                    >
+                                    <MDTypography variant="button" color="text" key={inedx}>
                                       {Number(variant.price).toFixed(0)} ج.م
                                     </MDTypography>
                                   </div>
@@ -113,12 +104,7 @@ function ProductDetails() {
                                       التكلفة :
                                     </MDTypography>
                                     &nbsp;
-                                    <MDTypography
-                                      variant="button"
-                                      color="text"
-                                      fontWeight="regular"
-                                      key={inedx}
-                                    >
+                                    <MDTypography variant="button" color="text" key={inedx}>
                                       {Number(variant.cost).toFixed(0)} ج.م
                                     </MDTypography>
                                   </div>
@@ -128,15 +114,41 @@ function ProductDetails() {
                           ))}
                         </MDBox>
 
-                        <MDBox mt={0} mb={2}>
-                          <MDTypography variant="button" fontWeight="regular">
+                        <MDBox mt={0}>
+                          <MDTypography variant="button">
                             <MDTypography display="inline" variant="h6" verticalAlign="middle">
                               المورد:
                             </MDTypography>
                             &nbsp;
-                            <MDTypography variant="button" color="text" fontWeight="regular">
+                            <MDTypography variant="button" color="text">
                               {productDetails.vendor.name}
                             </MDTypography>
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox mt={0} mb={2}>
+                          <MDTypography variant="button">
+                            <MDTypography display="inline" variant="h6" verticalAlign="middle">
+                              التصنيفات:
+                            </MDTypography>
+                            &nbsp;
+                            {productDetails?.categories.map((category) => {
+                              return (
+                                <Chip
+                                  style={{ fontSize: "12px" }}
+                                  key={category.categoryId}
+                                  label={category.category.title}
+                                  color="primary"
+                                  variant="filled"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: "#f0f0f0",
+                                    margin: "2px 4px 2px 0",
+                                    border: "1px solid #00000099",
+                                    color: "#00000099",
+                                  }}
+                                />
+                              );
+                            })}
                           </MDTypography>
                         </MDBox>
                       </MDBox>

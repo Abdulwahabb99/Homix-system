@@ -4,8 +4,6 @@ import { Card, CardContent, CardMedia, Chip, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 const ProductCard = ({ product }) => {
-  console.log(product);
-
   const navigate = useNavigate();
   const navigateToProduct = () => {
     navigate(`/products/${product.id}`);
@@ -21,7 +19,6 @@ const ProductCard = ({ product }) => {
         },
         cursor: "pointer",
         boxShadow: "none",
-        // border: "1px solid rgba(0, 0, 0, 0.6)",
       }}
       onClick={navigateToProduct}
     >

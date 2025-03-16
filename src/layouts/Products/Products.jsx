@@ -24,6 +24,7 @@ function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [searchParams, setSearchParams] = useSearchParams();
   const vendorIdsParam = searchParams.get("vendorsIds");
+  const categoriesIdsParam = searchParams.get("categoriesIds");
   const page = parseInt(searchParams.get("page")) || 1;
   const searchFilter = searchParams.get("searchQuery");
   const [products, setProducts] = useState([]);
@@ -31,6 +32,9 @@ function Products() {
   const [vendors, setVendors] = useState([]);
   const [selectedVendors, setSelectedVendors] = useState(
     vendorIdsParam ? vendorIdsParam.split(",").map(Number) : []
+  );
+  const [selectedCategories, setSelectedCategories] = useState(
+    categoriesIdsParam ? categoriesIdsParam.split(",").map(Number) : []
   );
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState(searchFilter);
@@ -69,6 +73,12 @@ function Products() {
     setSelectedVendors(vendors);
     setSearchParams({
       vendorsIds: vendors.length > 0 ? vendors.join(",") : "",
+    });
+  };
+  const handleChangeCategories = (categories) => {
+    setSelectedCategories(categories);
+    setSearchParams({
+      categoriesIds: categories.length > 0 ? categories.join(",") : "",
     });
   };
 
@@ -173,6 +183,44 @@ function Products() {
                   </FormControl>
                 </Grid>
               )}
+              <Grid item xs={6} md={4} lg={3}>
+                <FormControl style={{ width: "100%" }}>
+                  <InputLabel id="vendors">التصنيفات</InputLabel>
+                  <Select
+                    labelId="categories"
+                    id="categories"
+                    multiple
+                    value={selectedCategories}
+                    label="التصنيفات"
+                    fullWidth
+                    onChange={(e) => handleChangeCategories(e.target.value)}
+                    sx={{ height: 43 }}
+                    renderValue={(selected) =>
+                      selected
+                        .map((value) => vendors.find((option) => option.value === value)?.label)
+                        .join(", ")
+                    }
+                  >
+                    {vendors.map((option) => {
+                      const isSelected = selectedCategories.includes(option.value);
+
+                      return (
+                        <MenuItem
+                          key={option.value}
+                          value={option.value}
+                          style={{
+                            margin: "5px 0",
+                            color: "#000",
+                            backgroundColor: isSelected ? "#e0e0e0" : "inherit",
+                          }}
+                        >
+                          {option.label}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
 
             <Container>
