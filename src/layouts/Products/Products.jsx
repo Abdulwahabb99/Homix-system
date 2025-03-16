@@ -23,13 +23,15 @@ const ITEMS_PER_PAGE = 16;
 function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [searchParams, setSearchParams] = useSearchParams();
-  const vendorIdParam = searchParams.get("vendorId");
+  const vendorIdsParam = searchParams.get("vendorsIds");
   const page = parseInt(searchParams.get("page")) || 1;
   const searchFilter = searchParams.get("searchQuery");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [vendors, setVendors] = useState([]);
-  const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
+  const [selectedVendors, setSelectedVendors] = useState(
+    vendorIdsParam ? vendorIdsParam.split(",").map(Number) : []
+  );
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState(searchFilter);
   const [totalPages, setTotalPages] = useState(0);
@@ -38,8 +40,8 @@ function Products() {
   const handlePageChange = (event, value) => {
     setSearchParams({ page: value.toString() });
     navigate(
-      vendorIdParam
-        ? `/products?page=${value}&vendorId=${vendorIdParam}`
+      vendorIdsParam
+        ? `/products?page=${value}&vendorsIds=${vendorIdsParam}`
         : `/products?page=${value}&searchQuery=${searchFilter ? searchFilter : ""}`
     );
   };
@@ -63,17 +65,19 @@ function Products() {
       setSearchParams({ searchQuery: "" });
     }
   };
-  const changeVendor = (vendor) => {
-    setSelectedVendor(vendor);
-    setSearchParams({ vendorId: Number(vendor) !== 0 ? vendor : "" });
+  const changeVendors = (vendors) => {
+    setSelectedVendors(vendors);
+    setSearchParams({
+      vendorsIds: vendors.length > 0 ? vendors.join(",") : "",
+    });
   };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        vendorIdParam
-          ? `${process.env.REACT_APP_API_URL}/products?page=${page}&size=${ITEMS_PER_PAGE}&vendorId=${vendorIdParam}`
+        vendorIdsParam
+          ? `${process.env.REACT_APP_API_URL}/products?page=${page}&size=${ITEMS_PER_PAGE}&vendorsIds=${vendorIdsParam}`
           : `${
               process.env.REACT_APP_API_URL
             }/products?page=${page}&size=${ITEMS_PER_PAGE}&searchQuery=${
@@ -107,7 +111,7 @@ function Products() {
   useEffect(() => {
     fetchProducts();
     getVendors();
-  }, [page, searchFilter, vendorIdParam]);
+  }, [page, searchFilter, vendorIdsParam]);
 
   return (
     <DashboardLayout>
@@ -133,15 +137,34 @@ function Products() {
                     <Select
                       labelId="vendors"
                       id="vendors"
-                      value={selectedVendor}
+                      multiple
+                      value={selectedVendors}
                       label="الموردين"
                       fullWidth
-                      onChange={(e) => changeVendor(e.target.value)}
+                      onChange={(e) => changeVendors(e.target.value)}
                       sx={{ height: 43 }}
+                      renderValue={(selected) =>
+                        selected
+                          .map((value) => vendors.find((option) => option.value === value)?.label)
+                          .join(", ")
+                      }
                     >
                       {vendors.map((option) => {
+                        const isSelected = selectedVendors.includes(option.value);
+
                         return (
-                          <MenuItem key={option.value} value={option.value}>
+                          <MenuItem
+                            key={option.value}
+                            value={option.value}
+                            style={{
+                              margin: "5px 0",
+                              color: "#000",
+                              backgroundColor: isSelected ? "#e0e0e0" : "inherit",
+                              "&:hover": {
+                                backgroundColor: "#e0e0e0",
+                              },
+                            }}
+                          >
                             {option.label}
                           </MenuItem>
                         );
