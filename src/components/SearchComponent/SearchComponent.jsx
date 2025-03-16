@@ -11,6 +11,7 @@ const SearchComponent = ({ searchText, setSearchText, handleSearch }) => {
           variant="outlined"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
+          fullWidth
         />
         <Button variant="contained" color="primary" type="submit" style={{ color: "#fff" }}>
           بحث

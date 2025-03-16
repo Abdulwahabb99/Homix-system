@@ -109,8 +109,11 @@ function Products() {
   };
 
   useEffect(() => {
-    fetchProducts();
     getVendors();
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
   }, [page, searchFilter, vendorIdsParam]);
 
   return (
@@ -120,7 +123,7 @@ function Products() {
         {!loading ? (
           <>
             <Grid container spacing={2}>
-              <Grid item xs={6} md={3} lg={3}>
+              <Grid item xs={12} md={4} lg={3}>
                 {" "}
                 <div className={styles.searchContainer}>
                   <SearchComponent
@@ -131,7 +134,7 @@ function Products() {
                 </div>
               </Grid>
               {isAdmin && (
-                <Grid item xs={6} md={3} lg={3}>
+                <Grid item xs={6} md={4} lg={3}>
                   <FormControl style={{ width: "100%" }}>
                     <InputLabel id="vendors">الموردين</InputLabel>
                     <Select
@@ -160,9 +163,6 @@ function Products() {
                               margin: "5px 0",
                               color: "#000",
                               backgroundColor: isSelected ? "#e0e0e0" : "inherit",
-                              "&:hover": {
-                                backgroundColor: "#e0e0e0",
-                              },
                             }}
                           >
                             {option.label}
