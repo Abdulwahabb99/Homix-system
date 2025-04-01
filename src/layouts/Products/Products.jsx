@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import MDBox from "components/MDBox";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Container,
   FormControl,
@@ -12,119 +10,126 @@ import {
   Pagination,
   Select,
 } from "@mui/material";
-import ProductCard from "./components/ProductCard";
-import { useNavigate, useSearchParams } from "react-router-dom";
+
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import MDBox from "components/MDBox";
 import Spinner from "components/Spinner/Spinner";
 import SearchComponent from "components/SearchComponent/SearchComponent";
+import ProductCard from "./components/ProductCard";
 import styles from "./Products.module.css";
 
 const ITEMS_PER_PAGE = 16;
 
 function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = user.userType === "1";
   const [searchParams, setSearchParams] = useSearchParams();
-  const vendorIdsParam = searchParams.get("vendorsIds");
-  const categoriesIdsParam = searchParams.get("categoriesIds");
-  const page = parseInt(searchParams.get("page")) || 1;
-  const searchFilter = searchParams.get("searchQuery");
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState(searchParams.get("searchQuery") || "");
   const [selectedVendors, setSelectedVendors] = useState(
-    vendorIdsParam ? vendorIdsParam.split(",").map(Number) : []
+    searchParams.get("vendorsIds")?.split(",").map(Number) || []
   );
   const [selectedCategories, setSelectedCategories] = useState(
-    categoriesIdsParam ? categoriesIdsParam.split(",").map(Number) : []
+    searchParams.get("categoriesIds")?.split(",").map(Number) || []
   );
-  const navigate = useNavigate();
-  const [searchText, setSearchText] = useState(searchFilter);
   const [totalPages, setTotalPages] = useState(0);
-  const isAdmin = user.userType === "1";
 
-  const handlePageChange = (event, value) => {
-    setSearchParams({ page: value.toString() });
-    navigate(
-      vendorIdsParam
-        ? `/products?page=${value}&vendorsIds=${vendorIdsParam}`
-        : `/products?page=${value}&searchQuery=${searchFilter ? searchFilter : ""}`
-    );
-  };
-  axios.interceptors.request.use(
-    (config) => {
+  const page = parseInt(searchParams.get("page")) || 1;
+  const searchQueryParam = searchParams.get("searchQuery") || "";
+
+  useEffect(() => {
+    axios.interceptors.request.use((config) => {
       if (user.token) {
         config.headers["Authorization"] = `Bearer ${user.token}`;
       }
       return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
+    });
+  }, [user.token]);
+
+  const updateURLParams = (params) => {
+    setSearchParams((prevParams) => {
+      const updatedParams = new URLSearchParams(prevParams);
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) updatedParams.set(key, value);
+        else updatedParams.delete(key);
+      });
+      return updatedParams;
+    });
+  };
+
+  const handlePageChange = (event, value) => {
+    updateURLParams({ page: value.toString() });
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchText) {
-      setSearchParams({ searchQuery: searchText?.toString() });
-    } else {
-      setSearchParams({ searchQuery: "" });
-    }
-  };
-  const changeVendors = (vendors) => {
-    setSelectedVendors(vendors);
-    setSearchParams({
-      vendorsIds: vendors.length > 0 ? vendors.join(",") : "",
-    });
-  };
-  const handleChangeCategories = (categories) => {
-    setSelectedCategories(categories);
-    setSearchParams({
-      categoriesIds: categories.length > 0 ? categories.join(",") : "",
-    });
+    updateURLParams({ searchQuery: searchText, page: 1 });
   };
 
-  const fetchProducts = async () => {
+  const handleVendorChange = (vendors) => {
+    setSelectedVendors(vendors);
+    updateURLParams({ vendorsIds: vendors.join(","), page: 1 });
+  };
+
+  const handleCategoryChange = (categories) => {
+    setSelectedCategories(categories);
+    updateURLParams({ categoriesIds: categories.join(","), page: 1 });
+  };
+
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        vendorIdsParam
-          ? `${process.env.REACT_APP_API_URL}/products?page=${page}&size=${ITEMS_PER_PAGE}&vendorsIds=${vendorIdsParam}`
-          : `${
-              process.env.REACT_APP_API_URL
-            }/products?page=${page}&size=${ITEMS_PER_PAGE}&searchQuery=${
-              searchFilter ? searchFilter : ""
-            }`
-      );
+      const baseUrl = `${process.env.REACT_APP_API_URL}/products`;
+      const queryParams = new URLSearchParams({
+        page,
+        size: ITEMS_PER_PAGE,
+        vendorsIds: selectedVendors.join(","),
+        categoriesIds: selectedCategories.join(","),
+        searchQuery: searchQueryParam,
+      });
+      const response = await axios.get(`${baseUrl}?${queryParams}`);
       if (response.data.force_logout) {
         localStorage.removeItem("user");
-        navigate("/authentication/sign-in");
+        return navigate("/authentication/sign-in");
       }
-      setProducts(response.data.data.products);
-      setTotalPages(response.data.data.totalPages);
+
+      const { products, totalPages } = response.data.data;
+      setProducts(products);
+      setTotalPages(totalPages);
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, selectedVendors, selectedCategories, searchQueryParam, navigate]);
+
   const getVendors = () => {
-    axios
-      .get(`${process.env.REACT_APP_API_URL}/vendors`)
-      .then(({ data: { data } }) => {
-        const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
-        setVendors([{ label: "هومكس", value: "0" }, ...newData]);
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
+    axios.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
+      const vendorOptions = data.map((v) => ({ label: v.name, value: v.id }));
+      setVendors([{ label: "هومكس", value: 0 }, ...vendorOptions]);
+    });
+  };
+
+  const getCategories = () => {
+    axios.get(`${process.env.REACT_APP_API_URL}/categories`).then(({ data: { data } }) => {
+      const categoryOptions = data.map((c) => ({ label: c.title, value: c.id }));
+      setCategories(categoryOptions);
+    });
   };
 
   useEffect(() => {
     getVendors();
+    getCategories();
   }, []);
 
   useEffect(() => {
     fetchProducts();
-  }, [page, searchFilter, vendorIdsParam]);
+  }, [fetchProducts]);
 
   return (
     <DashboardLayout>
@@ -134,7 +139,6 @@ function Products() {
           <>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4} lg={3}>
-                {" "}
                 <div className={styles.searchContainer}>
                   <SearchComponent
                     handleSearch={handleSearch}
@@ -143,9 +147,10 @@ function Products() {
                   />
                 </div>
               </Grid>
+
               {isAdmin && (
                 <Grid item xs={6} md={4} lg={3}>
-                  <FormControl style={{ width: "100%" }}>
+                  <FormControl fullWidth>
                     <InputLabel id="vendors">الموردين</InputLabel>
                     <Select
                       labelId="vendors"
@@ -153,8 +158,7 @@ function Products() {
                       multiple
                       value={selectedVendors}
                       label="الموردين"
-                      fullWidth
-                      onChange={(e) => changeVendors(e.target.value)}
+                      onChange={(e) => handleVendorChange(e.target.value)}
                       sx={{ height: 43 }}
                       renderValue={(selected) =>
                         selected
@@ -164,7 +168,6 @@ function Products() {
                     >
                       {vendors.map((option) => {
                         const isSelected = selectedVendors.includes(option.value);
-
                         return (
                           <MenuItem
                             key={option.value}
@@ -183,27 +186,26 @@ function Products() {
                   </FormControl>
                 </Grid>
               )}
+
               <Grid item xs={6} md={4} lg={3}>
-                <FormControl style={{ width: "100%" }}>
-                  <InputLabel id="vendors">التصنيفات</InputLabel>
+                <FormControl fullWidth>
+                  <InputLabel id="categories">التصنيفات</InputLabel>
                   <Select
                     labelId="categories"
                     id="categories"
                     multiple
                     value={selectedCategories}
                     label="التصنيفات"
-                    fullWidth
-                    onChange={(e) => handleChangeCategories(e.target.value)}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
                     sx={{ height: 43 }}
                     renderValue={(selected) =>
                       selected
-                        .map((value) => vendors.find((option) => option.value === value)?.label)
+                        .map((value) => categories.find((option) => option.value === value)?.label)
                         .join(", ")
                     }
                   >
-                    {vendors.map((option) => {
+                    {categories.map((option) => {
                       const isSelected = selectedCategories.includes(option.value);
-
                       return (
                         <MenuItem
                           key={option.value}
@@ -225,7 +227,7 @@ function Products() {
 
             <Container>
               <Grid container spacing={1}>
-                {products?.map((product) => (
+                {products.map((product) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
                     <MDBox mb={1.5}>
                       <ProductCard product={product} />
@@ -233,11 +235,12 @@ function Products() {
                   </Grid>
                 ))}
               </Grid>
+
               <Pagination
                 count={totalPages}
                 page={page}
                 onChange={handlePageChange}
-                sx={{ display: "flex", justifyContent: "center", marginTop: "20px" }}
+                sx={{ display: "flex", justifyContent: "center", mt: 3 }}
               />
             </Container>
           </>
