@@ -23,30 +23,36 @@ import OrdersGrid from "./components/OrdersGrid/OrdersGrid";
 import moment from "moment";
 import "moment-timezone";
 import "moment/locale/ar";
+import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
+import { useDateRange } from "hooks/useDateRange";
+import { PAYMENT_STATUS } from "./utils/constants";
 
-const ITEMS_PER_PAGE = 150;
+const ITEMS_PER_PAGE = 1;
 const statusValues = {
   1: "معلق",
-  2: "قيد التنفيذ",
-  3: "نصف مكتمل",
-  4: "جاري التوصيل ",
-  5: "تم التوصيل",
-  6: "ملغي ",
-  7: "استبدال ",
+  2: "مؤكد",
+  3: "ملغي",
+  4: "قيد التصنيع ",
+  5: "تم التسليم",
+  6: "مسترجع ",
+  7: "مستبدل ",
 };
 const statusoptions = [
   { label: "معلق", value: 1 },
-  { label: "قيد التنفيذ", value: 2 },
-  { label: "نصف مكتمل", value: 3 },
-  { label: "جاري التوصيل ", value: 4 },
-  { label: "تم التوصيل", value: 5 },
-  { label: "ملغي ", value: 6 },
-  { label: "استبدال ", value: 7 },
+  { label: "مؤكد", value: 2 },
+  { label: "ملغي", value: 3 },
+  { label: "قيد التصنيع ", value: 4 },
+  { label: "تم التسليم", value: 5 },
+  { label: "مسترجع ", value: 6 },
+  { label: "مستبدل ", value: 7 },
 ];
-const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
+const paymentStatus = { 1: "مدفوع", 2: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function Orders() {
+  const { startDate, endDate, handleDatesChange } = useDateRange({
+    defaultDays: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -58,10 +64,12 @@ function Orders() {
   const orderNumberParam = searchParams.get("orderNumber");
   const vendorIdParam = searchParams.get("vendorId");
   const orderStatusParam = searchParams.get("status");
+  const paymentStatusParam = searchParams.get("paymentStatus");
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
   const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
-  const isAdmin = user.userType === "1";
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
+  const isVendor = user.userType === "2";
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
   moment.locale("ar");
@@ -75,29 +83,39 @@ function Orders() {
 
     return today > start ? `منذ ${diffDays} يوم` : "";
   }
-
-  const handlePageChange = (event, value) => {
-    setSearchParams({
-      page: value.toString(),
-      ...(vendorIdParam ? { vendorId: vendorIdParam } : {}),
-      ...(orderStatusParam ? { status: orderStatusParam } : {}),
+  const updateParams = (params) => {
+    const updated = new URLSearchParams(searchParams);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) updated.set(key, value);
+      else updated.delete(key);
     });
+    setSearchParams(updated);
   };
+
+  const handlePageChange = (_, value) => {
+    updateParams({ page: value });
+  };
+
   const getStatusValue = (status) => {
     const resultValue = statusValues[status];
     return resultValue;
   };
   const getPaymentValue = (status) => {
-    const resultValue = PAYMENT_STATUS[status];
+    const resultValue = paymentStatus[status];
     return resultValue;
   };
   const handleChangeStatus = (value) => {
     setOrderStatus(value);
-    setSearchParams({ ...(vendorIdParam ? { vendorId: vendorIdParam } : {}), status: value });
+    updateParams({ status: value });
   };
   const handleChangeVendor = (value) => {
     setSelectedVendor(value);
-    setSearchParams({ vendorId: value, ...(orderStatusParam ? { status: orderStatusParam } : {}) });
+    updateParams({ vendorId: value });
+  };
+
+  const handleChangePaymentStatus = (value) => {
+    setSelectedPaymentStatus(value);
+    updateParams({ paymentStatus: value });
   };
 
   axios.interceptors.request.use(
@@ -130,20 +148,24 @@ function Orders() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const orderNumber = Boolean(orderNumberParam) ? `&orderNumber=${orderNumberParam}` : "";
-      const vendorId = vendorIdParam ? `&vendorId=${vendorIdParam}` : "";
-      const orderStatus = orderStatusParam ? `&status=${orderStatusParam}` : "";
-      const response = await axios.get(
-        vendorId
-          ? `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}${vendorId}`
-          : `${process.env.REACT_APP_API_URL}/orders?page=${page}&size=${ITEMS_PER_PAGE}${orderNumber}${orderStatus}`
-      );
+      const query = new URLSearchParams({
+        page,
+        size: ITEMS_PER_PAGE,
+        ...(orderNumberParam && { orderNumber: orderNumberParam }),
+        ...(vendorIdParam && { vendorId: vendorIdParam }),
+        ...(orderStatusParam && { status: orderStatusParam }),
+        ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
+        // ...(startDate && { startDate: startDate.utc().toISOString() }),
+        // ...(endDate && { endDate: endDate.utc().toISOString() }),
+      });
 
-      if (response.data.force_logout) {
+      const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/orders?${query}`);
+
+      if (data.force_logout) {
         localStorage.removeItem("user");
         navigate("/authentication/sign-in");
       }
-      const newOrders = response.data.data.orders
+      const newOrders = data.data.orders
         .map((order) => {
           return {
             orderNumber: order.orderNumber,
@@ -164,11 +186,12 @@ function Orders() {
             orderData: order,
             receivedAmount: order.receivedAmount,
             totalDiscounts: order.totalDiscounts,
+            code: order.name,
           };
         })
         .sort((a, b) => b.orderNumber - a.orderNumber);
       setOrders(newOrders);
-      setTotalPages(response.data.data.totalPages);
+      setTotalPages(data.data.totalPages);
     } catch (res) {
       NotificationMeassage("error", "حدث خطأ");
     } finally {
@@ -230,6 +253,12 @@ function Orders() {
 
   const colDefs = [
     {
+      field: "code",
+      headerName: "الكود التعريفي",
+      sortable: true,
+      minWidth: 150,
+    },
+    {
       field: "orderNumber",
       headerName: "رقم الطلب",
       sortable: true,
@@ -253,7 +282,7 @@ function Orders() {
     },
     {
       field: "totalPrice",
-      headerName: "المجموع",
+      headerName: "سعر البيع",
       sortable: false,
       minWidth: 100,
       valueGetter: ({ data }) => {
@@ -266,7 +295,7 @@ function Orders() {
     },
     {
       field: "totalCost",
-      headerName: "مجموع التكلفة",
+      headerName: "سعر التكلفة",
       sortable: true,
       minWidth: 140,
       valueGetter: ({ data }) => {
@@ -274,8 +303,26 @@ function Orders() {
         data.items?.forEach((item) => {
           ordercost += Number(item.unitCost) * Number(item.quantity);
         });
-        return Number(ordercost).toFixed(1);
+        return Number(ordercost).toFixed(0);
       },
+    },
+    {
+      field: "paymentStatus",
+      headerName: "طريقة الدفع",
+      minWidth: 170,
+      valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
+    },
+    {
+      headerName: "تاريخ أمر التصنيع",
+      sortable: true,
+      minWidth: 120,
+      valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
+    },
+    {
+      field: "days",
+      headerName: "الايام المنقضية",
+      sortable: true,
+      minWidth: 140,
     },
     // {
     //   field: "receivedAmount",
@@ -294,25 +341,13 @@ function Orders() {
       minWidth: 130,
     },
     {
-      field: "paymentStatus",
-      headerName: "طريقة الدفع",
-      minWidth: 170,
-      valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
-    },
-    {
       field: "date",
       headerName: "التاريخ",
       sortable: true,
       minWidth: 100,
       valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
     },
-    {
-      headerName: "تاريخ أمر التصنيع",
-      sortable: true,
-      minWidth: 100,
-      valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
-    },
-    ...(user?.userType === "1"
+    ...(!isVendor
       ? [
           {
             headerName: "",
@@ -339,7 +374,15 @@ function Orders() {
     if (!vendors.length) {
       getVendors();
     }
-  }, [page, orderStatusParam, orderNumberParam, vendorIdParam]);
+  }, [
+    page,
+    orderStatusParam,
+    orderNumberParam,
+    vendorIdParam,
+    startDate,
+    endDate,
+    paymentStatusParam,
+  ]);
 
   return (
     <DashboardLayout>
@@ -365,7 +408,7 @@ function Orders() {
       {!isLoading ? (
         <>
           <Grid container spacing={1}>
-            <Grid item xs={6} md={5} lg={3}>
+            <Grid item xs={6} md={6} lg={3}>
               <FormControl fullWidth style={{ width: "100%" }}>
                 <InputLabel id="orderStatus">حالة الطلب</InputLabel>
                 <Select
@@ -387,8 +430,8 @@ function Orders() {
                 </Select>
               </FormControl>
             </Grid>
-            {isAdmin && (
-              <Grid item xs={6} md={5} lg={3}>
+            {!isVendor && (
+              <Grid item xs={6} md={6} lg={3}>
                 <FormControl fullWidth style={{ width: "100%" }}>
                   <InputLabel id="orderStatus">المصنعين</InputLabel>
                   <Select
@@ -411,6 +454,61 @@ function Orders() {
                 </FormControl>{" "}
               </Grid>
             )}
+            <Grid item xs={6} md={6} lg={3}>
+              <FormControl fullWidth style={{ width: "100%" }}>
+                <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
+                <Select
+                  labelId="deliveryStatus"
+                  id="deliveryStatus"
+                  value={selectedPaymentStatus}
+                  label="حاله الدفع"
+                  fullWidth
+                  onChange={(e) => handleChangePaymentStatus(e.target.value)}
+                  sx={{ height: 35 }}
+                >
+                  {PAYMENT_STATUS.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>{" "}
+            </Grid>
+            <Grid item xs={6} md={6} lg={3}>
+              <FormControl fullWidth style={{ width: "100%" }}>
+                <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
+                <Select
+                  labelId="deliveryStatus"
+                  id="deliveryStatus"
+                  value={selectedPaymentStatus}
+                  label="حاله الدفع"
+                  fullWidth
+                  onChange={(e) => handleChangePaymentStatus(e.target.value)}
+                  sx={{ height: 35 }}
+                >
+                  {PAYMENT_STATUS.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>{" "}
+            </Grid>
+
+            <Grid item xs={12} md={5} lg={3}>
+              <DateRangePickerWrapper
+                startDate={startDate}
+                endDate={endDate}
+                allowPastDays={true}
+                allowFutureDays={false}
+                useDefaultPresets={true}
+                handleDatesChange={handleDatesChange}
+              />{" "}
+            </Grid>
           </Grid>
 
           <OrdersGrid

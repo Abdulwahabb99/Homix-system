@@ -6,20 +6,8 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 
-const statusoptions = [
-  { label: "معلق", value: 1 },
-  { label: "قيد التنفيذ", value: 2 },
-  { label: "نصف مكتمل", value: 3 },
-  { label: "جاري التوصيل ", value: 4 },
-  { label: "تم التوصيل", value: 5 },
-  { label: "ملغي ", value: 6 },
-  { label: "استبدال ", value: 7 },
-];
-const PAYMENT_STATUS = [
-  { label: "مدفوع", value: 1 },
-  { label: "دفع عند الاستلام", value: 2 },
-];
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
