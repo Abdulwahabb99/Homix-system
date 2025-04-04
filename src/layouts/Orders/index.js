@@ -25,7 +25,7 @@ import "moment-timezone";
 import "moment/locale/ar";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import { useDateRange } from "hooks/useDateRange";
-import { PAYMENT_STATUS } from "./utils/constants";
+import { DELIVERY_STATUS, PAYMENT_STATUS } from "./utils/constants";
 
 const ITEMS_PER_PAGE = 1;
 const statusValues = {
@@ -65,10 +65,12 @@ function Orders() {
   const vendorIdParam = searchParams.get("vendorId");
   const orderStatusParam = searchParams.get("status");
   const paymentStatusParam = searchParams.get("paymentStatus");
+  const deliveryStatusParam = searchParams.get("deliveryStatus");
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
   const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
+  const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(deliveryStatusParam || "");
   const isVendor = user.userType === "2";
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
@@ -117,6 +119,10 @@ function Orders() {
     setSelectedPaymentStatus(value);
     updateParams({ paymentStatus: value });
   };
+  const handleChangeDeliveryStatus = (value) => {
+    setSelectedDeliveryStatus(value);
+    updateParams({ deliveryStatus: value });
+  };
 
   axios.interceptors.request.use(
     (config) => {
@@ -155,8 +161,9 @@ function Orders() {
         ...(vendorIdParam && { vendorId: vendorIdParam }),
         ...(orderStatusParam && { status: orderStatusParam }),
         ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
-        // ...(startDate && { startDate: startDate.utc().toISOString() }),
-        // ...(endDate && { endDate: endDate.utc().toISOString() }),
+        ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
+        ...(startDate && { startDate: startDate.utc().toISOString() }),
+        ...(endDate && { endDate: endDate.utc().toISOString() }),
       });
 
       const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/orders?${query}`);
@@ -382,6 +389,7 @@ function Orders() {
     startDate,
     endDate,
     paymentStatusParam,
+    deliveryStatusParam,
   ]);
 
   return (
@@ -478,17 +486,17 @@ function Orders() {
             </Grid>
             <Grid item xs={6} md={6} lg={3}>
               <FormControl fullWidth style={{ width: "100%" }}>
-                <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
+                <InputLabel id="deliveryStatus">حاله التصنيع</InputLabel>
                 <Select
                   labelId="deliveryStatus"
                   id="deliveryStatus"
-                  value={selectedPaymentStatus}
-                  label="حاله الدفع"
+                  value={selectedDeliveryStatus}
+                  label="حاله التصنيع"
                   fullWidth
-                  onChange={(e) => handleChangePaymentStatus(e.target.value)}
+                  onChange={(e) => handleChangeDeliveryStatus(e.target.value)}
                   sx={{ height: 35 }}
                 >
-                  {PAYMENT_STATUS.map((option) => {
+                  {DELIVERY_STATUS.map((option) => {
                     return (
                       <MenuItem key={option.value} value={option.value}>
                         {option.label}

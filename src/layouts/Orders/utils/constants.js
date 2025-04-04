@@ -11,3 +11,9 @@ export const PAYMENT_STATUS = [
   { label: "مدفوع", value: 1 },
   { label: "دفع عند الاستلام", value: 2 },
 ];
+export const DELIVERY_STATUS = [
+  { label: "في مده التصنيع", value: 1 },
+  { label: "أوشك علي التأخير", value: 2 },
+  { label: "تعدي المده", value: 3 },
+  { label: "متأخر", value: 4 },
+];
