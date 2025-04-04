@@ -26,6 +26,7 @@ import "moment/locale/ar";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import { useDateRange } from "hooks/useDateRange";
 import { DELIVERY_STATUS, PAYMENT_STATUS } from "./utils/constants";
+import { useSelector } from "react-redux";
 
 const ITEMS_PER_PAGE = 1;
 const statusValues = {
@@ -57,7 +58,6 @@ function Orders() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEditOrder, setSelectedEditOrder] = useState(null);
-  const user = JSON.parse(localStorage.getItem("user"));
   const [orders, setOrders] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get("page")) || 1;
@@ -71,10 +71,11 @@ function Orders() {
   const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
   const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(deliveryStatusParam || "");
-  const isVendor = user.userType === "2";
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
   moment.locale("ar");
+  const { user, token } = useSelector((state) => state.auth);
+  const isVendor = user.userType === "2";
 
   function calculateDaysFromPoDate(startDate) {
     const start = new Date(startDate);
@@ -126,8 +127,8 @@ function Orders() {
 
   axios.interceptors.request.use(
     (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
+      if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
       } else {
         delete config.headers.Authorization;
       }
@@ -462,51 +463,54 @@ function Orders() {
                 </FormControl>{" "}
               </Grid>
             )}
-            <Grid item xs={6} md={6} lg={3}>
-              <FormControl fullWidth style={{ width: "100%" }}>
-                <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
-                <Select
-                  labelId="deliveryStatus"
-                  id="deliveryStatus"
-                  value={selectedPaymentStatus}
-                  label="حاله الدفع"
-                  fullWidth
-                  onChange={(e) => handleChangePaymentStatus(e.target.value)}
-                  sx={{ height: 35 }}
-                >
-                  {PAYMENT_STATUS.map((option) => {
-                    return (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>{" "}
-            </Grid>
-            <Grid item xs={6} md={6} lg={3}>
-              <FormControl fullWidth style={{ width: "100%" }}>
-                <InputLabel id="deliveryStatus">حاله التصنيع</InputLabel>
-                <Select
-                  labelId="deliveryStatus"
-                  id="deliveryStatus"
-                  value={selectedDeliveryStatus}
-                  label="حاله التصنيع"
-                  fullWidth
-                  onChange={(e) => handleChangeDeliveryStatus(e.target.value)}
-                  sx={{ height: 35 }}
-                >
-                  {DELIVERY_STATUS.map((option) => {
-                    return (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>{" "}
-            </Grid>
-
+            {!isVendor && (
+              <>
+                <Grid item xs={6} md={6} lg={3}>
+                  <FormControl fullWidth style={{ width: "100%" }}>
+                    <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
+                    <Select
+                      labelId="deliveryStatus"
+                      id="deliveryStatus"
+                      value={selectedPaymentStatus}
+                      label="حاله الدفع"
+                      fullWidth
+                      onChange={(e) => handleChangePaymentStatus(e.target.value)}
+                      sx={{ height: 35 }}
+                    >
+                      {PAYMENT_STATUS.map((option) => {
+                        return (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>{" "}
+                </Grid>
+                <Grid item xs={6} md={6} lg={3}>
+                  <FormControl fullWidth style={{ width: "100%" }}>
+                    <InputLabel id="deliveryStatus">حاله التصنيع</InputLabel>
+                    <Select
+                      labelId="deliveryStatus"
+                      id="deliveryStatus"
+                      value={selectedDeliveryStatus}
+                      label="حاله التصنيع"
+                      fullWidth
+                      onChange={(e) => handleChangeDeliveryStatus(e.target.value)}
+                      sx={{ height: 35 }}
+                    >
+                      {DELIVERY_STATUS.map((option) => {
+                        return (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>{" "}
+                </Grid>
+              </>
+            )}
             <Grid item xs={12} md={5} lg={3}>
               <DateRangePickerWrapper
                 startDate={startDate}

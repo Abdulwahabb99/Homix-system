@@ -18,8 +18,11 @@ import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
 import { vendorsRoutes } from "routes";
-import styles from "../src/styles.css";
 import AddEditUser from "layouts/Users/AddEditUser";
+import { useDispatch } from "react-redux";
+import { setUser } from "store/slices/authSlice";
+import axios from "axios";
+import { clearUser } from "store/slices/authSlice";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -30,7 +33,22 @@ export default function App() {
   const { miniSidenav, layout, sidenavColor, darkMode } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
+  const reduxDispatch = useDispatch();
   const isAdmin = user?.userType === "1";
+
+  axios.interceptors.request.use(
+    (config) => {
+      if (user?.token) {
+        config.headers["Authorization"] = `Bearer ${user?.token}`;
+      } else {
+        delete config.headers.Authorization;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
 
   const rtlCache = useMemo(
     () =>
@@ -57,18 +75,28 @@ export default function App() {
     }
   };
 
-  // Change the openConfigurator state
-
-  // Setting the dir attribute for the body element
   useEffect(() => {
-    document.body.setAttribute("dir", "rtl");
-  }, []);
+    const token = user?.token;
+    if (token) {
+      const tokenExpiration = JSON.parse(atob(token.split(".")[1])).exp * 1000;
+      if (Date.now() > tokenExpiration) {
+        localStorage.removeItem("user");
+        reduxDispatch(clearUser());
+      }
+    }
+  }, [user?.token, reduxDispatch]);
 
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
+
+  useEffect(() => {
+    if (user) {
+      reduxDispatch(setUser({ user: { ...user }, token: user.token }));
+    }
+  }, [reduxDispatch]);
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
