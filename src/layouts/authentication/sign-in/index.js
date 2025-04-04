@@ -13,11 +13,15 @@ import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { setUser } from "store/slices/authSlice";
 
 function Basic() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
+
   const navigate = useNavigate();
   const handleSignInClick = (e) => {
     e.preventDefault();
@@ -33,6 +37,10 @@ function Basic() {
           "user",
           JSON.stringify({ ...response.data.data.user, token: response.data.data.token })
         );
+        dispatch(
+          setUser({ user: { ...response.data.data.user }, token: response.data.data.token })
+        );
+
         navigate("/home");
       })
       .catch(() => {

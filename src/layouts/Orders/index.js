@@ -161,7 +161,7 @@ function Orders() {
         ...(vendorIdParam && { vendorId: vendorIdParam }),
         ...(orderStatusParam && { status: orderStatusParam }),
         ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
-        ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
+        // ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
         ...(startDate && { startDate: startDate.utc().toISOString() }),
         ...(endDate && { endDate: endDate.utc().toISOString() }),
       });
