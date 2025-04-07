@@ -23,6 +23,7 @@ import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import axios from "axios";
 import { clearUser } from "store/slices/authSlice";
+import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -146,7 +147,15 @@ export default function App() {
               }
             />
             <Route
-              path="/products/:id"
+              path="/orders/add"
+              element={
+                <ProtectedRoutes>
+                  <AddOrderModal to="/orders/add" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/orders/add"
               element={
                 <ProtectedRoutes>
                   <ProductDetails to="/products/:id" />

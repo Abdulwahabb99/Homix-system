@@ -8,6 +8,8 @@ import { CsvExportModule } from "@ag-grid-community/csv-export";
 import styles from "./OrdersGrid.module.css";
 import { Button, IconButton } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import AddIcon from "@mui/icons-material/Add";
+import { useNavigate } from "react-router-dom";
 
 function OrdersGrid({
   columnDefs,
@@ -19,6 +21,7 @@ function OrdersGrid({
   enableQuickFilter,
   gridHeight,
 }) {
+  const navigate = useNavigate();
   const gridRef = useRef();
   const onExportClick = () => {
     gridRef.current.api.exportDataAsCsv();
@@ -49,11 +52,16 @@ function OrdersGrid({
         <div className={styles.resetBtnBox}>
           <IconButton
             fontSize="small"
-            style={{ marginLeft: "20px" }}
-            className={styles.downloadBtn}
             onClick={onExportClick}
           >
             <DownloadIcon />
+          </IconButton>{" "}
+          <IconButton
+            fontSize="small"
+            variant="contained"
+            onClick={navigate.bind(this, "/orders/add")}
+          >
+            <AddIcon />
           </IconButton>{" "}
         </div>
       </div>

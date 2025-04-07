@@ -9,7 +9,7 @@
  }
  .resetBtnBox {
    display: flex;
-   justify-content: center;
+   justify-content: space-between;
  }
  .resetBtn {
    margin-top: 10px !important;

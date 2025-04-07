@@ -17,3 +17,10 @@ export const DELIVERY_STATUS = [
   { label: "تعدي المده", value: 3 },
   { label: "متأخر", value: 4 },
 ];
+
+export const customerInitialState = {
+  name: "",
+  phone: "",
+  address: "",
+  email: "",
+};
