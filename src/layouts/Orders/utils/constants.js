@@ -19,7 +19,11 @@ export const DELIVERY_STATUS = [
 ];
 
 export const customerInitialState = {
-  name: "",
+  firstName: "",
+  lastName: "",
+  country: "",
+  province: "",
+  city: "",
   phone: "",
   address: "",
   email: "",
@@ -33,6 +37,12 @@ export const orderStatusValues = {
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
+};
+export const deliveryStatusValues = {
+  1: "في مده التصنيع",
+  2: "أوشك علي التأخير",
+  3: "تعدي المده",
+  4: "متأخر ",
 };
 
 export const paymentStatusValues = {

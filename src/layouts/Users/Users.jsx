@@ -1,5 +1,4 @@
 import { IconButton } from "@mui/material";
-import axios from "axios";
 import AgGrid from "components/AgGrid/AgGrid";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
@@ -15,6 +14,7 @@ import styles from "./Users.module.css";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { getUserType } from "shared/utils/constants";
 import apiRequest from "shared/functions/apiRequest";
+import axiosRequest from "shared/functions/axiosRequest";
 
 function Users() {
   const [isloading, setIsLoading] = useState(false);
@@ -23,18 +23,6 @@ function Users() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
-
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
 
   const getUsers = () => {
     setIsLoading(true);
@@ -58,7 +46,7 @@ function Users() {
       });
   };
   const deleteUser = () => {
-    axios
+    axiosRequest
       .delete(`${process.env.REACT_APP_API_URL}/users/${selectedUserId}`)
       .then(() => {
         setIsDeleteModalOpenned(false);

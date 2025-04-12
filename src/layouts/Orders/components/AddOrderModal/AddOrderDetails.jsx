@@ -8,7 +8,7 @@ import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { statusoptions } from "layouts/Orders/utils/constants";
 import { PAYMENT_STATUS } from "layouts/Orders/utils/constants";
-import axiosRequest from "shared/functions/axiosRequest";
+import { USER_TYPES_VALUES } from "shared/utils/constants";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -29,9 +29,7 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
   const [downPayment, setDownPayment] = useState(customer?.downPayment);
   const [shippingCost, setShippingCost] = useState(customer?.shippingCost);
   const [toBeCollected, setToBeCollected] = useState(customer?.toBeCollected);
-  const [vendor, setVendor] = useState(customer?.vendor);
-  const [administratorName, setAdministratorName] = useState(customer?.administratorName);
-  const [vendors, setVendors] = useState([]);
+  const [administrator, setAdministrator] = useState(customer?.administrator);
 
   const today = new Date();
   const formattedDate =
@@ -40,13 +38,6 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
     String(today.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(today.getDate()).padStart(2, "0");
-
-  useEffect(() => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
-      const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
-      setVendors([{ label: "هومكس", value: "0" }, ...newData]);
-    });
-  }, []);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -74,34 +65,6 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
             </Select>
           </FormControl>
           <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="vendor">البائع</InputLabel>
-            <Select
-              fullWidth
-              labelId="vendor"
-              id="vendor"
-              value={vendor}
-              label="vendor"
-              onChange={(e) => setVendor(e.target.value)}
-              sx={{ height: 35 }}
-            >
-              {vendors.map((option) => {
-                return (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-          <TextField
-            fullWidth
-            label="المسؤول"
-            value={administratorName}
-            onChange={(e) => setAdministratorName(e.target.value)}
-            type="text"
-            style={{ margin: "5px 0" }}
-          />{" "}
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel id="orderStatus">حالة الدفع</InputLabel>
             <Select
               fullWidth
@@ -113,6 +76,26 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
               sx={{ height: 35 }}
             >
               {PAYMENT_STATUS.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="administratorName">المسؤول</InputLabel>
+            <Select
+              fullWidth
+              labelId="administrator"
+              id="administrator"
+              value={administrator}
+              label="حالة الدفع"
+              onChange={(e) => setAdministrator(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {USER_TYPES_VALUES.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -186,10 +169,8 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
               downPayment,
               shippingCost,
               toBeCollected,
-              vendor,
-              administratorName,
+              administrator,
             });
-            setVendorName(vendors[vendor]?.label);
           }}
           variant="contained"
           style={{ color: "#fff" }}

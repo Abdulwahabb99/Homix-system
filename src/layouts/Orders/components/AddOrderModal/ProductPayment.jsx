@@ -4,6 +4,7 @@ import { Button } from "@mui/material";
 import PropTypes from "prop-types";
 import { orderStatusValues } from "layouts/Orders/utils/constants";
 import { paymentStatusValues } from "layouts/Orders/utils/constants";
+import { getUserType } from "shared/utils/constants";
 
 function ProductPayment({ customer, openAddModal, vendorName }) {
   return (
@@ -25,8 +26,8 @@ function ProductPayment({ customer, openAddModal, vendorName }) {
             <span className={styles.values}>{vendorName} </span>
           </div>
           <div className={styles.paymentDetail}>
-            <label>اسم المسؤول:</label>
-            <span className={styles.values}>{customer?.administratorName} </span>
+            <label> المسؤول:</label>
+            <span className={styles.values}>{getUserType(customer?.administrator)} </span>
           </div>
           <div className={styles.paymentDetail}>
             <label>طريقة الدفع:</label>

@@ -6,7 +6,8 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
-import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
+import { DELIVERY_STATUS, PAYMENT_STATUS, statusoptions } from "../utils/constants";
+import { USER_TYPES_VALUES } from "shared/utils/constants";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -17,7 +18,7 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-const EditOrderModal = ({ open, onEdit, onClose, data }) => {
+const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
@@ -25,6 +26,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.receivedAmount);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
+  const [selectedVendor, setSelectedVendor] = useState(data.selectedVendor);
+  const [deliveryStatus, setDeliveryStatus] = useState(data.deliveryStatus);
+  const [administrator, setAdministrator] = useState(data?.administrator);
 
   const today = new Date();
   const formattedDate =
@@ -71,6 +75,66 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               sx={{ height: 35 }}
             >
               {PAYMENT_STATUS.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="orderStatus">البائع</InputLabel>
+            <Select
+              fullWidth
+              labelId="vendor"
+              id="vendor"
+              value={selectedVendor}
+              label="البائع"
+              onChange={(e) => setSelectedVendor(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {vendors.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="orderStatus">حالة التصنيع</InputLabel>
+            <Select
+              fullWidth
+              labelId="deliveryStatus"
+              id="deliveryStatus"
+              value={deliveryStatus}
+              label="حالة التصنيع"
+              onChange={(e) => setDeliveryStatus(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {DELIVERY_STATUS.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="administratorName">المسؤول</InputLabel>
+            <Select
+              fullWidth
+              labelId="administrator"
+              id="administrator"
+              value={administrator}
+              label="حالة الدفع"
+              onChange={(e) => setAdministrator(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {USER_TYPES_VALUES.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -145,7 +209,10 @@ const EditOrderModal = ({ open, onEdit, onClose, data }) => {
               paymentStatus,
               downPayment,
               toBeCollected,
-              shippingCost
+              shippingCost,
+              selectedVendor,
+              deliveryStatus,
+              administrator
             )
           }
           variant="contained"

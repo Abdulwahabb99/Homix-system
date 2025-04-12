@@ -25,9 +25,10 @@ import "moment-timezone";
 import "moment/locale/ar";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import { useDateRange } from "hooks/useDateRange";
-import { DELIVERY_STATUS, PAYMENT_STATUS } from "./utils/constants";
+import { DELIVERY_STATUS, deliveryStatusValues, PAYMENT_STATUS } from "./utils/constants";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
+import { getUserType } from "shared/utils/constants";
 
 const ITEMS_PER_PAGE = 1;
 const statusValues = {
@@ -102,6 +103,10 @@ function Orders() {
 
   const getStatusValue = (status) => {
     const resultValue = statusValues[status];
+    return resultValue;
+  };
+  const getDeliveryStatusValue = (status) => {
+    const resultValue = deliveryStatusValues[status];
     return resultValue;
   };
   const getPaymentValue = (status) => {
@@ -207,7 +212,10 @@ function Orders() {
     paymentStatus,
     downPayment,
     toBeCollected,
-    receivedAmount
+    receivedAmount,
+    selectedVendor,
+    deliveryStatus,
+    administrator
   ) => {
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
@@ -217,6 +225,9 @@ function Orders() {
         downPayment: downPayment,
         receivedAmount: receivedAmount,
         toBeCollected: toBeCollected,
+        selectedVendor: selectedVendor,
+        deliveryStatus: deliveryStatus,
+        userType: administrator,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
@@ -230,6 +241,8 @@ function Orders() {
               paymentStatus: data.paymentStatus,
               PoDate: data.PoDate,
               receivedAmount: data.receivedAmount,
+              selectedVendor: data.selectedVendor,
+              deliveryStatus: data.deliveryStatus,
             };
           }
           return order;
@@ -257,13 +270,13 @@ function Orders() {
       field: "code",
       headerName: "الكود التعريفي",
       sortable: true,
-      minWidth: 150,
+      minWidth: 110,
     },
     {
       field: "orderNumber",
       headerName: "رقم الطلب",
       sortable: true,
-      minWidth: 110,
+      minWidth: 100,
       cellRenderer: (params) => (
         <LinkRenderer
           data={params.data}
@@ -273,13 +286,27 @@ function Orders() {
         />
       ),
     },
-    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 200 },
+    { field: "customerName", headerName: "اسم العميل", sortable: true, minWidth: 170 },
     {
       field: "status",
       headerName: "حالة الطلب",
       sortable: true,
-      minWidth: 120,
+      minWidth: 100,
       valueGetter: (node) => getStatusValue(node.data.status),
+    },
+    {
+      field: "deliveryStatus",
+      headerName: "حالة التصنيع",
+      sortable: true,
+      minWidth: 130,
+      valueGetter: (node) => getDeliveryStatusValue(node.data.status),
+    },
+    {
+      field: "administrator",
+      headerName: "المسؤول",
+      sortable: true,
+      minWidth: 130,
+      valueGetter: (node) => getUserType(node.data.userType),
     },
     {
       field: "totalPrice",
@@ -298,7 +325,7 @@ function Orders() {
       field: "totalCost",
       headerName: "سعر التكلفة",
       sortable: true,
-      minWidth: 140,
+      minWidth: 100,
       valueGetter: ({ data }) => {
         let ordercost = 0;
         data.items?.forEach((item) => {
@@ -310,20 +337,14 @@ function Orders() {
     {
       field: "paymentStatus",
       headerName: "طريقة الدفع",
-      minWidth: 170,
+      minWidth: 130,
       valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
     {
-      headerName: "تاريخ أمر التصنيع",
+      headerName: "الأيام المنقضيه",
       sortable: true,
       minWidth: 120,
       valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
-    },
-    {
-      field: "days",
-      headerName: "الايام المنقضية",
-      sortable: true,
-      minWidth: 140,
     },
     // {
     //   field: "receivedAmount",
@@ -398,12 +419,13 @@ function Orders() {
           setSearchParams={setSearchParams}
         />
       )}
-      {isEditModalOpen && selectedEditOrder && (
+      {isEditModalOpen && selectedEditOrder && vendors.length > 0 && (
         <EditOrdarModal
           data={selectedEditOrder}
           open={isEditModalOpen}
           onEdit={onEditConfirm}
           onClose={() => setIsEditModalOpen(false)}
+          vendors={vendors}
         />
       )}
 

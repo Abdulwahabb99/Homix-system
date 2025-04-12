@@ -16,13 +16,16 @@ import AddProductModal from "./AddProductModal";
 import { customerDetailsReducer } from "layouts/Orders/utils/reducers";
 import { customerInitialState } from "layouts/Orders/utils/constants";
 import AddOrderDetails from "./AddOrderDetails";
+import axiosRequest from "shared/functions/axiosRequest";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+
+const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function AddOrderModal() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [customerDetails, setCustomerDetails] = useState(null);
-  const [vendorName, setVendorName] = useState("");
+  const [orderDetails, setOrderDetails] = useState(null);
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
 
@@ -34,9 +37,71 @@ function AddOrderModal() {
     setSelectedProduct(product);
     setIsProductModalOpen(false);
   };
-  const handleCustomerDetailsChange = (customer) => {
-    setCustomerDetails(customer);
+  const handleCustomerDetailsChange = (order) => {
+    setOrderDetails(order);
     setIsOrderDetailsModalOpen(false);
+  };
+
+  const addNewOrder = (order) => {
+    axiosRequest
+      .post(`${baseURI}/orders`, {
+        total_discounts: 0,
+        total_line_items_price: selectedProduct.variants[0].price,
+        total_price: selectedProduct.variants[0].price,
+        total_tax: 0,
+        customer: {
+          firstName: state.firstName,
+          lastName: state.lastName,
+          country: state.country,
+          province: state.province,
+          city: state.city,
+          phone: state.phone,
+          address: state.address,
+          email: state.email,
+        },
+        line_items: [
+          {
+            title: selectedProduct.title,
+            name: selectedProduct.title,
+            price: selectedProduct.variants[0].price,
+            product_id: selectedProduct.shopifyId,
+            quantity: 1,
+            variant_id: selectedProduct.variants[0].shopifyId,
+            sku: selectedProduct.variants[0].sku,
+            total_discount: "",
+            discount_allocations: [],
+            shipping_lines: [
+              {
+                price: orderDetails.shippingCost,
+              },
+            ],
+          },
+        ],
+        userType: orderDetails.administrator,
+      })
+      .then(({ data: { data } }) => {
+        const newOrders = orders.map((order) => {
+          if (order.orderId === data.id) {
+            return {
+              ...order,
+              status: data.status,
+              commission: data.commission,
+              toBeCollected: data.toBeCollected,
+              paymentStatus: data.paymentStatus,
+              PoDate: data.PoDate,
+              receivedAmount: data.receivedAmount,
+              selectedVendor: data.selectedVendor,
+              deliveryStatus: data.deliveryStatus,
+            };
+          }
+          return order;
+        });
+        setOrders(newOrders);
+        NotificationMeassage("success", "تم اضافه الطلب بنجاح");
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
   };
 
   return (
@@ -66,8 +131,7 @@ function AddOrderModal() {
           open={() => setIsOrderDetailsModalOpen(true)}
           onClose={() => setIsOrderDetailsModalOpen(false)}
           onConfirm={handleCustomerDetailsChange}
-          customer={customerDetails}
-          setVendorName={setVendorName}
+          customer={orderDetails}
         />
       )}
       <MDBox py={3}>
@@ -146,9 +210,8 @@ function AddOrderModal() {
               </Grid>
               <Grid item xs={12} md={12} lg={12}>
                 <ProductPayment
-                  customer={customerDetails}
+                  customer={orderDetails}
                   openAddModal={() => setIsOrderDetailsModalOpen(true)}
-                  vendorName={vendorName}
                 />
               </Grid>
             </Grid>
@@ -178,7 +241,11 @@ function AddOrderModal() {
           >
             إلغاء
           </Button>
-          <Button onClick={() => {}} variant="contained" style={{ color: "#fff" }}>
+          <Button
+            onClick={() => addNewOrder()}
+            variant="contained"
+            style={{ backgroundColor: "#00314c", color: "#fff" }}
+          >
             اضافه
           </Button>
         </Box>

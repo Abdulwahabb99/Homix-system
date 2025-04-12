@@ -15,10 +15,10 @@ import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
 import { USER_TYPES_VALUES } from "shared/utils/constants";
+import axiosRequest from "shared/functions/axiosRequest";
 
 function AddEditUser({ type }) {
   const navigate = useNavigate();
@@ -31,21 +31,10 @@ function AddEditUser({ type }) {
   const { id } = useParams();
   const user = JSON.parse(localStorage.getItem("user"));
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
   useEffect(() => {
     if (type === "edit") {
       setIsLoading(true);
-      axios
+      axiosRequest
         .get(`${process.env.REACT_APP_API_URL}/users/${id}`)
         .then(({ data }) => {
           if (data === null) {
@@ -71,7 +60,7 @@ function AddEditUser({ type }) {
   }, []);
 
   const addUser = () => {
-    axios
+    axiosRequest
       .post(`${process.env.REACT_APP_API_URL}/users`, {
         firstName,
         lastName,
@@ -90,7 +79,7 @@ function AddEditUser({ type }) {
       });
   };
   const updateUser = () => {
-    axios
+    axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/users/${id}`, {
         firstName,
         lastName,

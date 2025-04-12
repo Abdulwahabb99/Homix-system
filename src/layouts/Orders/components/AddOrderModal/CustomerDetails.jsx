@@ -14,11 +14,21 @@ function CustomerDetails({ handleChange, state }) {
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <TextField
-            name="name"
-            label="اسم العميل"
+            name="firstName"
+            label="اسم الاول"
             variant="outlined"
             fullWidth
-            value={state.name}
+            value={state.firstName}
+            onChange={handleChange}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            name="lastName"
+            label="اسم العائلة"
+            variant="outlined"
+            fullWidth
+            value={state.lastName}
             onChange={handleChange}
           />
         </Grid>
@@ -45,6 +55,39 @@ function CustomerDetails({ handleChange, state }) {
             multiline
           />
         </Grid>
+        <Grid item xs={12}>
+          <TextField
+            name="country"
+            label="البلد"
+            variant="outlined"
+            fullWidth
+            value={state.country}
+            onChange={handleChange}
+            multiline
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            name="province"
+            label="المحافظة"
+            variant="outlined"
+            fullWidth
+            value={state.province}
+            onChange={handleChange}
+            multiline
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            name="city"
+            label="المدينة"
+            variant="outlined"
+            fullWidth
+            value={state.city}
+            onChange={handleChange}
+            multiline
+          />
+        </Grid>
 
         <Grid item xs={12}>
           <TextField
@@ -63,10 +106,14 @@ function CustomerDetails({ handleChange, state }) {
 
 CustomerDetails.propTypes = {
   state: PropTypes.shape({
-    name: PropTypes.string.isRequired,
+    firstName: PropTypes.string.isRequired,
+    lastName: PropTypes.string.isRequired,
     phone: PropTypes.string.isRequired,
     address: PropTypes.string.isRequired,
     email: PropTypes.string,
+    country: PropTypes.string,
+    province: PropTypes.string,
+    city: PropTypes.string,
   }),
   handleChange: PropTypes.func.isRequired,
 };
