@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Container,
@@ -18,6 +17,7 @@ import Spinner from "components/Spinner/Spinner";
 import SearchComponent from "components/SearchComponent/SearchComponent";
 import ProductCard from "./components/ProductCard";
 import styles from "./Products.module.css";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const ITEMS_PER_PAGE = 16;
 
@@ -34,6 +34,8 @@ function Products() {
   const [selectedVendors, setSelectedVendors] = useState(
     searchParams.get("vendorsIds")?.split(",").map(Number) || []
   );
+  const [vendorsIds, setVendorsIds] = useState([]);
+  const [categoriesIds, setCategoriesIds] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState(
     searchParams.get("categoriesIds")?.split(",").map(Number) || []
   );
@@ -41,15 +43,6 @@ function Products() {
 
   const page = parseInt(searchParams.get("page")) || 1;
   const searchQueryParam = searchParams.get("searchQuery") || "";
-
-  useEffect(() => {
-    axios.interceptors.request.use((config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    });
-  }, [user.token]);
 
   const updateURLParams = (params) => {
     setSearchParams((prevParams) => {
@@ -72,12 +65,12 @@ function Products() {
   };
 
   const handleVendorChange = (vendors) => {
-    setSelectedVendors(vendors);
+    setVendorsIds(vendors);
     updateURLParams({ vendorsIds: vendors.join(","), page: 1 });
   };
 
   const handleCategoryChange = (categories) => {
-    setSelectedCategories(categories);
+    setCategoriesIds(categories);
     updateURLParams({ categoriesIds: categories.join(","), page: 1 });
   };
 
@@ -92,7 +85,7 @@ function Products() {
         categoriesIds: selectedCategories.join(","),
         searchQuery: searchQueryParam,
       });
-      const response = await axios.get(`${baseUrl}?${queryParams}`);
+      const response = await axiosRequest.get(`${baseUrl}?${queryParams}`);
       if (response.data.force_logout) {
         localStorage.removeItem("user");
         return navigate("/authentication/sign-in");
@@ -106,17 +99,17 @@ function Products() {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedVendors, selectedCategories, searchQueryParam, navigate]);
+  }, [page, searchQueryParam, categoriesIds, vendorsIds, navigate]);
 
   const getVendors = () => {
-    axios.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
       const vendorOptions = data.map((v) => ({ label: v.name, value: v.id }));
       setVendors([{ label: "هومكس", value: 0 }, ...vendorOptions]);
     });
   };
 
   const getCategories = () => {
-    axios.get(`${process.env.REACT_APP_API_URL}/categories`).then(({ data: { data } }) => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/categories`).then(({ data: { data } }) => {
       const categoryOptions = data.map((c) => ({ label: c.title, value: c.id }));
       setCategories(categoryOptions);
     });
@@ -158,7 +151,10 @@ function Products() {
                       multiple
                       value={selectedVendors}
                       label="الموردين"
-                      onChange={(e) => handleVendorChange(e.target.value)}
+                      onChange={(e) => setSelectedVendors(e.target.value)}
+                      onClose={() => {
+                        handleVendorChange(selectedVendors);
+                      }}
                       sx={{ height: 43 }}
                       renderValue={(selected) =>
                         selected
@@ -196,7 +192,8 @@ function Products() {
                     multiple
                     value={selectedCategories}
                     label="التصنيفات"
-                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    onChange={(e) => setSelectedCategories(e.target.value)}
+                    onClose={() => handleCategoryChange(selectedCategories)}
                     sx={{ height: 43 }}
                     renderValue={(selected) =>
                       selected
