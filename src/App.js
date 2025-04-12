@@ -37,20 +37,6 @@ export default function App() {
   const reduxDispatch = useDispatch();
   const isAdmin = user?.userType === "1";
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user?.token) {
-        config.headers["Authorization"] = `Bearer ${user?.token}`;
-      } else {
-        delete config.headers.Authorization;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   const rtlCache = useMemo(
     () =>
       createCache({

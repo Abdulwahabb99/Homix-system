@@ -24,3 +24,18 @@ export const customerInitialState = {
   address: "",
   email: "",
 };
+
+export const orderStatusValues = {
+  1: "معلق",
+  2: "مؤكد",
+  3: "ملغي",
+  4: "قيد التصنيع ",
+  5: "تم التسليم",
+  6: "مسترجع ",
+  7: "مستبدل ",
+};
+
+export const paymentStatusValues = {
+  1: "مدفوع",
+  2: "دفع عند الاستلام",
+};

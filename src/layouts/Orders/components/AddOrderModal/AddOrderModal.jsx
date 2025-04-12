@@ -1,4 +1,4 @@
-import { Box, Chip, Grid, IconButton, Typography } from "@mui/material";
+import { Box, Button, Chip, Grid, IconButton, Typography } from "@mui/material";
 import React, { useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
@@ -15,10 +15,14 @@ import CustomerDetails from "./CustomerDetails";
 import AddProductModal from "./AddProductModal";
 import { customerDetailsReducer } from "layouts/Orders/utils/reducers";
 import { customerInitialState } from "layouts/Orders/utils/constants";
+import AddOrderDetails from "./AddOrderDetails";
 
 function AddOrderModal() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [customerDetails, setCustomerDetails] = useState(null);
+  const [vendorName, setVendorName] = useState("");
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
 
@@ -29,6 +33,10 @@ function AddOrderModal() {
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
     setIsProductModalOpen(false);
+  };
+  const handleCustomerDetailsChange = (customer) => {
+    setCustomerDetails(customer);
+    setIsOrderDetailsModalOpen(false);
   };
 
   return (
@@ -51,6 +59,15 @@ function AddOrderModal() {
           onClose={() => setIsProductModalOpen(false)}
           onConfirm={handleProductSelect}
           product={selectedProduct}
+        />
+      )}
+      {isOrderDetailsModalOpen && (
+        <AddOrderDetails
+          open={() => setIsOrderDetailsModalOpen(true)}
+          onClose={() => setIsOrderDetailsModalOpen(false)}
+          onConfirm={handleCustomerDetailsChange}
+          customer={customerDetails}
+          setVendorName={setVendorName}
         />
       )}
       <MDBox py={3}>
@@ -128,15 +145,43 @@ function AddOrderModal() {
                 </div>
               </Grid>
               <Grid item xs={12} md={12} lg={12}>
-                <ProductPayment />
+                <ProductPayment
+                  customer={customerDetails}
+                  openAddModal={() => setIsOrderDetailsModalOpen(true)}
+                  vendorName={vendorName}
+                />
               </Grid>
             </Grid>
           </Grid>
           <Grid item xs={12} md={12} lg={5}>
             <CustomerDetails handleChange={changeCustomerChange} state={state} />
           </Grid>
-          {/* second  */}
         </Grid>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent={"flex-end"}
+          width={"100%"}
+          gap={1}
+          mt={2}
+        >
+          <Button
+            onClick={() => navigate("/orders")}
+            variant="contained"
+            sx={{
+              backgroundColor: "#e0e0e0",
+              color: "#333",
+              "&:hover": {
+                backgroundColor: "#e0e0e0",
+              },
+            }}
+          >
+            إلغاء
+          </Button>
+          <Button onClick={() => {}} variant="contained" style={{ color: "#fff" }}>
+            اضافه
+          </Button>
+        </Box>
       </MDBox>
     </DashboardLayout>
   );

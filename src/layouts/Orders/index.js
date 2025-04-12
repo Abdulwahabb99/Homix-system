@@ -27,6 +27,7 @@ import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangeP
 import { useDateRange } from "hooks/useDateRange";
 import { DELIVERY_STATUS, PAYMENT_STATUS } from "./utils/constants";
 import { useSelector } from "react-redux";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const ITEMS_PER_PAGE = 1;
 const statusValues = {
@@ -125,22 +126,9 @@ function Orders() {
     updateParams({ deliveryStatus: value });
   };
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (token) {
-        config.headers["Authorization"] = `Bearer ${token}`;
-      } else {
-        delete config.headers.Authorization;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
   const getVendors = () => {
-    axios
-      .get(`${process.env.REACT_APP_API_URL}/vendors`)
+    axiosRequest
+      .get("/vendors")
       .then(({ data: { data } }) => {
         const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
         setVendors([{ label: "هومكس", value: "0" }, ...newData]);
@@ -152,30 +140,32 @@ function Orders() {
         setIsLoading(false);
       });
   };
-  const fetchOrders = async () => {
+
+  const fetchOrders = () => {
     setIsLoading(true);
-    try {
-      const query = new URLSearchParams({
-        page,
-        size: ITEMS_PER_PAGE,
-        ...(orderNumberParam && { orderNumber: orderNumberParam }),
-        ...(vendorIdParam && { vendorId: vendorIdParam }),
-        ...(orderStatusParam && { status: orderStatusParam }),
-        ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
-        // ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
-        ...(startDate && { startDate: startDate.utc().toISOString() }),
-        ...(endDate && { endDate: endDate.utc().toISOString() }),
-      });
 
-      const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/orders?${query}`);
+    const query = new URLSearchParams({
+      page,
+      size: ITEMS_PER_PAGE,
+      ...(orderNumberParam && { orderNumber: orderNumberParam }),
+      ...(vendorIdParam && { vendorId: vendorIdParam }),
+      ...(orderStatusParam && { status: orderStatusParam }),
+      ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
+      ...(startDate && { startDate: startDate.utc().toISOString() }),
+      ...(endDate && { endDate: endDate.utc().toISOString() }),
+    });
 
-      if (data.force_logout) {
-        localStorage.removeItem("user");
-        navigate("/authentication/sign-in");
-      }
-      const newOrders = data.data.orders
-        .map((order) => {
-          return {
+    axiosRequest
+      .get(`/orders?${query}`)
+      .then(({ data }) => {
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+          return;
+        }
+
+        const newOrders = data.data.orders
+          .map((order) => ({
             orderNumber: order.orderNumber,
             items: order.orderLines,
             totalPrice: order.totalPrice,
@@ -195,17 +185,20 @@ function Orders() {
             receivedAmount: order.receivedAmount,
             totalDiscounts: order.totalDiscounts,
             code: order.name,
-          };
-        })
-        .sort((a, b) => b.orderNumber - a.orderNumber);
-      setOrders(newOrders);
-      setTotalPages(data.data.totalPages);
-    } catch (res) {
-      NotificationMeassage("error", "حدث خطأ");
-    } finally {
-      setIsLoading(false);
-    }
+          }))
+          .sort((a, b) => b.orderNumber - a.orderNumber);
+
+        setOrders(newOrders);
+        setTotalPages(data.data.totalPages);
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
+
   const onEditConfirm = (
     id,
     orderStatus,
@@ -216,7 +209,7 @@ function Orders() {
     toBeCollected,
     receivedAmount
   ) => {
-    axios
+    axiosRequest
       .put(`${baseURI}/orders/${id}`, {
         status: orderStatus,
         commission: commission,

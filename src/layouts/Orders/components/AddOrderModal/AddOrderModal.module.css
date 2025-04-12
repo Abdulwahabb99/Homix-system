@@ -33,8 +33,13 @@
 }
 .removeIcon {
   margin-right: 5px;
-  font-size: 16px;
+  font-size: 18px !important;
 }
 .removeIcon:hover {
   color: #333434 !important;
+}
+.values{
+  font-size: 16px;
+  color: #5c5b5b;
+  margin: 0 5px;
 }

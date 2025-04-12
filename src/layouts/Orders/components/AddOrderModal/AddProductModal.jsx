@@ -17,29 +17,34 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const AddProductModal = ({ open, onClose, onConfirm, product }) => {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(product);
   const [loading, setLoading] = useState(false);
 
-  const fetchProducts = async () => {
+  const fetchProducts = () => {
     setLoading(true);
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/products?searchQuery=${searchText}`
-      );
-      if (response.data.force_logout) {
-        localStorage.removeItem("user");
-        return (window.location.href = "/authentication/sign-in");
-      }
-      setProducts(response.data.data.products);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
-    }
+
+    axiosRequest
+      .get(`/products?searchQuery=${searchText}`)
+      .then((response) => {
+        if (response.data.force_logout) {
+          localStorage.removeItem("user");
+          window.location.href = "/authentication/sign-in";
+          return;
+        }
+        setProducts(response.data.data.products);
+      })
+      .catch((error) => {
+        console.error("Error fetching products:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleVariantCheck = (variant, product) => {
