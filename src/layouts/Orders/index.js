@@ -318,7 +318,7 @@ function Orders() {
         data.items?.forEach((item) => {
           orderPrice += Number(item.price) * Number(item.quantity);
         });
-        return Number(orderPrice);
+        return Number(orderPrice.toFixed(0));
       },
     },
     {

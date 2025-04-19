@@ -11,9 +11,12 @@ import MDTypography from "components/MDTypography";
 import Spinner from "components/Spinner/Spinner";
 import CustomerDetails from "./components/CustomerDetails";
 import {
+  Box,
+  Button,
   Card,
   CardContent,
   CardMedia,
+  Chip,
   FormControl,
   Grid,
   Icon,
@@ -21,6 +24,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  TextField,
   Typography,
   useMediaQuery,
 } from "@mui/material";
@@ -31,6 +35,8 @@ import { ToastContainer } from "react-toastify";
 import OrderInfoCard from "./components/OrderInfoCard";
 import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
+import CloseIcon from "@mui/icons-material/Close";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const itemStatusOptions = [
   { label: "غير مؤكد", value: 1 },
@@ -67,32 +73,26 @@ function OrderDetails() {
   const [orderTotalShipping, setOrderTotalShipping] = useState(null);
   const [orderTotalToBeCollected, setOrderTotalToBeCollected] = useState(null);
   const [orderTotalCost, setOrderTotalCost] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [orderlines, setOrderlines] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editedCommentText, setEditedCommentText] = useState("");
+
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const componentRef = useRef();
   const isSmallScreen = useMediaQuery("(max-width:600px)");
   const isAdmin = user.userType === "1";
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
   });
 
   const changeOrderStatus = (status) => {
-    axios
+    axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
         status: status,
       })
@@ -104,42 +104,9 @@ function OrderDetails() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
-  const handleChangeLinesStatus = (value, id) => {
-    axios
-      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
-        status: value,
-      })
-      .then(() => {
-        setOrderlines((prevDetails) => {
-          return prevDetails?.map((item) => (item.id === id ? { ...item, status: value } : item));
-        });
-        NotificationMeassage("success", "تم التعديل بنجاح");
-      })
-      .catch((error) => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
-  const handleChangeItemStatus = (value, id) => {
-    axios
-      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
-        itemStatus: value,
-      })
-      .then(() => {
-        setOrderlines((prevDetails) => {
-          return prevDetails?.map((item) =>
-            item.id === id ? { ...item, itemStatus: value } : item
-          );
-        });
-        NotificationMeassage("success", "تم التعديل بنجاح");
-      })
-      .catch((error) => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
 
   const onEdit = (notes, cost, id, color, size, material, itemShipping, toBeCollected) => {
-    axios
+    axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
         notes: notes,
         color: color,
@@ -180,11 +147,32 @@ function OrderDetails() {
     const resultValue = PAYMENT_STATUS[status];
     return resultValue;
   };
+
+  const sendNewComment = () => {
+    axiosRequest
+      .post(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`, {
+        text: commentText,
+      })
+      .then((res) => {
+        NotificationMeassage("success", "تم اضافة التعليق");
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    setComments((prev) => [{ text: commentText, createdAt: new Date() }, ...prev]);
+    setCommentText("");
+    sendNewComment();
+  };
+
   useEffect(() => {
     const getOrderDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/orders/${id}`);
+        const { data } = await axiosRequest.get(`${process.env.REACT_APP_API_URL}/orders/${id}`);
         if (data.force_logout) {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");
@@ -205,6 +193,7 @@ function OrderDetails() {
         setOrderTotalToBeCollected(toBeCollected);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
+        setSelectedProduct(data.data.orderLines[0]);
         setOrderStatus(data.data.status);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -309,7 +298,7 @@ function OrderDetails() {
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
                     <Card sx={{ height: "100%" }}>
-                      {Object.keys(orderDetails).length && orderTotalPrice && orderTotalCost && (
+                      {orderDetails && (
                         <OrderInfoCard
                           orderDetails={orderDetails}
                           orderTotalCost={orderTotalCost}
@@ -341,158 +330,155 @@ function OrderDetails() {
                       )}{" "}
                     </Card>
                   </Grid>
-                  {orderlines?.map((product) => {
-                    return (
+                  <Grid item xs={12} md={6} lg={6}>
+                    <Card sx={{ padding: "17px", margin: "10px" }}>
+                      <Box
+                        display="flex"
+                        alignItems="flex-start"
+                        justifyContent={"center"}
+                        flexDirection={"column"}
+                        gap={1}
+                        mt={1}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center" }}>
+                            <img
+                              src={selectedProduct?.product.image}
+                              alt={selectedProduct.title}
+                              width={40}
+                              height={40}
+                              style={{ borderRadius: 4 }}
+                            />
+                            <Typography
+                              sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
+                            >
+                              {selectedProduct?.title}
+                            </Typography>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", margin: "0 20px" }}>
+                            <Typography
+                              sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
+                            >
+                              {Number(selectedProduct?.product.variants[0].price).toFixed(0)} ج.م
+                            </Typography>
+                          </div>
+                        </div>
+                        <Chip
+                          style={{ fontSize: "10px" }}
+                          label={selectedProduct?.product.variants[0].title}
+                          color="primary"
+                          variant="filled"
+                          size="small"
+                          sx={{
+                            backgroundColor: "#f0f0f0",
+                            margin: "2px 2px 2px 0",
+                            border: "1px solid #00000099",
+                            color: "#000",
+                          }}
+                        />
+                      </Box>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={6} lg={6} sx={{ margin: "5px 0" }}>
+                    <Card sx={{ padding: "13px", margin: "10px" }}>
+                      <TextField
+                        fullWidth
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="اكتب تعليقك هنا..."
+                        multiline
+                        variant="outlined"
+                      />
+
+                      <Box mt={2} display="flex" justifyContent="flex-end">
+                        <Button
+                          disabled={!commentText}
+                          variant="text"
+                          sx={{ color: "#007aff" }}
+                          onClick={handleAddComment}
+                        >
+                          إضافة
+                        </Button>
+                      </Box>
+                    </Card>
+                  </Grid>
+                </Grid>
+                {comments.map((comment, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      backgroundColor: "#f9f9f9",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      mb: 1,
+                      border: "1px solid #ddd",
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "14px" }}>
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </Typography>
+
+                    {editingIndex === index ? (
                       <>
-                        <Grid item xs={12} md={4} lg={4} key={product.id}>
-                          <Card
-                            sx={{
-                              maxWidth: 345,
-                              maxHeight: 800,
-                              minHeight: 800,
-                              "@media (max-width: 600px)": {
-                                maxHeight: "none",
-                                maxWidth: "none",
-                              },
+                        <TextField
+                          fullWidth
+                          value={editedCommentText}
+                          onChange={(e) => setEditedCommentText(e.target.value)}
+                          multiline
+                          size="small"
+                          sx={{ mt: 1 }}
+                        />
+                        <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => {
+                              const updated = [...comments];
+                              updated[index].text = editedCommentText;
+                              setComments(updated);
+                              setEditingIndex(null);
                             }}
                           >
-                            <CardMedia
-                              component="img"
-                              image={product.product?.image}
-                              alt={product?.product.title}
-                              sx={{ objectFit: "fill", maxHeight: "200px" }}
-                            />
-                            <CardContent>
-                              <Typography gutterBottom variant="h6" component="div">
-                                {product?.product.title}
-                              </Typography>
-                              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {product.product.vendor?.name}
-                                </Typography>
-                                <div
-                                  onClick={() => {
-                                    setSelectedOrderLine(product);
-                                    setIsEditModalOpenned(true);
-                                  }}
-                                >
-                                  <Icon sx={{ color: "#333", cursor: "pointer" }}>
-                                    <Edit />
-                                  </Icon>
-                                </div>
-                              </div>
-                              <Typography variant="h6" component="div">
-                                السعر الاجمالي{" "}
-                              </Typography>
-                              <Typography variant="body2" color="black">
-                                <span>
-                                  {Number(product?.price).toFixed(0)} ×
-                                  <span style={{ margin: "0 10px" }}>
-                                    {Number(product?.price) * Number(product?.quantity)}
-                                  </span>
-                                  {product?.quantity}
-                                </span>
-                              </Typography>
-                              <Typography variant="h6" component="div">
-                                اجمالي التكلفة{" "}
-                              </Typography>
-                              <Typography variant="body2" color="black">
-                                <span>
-                                  {Number(product?.unitCost).toFixed(0)} ×
-                                  <span style={{ margin: "0 10px" }}>
-                                    {(
-                                      Number(product?.unitCost) * Number(product?.quantity)
-                                    ).toFixed(0)}
-                                  </span>
-                                  {product?.quantity}
-                                </span>
-                              </Typography>
-                              <Typography variant="h6" component="div">
-                                اللون{" "}
-                              </Typography>
-                              <Typography variant="body2" color="black">
-                                {product?.color}
-                              </Typography>
-                              <Typography variant="h6" component="div">
-                                المقاس{" "}
-                              </Typography>
-                              <Typography variant="body2" color="black">
-                                {product?.size || ""}
-                              </Typography>
-                              <Typography variant="h6" component="div">
-                                الخامات{" "}
-                              </Typography>
-                              <Typography
-                                sx={{ fontSize: "14px", fontWeight: "300" }}
-                                color="black"
-                              >
-                                {product?.material || ""}
-                              </Typography>
-                              <FormControl style={{ margin: "12px 0 0 0", width: "100%" }}>
-                                <InputLabel id="lineStatus">حالة التصنيع</InputLabel>
-                                <Select
-                                  labelId="lineStatus"
-                                  id="lineStatus-select"
-                                  value={product.status}
-                                  label="حالة التصنيع"
-                                  onChange={(e) =>
-                                    handleChangeLinesStatus(e.target.value, product.id)
-                                  }
-                                  sx={{ height: 35, background: "#eee" }}
-                                >
-                                  {lineStatusOptions.map((option) => {
-                                    return (
-                                      <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
-                                      </MenuItem>
-                                    );
-                                  })}
-                                </Select>
-                              </FormControl>
-                              <FormControl style={{ margin: "15px 0", width: "100%" }}>
-                                <InputLabel id="itemStatus">حالة الطلب</InputLabel>
-                                <Select
-                                  labelId="itemStatus"
-                                  id="itemStatus-select"
-                                  value={product.itemStatus}
-                                  label="حالة الطلب"
-                                  onChange={(e) =>
-                                    handleChangeItemStatus(e.target.value, product.id)
-                                  }
-                                  sx={{ height: 35, background: "#eee" }}
-                                  disabled={user?.userType !== "1"}
-                                >
-                                  {itemStatusOptions.map((option) => {
-                                    return (
-                                      <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
-                                      </MenuItem>
-                                    );
-                                  })}
-                                </Select>
-                              </FormControl>
-                              {product?.notes && (
-                                <>
-                                  <Typography variant="h6" component="div">
-                                    الملاحظات
-                                  </Typography>
-                                  <Typography
-                                    gutterBottom
-                                    variant="caption"
-                                    component="div"
-                                    className={styles.notes}
-                                  >
-                                    {product?.notes}
-                                  </Typography>
-                                </>
-                              )}{" "}
-                            </CardContent>
-                          </Card>
-                        </Grid>
+                            حفظ
+                          </Button>
+                          <Button
+                            variant="text"
+                            size="small"
+                            color="error"
+                            onClick={() => setEditingIndex(null)}
+                          >
+                            إلغاء
+                          </Button>
+                        </Box>
                       </>
-                    );
-                  })}
-                </Grid>
+                    ) : (
+                      <>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
+                            {comment.text}
+                          </Typography>
+
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              setEditingIndex(index);
+                              setEditedCommentText(comment.text);
+                            }}
+                          >
+                            تعديل
+                          </Button>
+                        </Box>
+                      </>
+                    )}
+                  </Box>
+                ))}
               </MDBox>
             </MDBox>
           </>
