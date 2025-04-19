@@ -74,9 +74,9 @@ export const useDateRange = ({
       // Update URL
       if (queryParams) {
         const urlParams = new URLSearchParams(window.location.search);
-        urlParams.set("startDate", newStart.format(format));
+        urlParams.set("startDate", newStart.locale("en").format(format));
         if (useEndDate && newEnd) {
-          urlParams.set("endDate", newEnd.format(format));
+          urlParams.set("endDate", newEnd.locale("en").format(format));
         }
 
         const url = new URL(window.location.href);
