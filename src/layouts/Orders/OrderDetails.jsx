@@ -6,6 +6,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styles from "./Orders.module.css";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import PictureAsPdf from "@mui/icons-material/PictureAsPdf";
 import MDTypography from "components/MDTypography";
 import Spinner from "components/Spinner/Spinner";
@@ -33,29 +35,15 @@ import OrderInfoCard from "./components/OrderInfoCard";
 import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
-import { getUserType } from "shared/utils/constants";
-
-const itemStatusOptions = [
-  { label: "غير مؤكد", value: 1 },
-  { label: "مؤكد", value: 2 },
-  { label: "ملغي", value: 3 },
-];
-const lineStatusOptions = [
-  { label: "قيد التصنيع​", value: 1 },
-  { label: "مرفوض ", value: 2 },
-  { label: "جاهز للشحن​", value: 3 },
-  { label: "جاري التوصيل", value: 4 },
-  { label: "تم التوصيل​", value: 5 },
-];
 
 const statusoptions = [
   { label: "معلق", value: 1 },
-  { label: "قيد التنفيذ", value: 2 },
-  { label: "نصف مكتمل", value: 3 },
-  { label: "جاري التوصيل ", value: 4 },
-  { label: "تم التوصيل", value: 5 },
-  { label: "ملغي ", value: 6 },
-  { label: "استبدال ", value: 7 },
+  { label: "مؤكد", value: 2 },
+  { label: "ملغي", value: 3 },
+  { label: "قيد التصنيع ", value: 4 },
+  { label: "تم التسليم", value: 5 },
+  { label: "مسترجع ", value: 6 },
+  { label: "مستبدل ", value: 7 },
 ];
 
 const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
@@ -156,6 +144,31 @@ function OrderDetails() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
+  const updateComment = (noteId) => {
+    axiosRequest
+      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`, {
+        text: editedCommentText,
+      })
+      .then((res) => {
+        NotificationMeassage("success", "تم تعديل التعليق");
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+  const deleteComment = (noteId) => {
+    axiosRequest
+      .delete(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`)
+      .then(() => {
+        const updatedComments = comments.filter((comment) => comment.id !== noteId);
+        setComments(updatedComments);
+
+        NotificationMeassage("success", "تم حذف التعليق");
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
@@ -204,7 +217,6 @@ function OrderDetails() {
 
     getOrderDetails();
   }, []);
-  console.log(comments);
 
   return (
     <>
@@ -332,7 +344,7 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "22px", margin: "10px" }}>
+                    <Card sx={{ padding: "20px", margin: "10px" }}>
                       {orderlines.map((order) => {
                         return (
                           <>
@@ -401,14 +413,32 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6} sx={{ margin: "5px 0" }}>
-                    <Card sx={{ padding: "13px", margin: "10px" }}>
+                    <Card sx={{ padding: "0 13px", margin: "10px" }}>
                       <TextField
                         fullWidth
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="اكتب تعليقك هنا..."
                         multiline
+                        rows={2}
                         variant="outlined"
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            "& fieldset": {
+                              borderColor: "#999",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: "#115293",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#0d47a1",
+                            },
+                          },
+                          "& .MuiInputBase-input::placeholder": {
+                            color: "#999",
+                            opacity: 1,
+                          },
+                        }}
                       />
 
                       <Box mt={2} display="flex" justifyContent="flex-end">
@@ -493,6 +523,7 @@ function OrderDetails() {
                                 updated[index].text = editedCommentText;
                                 setComments(updated);
                                 setEditingIndex(null);
+                                updateComment(comment.id);
                               }}
                             >
                               حفظ
@@ -513,16 +544,27 @@ function OrderDetails() {
                             <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
                               {comment.text}
                             </Typography>
-
-                            <Button
-                              size="small"
-                              onClick={() => {
-                                setEditingIndex(index);
-                                setEditedCommentText(comment.text);
-                              }}
-                            >
-                              تعديل
-                            </Button>
+                            <Box display="flex" gap={1} alignItems="center">
+                              <IconButton
+                                fontSize="small"
+                                color="secondary"
+                                onClick={() => {
+                                  setEditingIndex(index);
+                                  setEditedCommentText(comment.text);
+                                }}
+                              >
+                                <EditIcon />
+                              </IconButton>{" "}
+                              <IconButton
+                                fontSize="small"
+                                color="error"
+                                onClick={() => {
+                                  deleteComment(comment.id);
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>{" "}
+                            </Box>
                           </Box>
                         </>
                       )}

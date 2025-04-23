@@ -4,7 +4,6 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Spinner from "components/Spinner/Spinner";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
 import {
   FormControl,
   Grid,
@@ -30,7 +29,7 @@ import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import { getUserType } from "shared/utils/constants";
 
-const ITEMS_PER_PAGE = 1;
+const ITEMS_PER_PAGE = 150;
 const statusValues = {
   1: "معلق",
   2: "مؤكد",
@@ -225,7 +224,7 @@ function Orders() {
         downPayment: downPayment,
         receivedAmount: receivedAmount,
         toBeCollected: toBeCollected,
-        selectedVendor: selectedVendor,
+        vendor: selectedVendor,
         deliveryStatus: deliveryStatus,
         userType: administrator,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
