@@ -79,25 +79,9 @@ function AddOrderModal() {
         ],
         userType: orderDetails.administrator,
       })
-      .then(({ data: { data } }) => {
-        const newOrders = orders.map((order) => {
-          if (order.orderId === data.id) {
-            return {
-              ...order,
-              status: data.status,
-              commission: data.commission,
-              toBeCollected: data.toBeCollected,
-              paymentStatus: data.paymentStatus,
-              PoDate: data.PoDate,
-              receivedAmount: data.receivedAmount,
-              selectedVendor: data.selectedVendor,
-              deliveryStatus: data.deliveryStatus,
-            };
-          }
-          return order;
-        });
-        setOrders(newOrders);
+      .then(() => {
         NotificationMeassage("success", "تم اضافه الطلب بنجاح");
+        navigate("/orders");
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");

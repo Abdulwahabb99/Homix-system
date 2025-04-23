@@ -205,7 +205,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {orderDetails.receivedAmount} LE
+              {orderDetails.downPayment} LE
             </Grid>
           </Grid>
           <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}>
@@ -217,7 +217,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {Number(orderDetails.totalPrice) - Number(orderDetails.receivedAmount)} LE
+              {Number(orderDetails.totalPrice) - Number(orderDetails.downPayment)} LE
             </Grid>
           </Grid>
         </Grid>

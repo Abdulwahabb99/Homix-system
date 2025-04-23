@@ -14,8 +14,6 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
-  CardMedia,
   Chip,
   FormControl,
   Grid,
@@ -29,14 +27,13 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
-import { Edit } from "@mui/icons-material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
 import OrderInfoCard from "./components/OrderInfoCard";
 import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
-import CloseIcon from "@mui/icons-material/Close";
 import axiosRequest from "shared/functions/axiosRequest";
+import { getUserType } from "shared/utils/constants";
 
 const itemStatusOptions = [
   { label: "غير مؤكد", value: 1 },
@@ -73,7 +70,6 @@ function OrderDetails() {
   const [orderTotalShipping, setOrderTotalShipping] = useState(null);
   const [orderTotalToBeCollected, setOrderTotalToBeCollected] = useState(null);
   const [orderTotalCost, setOrderTotalCost] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [orderlines, setOrderlines] = useState([]);
   const [commentText, setCommentText] = useState("");
@@ -187,14 +183,18 @@ function OrderDetails() {
           itemShipping += Number(item.itemShipping);
           toBeCollected += Number(item.toBeCollected);
         });
+
         setOrderTotalPrice(orderPrice);
         setOrderTotalCost(ordercost);
         setOrderTotalShipping(itemShipping);
         setOrderTotalToBeCollected(toBeCollected);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
-        setSelectedProduct(data.data.orderLines[0]);
         setOrderStatus(data.data.status);
+        const orderedComments = data.data?.notesList.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setComments(orderedComments);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -204,6 +204,7 @@ function OrderDetails() {
 
     getOrderDetails();
   }, []);
+  console.log(comments);
 
   return (
     <>
@@ -331,59 +332,72 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "17px", margin: "10px" }}>
-                      <Box
-                        display="flex"
-                        alignItems="flex-start"
-                        justifyContent={"center"}
-                        flexDirection={"column"}
-                        gap={1}
-                        mt={1}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center" }}>
-                            <img
-                              src={selectedProduct?.product.image}
-                              alt={selectedProduct.title}
-                              width={40}
-                              height={40}
-                              style={{ borderRadius: 4 }}
-                            />
-                            <Typography
-                              sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
+                    <Card sx={{ padding: "22px", margin: "10px" }}>
+                      {orderlines.map((order) => {
+                        return (
+                          <>
+                            <Box
+                              display="flex"
+                              alignItems="flex-start"
+                              justifyContent={"center"}
+                              flexDirection={"column"}
+                              gap={1}
+                              mt={1}
+                              key={order.id}
                             >
-                              {selectedProduct?.title}
-                            </Typography>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", margin: "0 20px" }}>
-                            <Typography
-                              sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
-                            >
-                              {Number(selectedProduct?.product.variants[0].price).toFixed(0)} ج.م
-                            </Typography>
-                          </div>
-                        </div>
-                        <Chip
-                          style={{ fontSize: "10px" }}
-                          label={selectedProduct?.product.variants[0].title}
-                          color="primary"
-                          variant="filled"
-                          size="small"
-                          sx={{
-                            backgroundColor: "#f0f0f0",
-                            margin: "2px 2px 2px 0",
-                            border: "1px solid #00000099",
-                            color: "#000",
-                          }}
-                        />
-                      </Box>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  width: "100%",
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                  <img
+                                    src={order?.product.image}
+                                    alt={order.title}
+                                    width={40}
+                                    height={40}
+                                    style={{ borderRadius: 4 }}
+                                  />
+                                  <Typography
+                                    sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
+                                  >
+                                    {order?.title}
+                                  </Typography>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    margin: "0 20px",
+                                  }}
+                                >
+                                  <Typography
+                                    sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
+                                  >
+                                    {Number(order?.product.variants[0].price).toFixed(0)} ج.م
+                                  </Typography>
+                                </div>
+                              </div>
+                              <Chip
+                                style={{ fontSize: "10px" }}
+                                label={order?.product.variants[0].title}
+                                color="primary"
+                                variant="filled"
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#f0f0f0",
+                                  margin: "2px 2px 2px 0",
+                                  border: "1px solid #00000099",
+                                  color: "#000",
+                                }}
+                              />
+                            </Box>
+                          </>
+                        );
+                      })}
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6} sx={{ margin: "5px 0" }}>
@@ -410,75 +424,111 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                 </Grid>
-                {comments.map((comment, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      backgroundColor: "#f9f9f9",
-                      padding: "10px",
-                      borderRadius: "8px",
-                      mb: 1,
-                      border: "1px solid #ddd",
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "14px" }}>
-                      {new Date(comment.createdAt).toLocaleString()}
-                    </Typography>
+                {comments.map((comment, index) => {
+                  const commentMaker =
+                    comment.userId === 1
+                      ? "أدمن"
+                      : comment.userId === 3
+                      ? "عمليات"
+                      : comment.userId === 4
+                      ? "لوجستي"
+                      : comment.userId === 2
+                      ? `${comment.firstName} ${comment.lastName}`
+                      : "";
 
-                    {editingIndex === index ? (
-                      <>
-                        <TextField
-                          fullWidth
-                          value={editedCommentText}
-                          onChange={(e) => setEditedCommentText(e.target.value)}
-                          multiline
-                          size="small"
-                          sx={{ mt: 1 }}
-                        />
-                        <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
-                          <Button
-                            variant="text"
+                  return (
+                    <Box
+                      key={index}
+                      sx={{
+                        backgroundColor: "#f9f9f9",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        mb: 1,
+                        border: "1px solid #ddd",
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1}>
+                        {" "}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: "14px" }}
+                        >
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </Typography>
+                        {commentMaker && (
+                          <Chip
+                            style={{ fontSize: "10px" }}
+                            label={commentMaker}
+                            color="primary"
+                            variant="filled"
                             size="small"
-                            onClick={() => {
-                              const updated = [...comments];
-                              updated[index].text = editedCommentText;
-                              setComments(updated);
-                              setEditingIndex(null);
+                            sx={{
+                              backgroundColor: "#f0f0f0",
+                              margin: "2px 2px 2px 0",
+                              border: "1px solid #00000099",
+                              color: "#000",
+                              padding: "0 5px",
                             }}
-                          >
-                            حفظ
-                          </Button>
-                          <Button
-                            variant="text"
-                            size="small"
-                            color="error"
-                            onClick={() => setEditingIndex(null)}
-                          >
-                            إلغاء
-                          </Button>
-                        </Box>
-                      </>
-                    ) : (
-                      <>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
-                            {comment.text}
-                          </Typography>
+                          />
+                        )}
+                      </Box>
 
-                          <Button
+                      {editingIndex === index ? (
+                        <>
+                          <TextField
+                            fullWidth
+                            value={editedCommentText}
+                            onChange={(e) => setEditedCommentText(e.target.value)}
+                            multiline
                             size="small"
-                            onClick={() => {
-                              setEditingIndex(index);
-                              setEditedCommentText(comment.text);
-                            }}
-                          >
-                            تعديل
-                          </Button>
-                        </Box>
-                      </>
-                    )}
-                  </Box>
-                ))}
+                            sx={{ mt: 1 }}
+                          />
+                          <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
+                            <Button
+                              variant="text"
+                              size="small"
+                              onClick={() => {
+                                const updated = [...comments];
+                                updated[index].text = editedCommentText;
+                                setComments(updated);
+                                setEditingIndex(null);
+                              }}
+                            >
+                              حفظ
+                            </Button>
+                            <Button
+                              variant="text"
+                              size="small"
+                              color="error"
+                              onClick={() => setEditingIndex(null)}
+                            >
+                              إلغاء
+                            </Button>
+                          </Box>
+                        </>
+                      ) : (
+                        <>
+                          <Box display="flex" justifyContent="space-between">
+                            <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
+                              {comment.text}
+                            </Typography>
+
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setEditingIndex(index);
+                                setEditedCommentText(comment.text);
+                              }}
+                            >
+                              تعديل
+                            </Button>
+                          </Box>
+                        </>
+                      )}
+                    </Box>
+                  );
+                })}
               </MDBox>
             </MDBox>
           </>
