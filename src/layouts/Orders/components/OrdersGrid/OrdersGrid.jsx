@@ -50,10 +50,7 @@ function OrdersGrid({
         </div>
 
         <div className={styles.resetBtnBox}>
-          <IconButton
-            fontSize="small"
-            onClick={onExportClick}
-          >
+          <IconButton fontSize="small" onClick={onExportClick}>
             <DownloadIcon />
           </IconButton>{" "}
           <IconButton

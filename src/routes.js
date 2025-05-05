@@ -15,6 +15,7 @@ const Factories = React.lazy(() =>
   import(/* webpackPrefetch: true */ "layouts/Factories/Factories")
 );
 const Users = React.lazy(() => import("./layouts/Users/Users"));
+const Shipments = React.lazy(() => import("./layouts/Shipments/Shipments"));
 const user = JSON.parse(localStorage.getItem("user"));
 
 const routes = [
@@ -115,6 +116,18 @@ const routes = [
     component: (
       <ProtectedRoutes>
         <Users />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "الشحنات",
+    key: "shipments",
+    icon: <Icon fontSize="small">group</Icon>,
+    route: "/shipments",
+    component: (
+      <ProtectedRoutes>
+        <Shipments />
       </ProtectedRoutes>
     ),
   },

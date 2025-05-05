@@ -1,0 +1,72 @@
+.searchContainer {
+  margin: 0px 25px 16px 0;
+}
+.orderDetailsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px auto;
+  width: 98%;
+}
+.imageContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.productimage {
+  display: flex;
+  align-items: center;
+}
+.productname {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.productname:hover {
+  text-decoration: underline;
+}
+.notes {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 56px;
+}
+.pdfLogoContainer {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 2rem 0 0 3.2rem;
+}
+.invoice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 1rem 3rem 0 0;
+}
+.billingDetails {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 1rem 0 0 1rem;
+}
+.billingPrice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 1rem 1rem 0 0;
+}
+.DescriptionContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0 1rem 0;
+}
+.width80 {
+  margin: 0 auto;
+  width: 80%;
+}

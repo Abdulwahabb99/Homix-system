@@ -1,7 +1,6 @@
 .DateRangePickerInput__withBorder {
-    border-radius: 8px !important;
-  }
-  .DateRangePicker_picker{
-    z-index: 10000000;
-  }
-  
+  border-radius: 8px !important;
+}
+.DateRangePicker_picker {
+  z-index: 10000000;
+}

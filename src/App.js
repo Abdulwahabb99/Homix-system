@@ -24,6 +24,7 @@ import { setUser } from "store/slices/authSlice";
 import axios from "axios";
 import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
+import ShipmentDetails from "./layouts/Shipments/components/ShipmentDetails";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -137,6 +138,14 @@ export default function App() {
               element={
                 <ProtectedRoutes>
                   <AddOrderModal to="/orders/add" />
+                </ProtectedRoutes>
+              }
+            />
+            <Route
+              path="/shipments/:id"
+              element={
+                <ProtectedRoutes>
+                  <ShipmentDetails to="/shipments/:id" />
                 </ProtectedRoutes>
               }
             />

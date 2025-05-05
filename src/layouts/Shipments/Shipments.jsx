@@ -1,0 +1,461 @@
+import React, { useEffect, useReducer } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import Spinner from "components/Spinner/Spinner";
+import { ToastContainer } from "react-toastify";
+import axiosRequest from "shared/functions/axiosRequest";
+import {
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Pagination,
+  Select,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { useSelector } from "react-redux";
+import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
+import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
+import moment from "moment";
+import { useDateRange } from "hooks/useDateRange";
+import OrdersGrid from "layouts/Orders/components/OrdersGrid/OrdersGrid";
+import EditShipmentModal from "./components/EditShipmentModal";
+const ITEMS_PER_PAGE = 150;
+
+// Reducer Initial State
+const initialState = {
+  shipments: [],
+  isLoading: false,
+  totalPages: 0,
+  error: null,
+  selectedOrderStatus: "",
+  selectedVendor: "",
+  selectedPaymentStatus: "",
+  selectedDeliveryStatus: "",
+  startDate: null,
+  endDate: null,
+  vendors: [],
+  isModalOpen: false,
+  selectedShipment: null,
+};
+
+// Reducer Function
+function reducer(state, action) {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, isLoading: true };
+    case "FETCH_SUCCESS":
+      return {
+        ...state,
+        isLoading: false,
+        shipments: action.payload.shipments,
+        totalPages: action.payload.totalPages,
+      };
+    case "FETCH_ERROR":
+      return { ...state, isLoading: false, error: action.payload };
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_VENDORS":
+      return { ...state, vendors: action.payload };
+    case "SET_Modal_open":
+      return { ...state, isModalOpen: action.payload };
+    default:
+      return state;
+  }
+}
+
+export default function Shipments() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const isVendor = user.userType === "2";
+  const { startDate, endDate, handleDatesChange } = useDateRange({
+    defaultDays: 0,
+  });
+
+  const page = parseInt(searchParams.get("page")) || 1;
+
+  const getShipments = () => {
+    const query = new URLSearchParams({
+      page,
+      size: ITEMS_PER_PAGE,
+      ...(state.selectedOrderStatus && { status: state.selectedOrderStatus }),
+      ...(state.selectedVendor && { vendorId: state.selectedVendor }),
+      ...(state.selectedPaymentStatus && { paymentStatus: state.selectedPaymentStatus }),
+      ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
+      ...(startDate && { startDate: startDate.utc().toISOString() }),
+      ...(endDate && { endDate: endDate.utc().toISOString() }),
+    });
+
+    dispatch({ type: "FETCH_START" });
+
+    axiosRequest
+      .get(`${process.env.REACT_APP_API_URL}/shipments`)
+      .then(({ data }) => {
+        if (data.force_logout) {
+          localStorage.removeItem("user");
+          navigate("/authentication/sign-in");
+          return;
+        }
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: {
+            shipments: data.data.shipments,
+            totalPages: data.data.totalPages,
+          },
+        });
+      })
+      .catch((error) => {
+        dispatch({ type: "FETCH_ERROR", payload: error });
+      });
+  };
+
+  const fetchVendors = () => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
+      const options = data.map((v) => ({ label: v.name, value: v.id }));
+      dispatch({ type: "SET_VENDORS", payload: options });
+    });
+  };
+
+  const handleChange = (field) => (e) => {
+    dispatch({ type: "SET_FIELD", field, value: e.target.value });
+  };
+
+  const handleReset = () => {
+    navigate("/shipments", { replace: true });
+  };
+  const handleModalOpen = () => {
+    dispatch({ type: "SET_Modal_open", payload: true });
+  };
+  const handleModalClose = () => {
+    dispatch({ type: "SET_Modal_open", payload: false });
+  };
+  const handleEditShipment = (
+    orderId,
+    shipmentStatus,
+    shipmentType,
+    governorate,
+    shippingCompany,
+    shippingFees,
+    shippingReceiveDate,
+    deliveryDate
+  ) => {
+    console.log(
+      orderId,
+      shipmentStatus,
+      shipmentType,
+      governorate,
+      shippingCompany,
+      shippingFees,
+      shippingReceiveDate,
+      deliveryDate
+    );
+
+    axiosRequest
+      .post(`${process.env.REACT_APP_API_URL}/shipments`, {
+        orderId,
+        shipmentStatus,
+        shipmentType,
+        governorate,
+        shippingCompany,
+        shippingFees,
+        shippingReceiveDate,
+        deliveryDate,
+      })
+      .then(({ data }) => {
+        console.log(data);
+        dispatch({ type: "SET_Modal_open", payload: false });
+
+        // dispatch({
+        //   type: "FETCH_SUCCESS",
+        //   payload: {
+        //     shipments: data.data.shipments,
+        //     totalPages: data.data.totalPages,
+        //   },
+        // });
+      })
+      .catch((error) => {
+        dispatch({ type: "FETCH_ERROR", payload: error });
+      });
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  useEffect(() => {
+    getShipments();
+  }, [
+    page,
+    state.selectedOrderStatus,
+    state.selectedVendor,
+    state.selectedPaymentStatus,
+    state.selectedDeliveryStatus,
+    startDate,
+    endDate,
+  ]);
+
+  const handlePageChange = (_, value) => {
+    updateParams({ page: value });
+  };
+
+  const updateShipment = (shipment) => {
+    dispatch({ type: "SET_FIELD", field: "selectedOrderStatus", value: shipment });
+  };
+
+  const colDefs = [
+    {
+      field: "code",
+      headerName: "الكود التعريفي",
+      sortable: true,
+      minWidth: 110,
+    },
+    {
+      field: "orderNumber",
+      headerName: "رقم الطلب",
+      sortable: true,
+      minWidth: 100,
+      cellRenderer: (params) => (
+        <LinkRenderer
+          data={params.data}
+          value={params.data.orderNumber}
+          openInNewTab
+          url={`/shipments/${params.data.id}`}
+        />
+      ),
+    },
+    {
+      field: "customerName",
+      headerName: "اسم العميل",
+      sortable: true,
+      minWidth: 170,
+      valueGetter: ({ data }) => {
+        return `${data.customer?.firstName} ${data.customer?.lastName}`;
+      },
+    },
+    {
+      field: "status",
+      headerName: "حالة الطلب",
+      sortable: true,
+      minWidth: 100,
+      // valueGetter: (node) => getStatusValue(node.data.status),
+    },
+    {
+      field: "deliveryStatus",
+      headerName: "حالة التصنيع",
+      sortable: true,
+      minWidth: 130,
+      // valueGetter: (node) => getDeliveryStatusValue(node.data.status),
+    },
+    {
+      field: "administrator",
+      headerName: "المسؤول",
+      sortable: true,
+      minWidth: 130,
+      // valueGetter: (node) => getUserType(node.data.userType),
+    },
+    {
+      field: "totalPrice",
+      headerName: "سعر البيع",
+      sortable: false,
+      minWidth: 100,
+      valueGetter: ({ data }) => {
+        let orderPrice = 0;
+        data.items?.forEach((item) => {
+          orderPrice += Number(item.price) * Number(item.quantity);
+        });
+        return Number(orderPrice.toFixed(0));
+      },
+    },
+    {
+      field: "totalCost",
+      headerName: "سعر التكلفة",
+      sortable: true,
+      minWidth: 100,
+      valueGetter: ({ data }) => {
+        let ordercost = 0;
+        data.items?.forEach((item) => {
+          ordercost += Number(item.unitCost) * Number(item.quantity);
+        });
+        return Number(ordercost).toFixed(0);
+      },
+    },
+    {
+      field: "paymentStatus",
+      headerName: "طريقة الدفع",
+      minWidth: 130,
+      // valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
+    },
+    {
+      headerName: "الأيام المنقضيه",
+      sortable: true,
+      minWidth: 120,
+      // valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
+    },
+    // {
+    //   field: "receivedAmount",
+    //   headerName: "تكلفة الشحن",
+    //   sortable: true,
+    //   minWidth: 140,
+    // },
+    {
+      field: "toBeCollected",
+      headerName: "المبلغ المطلوب تحصيله",
+      minWidth: 175,
+    },
+    {
+      field: "commission",
+      headerName: "عمولة المنصة",
+      minWidth: 130,
+    },
+    {
+      field: "date",
+      headerName: "التاريخ",
+      sortable: true,
+      minWidth: 100,
+      // valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
+    },
+    ...(!isVendor
+      ? [
+          {
+            headerName: "",
+            minWidth: 120,
+            sortable: false,
+            cellRenderer: (params) => {
+              return (
+                <IconButton
+                  onClick={() => {
+                    handleModalOpen();
+                    dispatch({ type: "SET_FIELD", field: "selectedShipment", value: params.data });
+                  }}
+                  sx={{ fontSize: "1.2rem" }}
+                >
+                  <EditIcon />
+                </IconButton>
+              );
+            },
+          },
+        ]
+      : []),
+  ];
+
+  const { shipments, isLoading, vendors } = state;
+
+  return (
+    <DashboardLayout>
+      <DashboardNavbar />
+      <ToastContainer />
+      {state.isModalOpen && (
+        <EditShipmentModal
+          open={state.isModalOpen}
+          onClose={handleModalClose}
+          data={state.selectedShipment}
+          vendors={vendors}
+          onEdit={handleEditShipment}
+        />
+      )}
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <>
+          <Grid container spacing={2}>
+            <Grid item xs={6} md={4} lg={3}>
+              <FormControl fullWidth>
+                <InputLabel>حالة الطلب</InputLabel>
+                <Select
+                  value={state.selectedOrderStatus}
+                  onChange={handleChange("selectedOrderStatus")}
+                  label="حالة الطلب"
+                  sx={{ height: 40 }}
+                >
+                  {/* Map Status Options Here */}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {!isVendor && (
+              <>
+                <Grid item xs={6} md={4} lg={3}>
+                  <FormControl fullWidth>
+                    <InputLabel>المصنعين</InputLabel>
+                    <Select
+                      value={state.selectedVendor}
+                      onChange={handleChange("selectedVendor")}
+                      label="المصنعين"
+                      sx={{ height: 40 }}
+                    >
+                      {vendors.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={6} md={4} lg={3}>
+                  <FormControl fullWidth>
+                    <InputLabel>حالة الدفع</InputLabel>
+                    <Select
+                      value={state.selectedPaymentStatus}
+                      onChange={handleChange("selectedPaymentStatus")}
+                      label="حالة الدفع"
+                      sx={{ height: 40 }}
+                    >
+                      {/* Map Payment Status Options Here */}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={6} md={4} lg={3}>
+                  <FormControl fullWidth>
+                    <InputLabel>حالة التصنيع</InputLabel>
+                    <Select
+                      value={state.selectedDeliveryStatus}
+                      onChange={handleChange("selectedDeliveryStatus")}
+                      label="حالة التصنيع"
+                      sx={{ height: 40 }}
+                    >
+                      {/* Map Delivery Status Options Here */}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </>
+            )}
+
+            <Grid item xs={12} md={6} lg={4}>
+              <DateRangePickerWrapper
+                startDate={startDate}
+                endDate={endDate}
+                allowPastDays={true}
+                allowFutureDays={false}
+                useDefaultPresets={true}
+                handleDatesChange={handleDatesChange}
+              />
+            </Grid>
+          </Grid>
+
+          <OrdersGrid
+            rowData={shipments}
+            columnDefs={colDefs}
+            defaultColDef={{
+              resizable: true,
+            }}
+            handleSearchClick={() => setIsSearchModalOpen(true)}
+            handleReset={handleReset}
+            enableExcel
+          />
+          <Pagination
+            count={state.totalPages}
+            page={page}
+            onChange={handlePageChange}
+            sx={{ display: "flex", justifyContent: "center", marginTop: "55px" }}
+          />
+        </>
+      )}
+    </DashboardLayout>
+  );
+}

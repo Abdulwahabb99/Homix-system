@@ -1,35 +1,34 @@
 .gridStyle {
-   padding: 0 10px;
- }
- .gridHeader {
-   background: #f0f2f5;
- }
- .gridHeader:hover {
-   background: #f0f2f5 !important;
- }
- .resetBtnBox {
-   display: flex;
-   justify-content: space-between;
- }
- .resetBtn {
-   margin-top: 10px !important;
- }
- .downloadBtn {
-   margin-top: 10px !important;
-   margin-left: 20px !important;
- }
- .hide{
-   visibility: hidden;
- }
- .upperGridBtn {
-   display: flex;
-   justify-content: space-between;
-   padding: 0 5px;
- }
- @media (min-width: 1200px) {
-   .gridStyle {
-     margin-right: 17.125rem;
-     /* padding: 0 5px; */
-   }
- }
- 
+  padding: 0 10px;
+}
+.gridHeader {
+  background: #f0f2f5;
+}
+.gridHeader:hover {
+  background: #f0f2f5 !important;
+}
+.resetBtnBox {
+  display: flex;
+  justify-content: space-between;
+}
+.resetBtn {
+  margin-top: 10px !important;
+}
+.downloadBtn {
+  margin-top: 10px !important;
+  margin-left: 20px !important;
+}
+.hide {
+  visibility: hidden;
+}
+.upperGridBtn {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 5px;
+}
+@media (min-width: 1200px) {
+  .gridStyle {
+    margin-right: 17.125rem;
+    /* padding: 0 5px; */
+  }
+}
