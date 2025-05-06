@@ -15,6 +15,7 @@ import {
   Select,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useSelector } from "react-redux";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
@@ -22,6 +23,9 @@ import moment from "moment";
 import { useDateRange } from "hooks/useDateRange";
 import OrdersGrid from "layouts/Orders/components/OrdersGrid/OrdersGrid";
 import EditShipmentModal from "./components/EditShipmentModal";
+import { SHIPMENT_STATUS_VALUES } from "shared/utils/constants";
+import { SHIPMENT_TYPE_VALUES } from "shared/utils/constants";
+import { GOVERNORATES_VALUES } from "shared/utils/constants";
 const ITEMS_PER_PAGE = 150;
 
 // Reducer Initial State
@@ -30,9 +34,9 @@ const initialState = {
   isLoading: false,
   totalPages: 0,
   error: null,
-  selectedOrderStatus: "",
-  selectedVendor: "",
-  selectedPaymentStatus: "",
+  selectedShipmentStatus: "",
+  selectedShipmentTybe: "",
+  selectedGovernorate: "",
   selectedDeliveryStatus: "",
   startDate: null,
   endDate: null,
@@ -82,9 +86,9 @@ export default function Shipments() {
     const query = new URLSearchParams({
       page,
       size: ITEMS_PER_PAGE,
-      ...(state.selectedOrderStatus && { status: state.selectedOrderStatus }),
-      ...(state.selectedVendor && { vendorId: state.selectedVendor }),
-      ...(state.selectedPaymentStatus && { paymentStatus: state.selectedPaymentStatus }),
+      ...(state.selectedShipmentStatus && { status: state.selectedShipmentStatus }),
+      ...(state.selectedShipmentTybe && { vendorId: state.selectedShipmentTybe }),
+      ...(state.selectedGovernorate && { paymentStatus: state.selectedGovernorate }),
       ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
       ...(startDate && { startDate: startDate.utc().toISOString() }),
       ...(endDate && { endDate: endDate.utc().toISOString() }),
@@ -190,9 +194,9 @@ export default function Shipments() {
     getShipments();
   }, [
     page,
-    state.selectedOrderStatus,
-    state.selectedVendor,
-    state.selectedPaymentStatus,
+    state.selectedShipmentStatus,
+    state.selectedShipmentTybe,
+    state.selectedGovernorate,
     state.selectedDeliveryStatus,
     startDate,
     endDate,
@@ -203,7 +207,7 @@ export default function Shipments() {
   };
 
   const updateShipment = (shipment) => {
-    dispatch({ type: "SET_FIELD", field: "selectedOrderStatus", value: shipment });
+    dispatch({ type: "SET_FIELD", field: "selectedShipmentStatus", value: shipment });
   };
 
   const colDefs = [
@@ -236,86 +240,64 @@ export default function Shipments() {
         return `${data.customer?.firstName} ${data.customer?.lastName}`;
       },
     },
+    // {
+    //   field: "status",
+    //   headerName: "حالة الطلب",
+    //   sortable: true,
+    //   minWidth: 100,
+    //   // valueGetter: (node) => getStatusValue(node.data.status),
+    // },
     {
-      field: "status",
-      headerName: "حالة الطلب",
-      sortable: true,
-      minWidth: 100,
-      // valueGetter: (node) => getStatusValue(node.data.status),
-    },
-    {
-      field: "deliveryStatus",
-      headerName: "حالة التصنيع",
+      field: "shipmentStatus",
+      headerName: "حالة الشحنة",
       sortable: true,
       minWidth: 130,
       // valueGetter: (node) => getDeliveryStatusValue(node.data.status),
     },
     {
-      field: "administrator",
-      headerName: "المسؤول",
+      field: "shipmentType",
+      headerName: "نوع الشحنة",
       sortable: true,
       minWidth: 130,
       // valueGetter: (node) => getUserType(node.data.userType),
     },
     {
-      field: "totalPrice",
-      headerName: "سعر البيع",
+      field: "governorate",
+      headerName: "المحافظة",
       sortable: false,
       minWidth: 100,
-      valueGetter: ({ data }) => {
-        let orderPrice = 0;
-        data.items?.forEach((item) => {
-          orderPrice += Number(item.price) * Number(item.quantity);
-        });
-        return Number(orderPrice.toFixed(0));
-      },
+      // valueGetter: ({ data }) => {
+
+      //   return "";
+      // },
     },
     {
-      field: "totalCost",
-      headerName: "سعر التكلفة",
+      field: "shippingCompany",
+      headerName: "شركة الشحن",
       sortable: true,
-      minWidth: 100,
-      valueGetter: ({ data }) => {
-        let ordercost = 0;
-        data.items?.forEach((item) => {
-          ordercost += Number(item.unitCost) * Number(item.quantity);
-        });
-        return Number(ordercost).toFixed(0);
-      },
+      minWidth: 110,
+      // valueGetter: ({ data }) => {
+      //   return "";
+      // },
     },
     {
-      field: "paymentStatus",
-      headerName: "طريقة الدفع",
+      field: "shippingFees",
+      headerName: "تكلفة الشحن",
       minWidth: 130,
       // valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
     {
-      headerName: "الأيام المنقضيه",
+      field: "shippingReceiveDate",
+      headerName: "تاريخ استلام الشحنة",
       sortable: true,
-      minWidth: 120,
+      minWidth: 150,
       // valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
     },
-    // {
-    //   field: "receivedAmount",
-    //   headerName: "تكلفة الشحن",
-    //   sortable: true,
-    //   minWidth: 140,
-    // },
     {
-      field: "toBeCollected",
-      headerName: "المبلغ المطلوب تحصيله",
-      minWidth: 175,
-    },
-    {
-      field: "commission",
-      headerName: "عمولة المنصة",
-      minWidth: 130,
-    },
-    {
-      field: "date",
-      headerName: "التاريخ",
+      field: "deliveryDate",
+      headerName: "تاريخ التسليم",
       sortable: true,
-      minWidth: 100,
+      minWidth: 110,
       // valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
     },
     ...(!isVendor
@@ -326,15 +308,24 @@ export default function Shipments() {
             sortable: false,
             cellRenderer: (params) => {
               return (
-                <IconButton
-                  onClick={() => {
-                    handleModalOpen();
-                    dispatch({ type: "SET_FIELD", field: "selectedShipment", value: params.data });
-                  }}
-                  sx={{ fontSize: "1.2rem" }}
-                >
-                  <EditIcon />
-                </IconButton>
+                <>
+                  <IconButton
+                    onClick={() => {
+                      handleModalOpen();
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "selectedShipment",
+                        value: params.data,
+                      });
+                    }}
+                    sx={{ fontSize: "1.2rem" }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => {}} sx={{ color: "#d32f2f", fontSize: "1.3rem" }}>
+                    <DeleteIcon />
+                  </IconButton>
+                </>
               );
             },
           },
@@ -364,14 +355,20 @@ export default function Shipments() {
           <Grid container spacing={2}>
             <Grid item xs={6} md={4} lg={3}>
               <FormControl fullWidth>
-                <InputLabel>حالة الطلب</InputLabel>
+                <InputLabel>حالة الشحنة</InputLabel>
                 <Select
-                  value={state.selectedOrderStatus}
-                  onChange={handleChange("selectedOrderStatus")}
-                  label="حالة الطلب"
+                  value={state.selectedShipmentStatus}
+                  onChange={handleChange("selectedShipmentStatus")}
+                  label="حالة الشحنة"
                   sx={{ height: 40 }}
                 >
-                  {/* Map Status Options Here */}
+                  {SHIPMENT_STATUS_VALUES.map((option) => {
+                    return (
+                      <MenuItem key={option?.value} value={option?.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}{" "}
                 </Select>
               </FormControl>
             </Grid>
@@ -380,15 +377,15 @@ export default function Shipments() {
               <>
                 <Grid item xs={6} md={4} lg={3}>
                   <FormControl fullWidth>
-                    <InputLabel>المصنعين</InputLabel>
+                    <InputLabel>نوع الشحنة</InputLabel>
                     <Select
-                      value={state.selectedVendor}
-                      onChange={handleChange("selectedVendor")}
-                      label="المصنعين"
+                      value={state.selectedShipmentTybe}
+                      onChange={handleChange("selectedShipmentTybe")}
+                      label="نوع الشحنة"
                       sx={{ height: 40 }}
                     >
-                      {vendors.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
+                      {SHIPMENT_TYPE_VALUES.map((option) => (
+                        <MenuItem key={option?.value} value={option?.value}>
                           {option.label}
                         </MenuItem>
                       ))}
@@ -398,14 +395,18 @@ export default function Shipments() {
 
                 <Grid item xs={6} md={4} lg={3}>
                   <FormControl fullWidth>
-                    <InputLabel>حالة الدفع</InputLabel>
+                    <InputLabel>المحافظة</InputLabel>
                     <Select
-                      value={state.selectedPaymentStatus}
-                      onChange={handleChange("selectedPaymentStatus")}
-                      label="حالة الدفع"
+                      value={state.selectedGovernorate}
+                      onChange={handleChange("selectedGovernorate")}
+                      label="المحافظة"
                       sx={{ height: 40 }}
                     >
-                      {/* Map Payment Status Options Here */}
+                      {GOVERNORATES_VALUES.map((option) => (
+                        <MenuItem key={option?.value} value={option?.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}{" "}
                     </Select>
                   </FormControl>
                 </Grid>
