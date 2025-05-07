@@ -27,8 +27,14 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [governorate, setGovernorate] = useState(data.governorate);
   const [shippingCompany, setShippingCompany] = useState(data.shippingCompany);
   const [shippingFees, setShippingFees] = useState(data.shippingFees);
-  const [shippingReceiveDate, setShippingReceiveDate] = useState(data.shippingReceiveDate);
-  const [deliveryDate, setDeliveryDate] = useState(data.deliveryDate);
+  const [shippingReceiveDate, setShippingReceiveDate] = useState(
+    data.shippingReceiveDate
+      ? formatDate(data.shippingReceiveDate)
+      : new Date().toISOString().split("T")[0]
+  );
+  const [deliveryDate, setDeliveryDate] = useState(
+    data.deliveryDate ? formatDate(data.deliveryDate) : new Date().toISOString().split("T")[0]
+  );
 
   const today = new Date();
   const formattedDate =

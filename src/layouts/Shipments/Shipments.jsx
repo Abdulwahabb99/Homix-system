@@ -21,11 +21,14 @@ import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import moment from "moment";
 import { useDateRange } from "hooks/useDateRange";
-import OrdersGrid from "layouts/Orders/components/OrdersGrid/OrdersGrid";
 import EditShipmentModal from "./components/EditShipmentModal";
 import { SHIPMENT_STATUS_VALUES } from "shared/utils/constants";
 import { SHIPMENT_TYPE_VALUES } from "shared/utils/constants";
 import { GOVERNORATES_VALUES } from "shared/utils/constants";
+import { getGovernorateLabel } from "shared/utils/constants";
+import { getShipmentTypeLabel } from "shared/utils/constants";
+import { getShipmentStatusLabel } from "shared/utils/constants";
+import ShipmentsGrid from "./components/ShipmentsGrid/ShipmentsGrid";
 const ITEMS_PER_PAGE = 150;
 
 // Reducer Initial State
@@ -38,14 +41,11 @@ const initialState = {
   selectedShipmentTybe: "",
   selectedGovernorate: "",
   selectedDeliveryStatus: "",
-  startDate: null,
-  endDate: null,
   vendors: [],
   isModalOpen: false,
   selectedShipment: null,
 };
 
-// Reducer Function
 function reducer(state, action) {
   switch (action.type) {
     case "FETCH_START":
@@ -79,6 +79,8 @@ export default function Shipments() {
   const { startDate, endDate, handleDatesChange } = useDateRange({
     defaultDays: 0,
   });
+  console.log("startDate", startDate);
+  console.log("endDate", endDate);
 
   const page = parseInt(searchParams.get("page")) || 1;
 
@@ -86,18 +88,18 @@ export default function Shipments() {
     const query = new URLSearchParams({
       page,
       size: ITEMS_PER_PAGE,
-      ...(state.selectedShipmentStatus && { status: state.selectedShipmentStatus }),
-      ...(state.selectedShipmentTybe && { vendorId: state.selectedShipmentTybe }),
+      ...(state.selectedShipmentStatus && { shipmentStatus: state.selectedShipmentStatus }),
+      ...(state.selectedShipmentTybe && { shipmentType: state.selectedShipmentTybe }),
       ...(state.selectedGovernorate && { paymentStatus: state.selectedGovernorate }),
       ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
-      ...(startDate && { startDate: startDate.utc().toISOString() }),
-      ...(endDate && { endDate: endDate.utc().toISOString() }),
+      ...(startDate && { shipmentStartDate: startDate.utc().toISOString() }),
+      ...(endDate && { shipmentEndDate: endDate.utc().toISOString() }),
     });
 
     dispatch({ type: "FETCH_START" });
 
     axiosRequest
-      .get(`${process.env.REACT_APP_API_URL}/shipments`)
+      .get(`${process.env.REACT_APP_API_URL}/shipments?${query.toString()}`)
       .then(({ data }) => {
         if (data.force_logout) {
           localStorage.removeItem("user");
@@ -138,7 +140,7 @@ export default function Shipments() {
     dispatch({ type: "SET_Modal_open", payload: false });
   };
   const handleEditShipment = (
-    orderId,
+    id,
     shipmentStatus,
     shipmentType,
     governorate,
@@ -147,20 +149,8 @@ export default function Shipments() {
     shippingReceiveDate,
     deliveryDate
   ) => {
-    console.log(
-      orderId,
-      shipmentStatus,
-      shipmentType,
-      governorate,
-      shippingCompany,
-      shippingFees,
-      shippingReceiveDate,
-      deliveryDate
-    );
-
     axiosRequest
-      .post(`${process.env.REACT_APP_API_URL}/shipments`, {
-        orderId,
+      .put(`${process.env.REACT_APP_API_URL}/shipments/${id}`, {
         shipmentStatus,
         shipmentType,
         governorate,
@@ -169,17 +159,21 @@ export default function Shipments() {
         shippingReceiveDate,
         deliveryDate,
       })
-      .then(({ data }) => {
+      .then(({ data: { data } }) => {
         console.log(data);
         dispatch({ type: "SET_Modal_open", payload: false });
+        const updatedShipments = state.shipments.map((shipment) =>
+          shipment.id === id ? { ...data, customer: shipment.customer } : shipment
+        );
+        console.log(updatedShipments);
 
-        // dispatch({
-        //   type: "FETCH_SUCCESS",
-        //   payload: {
-        //     shipments: data.data.shipments,
-        //     totalPages: data.data.totalPages,
-        //   },
-        // });
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: {
+            shipments: updatedShipments,
+            totalPages: state.totalPages,
+          },
+        });
       })
       .catch((error) => {
         dispatch({ type: "FETCH_ERROR", payload: error });
@@ -211,12 +205,12 @@ export default function Shipments() {
   };
 
   const colDefs = [
-    {
-      field: "code",
-      headerName: "الكود التعريفي",
-      sortable: true,
-      minWidth: 110,
-    },
+    // {
+    //   field: "name",
+    //   headerName: "الكود التعريفي",
+    //   sortable: true,
+    //   minWidth: 110,
+    // },
     {
       field: "orderNumber",
       headerName: "رقم الطلب",
@@ -240,65 +234,55 @@ export default function Shipments() {
         return `${data.customer?.firstName} ${data.customer?.lastName}`;
       },
     },
-    // {
-    //   field: "status",
-    //   headerName: "حالة الطلب",
-    //   sortable: true,
-    //   minWidth: 100,
-    //   // valueGetter: (node) => getStatusValue(node.data.status),
-    // },
     {
       field: "shipmentStatus",
       headerName: "حالة الشحنة",
       sortable: true,
       minWidth: 130,
-      // valueGetter: (node) => getDeliveryStatusValue(node.data.status),
+      valueGetter: ({ data }) => getShipmentStatusLabel(data.shipmentStatus),
     },
     {
       field: "shipmentType",
       headerName: "نوع الشحنة",
       sortable: true,
       minWidth: 130,
-      // valueGetter: (node) => getUserType(node.data.userType),
+      valueGetter: ({ data }) => getShipmentTypeLabel(Number(data.shipmentType)),
     },
     {
       field: "governorate",
       headerName: "المحافظة",
       sortable: false,
       minWidth: 100,
-      // valueGetter: ({ data }) => {
-
-      //   return "";
-      // },
+      valueGetter: ({ data }) => {
+        return getGovernorateLabel(Number(data.governorate));
+      },
     },
     {
       field: "shippingCompany",
       headerName: "شركة الشحن",
       sortable: true,
       minWidth: 110,
-      // valueGetter: ({ data }) => {
-      //   return "";
-      // },
     },
     {
       field: "shippingFees",
       headerName: "تكلفة الشحن",
       minWidth: 130,
-      // valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
     {
       field: "shippingReceiveDate",
       headerName: "تاريخ استلام الشحنة",
       sortable: true,
       minWidth: 150,
-      // valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
+      valueGetter: ({ data }) =>
+        data.shippingReceiveDate ? moment(data.shippingReceiveDate).format("DD/MM/YYYY") : "",
     },
     {
       field: "deliveryDate",
       headerName: "تاريخ التسليم",
       sortable: true,
       minWidth: 110,
-      // valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
+      valueGetter: ({ data }) =>
+        data.deliveryDate ? moment(data.deliveryDate).format("DD/MM/YYYY") : "",
     },
     ...(!isVendor
       ? [
@@ -439,7 +423,7 @@ export default function Shipments() {
             </Grid>
           </Grid>
 
-          <OrdersGrid
+          <ShipmentsGrid
             rowData={shipments}
             columnDefs={colDefs}
             defaultColDef={{

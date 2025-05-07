@@ -105,6 +105,20 @@ export const GOVERNORATES_VALUES = [
   { value: 23, label: "مطروح" },
   { value: 24, label: "البحر الأحمر" },
   { value: 25, label: "الأقصر" },
-  { value: 26, label: "كفر الشيخ" }, // البحيرة مكررة هنا، ممكن تتأكد لو دي غلط؟
+  { value: 26, label: "كفر الشيخ" },
   { value: 27, label: "دمياط" },
 ];
+
+export const getGovernorateLabel = (value) => {
+  const governorate = GOVERNORATES_VALUES.find((g) => g.value === value);
+  return governorate ? governorate.label : "";
+};
+
+export const getShipmentTypeLabel = (value) => {
+  const shipmentType = SHIPMENT_TYPE_VALUES.find((g) => g.value === value);
+  return shipmentType ? shipmentType.label : "";
+};
+export const getShipmentStatusLabel = (value) => {
+  const shipmentStatus = SHIPMENT_STATUS_VALUES.find((g) => g.value === value);
+  return shipmentStatus ? shipmentStatus.label : "";
+};
