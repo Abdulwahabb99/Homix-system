@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -8,6 +8,7 @@ import Button from "@mui/material/Button";
 import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { DELIVERY_STATUS, PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { USER_TYPES_VALUES } from "shared/utils/constants";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -29,6 +30,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [selectedVendor, setSelectedVendor] = useState(data.selectedVendor);
   const [deliveryStatus, setDeliveryStatus] = useState(data.deliveryStatus);
   const [administrator, setAdministrator] = useState(data?.administrator);
+  const [users, setUsers] = useState([]);
 
   const today = new Date();
   const formattedDate =
@@ -37,6 +39,16 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
     String(today.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(today.getDate()).padStart(2, "0");
+
+  useEffect(() => {
+    axiosRequest.get("/users").then(({ data: { data } }) => {
+      const newUsers = data.map((user) => ({
+        label: `${user.firstName} ${user.lastName}`,
+        value: user.id,
+      }));
+      setUsers(newUsers);
+    });
+  }, []);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -134,7 +146,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               onChange={(e) => setAdministrator(e.target.value)}
               sx={{ height: 35 }}
             >
-              {USER_TYPES_VALUES.map((option) => {
+              {users.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}

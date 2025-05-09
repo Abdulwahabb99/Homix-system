@@ -35,7 +35,6 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
   const [toBeCollected, setToBeCollected] = useState(customer?.toBeCollected);
   const [users, setUsers] = useState(customer?.administrator);
   const [selectedUser, setSelectedUser] = useState(customer?.userId);
-  // const [administrator, setAdministrator] = useState(customer?.administrator);
 
   const [shipmentStatus, setShipmentStatus] = useState(customer?.shipmentStatus);
   const [shipmentType, setShipmentType] = useState(customer?.shipmentType);

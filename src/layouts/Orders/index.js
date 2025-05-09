@@ -28,6 +28,7 @@ import { DELIVERY_STATUS, deliveryStatusValues, PAYMENT_STATUS } from "./utils/c
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import { getUserType } from "shared/utils/constants";
+import { set } from "lodash";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -72,6 +73,8 @@ function Orders() {
   const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
   const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(deliveryStatusParam || "");
+  const [users, setUsers] = useState([]);
+
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
   moment.locale("ar");
@@ -192,6 +195,7 @@ function Orders() {
             code: order.name,
             createdAt: order.createdAt,
             PoDate: order.PoDate,
+            userId: order.userId,
           }))
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -229,7 +233,7 @@ function Orders() {
         toBeCollected: toBeCollected,
         vendor: selectedVendor,
         deliveryStatus: deliveryStatus,
-        userType: administrator,
+        userId: administrator,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
@@ -245,6 +249,7 @@ function Orders() {
               receivedAmount: data.receivedAmount,
               selectedVendor: data.selectedVendor,
               deliveryStatus: data.deliveryStatus,
+              userId: data.userId,
             };
           }
           return order;
@@ -353,8 +358,11 @@ function Orders() {
       field: "administrator",
       headerName: "المسؤول",
       sortable: true,
-      minWidth: 130,
-      valueGetter: (node) => getUserType(node.data.userType),
+      minWidth: 140,
+      valueGetter: (node) => {
+        const user = users.find((user) => user.id === node.data.userId);
+        return user ? `${user.firstName} ${user.lastName}` : "";
+      },
     },
     ...(!isVendor
       ? [
@@ -393,6 +401,12 @@ function Orders() {
     paymentStatusParam,
     deliveryStatusParam,
   ]);
+
+  useEffect(() => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then(({ data: { data } }) => {
+      setUsers(data);
+    });
+  }, []);
 
   return (
     <DashboardLayout>
