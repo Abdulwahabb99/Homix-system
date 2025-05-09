@@ -17,6 +17,8 @@ const Factories = React.lazy(() =>
 const Users = React.lazy(() => import("./layouts/Users/Users"));
 const Shipments = React.lazy(() => import("./layouts/Shipments/Shipments"));
 const user = JSON.parse(localStorage.getItem("user"));
+const isVendor = user?.userType === "2";
+const isAdmin = user?.userType === "1";
 
 const routes = [
   {
@@ -63,26 +65,28 @@ const routes = [
       </ProtectedRoutes>
     ),
   },
-  {
-    type: "collapse",
-    name: "المصانع",
-    key: "factories",
-    icon: <Icon fontSize="small">factory</Icon>,
-    route: "/factories",
-    component: (
-      <ProtectedRoutes>
-        <Suspense
-          fallback={
-            <div>
-              <Spinner />
-            </div>
-          }
-        >
-          <Factories />
-        </Suspense>
-      </ProtectedRoutes>
-    ),
-  },
+  isAdmin
+    ? {
+        type: "collapse",
+        name: "المصانع",
+        key: "factories",
+        icon: <Icon fontSize="small">factory</Icon>,
+        route: "/factories",
+        component: (
+          <ProtectedRoutes>
+            <Suspense
+              fallback={
+                <div>
+                  <Spinner />
+                </div>
+              }
+            >
+              <Factories />
+            </Suspense>
+          </ProtectedRoutes>
+        ),
+      }
+    : {},
   {
     type: "collapse",
     name: "تقارير مالية",
@@ -95,35 +99,39 @@ const routes = [
       </ProtectedRoutes>
     ),
   },
-  {
-    type: "collapse",
-    name: "الموردين",
-    key: "vendors",
-    icon: <Icon fontSize="small">business</Icon>,
-    route: "/vendors",
-    component: (
-      <ProtectedRoutes>
-        <Vendors />
-      </ProtectedRoutes>
-    ),
-  },
-  {
-    type: "collapse",
-    name: "المستخدمون",
-    key: "users",
-    icon: <Icon fontSize="small">group</Icon>,
-    route: "/users",
-    component: (
-      <ProtectedRoutes>
-        <Users />
-      </ProtectedRoutes>
-    ),
-  },
+  isAdmin
+    ? {
+        type: "collapse",
+        name: "الموردين",
+        key: "vendors",
+        icon: <Icon fontSize="small">business</Icon>,
+        route: "/vendors",
+        component: (
+          <ProtectedRoutes>
+            <Vendors />
+          </ProtectedRoutes>
+        ),
+      }
+    : {},
+  isAdmin
+    ? {
+        type: "collapse",
+        name: "المستخدمون",
+        key: "users",
+        icon: <Icon fontSize="small">group</Icon>,
+        route: "/users",
+        component: (
+          <ProtectedRoutes>
+            <Users />
+          </ProtectedRoutes>
+        ),
+      }
+    : {},
   {
     type: "collapse",
     name: "الشحنات",
     key: "shipments",
-    icon: <Icon fontSize="small">group</Icon>,
+    icon: <Icon fontSize="small">local_shipping</Icon>,
     route: "/shipments",
     component: (
       <ProtectedRoutes>

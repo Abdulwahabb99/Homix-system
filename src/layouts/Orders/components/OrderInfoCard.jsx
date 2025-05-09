@@ -9,6 +9,7 @@ function OrderInfoCard({
   orderTotalPrice,
   orderTotalShipping,
   orderTotalToBeCollected,
+  isShimpentDetails,
 }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const isVendor = user?.userType === "2";
@@ -24,7 +25,7 @@ function OrderInfoCard({
     <>
       <MDBox pt={2} px={3}>
         <MDTypography variant="h6" fontWeight="medium">
-          تفاصيل الطلب
+          {isShimpentDetails ? "تفاصيل الشحنة" : "تفاصيل الطلب"}
         </MDTypography>
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">

@@ -320,11 +320,12 @@ function ShipmentDetails() {
                           orderTotalPrice={orderTotalPrice}
                           orderTotalShipping={orderTotalShipping}
                           orderTotalToBeCollected={orderTotalToBeCollected}
+                          isShimpentDetails={true}
                         />
                       )}
                       {user?.userType === "1" && (
                         <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
-                          <InputLabel id="orderStatus">حالة الطلب</InputLabel>
+                          <InputLabel id="orderStatus">حالة الشحنة</InputLabel>
                           <Select
                             labelId="orderStatus"
                             id="orderStatus-select"

@@ -30,6 +30,7 @@ import { getShipmentTypeLabel } from "shared/utils/constants";
 import { getShipmentStatusLabel } from "shared/utils/constants";
 import ShipmentsGrid from "./components/ShipmentsGrid/ShipmentsGrid";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import SearchDialog from "./components/SearchDialog/SearchDialog";
 const ITEMS_PER_PAGE = 150;
 
 // Reducer Initial State
@@ -52,9 +53,12 @@ export default function Shipments() {
     selectedShipmentTybe: searchParams.get("shipmentType") || "",
     selectedGovernorate: searchParams.get("governorate") || "",
     selectedDeliveryStatus: searchParams.get("deliveryStatus") || "",
+    orderNumber: searchParams.get("orderNumber") || "",
+    shippingCompany: searchParams.get("shippingCompany") || "",
     vendors: [],
     isModalOpen: false,
     isDeleteModalOpen: false,
+    isSearchModalOpen: false,
     selectedShipment: null,
   };
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -80,6 +84,8 @@ export default function Shipments() {
         return { ...state, isModalOpen: action.payload };
       case "SET_DELETE_MODAL_OPEN":
         return { ...state, isDeleteModalOpen: action.payload };
+      case "SET_SEARCH_MODAL_OPEN":
+        return { ...state, isSearchModalOpen: action.payload };
       default:
         return state;
     }
@@ -93,6 +99,8 @@ export default function Shipments() {
       ...(state.selectedShipmentTybe && { shipmentType: state.selectedShipmentTybe }),
       ...(state.selectedGovernorate && { governorate: state.selectedGovernorate }),
       ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
+      ...(state.orderNumber && { orderNumber: state.orderNumber }),
+      ...(state.shippingCompany && { shippingCompany: state.shippingCompany }),
       ...(startDate && startDateParam && { shipmentStartDate: startDate.utc().toISOString() }),
       ...(endDate && endDateParam && { shipmentEndDate: endDate.utc().toISOString() }),
     });
@@ -107,10 +115,13 @@ export default function Shipments() {
           navigate("/authentication/sign-in");
           return;
         }
+        const newShipments = data.data.shipments.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
         dispatch({
           type: "FETCH_SUCCESS",
           payload: {
-            shipments: data.data.shipments,
+            shipments: newShipments,
             totalPages: data.data.totalPages,
           },
         });
@@ -154,15 +165,53 @@ export default function Shipments() {
     }
   };
 
+  const handleOrderNumberChange = (orderNumber, shippingCompany) => {
+    dispatch({ type: "SET_FIELD", field: "orderNumber", value: orderNumber });
+    dispatch({ type: "SET_FIELD", field: "shippingCompany", value: shippingCompany });
+
+    // update only orderNumber param in URL
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (orderNumber) {
+      urlParams.set("orderNumber", orderNumber);
+    } else {
+      urlParams.delete("orderNumber");
+    }
+    if (shippingCompany) {
+      urlParams.set("shippingCompany", shippingCompany);
+    } else {
+      urlParams.delete("shippingCompany");
+    }
+
+    const url = new URL(window.location.href);
+    url.search = urlParams.toString();
+    window.history.pushState({}, "", url);
+  };
+
   const handleReset = () => {
     dispatch({ type: "SET_FIELD", field: "selectedShipmentStatus", value: "" });
     dispatch({ type: "SET_FIELD", field: "selectedShipmentTybe", value: "" });
     dispatch({ type: "SET_FIELD", field: "selectedGovernorate", value: "" });
     dispatch({ type: "SET_FIELD", field: "selectedDeliveryStatus", value: "" });
+    dispatch({ type: "SET_FIELD", field: "orderNumber", value: "" });
+    dispatch({ type: "SET_FIELD", field: "shippingCompany", value: "" });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.delete("shipmentStatus");
+    urlParams.delete("shipmentType");
+    urlParams.delete("governorate");
+    urlParams.delete("deliveryStatus");
+    urlParams.delete("orderNumber");
+    urlParams.delete("shippingCompany");
+    urlParams.delete("page");
+    urlParams.delete("startDate");
+    urlParams.delete("endDate");
+    const url = new URL(window.location.href);
+    url.search = urlParams.toString();
+    window.history.pushState({}, "", url);
     setTimeout(() => {
       getShipments();
-    }, 100);
-    navigate("/shipments");
+    }, 300);
   };
   const handleModalOpen = () => {
     dispatch({ type: "SET_Modal_open", payload: true });
@@ -228,6 +277,8 @@ export default function Shipments() {
     startDate,
     endDate,
     searchParams,
+    state.orderNumber,
+    state.shippingCompany,
   ]);
 
   const handlePageChange = (_, value) => {
@@ -264,7 +315,7 @@ export default function Shipments() {
     },
     {
       field: "orderNumber",
-      headerName: "رقم الطلب",
+      headerName: "رقم الشحنة",
       sortable: true,
       minWidth: 100,
       cellRenderer: (params) => (
@@ -387,6 +438,14 @@ export default function Shipments() {
     <DashboardLayout>
       <DashboardNavbar />
       <ToastContainer />
+      {state.isSearchModalOpen && (
+        <SearchDialog
+          open={state.isSearchModalOpen}
+          onClose={() => dispatch({ type: "SET_SEARCH_MODAL_OPEN", payload: false })}
+          handleSearch={handleOrderNumberChange}
+          data={{ orderNumber: state.orderNumber, shippingCompany: state.shippingCompany }}
+        />
+      )}
       {state.isModalOpen && (
         <EditShipmentModal
           open={state.isModalOpen}
@@ -486,7 +545,7 @@ export default function Shipments() {
             defaultColDef={{
               resizable: true,
             }}
-            handleSearchClick={() => setIsSearchModalOpen(true)}
+            handleSearchClick={() => dispatch({ type: "SET_SEARCH_MODAL_OPEN", payload: true })}
             handleReset={handleReset}
             enableExcel
           />

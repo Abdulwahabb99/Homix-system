@@ -190,8 +190,10 @@ function Orders() {
             receivedAmount: order.receivedAmount,
             totalDiscounts: order.totalDiscounts,
             code: order.name,
+            createdAt: order.createdAt,
+            PoDate: order.PoDate,
           }))
-          .sort((a, b) => b.orderNumber - a.orderNumber);
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         setOrders(newOrders);
         setTotalPages(data.data.totalPages);
@@ -295,20 +297,6 @@ function Orders() {
       valueGetter: (node) => getStatusValue(node.data.status),
     },
     {
-      field: "deliveryStatus",
-      headerName: "حالة التصنيع",
-      sortable: true,
-      minWidth: 130,
-      valueGetter: (node) => getDeliveryStatusValue(node.data.status),
-    },
-    {
-      field: "administrator",
-      headerName: "المسؤول",
-      sortable: true,
-      minWidth: 130,
-      valueGetter: (node) => getUserType(node.data.userType),
-    },
-    {
       field: "totalPrice",
       headerName: "سعر البيع",
       sortable: false,
@@ -341,33 +329,32 @@ function Orders() {
       valueGetter: (node) => getPaymentValue(node.data.paymentStatus),
     },
     {
+      field: "date",
+      headerName: "تاريخ أمر التصنيع",
+      sortable: true,
+      minWidth: 150,
+      valueGetter: ({ data }) =>
+        data.PoDate ? moment.utc(data.PoDate).tz("Africa/Cairo").format("YY/MM/DD") : "",
+    },
+    {
       headerName: "الأيام المنقضيه",
       sortable: true,
       minWidth: 120,
       valueGetter: (node) => (node.data.PoDate ? calculateDaysFromPoDate(node.data.PoDate) : ""),
     },
-    // {
-    //   field: "receivedAmount",
-    //   headerName: "تكلفة الشحن",
-    //   sortable: true,
-    //   minWidth: 140,
-    // },
     {
-      field: "toBeCollected",
-      headerName: "المبلغ المطلوب تحصيله",
-      minWidth: 175,
-    },
-    {
-      field: "commission",
-      headerName: "عمولة المنصة",
-      minWidth: 130,
-    },
-    {
-      field: "date",
-      headerName: "التاريخ",
+      field: "deliveryStatus",
+      headerName: "الحالة",
       sortable: true,
-      minWidth: 100,
-      valueGetter: (node) => moment.utc(node.data.date).tz("Africa/Cairo").format("YY/MM/DD"),
+      minWidth: 130,
+      valueGetter: (node) => getDeliveryStatusValue(node.data.status),
+    },
+    {
+      field: "administrator",
+      headerName: "المسؤول",
+      sortable: true,
+      minWidth: 130,
+      valueGetter: (node) => getUserType(node.data.userType),
     },
     ...(!isVendor
       ? [
