@@ -145,35 +145,36 @@ const DateRangePickerWrapper = ({
   );
 
   return (
-    <div className={`${className}`}>
-      <DateRangePicker
-        startDate={startDate}
-        endDate={endDate}
-        onDatesChange={onDatesChange}
-        focusedInput={focusedInput}
-        onFocusChange={onFocusChange}
-        startDateId="startDate"
-        endDateId="endDate"
-        isRTL={isDirectionRTL}
-        showClearDates
-        reopenPickerOnClearDates
-        small
-        hideKeyboardShortcutsPanel
-        numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
-        readOnly
-        customCloseIcon={<span>&times;</span>}
-        keepOpenOnDateSelect
-        onClose={cancel}
-        isDayHighlighted={(day) => isSameDay(day, moment())}
-        isOutsideRange={isOutsideRange}
-        renderCalendarInfo={renderPresets}
-        startDatePlaceholderText="من "
-        endDatePlaceholderText="إلى "
-        initialVisibleMonth={() =>
-          window.innerWidth > 768 ? moment().subtract(1, "month") : moment()
-        }
-      />
-    </div>
+    <DateRangePicker
+      startDate={startDate}
+      endDate={endDate}
+      onDatesChange={onDatesChange}
+      focusedInput={focusedInput}
+      onFocusChange={onFocusChange}
+      startDateId="startDate"
+      endDateId="endDate"
+      isRTL={isDirectionRTL}
+      showClearDates
+      reopenPickerOnClearDates
+      small
+      hideKeyboardShortcutsPanel
+      numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
+      readOnly
+      customCloseIcon={<span>&times;</span>}
+      keepOpenOnDateSelect
+      onClose={cancel}
+      isDayHighlighted={(day) => isSameDay(day, moment())}
+      isOutsideRange={isOutsideRange}
+      renderCalendarInfo={renderPresets}
+      startDatePlaceholderText="من "
+      endDatePlaceholderText="إلى "
+      initialVisibleMonth={() =>
+        window.innerWidth > 768 ? moment().subtract(1, "month") : moment()
+      }
+      inputIconPosition="after"
+      customInputIcon={null}
+      block
+    />
   );
 };
 DateRangePickerWrapper.propTypes = {

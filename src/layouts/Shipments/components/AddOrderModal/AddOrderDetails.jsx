@@ -9,6 +9,10 @@ import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/mater
 import { statusoptions } from "layouts/Orders/utils/constants";
 import { PAYMENT_STATUS } from "layouts/Orders/utils/constants";
 import { USER_TYPES_VALUES } from "shared/utils/constants";
+import { SHIPMENT_STATUS_VALUES } from "shared/utils/constants";
+import { SHIPMENT_TYPE_VALUES } from "shared/utils/constants";
+import { GOVERNORATES_VALUES } from "shared/utils/constants";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -19,7 +23,7 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) => {
+const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
   const [orderStatus, setOrderStatus] = useState(customer?.orderStatus);
   const [commission, setCommission] = useState(customer?.commission);
   const [manufacturingDate, setManufacturingDate] = useState(
@@ -29,7 +33,24 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
   const [downPayment, setDownPayment] = useState(customer?.downPayment);
   const [shippingCost, setShippingCost] = useState(customer?.shippingCost);
   const [toBeCollected, setToBeCollected] = useState(customer?.toBeCollected);
-  const [administrator, setAdministrator] = useState(customer?.administrator);
+  const [users, setUsers] = useState(customer?.administrator);
+  const [selectedUser, setSelectedUser] = useState(customer?.userId);
+  // const [administrator, setAdministrator] = useState(customer?.administrator);
+
+  const [shipmentStatus, setShipmentStatus] = useState(customer?.shipmentStatus);
+  const [shipmentType, setShipmentType] = useState(customer?.shipmentType);
+  const [governorate, setGovernorate] = useState(customer?.governorate);
+  const [shippingCompany, setShippingCompany] = useState(customer?.shippingCompany);
+  const [shippingReceiveDate, setShippingReceiveDate] = useState(
+    customer?.shippingReceiveDate
+      ? formatDate(customer?.shippingReceiveDate)
+      : new Date().toISOString().split("T")[0]
+  );
+  const [deliveryDate, setDeliveryDate] = useState(
+    customer?.deliveryDate
+      ? formatDate(customer?.deliveryDate)
+      : new Date().toISOString().split("T")[0]
+  );
 
   const today = new Date();
   const formattedDate =
@@ -38,6 +59,16 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
     String(today.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(today.getDate()).padStart(2, "0");
+
+  useEffect(() => {
+    axiosRequest.get("/users").then(({ data: { data } }) => {
+      const newUsers = data.map((user) => ({
+        label: `${user.firstName} ${user.lastName}`,
+        value: user.id,
+      }));
+      setUsers(newUsers);
+    });
+  }, []);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -90,12 +121,12 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
               fullWidth
               labelId="administrator"
               id="administrator"
-              value={administrator}
+              value={selectedUser}
               label="حالة الدفع"
-              onChange={(e) => setAdministrator(e.target.value)}
+              onChange={(e) => setSelectedUser(e.target.value)}
               sx={{ height: 35 }}
             >
-              {USER_TYPES_VALUES.map((option) => {
+              {users?.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -137,6 +168,94 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
             style={{ margin: "5px 0" }}
           />
           <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="shipmentStatus">حالة الشحنة</InputLabel>
+            <Select
+              fullWidth
+              labelId="shipmentStatus"
+              id="shipmentStatus-select"
+              value={shipmentStatus}
+              label="حالة الشحنة"
+              onChange={(e) => setShipmentStatus(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {SHIPMENT_STATUS_VALUES.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="shipmentType">نوع الشحنة</InputLabel>
+            <Select
+              fullWidth
+              labelId="shipmentType"
+              id="shipmentType-select"
+              value={shipmentType}
+              label="نوع الشحنة"
+              onChange={(e) => setShipmentType(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {SHIPMENT_TYPE_VALUES.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="governorate">المحافظة</InputLabel>
+            <Select
+              fullWidth
+              labelId="governorate"
+              id="governorate-select"
+              value={governorate}
+              label="نوع الشحنة"
+              onChange={(e) => setGovernorate(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {GOVERNORATES_VALUES.map((option) => {
+                return (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            label="شركة الشحن"
+            value={shippingCompany}
+            onChange={(e) => setShippingCompany(e.target.value)}
+            type="text"
+            style={{ margin: "5px 0" }}
+          />
+          <TextField
+            fullWidth
+            label="تاريخ استلام الشحنة"
+            value={shippingReceiveDate}
+            onChange={(e) => setShippingReceiveDate(e.target.value)}
+            type="date"
+            style={{ margin: "5px 0" }}
+            defaultValue={new Date().toISOString().split("T")[0]}
+          />
+          <TextField
+            fullWidth
+            label="تاريخ التسليم"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            type="date"
+            style={{ margin: "5px 0" }}
+            defaultValue={new Date().toISOString().split("T")[0]}
+          />
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
               تاريخ امر التصنيع
             </InputLabel>
@@ -169,7 +288,13 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
               downPayment,
               shippingCost,
               toBeCollected,
-              administrator,
+              selectedUser,
+              shipmentStatus,
+              shipmentType,
+              governorate,
+              shippingCompany,
+              shippingReceiveDate,
+              deliveryDate,
             });
           }}
           variant="contained"

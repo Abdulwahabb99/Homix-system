@@ -29,49 +29,12 @@ import { getGovernorateLabel } from "shared/utils/constants";
 import { getShipmentTypeLabel } from "shared/utils/constants";
 import { getShipmentStatusLabel } from "shared/utils/constants";
 import ShipmentsGrid from "./components/ShipmentsGrid/ShipmentsGrid";
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 const ITEMS_PER_PAGE = 150;
 
 // Reducer Initial State
-const initialState = {
-  shipments: [],
-  isLoading: false,
-  totalPages: 0,
-  error: null,
-  selectedShipmentStatus: "",
-  selectedShipmentTybe: "",
-  selectedGovernorate: "",
-  selectedDeliveryStatus: "",
-  vendors: [],
-  isModalOpen: false,
-  selectedShipment: null,
-};
-
-function reducer(state, action) {
-  switch (action.type) {
-    case "FETCH_START":
-      return { ...state, isLoading: true };
-    case "FETCH_SUCCESS":
-      return {
-        ...state,
-        isLoading: false,
-        shipments: action.payload.shipments,
-        totalPages: action.payload.totalPages,
-      };
-    case "FETCH_ERROR":
-      return { ...state, isLoading: false, error: action.payload };
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "SET_VENDORS":
-      return { ...state, vendors: action.payload };
-    case "SET_Modal_open":
-      return { ...state, isModalOpen: action.payload };
-    default:
-      return state;
-  }
-}
 
 export default function Shipments() {
-  const [state, dispatch] = useReducer(reducer, initialState);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
@@ -79,21 +42,59 @@ export default function Shipments() {
   const { startDate, endDate, handleDatesChange } = useDateRange({
     defaultDays: 0,
   });
-  console.log("startDate", startDate);
-  console.log("endDate", endDate);
-
   const page = parseInt(searchParams.get("page")) || 1;
+  const initialState = {
+    shipments: [],
+    isLoading: false,
+    totalPages: 0,
+    error: null,
+    selectedShipmentStatus: searchParams.get("shipmentStatus") || "",
+    selectedShipmentTybe: searchParams.get("shipmentType") || "",
+    selectedGovernorate: searchParams.get("governorate") || "",
+    selectedDeliveryStatus: searchParams.get("deliveryStatus") || "",
+    vendors: [],
+    isModalOpen: false,
+    isDeleteModalOpen: false,
+    selectedShipment: null,
+  };
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  const getShipments = () => {
+  function reducer(state, action) {
+    switch (action.type) {
+      case "FETCH_START":
+        return { ...state, isLoading: true };
+      case "FETCH_SUCCESS":
+        return {
+          ...state,
+          isLoading: false,
+          shipments: action.payload.shipments,
+          totalPages: action.payload.totalPages,
+        };
+      case "FETCH_ERROR":
+        return { ...state, isLoading: false, error: action.payload };
+      case "SET_FIELD":
+        return { ...state, [action.field]: action.value };
+      case "SET_VENDORS":
+        return { ...state, vendors: action.payload };
+      case "SET_Modal_open":
+        return { ...state, isModalOpen: action.payload };
+      case "SET_DELETE_MODAL_OPEN":
+        return { ...state, isDeleteModalOpen: action.payload };
+      default:
+        return state;
+    }
+  }
+
+  const getShipments = (startDateParam, endDateParam) => {
     const query = new URLSearchParams({
       page,
       size: ITEMS_PER_PAGE,
       ...(state.selectedShipmentStatus && { shipmentStatus: state.selectedShipmentStatus }),
       ...(state.selectedShipmentTybe && { shipmentType: state.selectedShipmentTybe }),
-      ...(state.selectedGovernorate && { paymentStatus: state.selectedGovernorate }),
+      ...(state.selectedGovernorate && { governorate: state.selectedGovernorate }),
       ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
-      ...(startDate && { shipmentStartDate: startDate.utc().toISOString() }),
-      ...(endDate && { shipmentEndDate: endDate.utc().toISOString() }),
+      ...(startDate && startDateParam && { shipmentStartDate: startDate.utc().toISOString() }),
+      ...(endDate && endDateParam && { shipmentEndDate: endDate.utc().toISOString() }),
     });
 
     dispatch({ type: "FETCH_START" });
@@ -127,11 +128,41 @@ export default function Shipments() {
   };
 
   const handleChange = (field) => (e) => {
-    dispatch({ type: "SET_FIELD", field, value: e.target.value });
+    const value = e.target.value;
+    dispatch({ type: "SET_FIELD", field, value });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramKeyMap = {
+      selectedShipmentStatus: "shipmentStatus",
+      selectedShipmentTybe: "shipmentType",
+      selectedGovernorate: "governorate",
+      selectedDeliveryStatus: "deliveryStatus",
+    };
+
+    const paramKey = paramKeyMap[field];
+
+    if (paramKey) {
+      if (value) {
+        urlParams.set(paramKey, value);
+      } else {
+        urlParams.delete(paramKey);
+      }
+
+      const url = new URL(window.location.href);
+      url.search = urlParams.toString();
+      window.history.pushState({}, "", url);
+    }
   };
 
   const handleReset = () => {
-    navigate("/shipments", { replace: true });
+    dispatch({ type: "SET_FIELD", field: "selectedShipmentStatus", value: "" });
+    dispatch({ type: "SET_FIELD", field: "selectedShipmentTybe", value: "" });
+    dispatch({ type: "SET_FIELD", field: "selectedGovernorate", value: "" });
+    dispatch({ type: "SET_FIELD", field: "selectedDeliveryStatus", value: "" });
+    setTimeout(() => {
+      getShipments();
+    }, 100);
+    navigate("/shipments");
   };
   const handleModalOpen = () => {
     dispatch({ type: "SET_Modal_open", payload: true });
@@ -160,13 +191,10 @@ export default function Shipments() {
         deliveryDate,
       })
       .then(({ data: { data } }) => {
-        console.log(data);
         dispatch({ type: "SET_Modal_open", payload: false });
         const updatedShipments = state.shipments.map((shipment) =>
           shipment.id === id ? { ...data, customer: shipment.customer } : shipment
         );
-        console.log(updatedShipments);
-
         dispatch({
           type: "FETCH_SUCCESS",
           payload: {
@@ -185,7 +213,12 @@ export default function Shipments() {
   }, []);
 
   useEffect(() => {
-    getShipments();
+    const searchParam = new URLSearchParams(window.location.search);
+
+    const startDateParam = searchParam.get("startDate");
+    const endDateParam = searchParam.get("endDate");
+
+    getShipments(startDateParam, endDateParam);
   }, [
     page,
     state.selectedShipmentStatus,
@@ -194,23 +227,41 @@ export default function Shipments() {
     state.selectedDeliveryStatus,
     startDate,
     endDate,
+    searchParams,
   ]);
 
   const handlePageChange = (_, value) => {
     updateParams({ page: value });
   };
 
-  const updateShipment = (shipment) => {
-    dispatch({ type: "SET_FIELD", field: "selectedShipmentStatus", value: shipment });
+  const deleteShipment = () => {
+    axiosRequest
+      .delete(`${process.env.REACT_APP_API_URL}/shipments/${state.selectedShipment.id}`)
+      .then(() => {
+        const updatedShipments = state.shipments.filter(
+          (shipment) => shipment.id !== state.selectedShipment.id
+        );
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: {
+            shipments: updatedShipments,
+            totalPages: state.totalPages,
+          },
+        });
+        dispatch({ type: "SET_DELETE_MODAL_OPEN", payload: false });
+      })
+      .catch((error) => {
+        dispatch({ type: "FETCH_ERROR", payload: error });
+      });
   };
 
   const colDefs = [
-    // {
-    //   field: "name",
-    //   headerName: "الكود التعريفي",
-    //   sortable: true,
-    //   minWidth: 110,
-    // },
+    {
+      field: "code",
+      headerName: "الكود التعريفي",
+      sortable: true,
+      minWidth: 110,
+    },
     {
       field: "orderNumber",
       headerName: "رقم الطلب",
@@ -306,7 +357,20 @@ export default function Shipments() {
                   >
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => {}} sx={{ color: "#d32f2f", fontSize: "1.3rem" }}>
+                  <IconButton
+                    onClick={() => {
+                      dispatch({
+                        type: "SET_DELETE_MODAL_OPEN",
+                        payload: true,
+                      });
+                      dispatch({
+                        type: "SET_FIELD",
+                        field: "selectedShipment",
+                        value: params.data,
+                      });
+                    }}
+                    sx={{ color: "#d32f2f", fontSize: "1.3rem" }}
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </>
@@ -330,6 +394,13 @@ export default function Shipments() {
           data={state.selectedShipment}
           vendors={vendors}
           onEdit={handleEditShipment}
+        />
+      )}
+      {state.isDeleteModalOpen && state.selectedShipment && (
+        <ConfirmDeleteModal
+          open={state.isDeleteModalOpen}
+          onClose={() => dispatch({ type: "SET_DELETE_MODAL_OPEN", payload: false })}
+          handleConfirmDelete={deleteShipment}
         />
       )}
       {isLoading ? (
@@ -377,7 +448,7 @@ export default function Shipments() {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={6} md={4} lg={3}>
+                <Grid item xs={12} md={4} lg={3}>
                   <FormControl fullWidth>
                     <InputLabel>المحافظة</InputLabel>
                     <Select
@@ -394,24 +465,10 @@ export default function Shipments() {
                     </Select>
                   </FormControl>
                 </Grid>
-
-                <Grid item xs={6} md={4} lg={3}>
-                  <FormControl fullWidth>
-                    <InputLabel>حالة التصنيع</InputLabel>
-                    <Select
-                      value={state.selectedDeliveryStatus}
-                      onChange={handleChange("selectedDeliveryStatus")}
-                      label="حالة التصنيع"
-                      sx={{ height: 40 }}
-                    >
-                      {/* Map Delivery Status Options Here */}
-                    </Select>
-                  </FormControl>
-                </Grid>
               </>
             )}
 
-            <Grid item xs={12} md={6} lg={4}>
+            <Grid item xs={12} md={6} lg={3}>
               <DateRangePickerWrapper
                 startDate={startDate}
                 endDate={endDate}

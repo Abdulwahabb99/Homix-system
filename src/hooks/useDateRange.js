@@ -26,11 +26,8 @@ export const useDateRange = ({
       end = useEndOfDay ? moment.utc(end, format).endOf("day") : moment.utc(end, format);
     }
 
-    const fallbackStart = useStartOfDay
-      ? moment().utc().subtract(defaultDays, "days").startOf("day")
-      : moment().subtract(defaultDays, "days");
-
-    const fallbackEnd = useEndOfDay ? moment().utc().endOf("day") : moment();
+    const fallbackStart = moment().utc().startOf("day");
+    const fallbackEnd = moment().utc().endOf("day");
 
     return useEndDate
       ? {

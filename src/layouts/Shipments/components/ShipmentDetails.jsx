@@ -64,6 +64,7 @@ function ShipmentDetails() {
   const [comments, setComments] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState("");
+  const [administrator, setAdministrator] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
@@ -177,6 +178,16 @@ function ShipmentDetails() {
     sendNewComment();
   };
 
+  const getUser = () => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
+      const users = res.data.data;
+      const user = users.find((user) => user.id === orderDetails.userId);
+      if (user) {
+        setAdministrator(`${user.firstName} ${user.lastName}`);
+      }
+    });
+  };
+
   useEffect(() => {
     const getOrderDetails = async () => {
       setIsLoading(true);
@@ -214,9 +225,14 @@ function ShipmentDetails() {
         setIsLoading(false);
       }
     };
-
     getOrderDetails();
   }, []);
+
+  useEffect(() => {
+    if (orderDetails) {
+      getUser();
+    }
+  }, [orderDetails]);
 
   return (
     <>
@@ -299,7 +315,7 @@ function ShipmentDetails() {
                     <Card sx={{ height: "100%" }}>
                       {orderDetails && (
                         <OrderInfoCard
-                          orderDetails={orderDetails}
+                          orderDetails={{ ...orderDetails, administrator }}
                           orderTotalCost={orderTotalCost}
                           orderTotalPrice={orderTotalPrice}
                           orderTotalShipping={orderTotalShipping}

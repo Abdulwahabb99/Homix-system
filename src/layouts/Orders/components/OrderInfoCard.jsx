@@ -11,7 +11,7 @@ function OrderInfoCard({
   orderTotalToBeCollected,
 }) {
   const user = JSON.parse(localStorage.getItem("user"));
-  const isAdmin = user?.userType === "1";
+  const isVendor = user?.userType === "2";
 
   function formatDateStringToArabic(dateString) {
     const date = new Date(dateString);
@@ -48,7 +48,7 @@ function OrderInfoCard({
             </MDTypography>
           </MDTypography>
         </MDBox>
-        {!isAdmin && (
+        {!isVendor && (
           <MDBox mt={0} mb={2}>
             <MDTypography variant="button" fontWeight="regular">
               <MDTypography display="inline" variant="body2" verticalAlign="middle">
@@ -96,7 +96,7 @@ function OrderInfoCard({
             </MDTypography>
           </MDTypography>
         </MDBox>
-        {isAdmin && (
+        {!isVendor && (
           <>
             <MDBox mt={0} mb={2}>
               <MDTypography variant="button" fontWeight="regular">
@@ -133,6 +133,19 @@ function OrderInfoCard({
             </MDTypography>
           </MDTypography>
         </MDBox>
+        {!isVendor && (
+          <MDBox mt={0} mb={2}>
+            <MDTypography variant="button" fontWeight="regular">
+              <MDTypography display="inline" variant="body2" verticalAlign="middle">
+                المسؤول :{" "}
+              </MDTypography>
+              &nbsp;
+              <MDTypography variant="button" color="text" fontWeight="medium">
+                {orderDetails.administrator || "لا يوجد"}
+              </MDTypography>
+            </MDTypography>
+          </MDBox>
+        )}{" "}
       </MDBox>
     </>
   );

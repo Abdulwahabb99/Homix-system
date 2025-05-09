@@ -26,6 +26,7 @@ function AddOrderModal() {
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
+
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
 
@@ -61,23 +62,36 @@ function AddOrderModal() {
         },
         line_items: [
           {
-            title: selectedProduct.title,
-            name: selectedProduct.title,
-            price: selectedProduct.variants[0].price,
-            product_id: selectedProduct.shopifyId,
+            title: selectedProduct?.title,
+            name: selectedProduct?.title,
+            price: selectedProduct?.variants[0].price,
+            product_id: selectedProduct?.shopifyId,
             quantity: 1,
-            variant_id: selectedProduct.variants[0].shopifyId,
-            sku: selectedProduct.variants[0].sku,
+            variant_id: selectedProduct?.variants[0].shopifyId,
+            sku: selectedProduct?.variants[0].sku,
             total_discount: "",
             discount_allocations: [],
             shipping_lines: [
               {
-                price: orderDetails.shippingCost,
+                price: orderDetails?.shippingCost,
               },
             ],
           },
         ],
-        userType: orderDetails.administrator,
+        userId: orderDetails?.selectedUser,
+        status: orderDetails?.orderStatus,
+        shippingFees: orderDetails?.shippingCost,
+        commission: orderDetails?.commission,
+        shipmentStatus: orderDetails?.shipmentStatus,
+        shipmentType: orderDetails?.shipmentType,
+        shippingCompany: orderDetails?.shippingCompany,
+        shippingReceiveDate: orderDetails?.shippingReceiveDate,
+        deliveryDate: orderDetails?.deliveryDate,
+        downPayment: orderDetails?.downPayment,
+        paymentStatus: orderDetails?.paymentStatus,
+        toBeCollected: orderDetails?.toBeCollected,
+        manufacturingDate: orderDetails?.manufacturingDate,
+        governorate: orderDetails?.governorate,
       })
       .then(() => {
         NotificationMeassage("success", "تم اضافه الشحنة بنجاح");
@@ -229,6 +243,15 @@ function AddOrderModal() {
             onClick={() => addNewOrder()}
             variant="contained"
             style={{ backgroundColor: "#00314c", color: "#fff" }}
+            disabled={
+              !selectedProduct || !state.firstName || !state.lastName
+              // !state.country ||
+              // !state.province ||
+              // !state.city ||
+              // !state.phone ||
+              // !state.address ||
+              // !state.email
+            }
           >
             اضافه
           </Button>

@@ -44,8 +44,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
     "-" +
     String(today.getDate()).padStart(2, "0");
 
-  console.log(data);
-
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
       <DialogTitle>تعديل الشحنة {data.orderData?.name}</DialogTitle>

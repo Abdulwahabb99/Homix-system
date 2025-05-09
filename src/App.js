@@ -37,7 +37,7 @@ export default function App() {
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
   const reduxDispatch = useDispatch();
-  const isAdmin = user?.userType === "1";
+  const isVendor = user?.userType === "2";
 
   const rtlCache = useMemo(
     () =>
@@ -110,7 +110,7 @@ export default function App() {
               color={sidenavColor}
               brand={homix}
               brandName="HOMIX"
-              routes={isAdmin ? routes : vendorsRoutes}
+              routes={!isVendor ? routes : vendorsRoutes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
