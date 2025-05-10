@@ -5,7 +5,16 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import {
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { DELIVERY_STATUS, PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { USER_TYPES_VALUES } from "shared/utils/constants";
 import axiosRequest from "shared/functions/axiosRequest";
@@ -20,17 +29,18 @@ const formatDate = (dateString) => {
 };
 
 const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
+  const [users, setUsers] = useState([]);
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
-  const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus);
-  const [downPayment, setDownPayment] = useState(data.downPayment);
-  const [shippingCost, setShippingCost] = useState(data.receivedAmount);
+  const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
+  const [downPayment, setDownPayment] = useState(data.orderData.downPayment);
+  const [shippingCost, setShippingCost] = useState(data.shippingFees);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
-  const [selectedVendor, setSelectedVendor] = useState(data.selectedVendor);
-  const [deliveryStatus, setDeliveryStatus] = useState(data.deliveryStatus);
-  const [administrator, setAdministrator] = useState(data?.administrator);
-  const [users, setUsers] = useState([]);
+  const [selectedVendor, setSelectedVendor] = useState(data.items[0].product.vendorId);
+  const [deliveryStatus, setDeliveryStatus] = useState(data.status);
+  const [administrator, setAdministrator] = useState(data?.userId ? data?.userId : null);
+  const [shippedFromInventory, setShippedFromInventory] = useState(data.shippedFromInventory);
 
   const today = new Date();
   const formattedDate =
@@ -205,6 +215,28 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               }}
             />
           </FormControl>
+
+          <FormControlLabel
+            sx={{ display: "flex", alignItems: "center" }}
+            control={
+              <Checkbox
+                checked={shippedFromInventory}
+                onChange={(e) => setShippedFromInventory(e.target.checked)}
+                color="primary"
+                sx={{
+                  "& .MuiSvgIcon-root": {
+                    border: "1px solid rgb(135, 134, 134)",
+                    fontSize: 18,
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography color={"#000"} fontSize={"13px"} fontWeight="bold">
+                شحن للمخزن
+              </Typography>
+            }
+          />
         </div>
       </DialogContent>
       <DialogActions>
@@ -224,7 +256,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               shippingCost,
               selectedVendor,
               deliveryStatus,
-              administrator
+              administrator,
+              shippedFromInventory
             )
           }
           variant="contained"

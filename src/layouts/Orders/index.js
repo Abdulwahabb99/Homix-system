@@ -218,10 +218,11 @@ function Orders() {
     paymentStatus,
     downPayment,
     toBeCollected,
-    receivedAmount,
+    shippingFees,
     selectedVendor,
     deliveryStatus,
-    administrator
+    administrator,
+    shippedFromInventory
   ) => {
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
@@ -229,11 +230,12 @@ function Orders() {
         commission: commission,
         paymentStatus: paymentStatus,
         downPayment: downPayment,
-        receivedAmount: receivedAmount,
+        shippingFees: shippingFees,
         toBeCollected: toBeCollected,
-        vendor: selectedVendor,
+        vendorId: selectedVendor,
         deliveryStatus: deliveryStatus,
         userId: administrator,
+        shippedFromInventory: shippedFromInventory,
         PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
@@ -246,7 +248,7 @@ function Orders() {
               toBeCollected: data.toBeCollected,
               paymentStatus: data.paymentStatus,
               PoDate: data.PoDate,
-              receivedAmount: data.receivedAmount,
+              shippingFees: data.shippingFees,
               selectedVendor: data.selectedVendor,
               deliveryStatus: data.deliveryStatus,
               userId: data.userId,

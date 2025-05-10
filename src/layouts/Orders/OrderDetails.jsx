@@ -64,12 +64,14 @@ function OrderDetails() {
   const [comments, setComments] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState("");
+  const [administrator, setAdministrator] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const componentRef = useRef();
   const isSmallScreen = useMediaQuery("(max-width:600px)");
   const isAdmin = user.userType === "1";
+  const isVendor = user.userType === "2";
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
@@ -176,6 +178,20 @@ function OrderDetails() {
     setCommentText("");
     sendNewComment();
   };
+  const getUser = () => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
+      const users = res.data.data;
+      const user = users.find((user) => user.id === orderDetails.userId);
+      if (user) {
+        setAdministrator(`${user.firstName} ${user.lastName}`);
+      }
+    });
+  };
+  useEffect(() => {
+    if (orderDetails) {
+      getUser();
+    }
+  }, [orderDetails]);
 
   useEffect(() => {
     const getOrderDetails = async () => {
@@ -270,7 +286,7 @@ function OrderDetails() {
                     {getPaymentValue(orderDetails?.paymentStatus)}
                   </div>
                 )}
-                {!isSmallScreen && isAdmin && (
+                {!isSmallScreen && !isVendor && (
                   <div
                     onClick={handlePrint}
                     style={{
@@ -305,6 +321,7 @@ function OrderDetails() {
                               ? orderDetails.customer.phoneNumber
                               : ""
                           }
+                          shippedFromInventory={orderDetails.shippedFromInventory}
                         />
                       )}
                     </Card>
@@ -313,7 +330,7 @@ function OrderDetails() {
                     <Card sx={{ height: "100%" }}>
                       {orderDetails && (
                         <OrderInfoCard
-                          orderDetails={orderDetails}
+                          orderDetails={{ ...orderDetails, administrator }}
                           orderTotalCost={orderTotalCost}
                           orderTotalPrice={orderTotalPrice}
                           orderTotalShipping={orderTotalShipping}
@@ -455,16 +472,7 @@ function OrderDetails() {
                   </Grid>
                 </Grid>
                 {comments.map((comment, index) => {
-                  const commentMaker =
-                    comment.userId === 1
-                      ? "أدمن"
-                      : comment.userId === 3
-                      ? "عمليات"
-                      : comment.userId === 4
-                      ? "لوجستي"
-                      : comment.userId === 2
-                      ? `${comment.firstName} ${comment.lastName}`
-                      : "";
+                  const commentMaker = administrator;
 
                   return (
                     <Box

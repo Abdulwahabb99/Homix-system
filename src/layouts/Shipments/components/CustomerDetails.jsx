@@ -1,36 +1,14 @@
 import { Home, Phone } from "@mui/icons-material";
-import { Icon, Typography } from "@mui/material";
+import { Icon } from "@mui/material";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";
 import EmailIcon from "@mui/icons-material/Email";
 import PersonIcon from "@mui/icons-material/Person";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+
 // eslint-disable-next-line react/prop-types
-function CustomerDetails({ customerName, email, address, phoneNumber, shippedFromInventory }) {
-  return shippedFromInventory ? (
-    <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "16px 24px",
-        }}
-      >
-        <Icon sx={{ color: "#333", marginRight: "8px" }}>
-          <LocalShippingIcon />
-        </Icon>
-
-        <MDTypography variant="h6" fontWeight="medium">
-          بيانات الشحن
-        </MDTypography>
-      </div>
-
-      <MDBox pt={1} px={3}>
-        <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>التسليم بمخازن هومكس </Typography>
-      </MDBox>
-    </>
-  ) : (
+function CustomerDetails({ customerName, email, address, phoneNumber }) {
+  return (
     <>
       <MDBox pt={2} px={3}>
         <MDTypography variant="h6" fontWeight="medium">
@@ -96,6 +74,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
           </MDBox>
         </MDBox>
       </div>
+      <MDBox p={2}></MDBox>
     </>
   );
 }

@@ -34,7 +34,7 @@ import { ToastContainer } from "react-toastify";
 import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
 import OrderInfoCard from "layouts/Orders/components/OrderInfoCard";
-import CustomerDetails from "layouts/Orders/components/CustomerDetails";
+import CustomerDetails from "./CustomerDetails";
 
 const statusoptions = [
   { label: "معلق", value: 1 },
@@ -307,6 +307,7 @@ function ShipmentDetails() {
                               ? orderDetails.customer.phoneNumber
                               : ""
                           }
+                          isShimpentDetails={true}
                         />
                       )}
                     </Card>

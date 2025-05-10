@@ -3,14 +3,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";
 
-function OrderInfoCard({
-  orderDetails,
-  orderTotalCost,
-  orderTotalPrice,
-  orderTotalShipping,
-  orderTotalToBeCollected,
-  isShimpentDetails,
-}) {
+function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpentDetails }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const isVendor = user?.userType === "2";
 
@@ -49,19 +42,6 @@ function OrderInfoCard({
             </MDTypography>
           </MDTypography>
         </MDBox>
-        {!isVendor && (
-          <MDBox mt={0} mb={2}>
-            <MDTypography variant="button" fontWeight="regular">
-              <MDTypography display="inline" variant="body2" verticalAlign="middle">
-                تكلفة الشحن :{" "}
-              </MDTypography>
-              &nbsp;
-              <MDTypography variant="button" color="text" fontWeight="medium">
-                {Number(orderTotalShipping).toFixed(0) || ""}
-              </MDTypography>
-            </MDTypography>
-          </MDBox>
-        )}{" "}
         {orderDetails.discount && (
           <MDBox mt={0} mb={2}>
             <MDTypography variant="button" fontWeight="regular">
@@ -93,7 +73,7 @@ function OrderInfoCard({
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderTotalToBeCollected || 0}
+              {orderDetails.toBeCollected || 0}
             </MDTypography>
           </MDTypography>
         </MDBox>
