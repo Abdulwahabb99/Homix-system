@@ -93,5 +93,29 @@ export const useDateRange = ({
     ]
   );
 
-  return { startDate, endDate, handleDatesChange };
+  const handleReset = useCallback(() => {
+    const resetStart = moment().utc().startOf("day");
+    const resetEnd = moment().utc().endOf("day");
+
+    const newDateRange = useEndDate
+      ? { startDate: resetStart, endDate: resetEnd }
+      : { startDate: resetStart };
+
+    setDateRange(newDateRange);
+    if (onChange) onChange(newDateRange);
+
+    if (queryParams) {
+      const urlParams = new URLSearchParams(window.location.search);
+      urlParams.set("startDate", resetStart.locale("en").format(format));
+      if (useEndDate) {
+        urlParams.set("endDate", resetEnd.locale("en").format(format));
+      }
+
+      const url = new URL(window.location.href);
+      url.search = urlParams.toString().replaceAll("%2C", ",");
+      window.history.pushState(null, "", url.toString());
+    }
+  }, [format, onChange, queryParams, useEndDate]);
+
+  return { startDate, endDate, handleDatesChange, handleReset };
 };

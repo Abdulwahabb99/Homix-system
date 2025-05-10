@@ -29,18 +29,21 @@ const formatDate = (dateString) => {
 };
 
 const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
+  console.log("data", data);
   const [users, setUsers] = useState([]);
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
   const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
-  const [downPayment, setDownPayment] = useState(data.orderData.downPayment);
+  const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
   const [selectedVendor, setSelectedVendor] = useState(data.items[0].product.vendorId);
-  const [deliveryStatus, setDeliveryStatus] = useState(data.status);
+  const [deliveryStatus, setDeliveryStatus] = useState(data.deliveryStatus);
   const [administrator, setAdministrator] = useState(data?.userId ? data?.userId : null);
-  const [shippedFromInventory, setShippedFromInventory] = useState(data.shippedFromInventory);
+  const [shippedFromInventory, setShippedFromInventory] = useState(
+    data.shippedFromInventory ? data.shippedFromInventory : false
+  );
 
   const today = new Date();
   const formattedDate =
@@ -198,7 +201,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
             type="number"
             style={{ margin: "5px 0" }}
           />
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
+          {/* <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
               تاريخ امر التصنيع
             </InputLabel>
@@ -214,7 +217,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
                 },
               }}
             />
-          </FormControl>
+          </FormControl> */}
 
           <FormControlLabel
             sx={{ display: "flex", alignItems: "center" }}

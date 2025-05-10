@@ -53,7 +53,7 @@ const paymentStatus = { 1: "مدفوع", 2: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function Orders() {
-  const { startDate, endDate, handleDatesChange } = useDateRange({
+  const { startDate, endDate, handleDatesChange, handleReset } = useDateRange({
     defaultDays: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -148,7 +148,7 @@ function Orders() {
       });
   };
 
-  const fetchOrders = () => {
+  const fetchOrders = (startDateParam, endDateParam) => {
     setIsLoading(true);
 
     const query = new URLSearchParams({
@@ -159,8 +159,8 @@ function Orders() {
       ...(orderStatusParam && { status: orderStatusParam }),
       ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
       ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
-      ...(startDate && { startDate: startDate.utc().toISOString() }),
-      ...(endDate && { endDate: endDate.utc().toISOString() }),
+      ...(startDate && startDateParam && { startDate: startDate.utc().toISOString() }),
+      ...(endDate && endDateParam && { endDate: endDate.utc().toISOString() }),
     });
 
     axiosRequest
@@ -236,7 +236,7 @@ function Orders() {
         deliveryStatus: deliveryStatus,
         userId: administrator,
         shippedFromInventory: shippedFromInventory,
-        PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
+        // PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -252,6 +252,8 @@ function Orders() {
               selectedVendor: data.selectedVendor,
               deliveryStatus: data.deliveryStatus,
               userId: data.userId,
+              shippedFromInventory: data.shippedFromInventory,
+              downPayment: data.downPayment,
             };
           }
           return order;
@@ -268,10 +270,26 @@ function Orders() {
   const openEditModal = (value) => {
     setSelectedEditOrder(value);
   };
-  const handleReset = () => {
+  const handleResetGrid = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    handleReset();
+    urlParams.delete("startDate");
+    urlParams.delete("endDate");
+    urlParams.delete("page");
+    urlParams.delete("orderNumber");
+    urlParams.delete("vendorId");
+    urlParams.delete("status");
+    urlParams.delete("paymentStatus");
+    urlParams.delete("deliveryStatus");
+    setSearchParams(urlParams);
+    setSelectedPaymentStatus("");
+    setSelectedDeliveryStatus("");
     setSelectedVendor("");
     setOrderStatus("");
-    navigate("/orders");
+    // setTimeout(() => {
+    //   fetchOrders();
+    //   // navigate("/orders");
+    // }, 300);
   };
 
   const colDefs = [
@@ -280,6 +298,14 @@ function Orders() {
       headerName: "الكود التعريفي",
       sortable: true,
       minWidth: 110,
+      cellRenderer: (params) => (
+        <LinkRenderer
+          data={params.data}
+          value={params.data.code}
+          openInNewTab
+          url={`/orders/${params.data.orderId}`}
+        />
+      ),
     },
     {
       field: "orderNumber",
@@ -356,7 +382,7 @@ function Orders() {
       minWidth: 130,
       valueGetter: (node) => getDeliveryStatusValue(node.data.status),
     },
-    {
+    !isVendor && {
       field: "administrator",
       headerName: "المسؤول",
       sortable: true,
@@ -389,7 +415,12 @@ function Orders() {
   ];
 
   useEffect(() => {
-    fetchOrders();
+    const searchParam = new URLSearchParams(window.location.search);
+
+    const startDateParam = searchParam.get("startDate");
+    const endDateParam = searchParam.get("endDate");
+
+    fetchOrders(startDateParam, endDateParam);
     if (!vendors.length) {
       getVendors();
     }
@@ -485,7 +516,7 @@ function Orders() {
               <>
                 <Grid item xs={6} md={6} lg={3}>
                   <FormControl fullWidth style={{ width: "100%" }}>
-                    <InputLabel id="deliveryStatus">حاله الدفع</InputLabel>
+                    <InputLabel id="deliveryStatus">طريقة الدفع</InputLabel>
                     <Select
                       labelId="deliveryStatus"
                       id="deliveryStatus"
@@ -548,7 +579,7 @@ function Orders() {
               resizable: true,
             }}
             handleSearchClick={() => setIsSearchModalOpen(true)}
-            handleReset={handleReset}
+            handleReset={handleResetGrid}
             enableExcel
           />
           <Pagination
