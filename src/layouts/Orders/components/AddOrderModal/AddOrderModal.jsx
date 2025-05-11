@@ -1,5 +1,5 @@
 import { Box, Button, Chip, Grid, IconButton, Typography } from "@mui/material";
-import React, { useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,6 +26,7 @@ function AddOrderModal() {
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
 
@@ -78,6 +79,13 @@ function AddOrderModal() {
           },
         ],
         userType: orderDetails.administrator,
+        commission: orderDetails.commission,
+        downPayment: orderDetails.downPayment,
+        shippingFees: orderDetails.shippingCost,
+        toBeCollected: orderDetails.toBeCollected,
+        status: orderDetails.status,
+        paymentStatus: orderDetails.paymentStatus,
+        userId: orderDetails.administrator,
       })
       .then(() => {
         NotificationMeassage("success", "تم اضافه الطلب بنجاح");
@@ -87,6 +95,12 @@ function AddOrderModal() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
+
+  useEffect(() => {
+    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then(({ data: { data } }) => {
+      setUsers(data);
+    });
+  }, []);
 
   return (
     <DashboardLayout>
@@ -116,6 +130,7 @@ function AddOrderModal() {
           onClose={() => setIsOrderDetailsModalOpen(false)}
           onConfirm={handleCustomerDetailsChange}
           customer={orderDetails}
+          users={users}
         />
       )}
       <MDBox py={3}>
@@ -229,6 +244,7 @@ function AddOrderModal() {
             onClick={() => addNewOrder()}
             variant="contained"
             style={{ backgroundColor: "#00314c", color: "#fff" }}
+            disabled={!selectedProduct || !orderDetails || !state.firstName || !state.lastName}
           >
             اضافه
           </Button>

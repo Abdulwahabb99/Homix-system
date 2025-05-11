@@ -29,7 +29,6 @@ const formatDate = (dateString) => {
 };
 
 const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
-  console.log("data", data);
   const [users, setUsers] = useState([]);
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);

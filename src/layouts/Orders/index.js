@@ -27,8 +27,6 @@ import { useDateRange } from "hooks/useDateRange";
 import { DELIVERY_STATUS, deliveryStatusValues, PAYMENT_STATUS } from "./utils/constants";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
-import { getUserType } from "shared/utils/constants";
-import { set } from "lodash";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -171,39 +169,41 @@ function Orders() {
           navigate("/authentication/sign-in");
           return;
         }
-
         const newOrders = data.data.orders
-          .map((order) => ({
-            orderNumber: order.orderNumber,
-            items: order.orderLines,
-            totalPrice: order.totalPrice,
-            subTotalPrice: order.subTotalPrice,
-            status: order.status,
-            customerName: `${order.customer.firstName} ${order.customer.lastName}`,
-            orderId: order.id,
-            date: order.orderDate,
-            toBeCollected: order.toBeCollected,
-            shippingFees: order.shippingFees,
-            paymentStatus: order.paymentStatus,
-            notes: order.notes,
-            commission: order.commission,
-            PoDate: order.PoDate,
-            totalCost: Number(order.totalCost).toFixed(1),
-            orderData: order,
-            receivedAmount: order.receivedAmount,
-            totalDiscounts: order.totalDiscounts,
-            code: order.name,
-            createdAt: order.createdAt,
-            PoDate: order.PoDate,
-            userId: order.userId,
-          }))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          .map((order) => {
+            return {
+              orderNumber: order.orderNumber,
+              items: order.orderLines,
+              totalPrice: order.totalPrice,
+              subTotalPrice: order.subTotalPrice,
+              status: order.status,
+              customerName: order.customer
+                ? `${order.customer.firstName} ${order.customer.lastName}`
+                : "",
+              orderId: order.id,
+              date: order.orderDate,
+              toBeCollected: order.toBeCollected,
+              shippingFees: order.shippingFees,
+              paymentStatus: order.paymentStatus,
+              notes: order.notes,
+              commission: order.commission,
+              PoDate: order.PoDate,
+              totalCost: Number(order.totalCost).toFixed(1),
+              orderData: order,
+              receivedAmount: order.receivedAmount,
+              totalDiscounts: order.totalDiscounts,
+              code: order.name,
+              createdAt: order.createdAt,
+              userId: order.userId,
+            };
+          })
+          .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
 
         setOrders(newOrders);
         setTotalPages(data.data.totalPages);
       })
       .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
+        // NotificationMeassage("error", "حدث خطأ");
       })
       .finally(() => {
         setIsLoading(false);

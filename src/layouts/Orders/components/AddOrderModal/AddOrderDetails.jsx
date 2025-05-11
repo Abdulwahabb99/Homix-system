@@ -19,7 +19,7 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) => {
+const AddOrderDetails = ({ open, onClose, customer, onConfirm, users }) => {
   const [orderStatus, setOrderStatus] = useState(customer?.orderStatus);
   const [commission, setCommission] = useState(customer?.commission);
   const [manufacturingDate, setManufacturingDate] = useState(
@@ -38,6 +38,11 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
     String(today.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(today.getDate()).padStart(2, "0");
+
+  const newUsers = users.map((user) => ({
+    label: `${user.firstName} ${user.lastName}`,
+    value: user.id,
+  }));
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
@@ -91,11 +96,11 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, setVendorName }) 
               labelId="administrator"
               id="administrator"
               value={administrator}
-              label="حالة الدفع"
+              label="المسؤول"
               onChange={(e) => setAdministrator(e.target.value)}
               sx={{ height: 35 }}
             >
-              {USER_TYPES_VALUES.map((option) => {
+              {newUsers.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
