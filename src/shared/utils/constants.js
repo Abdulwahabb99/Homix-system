@@ -1,3 +1,5 @@
+import { deliveryStatusValues } from "layouts/Orders/utils/constants";
+
 export const USER_TYPES = {
   ADMIN: "1",
   VENDOR: "2",
@@ -121,4 +123,24 @@ export const getShipmentTypeLabel = (value) => {
 export const getShipmentStatusLabel = (value) => {
   const shipmentStatus = SHIPMENT_STATUS_VALUES.find((g) => g.value === value);
   return shipmentStatus ? shipmentStatus.label : "";
+};
+
+export const statusValues = {
+  1: "معلق",
+  2: "مؤكد",
+  3: "ملغي",
+  4: "قيد التصنيع ",
+  5: "تم التسليم",
+  6: "مسترجع ",
+  7: "مستبدل ",
+};
+
+export const getStatusValue = (status) => {
+  const resultValue = statusValues[status];
+  return resultValue;
+};
+
+export const getDeliveryStatusValue = (status) => {
+  const resultValue = deliveryStatusValues[status];
+  return resultValue;
 };

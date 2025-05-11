@@ -1,81 +1,64 @@
 /* eslint-disable react/prop-types */
+import { Button } from "@mui/material";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import React from "react";
+import { getDeliveryStatusValue } from "shared/utils/constants";
+import { getStatusValue } from "shared/utils/constants";
 
-function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpentDetails }) {
+function BasicsInfoCard({ orderDetails }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const isVendor = user?.userType === "2";
-
-  function formatDateStringToArabic(dateString) {
-    const date = new Date(dateString);
-    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
-    const formatter = new Intl.DateTimeFormat("ar-EG", options);
-    return formatter.format(date);
-  }
 
   return (
     <>
       <MDBox pt={2} px={3}>
-        <MDTypography variant="h5" fontWeight="medium">
-          {isShimpentDetails ? "تفاصيل الشحنة" : "تفاصيل الطلب"}
-        </MDTypography>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular"></MDTypography>
+        </MDBox>
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              سعر البيع :{" "}
+              حالة الطلب :{" "}
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.orderLines[0].price).toFixed(0) || ""}
+              {getStatusValue(orderDetails.status)}
             </MDTypography>
           </MDTypography>
         </MDBox>
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              سعر التكلفة :{" "}
+              حالة التصنيع :
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.orderLines[0].cost).toFixed(0) || ""}
+              {getDeliveryStatusValue(orderDetails.deliveryStatus)}
             </MDTypography>
           </MDTypography>
         </MDBox>
-        {!isVendor && (
-          <>
-            <MDBox mt={0} mb={2}>
-              <MDTypography variant="button" fontWeight="regular">
-                <MDTypography display="inline" variant="h6" verticalAlign="middle">
-                  تكلفة الشحن :{" "}
-                </MDTypography>
-                &nbsp;
-                <MDTypography variant="button" color="text" fontWeight="medium">
-                  {orderDetails.shippingFees || 0}
-                </MDTypography>
-              </MDTypography>
-            </MDBox>
-          </>
-        )}{" "}
+
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              جدية الشراء :{" "}
+              المسؤول :
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.downPayment || 0}
+              {orderDetails.administrator ? orderDetails.administrator : "لا يوجد"}
             </MDTypography>
           </MDTypography>
         </MDBox>
+
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              المبلغ المطلوب تحصيله :{" "}
+              مكان التسليم :
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.toBeCollected || 0}
+              {orderDetails.shippedFromInventory ? "مخازن هومكس" : "عنوان العميل"}
             </MDTypography>
           </MDTypography>
         </MDBox>
@@ -84,4 +67,4 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
   );
 }
 
-export default OrderInfoCard;
+export default BasicsInfoCard;

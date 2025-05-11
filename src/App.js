@@ -21,7 +21,6 @@ import { vendorsRoutes } from "routes";
 import AddEditUser from "layouts/Users/AddEditUser";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
-import axios from "axios";
 import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
@@ -159,7 +158,7 @@ export default function App() {
               }
             />
             <Route
-              path="/orders/add"
+              path="/products/:id"
               element={
                 <ProtectedRoutes>
                   <ProductDetails to="/products/:id" />

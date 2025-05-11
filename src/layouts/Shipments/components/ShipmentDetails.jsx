@@ -173,7 +173,14 @@ function ShipmentDetails() {
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
-    setComments((prev) => [{ text: commentText, createdAt: new Date() }, ...prev]);
+    setComments((prev) => [
+      {
+        text: commentText,
+        createdAt: new Date(),
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
+      ...prev,
+    ]);
     setCommentText("");
     sendNewComment();
   };
@@ -457,16 +464,7 @@ function ShipmentDetails() {
                   </Grid>
                 </Grid>
                 {comments.map((comment, index) => {
-                  const commentMaker =
-                    comment.userId === 1
-                      ? "أدمن"
-                      : comment.userId === 3
-                      ? "عمليات"
-                      : comment.userId === 4
-                      ? "لوجستي"
-                      : comment.userId === 2
-                      ? `${comment.firstName} ${comment.lastName}`
-                      : "";
+                  const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
 
                   return (
                     <Box

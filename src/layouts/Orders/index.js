@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import SearchDialog from "./components/SearchDialog/SearchDialog";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import EditOrdarModal from "./components/EditOrderModal";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -27,6 +28,7 @@ import { useDateRange } from "hooks/useDateRange";
 import { DELIVERY_STATUS, deliveryStatusValues, PAYMENT_STATUS } from "./utils/constants";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -57,6 +59,7 @@ function Orders() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEditOrder, setSelectedEditOrder] = useState(null);
   const [orders, setOrders] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -79,13 +82,14 @@ function Orders() {
   const { user, token } = useSelector((state) => state.auth);
   const isVendor = user.userType === "2";
 
-  function calculateDaysFromPoDate(startDate) {
-    const start = new Date(startDate);
+  function calculateDaysFromPoDate(date) {
+    if (!date) return;
+    const start = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diffTime = today - start;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
+    if (diffDays === 0) return "اليوم";
     return today > start ? `منذ ${diffDays} يوم` : "";
   }
   const updateParams = (params) => {
@@ -177,6 +181,7 @@ function Orders() {
               totalPrice: order.totalPrice,
               subTotalPrice: order.subTotalPrice,
               status: order.status,
+              deliveryStatus: order.deliveryStatus,
               customerName: order.customer
                 ? `${order.customer.firstName} ${order.customer.lastName}`
                 : "",
@@ -236,7 +241,6 @@ function Orders() {
         deliveryStatus: deliveryStatus,
         userId: administrator,
         shippedFromInventory: shippedFromInventory,
-        // PoDate: manufacturingDate === "NaN-NaN-NaN" ? null : manufacturingDate,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -290,6 +294,19 @@ function Orders() {
     //   fetchOrders();
     //   // navigate("/orders");
     // }, 300);
+  };
+
+  const deleteOrder = () => {
+    axiosRequest
+      .delete(`${process.env.REACT_APP_API_URL}/orders/${selectedEditOrder.orderId}`)
+      .then(() => {
+        const updatedorders = orders.filter((order) => order.orderId !== selectedEditOrder.orderId);
+        setOrders(updatedorders);
+        setIsDeleteModalOpen(false);
+      })
+      .catch((error) => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
   };
 
   const colDefs = [
@@ -380,7 +397,7 @@ function Orders() {
       headerName: "الحالة",
       sortable: true,
       minWidth: 130,
-      valueGetter: (node) => getDeliveryStatusValue(node.data.status),
+      valueGetter: (node) => getDeliveryStatusValue(node.data.deliveryStatus),
     },
     !isVendor && {
       field: "administrator",
@@ -399,15 +416,27 @@ function Orders() {
             minWidth: 120,
             sortable: false,
             cellRenderer: (params) => (
-              <IconButton
-                onClick={() => {
-                  openEditModal(params.data);
-                  setIsEditModalOpen(true);
-                }}
-                sx={{ fontSize: "1.2rem" }}
-              >
-                <EditIcon />
-              </IconButton>
+              <>
+                <IconButton
+                  onClick={() => {
+                    openEditModal(params.data);
+                    setIsEditModalOpen(true);
+                  }}
+                  sx={{ fontSize: "1.2rem" }}
+                >
+                  <EditIcon />
+                </IconButton>
+
+                <IconButton
+                  onClick={() => {
+                    openEditModal(params.data);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  sx={{ color: "#d32f2f", fontSize: "1.3rem" }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </>
             ),
           },
         ]
@@ -462,7 +491,13 @@ function Orders() {
           vendors={vendors}
         />
       )}
-
+      {isDeleteModalOpen && selectedEditOrder && (
+        <ConfirmDeleteModal
+          open={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          handleConfirmDelete={deleteOrder}
+        />
+      )}
       {!isLoading ? (
         <>
           <Grid container spacing={1}>

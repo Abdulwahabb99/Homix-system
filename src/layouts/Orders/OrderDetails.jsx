@@ -35,6 +35,7 @@ import OrderInfoCard from "./components/OrderInfoCard";
 import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
+import BasicsInfoCard from "./components/BasicsInfoCard";
 
 const statusoptions = [
   { label: "معلق", value: 1 },
@@ -174,7 +175,14 @@ function OrderDetails() {
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
-    setComments((prev) => [{ text: commentText, createdAt: new Date() }, ...prev]);
+    setComments((prev) => [
+      {
+        text: commentText,
+        createdAt: new Date(),
+        user: { firstName: user.firstName, lastName: user.lastName },
+      },
+      ...prev,
+    ]);
     setCommentText("");
     sendNewComment();
   };
@@ -265,43 +273,55 @@ function OrderDetails() {
                   {orderDetails?.name}
                 </MDTypography>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                {orderDetails?.paymentStatus && (
-                  <div
-                    style={{
-                      background: "#4472C4",
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              {orderDetails?.paymentStatus && (
+                <div
+                  style={{
+                    background: "#4472C4",
+                    color: "#fff",
+                    padding: "7px 7px",
+                    borderRadius: "5px",
+                    fontSize: "16px",
+                  }}
+                >
+                  {getPaymentValue(orderDetails?.paymentStatus)}
+                </div>
+              )}
+              {!isSmallScreen && !isVendor && (
+                <div
+                  onClick={handlePrint}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#4472C4",
                       color: "#fff",
                       padding: "5px 5px",
                       borderRadius: "5px",
-                      fontSize: "16px",
                     }}
                   >
-                    {getPaymentValue(orderDetails?.paymentStatus)}
-                  </div>
-                )}
-                {!isSmallScreen && !isVendor && (
-                  <div
-                    onClick={handlePrint}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Icon>
+                    <Icon sx={{ margin: "0 5px" }}>
                       <PictureAsPdf />
                     </Icon>
-                  </div>
-                )}
-              </div>
+                    <span style={{ fontSize: "16px" }}> الفاتوره</span>
+                  </Button>
+                </div>
+              )}
             </div>
+
             <MDBox py={3}>
               <MDBox>
                 <Grid container spacing={2}>
@@ -328,6 +348,19 @@ function OrderDetails() {
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
                     <Card sx={{ height: "100%" }}>
+                      {orderDetails && (
+                        <BasicsInfoCard
+                          orderDetails={{ ...orderDetails, administrator }}
+                          orderTotalCost={orderTotalCost}
+                          orderTotalPrice={orderTotalPrice}
+                          orderTotalShipping={orderTotalShipping}
+                          orderTotalToBeCollected={orderTotalToBeCollected}
+                        />
+                      )}
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={6} lg={6}>
+                    <Card sx={{ height: "98%" }}>
                       {orderDetails && (
                         <OrderInfoCard
                           orderDetails={{ ...orderDetails, administrator }}
@@ -360,77 +393,54 @@ function OrderDetails() {
                       )}{" "}
                     </Card>
                   </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "20px", margin: "10px" }}>
-                      {orderlines.map((order) => {
-                        return (
-                          <>
-                            <Box
-                              display="flex"
-                              alignItems="flex-start"
-                              justifyContent={"center"}
-                              flexDirection={"column"}
-                              gap={1}
-                              mt={1}
-                              key={order.id}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  width: "100%",
-                                }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center" }}>
-                                  <img
-                                    src={order?.product.image}
-                                    alt={order.title}
-                                    width={40}
-                                    height={40}
-                                    style={{ borderRadius: 4 }}
-                                  />
-                                  <Typography
-                                    sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
-                                  >
-                                    {order?.title}
-                                  </Typography>
-                                </div>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    margin: "0 20px",
-                                  }}
-                                >
-                                  <Typography
-                                    sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
-                                  >
-                                    {Number(order?.product.variants[0].price).toFixed(0)} ج.م
-                                  </Typography>
-                                </div>
-                              </div>
-                              <Chip
-                                style={{ fontSize: "10px" }}
-                                label={order?.product.variants[0].title}
-                                color="primary"
-                                variant="filled"
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#f0f0f0",
-                                  margin: "2px 2px 2px 0",
-                                  border: "1px solid #00000099",
-                                  color: "#000",
-                                }}
-                              />
-                            </Box>
-                          </>
-                        );
-                      })}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6} sx={{ margin: "5px 0" }}>
-                    <Card sx={{ padding: "0 13px", margin: "10px" }}>
+                  {orderlines.map((order) => {
+                    return (
+                      <Grid item xs={12} md={6} lg={6} key={order.id}>
+                        <Card sx={{ padding: "20px", margin: "10px" }}>
+                          <Box
+                            onClick={() => navigate(`/products/${order.product.id}`)}
+                            sx={{
+                              cursor: "pointer",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                              padding: "10px 0",
+                              borderBottom: "1px solid #eee",
+                            }}
+                          >
+                            <img
+                              src={order?.product.image}
+                              alt={order.title}
+                              width={300}
+                              height={300}
+                              style={{ borderRadius: 6 }}
+                            />
+                            <Typography sx={{ fontSize: "15px", color: "#000", marginTop: "10px" }}>
+                              {order?.title}
+                            </Typography>
+                            <Typography sx={{ fontSize: "14px", color: "#000", marginTop: "4px" }}>
+                              {Number(order?.product.variants[0].price).toFixed(0)} ج.م
+                            </Typography>
+                            <Chip
+                              style={{ fontSize: "12px", marginTop: "6px" }}
+                              label={order?.product.variants[0].title}
+                              color="primary"
+                              variant="filled"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#f0f0f0",
+                                border: "1px solid #4472C4",
+                                color: "#4472C4",
+                              }}
+                            />
+                          </Box>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                  <Grid item xs={12} md={12} lg={12} sx={{ margin: "5px 0" }}>
+                    <Card sx={{ padding: "10px 13px", margin: "10px" }}>
                       <TextField
                         fullWidth
                         value={commentText}
@@ -472,7 +482,7 @@ function OrderDetails() {
                   </Grid>
                 </Grid>
                 {comments.map((comment, index) => {
-                  const commentMaker = administrator;
+                  const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
 
                   return (
                     <Box
