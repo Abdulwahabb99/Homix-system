@@ -245,7 +245,7 @@ function OrderDetails() {
   return (
     <>
       {orderDetails?.id && (
-        <div style={{ display: "none" }}>
+        <div>
           <PdfData ref={componentRef} orderDetails={orderDetails} />
         </div>
       )}
@@ -406,7 +406,7 @@ function OrderDetails() {
                               alignItems: "center",
                               textAlign: "center",
                               padding: "10px 0",
-                              borderBottom: "1px solid #eee",
+                              backgroundColor: "red",
                             }}
                           >
                             <img

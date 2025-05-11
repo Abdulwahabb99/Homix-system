@@ -50,7 +50,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
           </MDTypography>
         </MDBox>
       </MDBox>
-      <div style={{ borderBottom: "solid 1px #ffc" }}>
+      <div>
         <MDBox pt={1} px={3}>
           <MDTypography variant="h6" fontWeight="medium">
             معلومات العميل
