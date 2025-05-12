@@ -33,18 +33,18 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
   1: "معلق",
-  2: "مؤكد",
-  3: "ملغي",
-  4: "قيد التصنيع ",
+  3: "مؤكد",
+  4: "ملغي",
+  2: "قيد التصنيع ",
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
 };
-const statusoptions = [
+export const statusoptions = [
   { label: "معلق", value: 1 },
-  { label: "مؤكد", value: 2 },
-  { label: "ملغي", value: 3 },
-  { label: "قيد التصنيع ", value: 4 },
+  { label: "مؤكد", value: 3 },
+  { label: "ملغي", value: 4 },
+  { label: "قيد التصنيع ", value: 2 },
   { label: "تم التسليم", value: 5 },
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
@@ -500,7 +500,7 @@ function Orders() {
           handleConfirmDelete={deleteOrder}
         />
       )}
-      {!isLoading ? (
+      {!isLoading && orders.length > 0 ? (
         <>
           <Grid container spacing={1}>
             <Grid item xs={6} md={6} lg={3}>

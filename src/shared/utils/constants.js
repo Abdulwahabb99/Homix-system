@@ -125,11 +125,11 @@ export const getShipmentStatusLabel = (value) => {
   return shipmentStatus ? shipmentStatus.label : "";
 };
 
-export const statusValues = {
+const statusValues = {
   1: "معلق",
-  2: "مؤكد",
-  3: "ملغي",
-  4: "قيد التصنيع ",
+  3: "مؤكد",
+  4: "ملغي",
+  2: "قيد التصنيع ",
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
