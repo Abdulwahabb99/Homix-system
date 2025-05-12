@@ -11,9 +11,9 @@ const ProductCard = ({ product }) => {
   return (
     <Card
       sx={{
-        maxWidth: 345,
+        maxWidth: 370,
         maxHeight: 450,
-        minHeight: 370,
+        minHeight: 450,
         "@media (max-width: 600px)": {
           maxHeight: "none",
         },
