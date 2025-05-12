@@ -1,4 +1,3 @@
-import axios from "axios";
 import MDBox from "components/MDBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -36,11 +35,11 @@ import axiosRequest from "shared/functions/axiosRequest";
 import OrderInfoCard from "layouts/Orders/components/OrderInfoCard";
 import CustomerDetails from "./CustomerDetails";
 
-const statusoptions = [
+export const statusoptions = [
   { label: "معلق", value: 1 },
-  { label: "مؤكد", value: 2 },
-  { label: "ملغي", value: 3 },
-  { label: "قيد التصنيع ", value: 4 },
+  { label: "مؤكد", value: 3 },
+  { label: "ملغي", value: 4 },
+  { label: "قيد التصنيع ", value: 2 },
   { label: "تم التسليم", value: 5 },
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
