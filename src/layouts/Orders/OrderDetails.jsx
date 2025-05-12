@@ -245,7 +245,7 @@ function OrderDetails() {
   return (
     <>
       {orderDetails?.id && (
-        <div>
+        <div style={{ display: "none" }}>
           <PdfData ref={componentRef} orderDetails={orderDetails} />
         </div>
       )}
@@ -360,7 +360,7 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "98%" }}>
+                    <Card sx={{ height: "100%" }}>
                       {orderDetails && (
                         <OrderInfoCard
                           orderDetails={{ ...orderDetails, administrator }}
@@ -396,7 +396,7 @@ function OrderDetails() {
                   {orderlines.map((order) => {
                     return (
                       <Grid item xs={12} md={6} lg={6} key={order.id}>
-                        <Card sx={{ padding: "20px", margin: "10px" }}>
+                        <Card sx={{ padding: "20px", margin: "0px" }}>
                           <Box
                             onClick={() => navigate(`/products/${order.product.id}`)}
                             sx={{
@@ -406,7 +406,6 @@ function OrderDetails() {
                               alignItems: "center",
                               textAlign: "center",
                               padding: "10px 0",
-                              backgroundColor: "red",
                             }}
                           >
                             <img
@@ -430,8 +429,8 @@ function OrderDetails() {
                               size="small"
                               sx={{
                                 backgroundColor: "#f0f0f0",
-                                border: "1px solid #4472C4",
-                                color: "#4472C4",
+                                border: "1px solid #000",
+                                color: "#000",
                               }}
                             />
                           </Box>

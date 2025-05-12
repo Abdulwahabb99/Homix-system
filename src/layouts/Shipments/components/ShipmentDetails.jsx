@@ -355,7 +355,7 @@ function ShipmentDetails() {
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "20px", margin: "10px" }}>
+                    <Card sx={{ padding: "23px" }}>
                       {orderlines.map((order) => {
                         return (
                           <Box
@@ -421,8 +421,8 @@ function ShipmentDetails() {
                       })}
                     </Card>
                   </Grid>
-                  <Grid item xs={12} md={6} lg={6} sx={{ margin: "5px 0" }}>
-                    <Card sx={{ padding: "0 13px", margin: "10px" }}>
+                  <Grid item xs={12} md={6} lg={6}>
+                    <Card sx={{ padding: "10px 13px 0 13px" }}>
                       <TextField
                         fullWidth
                         value={commentText}
@@ -473,7 +473,7 @@ function ShipmentDetails() {
                         backgroundColor: "#f9f9f9",
                         padding: "10px",
                         borderRadius: "8px",
-                        mb: 1,
+                        my: 2,
                         border: "1px solid #ddd",
                       }}
                     >
