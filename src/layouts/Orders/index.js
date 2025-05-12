@@ -200,6 +200,7 @@ function Orders() {
               code: order.name,
               createdAt: order.createdAt,
               userId: order.userId,
+              downPayment: order.downPayment,
             };
           })
           .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
@@ -302,6 +303,7 @@ function Orders() {
       .then(() => {
         const updatedorders = orders.filter((order) => order.orderId !== selectedEditOrder.orderId);
         setOrders(updatedorders);
+        NotificationMeassage("success", "تم حذف الطلب");
         setIsDeleteModalOpen(false);
       })
       .catch((error) => {
