@@ -316,7 +316,7 @@ function Orders() {
       field: "code",
       headerName: "الكود التعريفي",
       sortable: true,
-      minWidth: 110,
+      minWidth: 120,
       cellRenderer: (params) => (
         <LinkRenderer
           data={params.data}

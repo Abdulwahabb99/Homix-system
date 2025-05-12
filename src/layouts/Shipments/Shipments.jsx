@@ -311,7 +311,7 @@ export default function Shipments() {
       field: "code",
       headerName: "الكود التعريفي",
       sortable: true,
-      minWidth: 110,
+      minWidth: 120,
     },
     {
       field: "orderNumber",

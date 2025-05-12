@@ -34,6 +34,9 @@ function OrdersGrid({
     if (onCellValueChanged) onCellValueChanged(params);
   };
 
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isVendor = user?.userType === "2";
+
   return (
     <div
       className={"ag-theme-quartz"}
@@ -48,19 +51,20 @@ function OrdersGrid({
             اعادة ضبط
           </Button>
         </div>
-
-        <div className={styles.resetBtnBox}>
-          <IconButton fontSize="small" onClick={onExportClick}>
-            <DownloadIcon />
-          </IconButton>{" "}
-          <IconButton
-            fontSize="small"
-            variant="contained"
-            onClick={navigate.bind(this, "/orders/add")}
-          >
-            <AddIcon />
-          </IconButton>{" "}
-        </div>
+        {!isVendor && (
+          <div className={styles.resetBtnBox}>
+            <IconButton fontSize="small" onClick={onExportClick}>
+              <DownloadIcon />
+            </IconButton>{" "}
+            <IconButton
+              fontSize="small"
+              variant="contained"
+              onClick={navigate.bind(this, "/orders/add")}
+            >
+              <AddIcon />
+            </IconButton>{" "}
+          </div>
+        )}{" "}
       </div>
       <AgGridReact
         ref={gridRef}
