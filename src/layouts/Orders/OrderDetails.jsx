@@ -431,6 +431,14 @@ function OrderDetails() {
                                 backgroundColor: "#f0f0f0",
                                 border: "1px solid #000",
                                 color: "#000",
+                                whiteSpace: "normal",
+                                lineHeight: "20px",
+                                height: "auto",
+                                paddingY: "2px",
+                                "& .MuiChip-label": {
+                                  whiteSpace: "normal",
+                                  textAlign: "left",
+                                },
                               }}
                             />
                           </Box>

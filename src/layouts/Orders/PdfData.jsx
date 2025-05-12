@@ -17,6 +17,11 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
     return formatter.format(date);
   }
   const orderDate = formatDateStringToArabic(orderDetails.createdAt);
+  const priceWithShippingAndDiscount =
+    Number(orderDetails.totalPrice) +
+    Number(orderDetails.shippingFees) -
+    Number(orderDetails.totalDiscounts);
+
   return (
     <div ref={ref} style={{ direction: "ltr" }}>
       <Grid container spacing={2}>
@@ -75,7 +80,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
             </Grid>
             <Grid item xs={12} md={4} lg={4}>
               <div className={styles.billingPrice}>
-                <h2>{orderDetails.totalPrice} LE</h2>
+                <h2>{priceWithShippingAndDiscount} LE</h2>
                 <span style={{ fontSize: "1.5rem", fontWeight: "700", color: "#003045" }}>
                   TOTAL
                 </span>
@@ -193,7 +198,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {orderDetails.totalPrice} LE
+              {priceWithShippingAndDiscount.toFixed(1)} LE
             </Grid>
           </Grid>
           <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}>
@@ -217,7 +222,7 @@ const PdfData = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {Number(orderDetails.totalPrice) - Number(orderDetails.downPayment)} LE
+              {priceWithShippingAndDiscount - Number(orderDetails.downPayment)} LE
             </Grid>
           </Grid>
         </Grid>
