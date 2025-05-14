@@ -32,7 +32,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [users, setUsers] = useState([]);
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
-  const [manufacturingDate, setManufacturingDate] = useState(formatDate(`${data.PoDate}`));
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
@@ -43,6 +42,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [shippedFromInventory, setShippedFromInventory] = useState(
     data.shippedFromInventory ? data.shippedFromInventory : false
   );
+  const [totalVendorDue, setTotalVendorDue] = useState(data.totalVendorDue);
+  const [totalCompanyDue, setTotalCompanyDue] = useState(data.totalCompanyDue);
 
   const today = new Date();
   const formattedDate =
@@ -167,7 +168,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               })}
             </Select>
           </FormControl>
-
           <TextField
             fullWidth
             label="جدية شراء"
@@ -200,24 +200,22 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
             type="number"
             style={{ margin: "5px 0" }}
           />
-          {/* <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
-              تاريخ امر التصنيع
-            </InputLabel>
-            <TextField
-              fullWidth
-              value={manufacturingDate}
-              onChange={(e) => setManufacturingDate(e.target.value)}
-              style={{ margin: "5px 0" }}
-              type="date"
-              InputProps={{
-                inputProps: {
-                  max: formattedDate,
-                },
-              }}
-            />
-          </FormControl> */}
-
+          <TextField
+            label="إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺑﺎﺋﻊ"
+            fullWidth
+            value={totalVendorDue}
+            onChange={(e) => setTotalVendorDue(e.target.value)}
+            style={{ margin: "5px 0" }}
+            type="number"
+          />{" "}
+          <TextField
+            label="إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺷرﻛﺔ"
+            fullWidth
+            value={totalCompanyDue}
+            onChange={(e) => setTotalCompanyDue(e.target.value)}
+            style={{ margin: "5px 0" }}
+            type="number"
+          />
           <FormControlLabel
             sx={{ display: "flex", alignItems: "center" }}
             control={
@@ -251,7 +249,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               data.orderId,
               orderStatus,
               commission,
-              manufacturingDate,
+              totalVendorDue,
               paymentStatus,
               downPayment,
               toBeCollected,
@@ -259,7 +257,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               selectedVendor,
               deliveryStatus,
               administrator,
-              shippedFromInventory
+              shippedFromInventory,
+              totalCompanyDue
             )
           }
           variant="contained"

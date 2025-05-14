@@ -207,6 +207,8 @@ function Orders() {
               createdAt: order.createdAt,
               userId: order.userId,
               downPayment: order.downPayment,
+              totalVendorDue: order.totalVendorDue,
+              totalCompanyDue: order.totalCompanyDue,
             };
           })
           .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
@@ -215,7 +217,7 @@ function Orders() {
         setTotalPages(data.data.totalPages);
       })
       .catch(() => {
-        // NotificationMeassage("error", "حدث خطأ");
+        NotificationMeassage("error", "حدث خطأ");
       })
       .finally(() => {
         setIsLoading(false);
@@ -226,7 +228,7 @@ function Orders() {
     id,
     orderStatus,
     commission,
-    manufacturingDate,
+    totalVendorDue,
     paymentStatus,
     downPayment,
     toBeCollected,
@@ -234,7 +236,8 @@ function Orders() {
     selectedVendor,
     deliveryStatus,
     administrator,
-    shippedFromInventory
+    shippedFromInventory,
+    totalCompanyDue
   ) => {
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
@@ -248,6 +251,8 @@ function Orders() {
         deliveryStatus: deliveryStatus,
         userId: administrator,
         shippedFromInventory: shippedFromInventory,
+        totalVendorDue: totalVendorDue,
+        totalCompanyDue: totalCompanyDue,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -265,6 +270,8 @@ function Orders() {
               userId: data.userId,
               shippedFromInventory: data.shippedFromInventory,
               downPayment: data.downPayment,
+              totalVendorDue: data.totalVendorDue,
+              totalCompanyDue: data.totalCompanyDue,
             };
           }
           return order;

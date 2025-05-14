@@ -79,6 +79,28 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
             </MDTypography>
           </MDTypography>
         </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="h6" verticalAlign="middle">
+              إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺑﺎﺋﻊ:
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {orderDetails.totalVendorDue || 0}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="h6" verticalAlign="middle">
+              إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق للشركة:
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {orderDetails.totalCompanyDue || 0}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
       </MDBox>
     </>
   );
