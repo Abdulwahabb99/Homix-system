@@ -61,7 +61,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
       setUsers(newUsers);
     });
   }, []);
-  console.log(data);
 
   return (
     <Dialog fullWidth open={open} onClose={onClose}>

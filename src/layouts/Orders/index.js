@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Spinner from "components/Spinner/Spinner";
@@ -29,6 +29,7 @@ import { DELIVERY_STATUS, deliveryStatusValues, PAYMENT_STATUS } from "./utils/c
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import BulkEditModal from "./components/BulkEditModal";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -49,7 +50,7 @@ export const statusoptions = [
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
 ];
-const paymentStatus = { 1: "مدفوع", 2: "دفع عند الاستلام" };
+const paymentStatus = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function Orders() {
@@ -75,6 +76,11 @@ function Orders() {
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
   const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(deliveryStatusParam || "");
   const [users, setUsers] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
+  const gridRef = useRef();
 
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
@@ -310,6 +316,69 @@ function Orders() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
+  const onSelectionChanged = () => {
+    const selected = gridRef.current.api.getSelectedRows();
+    setSelectedRows(selected);
+  };
+  const bulkEdit = (orderStatus, paymentStatus, shippedFromInventory) => {
+    const orderIds = selectedRows.map((order) => order.orderId);
+
+    axiosRequest
+      .put(`${baseURI}/orders/bulk-update`, {
+        orderIds: orderIds,
+        orderData: {
+          status: orderStatus,
+          paymentStatus: paymentStatus,
+          shippedFromInventory: shippedFromInventory,
+        },
+      })
+      .then(() => {
+        const idsSet = new Set(orderIds);
+
+        const updatedOrders = orders.map((order) => {
+          if (idsSet.has(order.orderId)) {
+            return {
+              ...order,
+              status: orderStatus,
+              paymentStatus,
+              shippedFromInventory,
+            };
+          }
+          return order;
+        });
+
+        setOrders(updatedOrders);
+        NotificationMeassage("success", "تم التعديل بنجاح");
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+
+    setIsBulkEditModalOpen(false);
+  };
+
+  const bulkDelete = () => {
+    const orderIds = selectedRows.map((order) => order.orderId);
+
+    if (orderIds.length > 0) {
+      axiosRequest
+        .delete(`${baseURI}/orders/bulk-delete`, {
+          data: { orderIds: orderIds },
+        })
+
+        .then(() => {
+          const idsSet = new Set(orderIds);
+          const newOrders = orders.filter((order) => !idsSet.has(order.orderId));
+          setOrders(newOrders);
+          NotificationMeassage("success", "تم التعديل بنجاح");
+        })
+        .catch(() => {
+          NotificationMeassage("error", "حدث خطأ");
+        });
+
+      setIsBulkDeleteModalOpen(false);
+    }
+  };
 
   const colDefs = [
     {
@@ -495,9 +564,26 @@ function Orders() {
       )}
       {isDeleteModalOpen && selectedEditOrder && (
         <ConfirmDeleteModal
+          title="الطلب"
           open={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           handleConfirmDelete={deleteOrder}
+        />
+      )}
+      {isBulkEditModalOpen && selectedRows.length > 0 && (
+        <BulkEditModal
+          open={isBulkEditModalOpen}
+          onEdit={bulkEdit}
+          onClose={() => setIsBulkEditModalOpen(false)}
+        />
+      )}
+
+      {isBulkDeleteModalOpen && selectedRows.length > 0 && (
+        <ConfirmDeleteModal
+          title="الطلبات المحددة"
+          open={isBulkDeleteModalOpen}
+          onClose={() => setIsBulkDeleteModalOpen(false)}
+          handleConfirmDelete={bulkDelete}
         />
       )}
       {!isLoading && orders.length > 0 ? (
@@ -618,6 +704,11 @@ function Orders() {
             handleSearchClick={() => setIsSearchModalOpen(true)}
             handleReset={handleResetGrid}
             enableExcel
+            gridRef={gridRef}
+            onSelectionChanged={onSelectionChanged}
+            setIsBulkEditModalOpen={setIsBulkEditModalOpen}
+            selectedRows={selectedRows}
+            setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen} // ✅ Add this line
           />
           <Pagination
             count={totalPages}

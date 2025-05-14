@@ -20,9 +20,13 @@ function OrdersGrid({
   onCellValueChanged,
   enableQuickFilter,
   gridHeight,
+  gridRef,
+  onSelectionChanged,
+  setIsBulkEditModalOpen,
+  selectedRows,
+  setIsBulkDeleteModalOpen,
 }) {
   const navigate = useNavigate();
-  const gridRef = useRef();
   const onExportClick = () => {
     gridRef.current.api.exportDataAsCsv();
   };
@@ -37,6 +41,16 @@ function OrdersGrid({
   const user = JSON.parse(localStorage.getItem("user"));
   const isVendor = user?.userType === "2";
 
+  const updatedColumnDefs = [
+    {
+      headerCheckboxSelection: true,
+      checkboxSelection: true,
+      width: 50,
+      pinned: "right",
+    },
+    ...columnDefs,
+  ];
+
   return (
     <div
       className={"ag-theme-quartz"}
@@ -50,6 +64,22 @@ function OrdersGrid({
           <Button sx={{ padding: "0" }} onClick={handleReset}>
             اعادة ضبط
           </Button>
+          {selectedRows?.length > 0 && (
+            <>
+              <Button
+                sx={{ padding: "0", margin: "0 5px" }}
+                onClick={() => setIsBulkEditModalOpen(true)}
+              >
+                تعديل الطلبات المحددة
+              </Button>
+              <Button
+                sx={{ padding: "0", color: "red", margin: "0 5px" }}
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+              >
+                مسح الطلبات المحددة
+              </Button>
+            </>
+          )}
         </div>
         {!isVendor && (
           <div className={styles.resetBtnBox}>
@@ -69,11 +99,14 @@ function OrdersGrid({
       <AgGridReact
         ref={gridRef}
         rowData={rowData}
-        columnDefs={columnDefs}
+        columnDefs={updatedColumnDefs}
         defaultColDef={{
           ...defaultColDef,
           headerClass: styles.gridHeader,
         }}
+        rowSelection="multiple"
+        rowMultiSelectWithClick={true}
+        onSelectionChanged={onSelectionChanged}
         enableRtl
         domLayout="normal"
         enableCellTextSelection

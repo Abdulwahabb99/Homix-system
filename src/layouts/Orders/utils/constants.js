@@ -8,8 +8,8 @@ export const statusoptions = [
   { label: "مستبدل ", value: 7 },
 ];
 export const PAYMENT_STATUS = [
-  { label: "مدفوع", value: 1 },
-  { label: "دفع عند الاستلام", value: 2 },
+  { label: "مدفوع", value: 2 },
+  { label: "دفع عند الاستلام", value: 1 },
 ];
 export const DELIVERY_STATUS = [
   { label: "في مده التصنيع", value: 1 },
@@ -46,6 +46,6 @@ export const deliveryStatusValues = {
 };
 
 export const paymentStatusValues = {
-  1: "مدفوع",
-  2: "دفع عند الاستلام",
+  2: "مدفوع",
+  1: "دفع عند الاستلام",
 };

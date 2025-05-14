@@ -47,7 +47,7 @@ export const statusoptions = [
   { label: "مستبدل ", value: 7 },
 ];
 
-const PAYMENT_STATUS = { 1: "مدفوع", 2: "دفع عند الاستلام" };
+const PAYMENT_STATUS = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 
 function OrderDetails() {
   const { id } = useParams();

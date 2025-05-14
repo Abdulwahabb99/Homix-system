@@ -2,11 +2,11 @@
 import { Button, Dialog, DialogActions, DialogContent } from "@mui/material";
 import React from "react";
 
-function ConfirmDeleteModal({ open, onClose, handleConfirmDelete }) {
+function ConfirmDeleteModal({ open, onClose, handleConfirmDelete, title }) {
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogContent>
-        <h2 style={{ textAlign: "center", color: "#000" }}>هل متأكد من حذف الطلب ؟</h2>
+        <h2 style={{ textAlign: "center", color: "#000" }}>هل متأكد من حذف {title} ؟</h2>
       </DialogContent>
       <DialogActions style={{ display: "flex", justifyContent: "center" }}>
         <Button onClick={onClose} variant="contained" style={{ background: "#000", color: "#fff" }}>
