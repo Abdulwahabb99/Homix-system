@@ -64,7 +64,7 @@ function OrdersGrid({
           <Button sx={{ padding: "0" }} onClick={handleReset}>
             اعادة ضبط
           </Button>
-          {selectedRows?.length > 0 && (
+          {selectedRows?.length > 1 && (
             <>
               <Button
                 sx={{ padding: "0", margin: "0 5px" }}

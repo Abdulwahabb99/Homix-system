@@ -144,3 +144,11 @@ export const getDeliveryStatusValue = (status) => {
   const resultValue = deliveryStatusValues[status];
   return resultValue;
 };
+
+export const manufactureStatusOptions = [
+  { label: "مقبول", value: 1 },
+  { label: "قيد التصنيع", value: 2 },
+  { label: "جاهز للشحن", value: 3 },
+  { label: "تم التوصيل", value: 4 },
+  { label: "فشل في التوصيل", value: 5 },
+];

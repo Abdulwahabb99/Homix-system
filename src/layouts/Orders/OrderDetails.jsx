@@ -21,6 +21,7 @@ import {
   Grid,
   Icon,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -36,6 +37,8 @@ import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
 import BasicsInfoCard from "./components/BasicsInfoCard";
+import { manufactureStatusOptions } from "shared/utils/constants";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 export const statusoptions = [
   { label: "معلق", value: 1 },
@@ -53,7 +56,7 @@ function OrderDetails() {
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState(null);
-  const [orderStatus, setOrderStatus] = useState(null);
+  const [manufactureStatus, setManufactureStatus] = useState(null);
   const [slectedOrderLine, setSelectedOrderLine] = useState(null);
   const [orderTotalPrice, setOrderTotalPrice] = useState(null);
   const [orderTotalShipping, setOrderTotalShipping] = useState(null);
@@ -66,6 +69,8 @@ function OrderDetails() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState("");
   const [administrator, setAdministrator] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isFileUploadingloading, setIsFileUploadingloading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
@@ -78,14 +83,14 @@ function OrderDetails() {
     content: () => componentRef.current,
   });
 
-  const changeOrderStatus = (status) => {
+  const changeManufactureStatus = (status) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
-        status: status,
+        manufactureStatus: status,
       })
       .then(() => {
         NotificationMeassage("success", "تم التعديل بنجاح");
-        setOrderStatus(status);
+        setManufactureStatus(status);
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
@@ -147,6 +152,7 @@ function OrderDetails() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
+
   const updateComment = (noteId) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`, {
@@ -173,19 +179,46 @@ function OrderDetails() {
       });
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentText.trim()) return;
-    setComments((prev) => [
-      {
+
+    try {
+      const { data } = await axiosRequest.post(
+        `${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`,
+        { text: commentText }
+      );
+
+      const newComment = {
+        id: data.data.id,
         text: commentText,
         createdAt: new Date(),
         user: { firstName: user.firstName, lastName: user.lastName },
-      },
-      ...prev,
-    ]);
-    setCommentText("");
-    sendNewComment();
+        attachments: selectedFiles,
+        isEdited: true,
+      };
+
+      setComments((prev) => [newComment, ...prev]);
+      setCommentText("");
+
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach((file) => {
+          formData.append("files", file.file);
+        });
+        await axios.post(
+          `${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${newComment.id}/upload`,
+          formData
+        );
+        setSelectedFiles([]);
+        NotificationMeassage("success", "تم إضافة التعليق والمرفقات بنجاح");
+      } else {
+        NotificationMeassage("success", "تم إضافة التعليق");
+      }
+    } catch (error) {
+      NotificationMeassage("error", "حدث خطأ أثناء إضافة التعليق أو رفع المرفقات");
+    }
   };
+
   const getUser = () => {
     axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
       const users = res.data.data;
@@ -194,6 +227,21 @@ function OrderDetails() {
         setAdministrator(`${user.firstName} ${user.lastName}`);
       }
     });
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    const previewFiles = files?.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    setSelectedFiles(previewFiles);
+  };
+
+  const handleRemoveFile = (index) => {
+    const updatedFiles = [...selectedFiles];
+    updatedFiles.splice(index, 1);
+    setSelectedFiles(updatedFiles);
   };
   useEffect(() => {
     if (orderDetails) {
@@ -227,7 +275,7 @@ function OrderDetails() {
         setOrderTotalToBeCollected(toBeCollected);
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
-        setOrderStatus(data.data.status);
+        setManufactureStatus(data.data.manufactureStatus);
         const orderedComments = data.data?.notesList.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -370,27 +418,25 @@ function OrderDetails() {
                           orderTotalToBeCollected={orderTotalToBeCollected}
                         />
                       )}
-                      {user?.userType === "1" && (
-                        <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
-                          <InputLabel id="orderStatus">حالة الطلب</InputLabel>
-                          <Select
-                            labelId="orderStatus"
-                            id="orderStatus-select"
-                            value={orderStatus}
-                            label="حالة الطلب"
-                            onChange={(e) => changeOrderStatus(e.target.value)}
-                            sx={{ height: 35, background: "#eee" }}
-                          >
-                            {statusoptions.map((option) => {
-                              return (
-                                <MenuItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </MenuItem>
-                              );
-                            })}
-                          </Select>
-                        </FormControl>
-                      )}{" "}
+                      <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
+                        <InputLabel id="manufactureStatus">حالة التصنيع</InputLabel>
+                        <Select
+                          labelId="manufactureStatus"
+                          id="manufactureStatus-select"
+                          value={manufactureStatus}
+                          label="حالة التصنيع"
+                          onChange={(e) => changeManufactureStatus(e.target.value)}
+                          sx={{ height: 35, background: "#eee" }}
+                        >
+                          {manufactureStatusOptions.map((option) => {
+                            return (
+                              <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                              </MenuItem>
+                            );
+                          })}
+                        </Select>
+                      </FormControl>
                     </Card>
                   </Grid>
                   {orderlines.map((order) => {
@@ -441,6 +487,26 @@ function OrderDetails() {
                                 },
                               }}
                             />
+                            <Chip
+                              style={{ fontSize: "12px", marginTop: "6px" }}
+                              label={order?.product.type.name}
+                              color="primary"
+                              variant="filled"
+                              size="small"
+                              sx={{
+                                backgroundColor: "#f0f0f0",
+                                border: "1px solid #000",
+                                color: "#000",
+                                whiteSpace: "normal",
+                                lineHeight: "20px",
+                                height: "auto",
+                                paddingY: "2px",
+                                "& .MuiChip-label": {
+                                  whiteSpace: "normal",
+                                  textAlign: "left",
+                                },
+                              }}
+                            />
                           </Box>
                         </Card>
                       </Grid>
@@ -448,86 +514,154 @@ function OrderDetails() {
                   })}
                   <Grid item xs={12} md={12} lg={12} sx={{ margin: "5px 0" }}>
                     <Card sx={{ padding: "10px 13px", margin: "10px" }}>
-                      <TextField
-                        fullWidth
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="اكتب تعليقك هنا..."
-                        multiline
-                        rows={2}
-                        variant="outlined"
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "& fieldset": {
-                              borderColor: "#999",
+                      <Box component="form" display="flex" alignItems="center" gap={1}>
+                        <TextField
+                          fullWidth
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="اكتب تعليقك هنا..."
+                          multiline
+                          rows={2}
+                          variant="outlined"
+                          sx={{
+                            flexGrow: 1,
+                            "& .MuiOutlinedInput-root": {
+                              "& fieldset": {
+                                borderColor: "#999",
+                              },
+                              "&:hover fieldset": {
+                                borderColor: "#115293",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#0d47a1",
+                              },
                             },
-                            "&:hover fieldset": {
-                              borderColor: "#115293",
+                            "& .MuiInputBase-input::placeholder": {
+                              color: "#999",
+                              opacity: 1,
                             },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#0d47a1",
-                            },
-                          },
-                          "& .MuiInputBase-input::placeholder": {
-                            color: "#999",
-                            opacity: 1,
-                          },
-                        }}
-                      />
-
-                      <Box mt={2} display="flex" justifyContent="flex-end">
+                          }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                {selectedFiles?.length > 0 ? (
+                                  selectedFiles?.map((file, index) => (
+                                    <Chip
+                                      key={index}
+                                      label={
+                                        file.file.name?.length > 20
+                                          ? file.file.name.slice(0, 10) +
+                                            "..." +
+                                            file.file.name.slice(-7)
+                                          : file?.file.name
+                                      }
+                                      size="small"
+                                      onDelete={() => handleRemoveFile(index)}
+                                      variant="outlined"
+                                      sx={{
+                                        maxWidth: "120px",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        fontSize: "12px",
+                                        margin: "0 5px",
+                                      }}
+                                    />
+                                  ))
+                                ) : (
+                                  <label htmlFor="comment-attachment">
+                                    <input
+                                      id="comment-attachment"
+                                      type="file"
+                                      hidden
+                                      onChange={(e) => handleFileChange(e)}
+                                      accept="image/png, image/jpeg, image/jpg, application/pdf"
+                                    />
+                                    <IconButton component="span">
+                                      <AttachFileIcon />
+                                    </IconButton>
+                                  </label>
+                                )}
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
                         <Button
                           disabled={!commentText}
-                          variant="text"
-                          sx={{ color: "#007aff" }}
+                          variant="contained"
+                          sx={{ backgroundColor: "#007aff", color: "#fff" }}
                           onClick={handleAddComment}
                         >
                           إضافة
                         </Button>
                       </Box>
                     </Card>
-                  </Grid>
+                  </Grid>{" "}
                 </Grid>
                 {comments.map((comment, index) => {
                   const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
+                  const imageUrl = comment?.attachments?.[0]?.url
+                    ? comment.isEdited
+                      ? comment.attachments[0].url
+                      : `${process.env.REACT_APP_API_URL}/${comment.attachments[0].url}`
+                    : null;
 
                   return (
-                    <Box
+                    <Card
                       key={index}
-                      sx={{
-                        backgroundColor: "#f9f9f9",
-                        padding: "10px",
-                        borderRadius: "8px",
-                        mb: 1,
-                        border: "1px solid #ddd",
-                      }}
+                      sx={{ mb: 2, p: 2, backgroundColor: "#fdfdfd", border: "1px solid #ddd" }}
                     >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {" "}
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "14px" }}
-                        >
-                          {new Date(comment.createdAt).toLocaleString()}
-                        </Typography>
-                        {commentMaker && (
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </Typography>
                           <Chip
-                            style={{ fontSize: "10px" }}
                             label={commentMaker}
-                            color="primary"
-                            variant="filled"
                             size="small"
                             sx={{
-                              backgroundColor: "#f0f0f0",
-                              margin: "2px 2px 2px 0",
-                              border: "1px solid #00000099",
+                              backgroundColor: "#e0e0e0",
                               color: "#000",
-                              padding: "0 5px",
+                              fontSize: "11px",
+                              borderRadius: "4px",
+                              height: "24px",
                             }}
                           />
-                        )}
+                        </Box>
+                        <Box display="flex" gap={1}>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setEditingIndex(index);
+                              setEditedCommentText(comment.text);
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => deleteComment(comment.id)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
+
+                      {imageUrl && (
+                        <Box mt={1}>
+                          <img
+                            src={imageUrl}
+                            alt="comment_attachment"
+                            style={{
+                              maxHeight: "250px",
+                              borderRadius: "6px",
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        </Box>
+                      )}
 
                       {editingIndex === index ? (
                         <>
@@ -541,7 +675,7 @@ function OrderDetails() {
                           />
                           <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
                             <Button
-                              variant="text"
+                              variant="contained"
                               size="small"
                               onClick={() => {
                                 const updated = [...comments];
@@ -550,13 +684,13 @@ function OrderDetails() {
                                 setEditingIndex(null);
                                 updateComment(comment.id);
                               }}
+                              sx={{ color: "#fff" }}
                             >
                               حفظ
                             </Button>
                             <Button
                               variant="text"
                               size="small"
-                              color="error"
                               onClick={() => setEditingIndex(null)}
                             >
                               إلغاء
@@ -564,36 +698,11 @@ function OrderDetails() {
                           </Box>
                         </>
                       ) : (
-                        <>
-                          <Box display="flex" justifyContent="space-between">
-                            <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
-                              {comment.text}
-                            </Typography>
-                            <Box display="flex" gap={1} alignItems="center">
-                              <IconButton
-                                fontSize="small"
-                                color="secondary"
-                                onClick={() => {
-                                  setEditingIndex(index);
-                                  setEditedCommentText(comment.text);
-                                }}
-                              >
-                                <EditIcon />
-                              </IconButton>{" "}
-                              <IconButton
-                                fontSize="small"
-                                color="error"
-                                onClick={() => {
-                                  deleteComment(comment.id);
-                                }}
-                              >
-                                <DeleteIcon />
-                              </IconButton>{" "}
-                            </Box>
-                          </Box>
-                        </>
+                        <Typography variant="body1" sx={{ mt: 1, whiteSpace: "pre-wrap" }}>
+                          {comment.text}
+                        </Typography>
                       )}
-                    </Box>
+                    </Card>
                   );
                 })}
               </MDBox>

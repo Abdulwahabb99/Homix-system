@@ -16,17 +16,8 @@ import {
   Typography,
 } from "@mui/material";
 import { DELIVERY_STATUS, PAYMENT_STATUS, statusoptions } from "../utils/constants";
-import { USER_TYPES_VALUES } from "shared/utils/constants";
 import axiosRequest from "shared/functions/axiosRequest";
-
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = String(date.getFullYear());
-  return `${year}-${month}-${day}`;
-};
+import moment from "moment";
 
 const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [users, setUsers] = useState([]);
@@ -44,14 +35,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   );
   const [totalVendorDue, setTotalVendorDue] = useState(data.totalVendorDue);
   const [totalCompanyDue, setTotalCompanyDue] = useState(data.totalCompanyDue);
-
-  const today = new Date();
-  const formattedDate =
-    today.getFullYear() +
-    "-" +
-    String(today.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(today.getDate()).padStart(2, "0");
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(
+    moment(data.expectedDeliveryDate).locale("en").format("YYYY-MM-DD")
+  );
 
   useEffect(() => {
     axiosRequest.get("/users").then(({ data: { data } }) => {
@@ -216,6 +202,23 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
             style={{ margin: "5px 0" }}
             type="number"
           />
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
+              تاريخ التسليم المتوقع{" "}
+            </InputLabel>
+            <TextField
+              fullWidth
+              value={expectedDeliveryDate}
+              onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+              style={{ margin: "5px 0" }}
+              type="date"
+              InputProps={{
+                inputProps: {
+                  min: moment().locale("en").format("YYYY-MM-DD"),
+                },
+              }}
+            />
+          </FormControl>
           <FormControlLabel
             sx={{ display: "flex", alignItems: "center" }}
             control={
@@ -258,7 +261,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               deliveryStatus,
               administrator,
               shippedFromInventory,
-              totalCompanyDue
+              totalCompanyDue,
+              expectedDeliveryDate
             )
           }
           variant="contained"

@@ -209,6 +209,8 @@ function Orders() {
               downPayment: order.downPayment,
               totalVendorDue: order.totalVendorDue,
               totalCompanyDue: order.totalCompanyDue,
+              expectedDeliveryDate: order.expectedDeliveryDate,
+              type: order.orderLines[0]?.product?.type?.name,
             };
           })
           .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
@@ -237,7 +239,8 @@ function Orders() {
     deliveryStatus,
     administrator,
     shippedFromInventory,
-    totalCompanyDue
+    totalCompanyDue,
+    expectedDeliveryDate
   ) => {
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
@@ -253,6 +256,7 @@ function Orders() {
         shippedFromInventory: shippedFromInventory,
         totalVendorDue: totalVendorDue,
         totalCompanyDue: totalCompanyDue,
+        expectedDeliveryDate: expectedDeliveryDate,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -272,6 +276,7 @@ function Orders() {
               downPayment: data.downPayment,
               totalVendorDue: data.totalVendorDue,
               totalCompanyDue: data.totalCompanyDue,
+              expectedDeliveryDate: data.expectedDeliveryDate,
             };
           }
           return order;
@@ -476,6 +481,13 @@ function Orders() {
       sortable: true,
       minWidth: 130,
       valueGetter: (node) => getDeliveryStatusValue(node.data.deliveryStatus),
+    },
+    {
+      field: "type",
+      headerName: "النوع",
+      sortable: true,
+      minWidth: 130,
+      // valueGetter: (node) => getDeliveryStatusValue(node.data.deliveryStatus),
     },
     !isVendor && {
       field: "administrator",
@@ -715,7 +727,7 @@ function Orders() {
             onSelectionChanged={onSelectionChanged}
             setIsBulkEditModalOpen={setIsBulkEditModalOpen}
             selectedRows={selectedRows}
-            setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen} // ✅ Add this line
+            setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen}
           />
           <Pagination
             count={totalPages}
