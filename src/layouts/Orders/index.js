@@ -392,6 +392,25 @@ function Orders() {
     }
   };
 
+  const handleExport = (startDateParam, endDateParam) => {
+    const query = new URLSearchParams({
+      ...(vendorIdParam && { vendorId: vendorIdParam }),
+      ...(orderStatusParam && { status: orderStatusParam }),
+      ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
+      ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
+      ...(startDate && startDateParam && { startDate: startDate.utc().toISOString() }),
+      ...(endDate && endDateParam && { endDate: endDate.utc().toISOString() }),
+    });
+    axiosRequest
+      .get(`${baseURI}/orders/export?${query}`)
+      .then(({ request: { responseURL } }) => {
+        window.location.href = responseURL;
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+
   const colDefs = [
     {
       field: "code",
@@ -487,7 +506,6 @@ function Orders() {
       headerName: "النوع",
       sortable: true,
       minWidth: 130,
-      // valueGetter: (node) => getDeliveryStatusValue(node.data.deliveryStatus),
     },
     !isVendor && {
       field: "administrator",
@@ -728,6 +746,7 @@ function Orders() {
             setIsBulkEditModalOpen={setIsBulkEditModalOpen}
             selectedRows={selectedRows}
             setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen}
+            handleExport={handleExport}
           />
           <Pagination
             count={totalPages}
