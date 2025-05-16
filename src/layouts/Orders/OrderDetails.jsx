@@ -167,8 +167,6 @@ function OrderDetails() {
   };
 
   const handleAddComment = async () => {
-    // if (!commentText.trim()) return;
-
     try {
       const { data } = await axiosRequest.post(
         `${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`,
@@ -637,16 +635,23 @@ function OrderDetails() {
 
                       {imageUrl && (
                         <Box mt={1}>
-                          <img
-                            src={imageUrl}
-                            alt="comment_attachment"
-                            style={{
-                              maxHeight: "250px",
-                              borderRadius: "6px",
-                              objectFit: "cover",
-                              display: "block",
-                            }}
-                          />
+                          <a
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            // style={{ width: "100%", display: "flex", justifyContent: "center" }}
+                          >
+                            <img
+                              src={imageUrl}
+                              alt="comment_attachment"
+                              style={{
+                                maxHeight: "250px",
+                                borderRadius: "6px",
+                                objectFit: "cover",
+                                display: "block",
+                              }}
+                            />
+                          </a>
                         </Box>
                       )}
 
