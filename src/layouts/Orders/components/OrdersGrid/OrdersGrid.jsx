@@ -26,11 +26,16 @@ function OrdersGrid({
   selectedRows,
   setIsBulkDeleteModalOpen,
   handleExport,
+  isOrdersPage,
 }) {
-  const navigate = useNavigate();
   const searchParam = new URLSearchParams(window.location.search);
   const startDateParam = searchParam.get("startDate");
   const endDateParam = searchParam.get("endDate");
+
+  const navigate = useNavigate();
+  const onExportClick = () => {
+    gridRef.current.api.exportDataAsCsv();
+  };
 
   const onGridReady = (params) => {
     params.api.sizeColumnsToFit();
@@ -84,7 +89,12 @@ function OrdersGrid({
         </div>
         {!isVendor && (
           <div className={styles.resetBtnBox}>
-            <IconButton fontSize="small" onClick={() => handleExport(startDateParam, endDateParam)}>
+            <IconButton
+              fontSize="small"
+              onClick={() =>
+                isOrdersPage ? handleExport(startDateParam, endDateParam) : onExportClick()
+              }
+            >
               <DownloadIcon />
             </IconButton>{" "}
             <IconButton

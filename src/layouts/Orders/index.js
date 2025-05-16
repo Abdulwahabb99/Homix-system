@@ -747,6 +747,7 @@ function Orders() {
             selectedRows={selectedRows}
             setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen}
             handleExport={handleExport}
+            isOrdersPage
           />
           <Pagination
             count={totalPages}

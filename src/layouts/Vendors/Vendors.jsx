@@ -1,5 +1,4 @@
 import { IconButton, Switch } from "@mui/material";
-import axios from "axios";
 import AgGrid from "components/AgGrid/AgGrid";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
@@ -8,15 +7,17 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
-import ConfirmDeleteModal from "../Factories/ConfirmDeleteModal";
+import EditVendorModal from "./components/EditVendorModal";
+import axiosRequest from "shared/functions/axiosRequest";
+
 const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
+
 function Vendors() {
   const [isloading, setIsLoading] = useState(false);
-  const [isDeleteModalOpenned, setIsDeleteModalOpenned] = useState(false);
+  const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [vendors, setVendors] = useState([]);
-  const [selectedVendorId, setSelectedVendorId] = useState(null);
+  const [selectedVendor, setSelectedVendor] = useState(null);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -24,21 +25,10 @@ function Vendors() {
     const statusValue = statusOptions[value];
     return statusValue;
   };
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
 
   const getVendors = () => {
     setIsLoading(true);
-    axios
+    axiosRequest
       .get(`${process.env.REACT_APP_API_URL}/vendors`)
       .then(({ data }) => {
         if (data.force_logout) {
@@ -57,7 +47,7 @@ function Vendors() {
       });
   };
   // const deleteVendor = () => {
-  //   axios
+  //   axiosRequest
   //     .delete(`${process.env.REACT_APP_API_URL}/vendors/${selectedVendorId}`)
   //     .then(() => {
   //       setIsDeleteModalOpenned(false);
@@ -71,7 +61,7 @@ function Vendors() {
   // };
 
   const handleChange = (id, value) => {
-    axios
+    axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/vendors/${id}/activeStatus`)
       .then(() => {
         const newData = vendors.map((vendor) => {
@@ -87,6 +77,26 @@ function Vendors() {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
+
+  const handleEditVendor = (daysToDeliver, password) => {
+    axiosRequest
+      .put(`${process.env.REACT_APP_API_URL}/vendors/${selectedVendor.id}`, {
+        daysToDeliver,
+        password,
+      })
+      .then(() => {
+        const updatedVendors = vendors.map((vendor) =>
+          selectedVendor.id === vendor.id ? { ...vendor, daysToDeliver: daysToDeliver } : vendor
+        );
+        setVendors(updatedVendors);
+        setIsEditModalOpenned(false);
+        NotificationMeassage("success", "تم تعديل المورد بنجاح");
+      })
+      .catch((error) => {
+        NotificationMeassage("error", "حدث خطأ");
+      });
+  };
+
   useEffect(() => {
     getVendors();
   }, []);
@@ -110,44 +120,36 @@ function Vendors() {
         <Switch checked={data.active} onChange={() => handleChange(data.id, data.active)} />
       ),
     },
-    //  {
-    //    headerName: "تعديل",
-    //    minWidth: 80,
-    //    maxWidth: 80,
-    //    sortable: false,
-    //    cellRenderer: ({ data: { id } }) => (
-    //      <IconButton onClick={() => navigate(`/factories/edit/${id}`)} sx={{ fontSize: "1.2rem" }}>
-    //        <EditIcon />
-    //      </IconButton>
-    //    ),
-    //  },
-    // {
-    //   headerName: "حذف",
-    //   minWidth: 80,
-    //   maxWidth: 80,
-    //   sortable: false,
-    //   cellRenderer: ({ data: { id } }) => (
-    //     <IconButton
-    //       onClick={() => {
-    //         // setIsDeleteModalOpenned(true);
-    //         setSelectedVendorId(id);
-    //       }}
-    //       sx={{ fontSize: "1.2rem", color: "red" }}
-    //     >
-    //       <DeleteIcon />
-    //     </IconButton>
-    //   ),
-    // },
+    {
+      headerName: "تعديل",
+      minWidth: 80,
+      maxWidth: 80,
+      sortable: false,
+      cellRenderer: ({ data }) => (
+        <IconButton
+          onClick={() => {
+            setIsEditModalOpenned(true);
+            setSelectedVendor(data);
+          }}
+          sx={{ fontSize: "1.2rem" }}
+        >
+          <EditIcon />
+        </IconButton>
+      ),
+    },
   ];
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
       <ToastContainer />
-      {isDeleteModalOpenned && selectedVendorId && (
-        <ConfirmDeleteModal
-          open={isDeleteModalOpenned}
-          onClose={() => setIsDeleteModalOpenned(false)}
-          handleConfirmDelete={deleteVendor}
+
+      {isEditModalOpenned && (
+        <EditVendorModal
+          open={isEditModalOpenned}
+          onClose={() => setIsEditModalOpenned(false)}
+          data={selectedVendor}
+          onEdit={handleEditVendor}
         />
       )}
       {isloading ? (
@@ -161,7 +163,6 @@ function Vendors() {
           }}
           enableQuickFilter
           gridHeight={"500px"}
-          //  handleAdd={() => navigate(`/factories/add`)}
         />
       )}
     </DashboardLayout>

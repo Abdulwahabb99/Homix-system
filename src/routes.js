@@ -65,6 +65,18 @@ const routes = [
       </ProtectedRoutes>
     ),
   },
+  {
+    type: "collapse",
+    name: "الشحنات",
+    key: "shipments",
+    icon: <Icon fontSize="small">local_shipping</Icon>,
+    route: "/shipments",
+    component: (
+      <ProtectedRoutes>
+        <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
   isAdmin
     ? {
         type: "collapse",
@@ -113,6 +125,7 @@ const routes = [
         ),
       }
     : {},
+
   isAdmin
     ? {
         type: "collapse",
@@ -127,18 +140,6 @@ const routes = [
         ),
       }
     : {},
-  {
-    type: "collapse",
-    name: "الشحنات",
-    key: "shipments",
-    icon: <Icon fontSize="small">local_shipping</Icon>,
-    route: "/shipments",
-    component: (
-      <ProtectedRoutes>
-        <Shipments />
-      </ProtectedRoutes>
-    ),
-  },
 ];
 
 export const vendorsRoutes = [

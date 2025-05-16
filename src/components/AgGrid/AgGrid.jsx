@@ -99,6 +99,9 @@ function AgGrid({
               onChange={onQuickFilterChange}
               fullWidth
               style={{ marginBottom: "10px" }}
+              type="text"
+              autoComplete="off"
+              name="search-field"
             />
           </div>
         ) : (
