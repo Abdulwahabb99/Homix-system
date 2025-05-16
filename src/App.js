@@ -25,6 +25,7 @@ import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import ShipmentDetails from "./layouts/Shipments/components/ShipmentDetails";
+import useSocket from "hooks/useSocket";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -34,9 +35,15 @@ export default function App() {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, layout, sidenavColor, darkMode } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
   const { pathname } = useLocation();
   const reduxDispatch = useDispatch();
   const isVendor = user?.userType === "2";
+
+  // const socket = useSocket((data) => {
+  //   setNotifications((prev) => [data, ...prev]);
+  // });
 
   const rtlCache = useMemo(
     () =>
@@ -46,7 +53,9 @@ export default function App() {
       }),
     []
   );
-
+  useSocket(user?.id, (data) => {
+    setNotifications((prev) => [data, ...prev]);
+  });
   // Open sidenav when mouse enter on mini sidenav
   const handleOnMouseEnter = () => {
     if (miniSidenav && !onMouseEnter) {
@@ -74,6 +83,12 @@ export default function App() {
     }
   }, [user?.token, reduxDispatch]);
 
+  // useEffect(() => {
+  //   if (user?.id && socket) {
+  //     socket.emit("subscribe", { userId: user.id });
+  //   }
+  // }, [socket, user?.id]);
+
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
     document.documentElement.scrollTop = 0;
@@ -98,6 +113,7 @@ export default function App() {
 
       return null;
     });
+  console.log(notifications);
 
   return (
     <CacheProvider value={rtlCache}>
