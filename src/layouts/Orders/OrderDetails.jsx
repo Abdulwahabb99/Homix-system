@@ -140,19 +140,6 @@ function OrderDetails() {
     return resultValue;
   };
 
-  const sendNewComment = () => {
-    axiosRequest
-      .post(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`, {
-        text: commentText,
-      })
-      .then((res) => {
-        NotificationMeassage("success", "تم اضافة التعليق");
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
   const updateComment = (noteId) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`, {
@@ -180,7 +167,7 @@ function OrderDetails() {
   };
 
   const handleAddComment = async () => {
-    if (!commentText.trim()) return;
+    // if (!commentText.trim()) return;
 
     try {
       const { data } = await axiosRequest.post(
@@ -587,7 +574,7 @@ function OrderDetails() {
                           }}
                         />
                         <Button
-                          disabled={!commentText}
+                          disabled={!commentText && !selectedFiles?.length}
                           variant="contained"
                           sx={{ backgroundColor: "#007aff", color: "#fff" }}
                           onClick={handleAddComment}
