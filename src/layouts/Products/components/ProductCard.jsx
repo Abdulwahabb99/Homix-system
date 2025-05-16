@@ -8,6 +8,7 @@ const ProductCard = ({ product }) => {
   const navigateToProduct = () => {
     navigate(`/products/${product.id}`);
   };
+
   return (
     <Card
       sx={{
@@ -44,24 +45,21 @@ const ProductCard = ({ product }) => {
         <Typography sx={{ fontSize: "12px" }} color="text.secondary">
           {product.vendor.name}
         </Typography>
-        {product?.categories.map((category) => {
-          return (
-            <Chip
-              style={{ fontSize: "12px" }}
-              key={category.categoryId}
-              label={category.category.title}
-              color="primary"
-              variant="filled"
-              size="small"
-              sx={{
-                backgroundColor: "#f0f0f0",
-                margin: "2px 2px 2px 0",
-                border: "1px solid #00000099",
-                color: "#00000099",
-              }}
-            />
-          );
-        })}
+        {product?.type?.name && (
+          <Chip
+            style={{ fontSize: "12px" }}
+            label={product?.type?.name}
+            color="primary"
+            variant="filled"
+            size="small"
+            sx={{
+              backgroundColor: "#f0f0f0",
+              margin: "2px 2px 2px 0",
+              border: "1px solid #00000099",
+              color: "#00000099",
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
