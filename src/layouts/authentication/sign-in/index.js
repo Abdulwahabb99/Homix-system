@@ -7,7 +7,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
-import { Button, TextField } from "@mui/material";
+import { Button, TextField, IconButton, InputAdornment } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
@@ -15,11 +15,14 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import { ToastContainer } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 function Basic() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
@@ -114,9 +117,18 @@ function Basic() {
                   onChange={handlePasswordChange}
                   id="password"
                   label="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   variant="outlined"
                   fullWidth
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </MDBox>
               <MDBox mt={4} mb={1}>

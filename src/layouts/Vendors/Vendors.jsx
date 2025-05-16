@@ -81,12 +81,14 @@ function Vendors() {
   const handleEditVendor = (daysToDeliver, password) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/vendors/${selectedVendor.id}`, {
-        daysToDeliver,
-        password,
+        ...(daysToDeliver && { daysToDeliver: daysToDeliver }),
+        ...(password && { password: password }),
       })
       .then(() => {
         const updatedVendors = vendors.map((vendor) =>
-          selectedVendor.id === vendor.id ? { ...vendor, daysToDeliver: daysToDeliver } : vendor
+          selectedVendor.id === vendor.id
+            ? { ...vendor, ...(daysToDeliver && { daysToDeliver: daysToDeliver }) }
+            : vendor
         );
         setVendors(updatedVendors);
         setIsEditModalOpenned(false);
