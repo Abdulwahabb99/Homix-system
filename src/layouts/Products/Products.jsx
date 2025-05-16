@@ -37,7 +37,7 @@ function Products() {
   const [vendorsIds, setVendorsIds] = useState([]);
   const [categoriesIds, setCategoriesIds] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState(
-    searchParams.get("categoriesIds")?.split(",").map(Number) || []
+    searchParams.get("typesIds")?.split(",").map(Number) || []
   );
   const [totalPages, setTotalPages] = useState(0);
 
@@ -71,7 +71,7 @@ function Products() {
 
   const handleCategoryChange = (categories) => {
     setCategoriesIds(categories);
-    updateURLParams({ categoriesIds: categories.join(","), page: 1 });
+    updateURLParams({ typesIds: categories.join(","), page: 1 });
   };
 
   const fetchProducts = useCallback(async () => {
@@ -82,7 +82,7 @@ function Products() {
         page,
         size: ITEMS_PER_PAGE,
         vendorsIds: selectedVendors.join(","),
-        categoriesIds: selectedCategories.join(","),
+        typesIds: selectedCategories.join(","),
         searchQuery: searchQueryParam,
       });
       const response = await axiosRequest.get(`${baseUrl}?${queryParams}`);
@@ -109,10 +109,12 @@ function Products() {
   };
 
   const getCategories = () => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/categories`).then(({ data: { data } }) => {
-      const categoryOptions = data.map((c) => ({ label: c.title, value: c.id }));
-      setCategories(categoryOptions);
-    });
+    axiosRequest
+      .get(`${process.env.REACT_APP_API_URL}/products/types`)
+      .then(({ data: { data } }) => {
+        const categoryOptions = data.map((c) => ({ label: c.name, value: c.id }));
+        setCategories(categoryOptions);
+      });
   };
 
   useEffect(() => {

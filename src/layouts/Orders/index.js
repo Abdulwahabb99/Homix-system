@@ -52,6 +52,7 @@ export const statusoptions = [
 ];
 const paymentStatus = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;
+const PAGE = "page";
 
 function Orders() {
   const { startDate, endDate, handleDatesChange, handleReset } = useDateRange({
@@ -100,10 +101,18 @@ function Orders() {
   }
   const updateParams = (params) => {
     const updated = new URLSearchParams(searchParams);
+
     Object.entries(params).forEach(([key, value]) => {
-      if (value) updated.set(key, value);
-      else updated.delete(key);
+      if (value) {
+        updated.set(key, value);
+      } else {
+        updated.delete(key);
+      }
+      if (key !== PAGE) {
+        updated.set("page", "1");
+      }
     });
+
     setSearchParams(updated);
   };
 
@@ -623,7 +632,7 @@ function Orders() {
           handleConfirmDelete={bulkDelete}
         />
       )}
-      {!isLoading && orders.length > 0 ? (
+      {!isLoading ? (
         <>
           <Grid container spacing={1}>
             <Grid item xs={6} md={6} lg={3}>
