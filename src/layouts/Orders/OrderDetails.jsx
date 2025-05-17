@@ -312,7 +312,7 @@ function OrderDetails() {
                 display: "flex",
                 justifyContent: "flex-start",
                 alignItems: "center",
-                gap: 10,
+                gap: 5,
               }}
             >
               {orderDetails?.paymentStatus && (
@@ -353,6 +353,20 @@ function OrderDetails() {
                   </Button>
                 </div>
               )}
+              <Button
+                variant="contained"
+                onClick={() => navigate(`/orders/edit/${id}`)}
+                sx={{
+                  backgroundColor: "#4472C4",
+                  color: "#fff",
+                  padding: "5px 5px",
+                  borderRadius: "5px",
+                }}
+              >
+                <Icon sx={{ margin: "0 5px" }}>
+                  <EditIcon />
+                </Icon>
+              </Button>
             </div>
 
             <MDBox py={3}>
