@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "https://homix.host/";
+const SOCKET_URL = process.env.REACT_APP_API_URL;
 
 export default function useSocket(userId, onNotification) {
   const socketRef = useRef(null);
