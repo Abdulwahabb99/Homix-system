@@ -328,31 +328,29 @@ function OrderDetails() {
                   {getPaymentValue(orderDetails?.paymentStatus)}
                 </div>
               )}
-              {!isSmallScreen && !isVendor && (
-                <div
-                  onClick={handlePrint}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    cursor: "pointer",
+              <div
+                onClick={handlePrint}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#4472C4",
+                    color: "#fff",
+                    padding: "5px 5px",
+                    borderRadius: "5px",
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    sx={{
-                      backgroundColor: "#4472C4",
-                      color: "#fff",
-                      padding: "5px 5px",
-                      borderRadius: "5px",
-                    }}
-                  >
-                    <Icon sx={{ margin: "0 5px" }}>
-                      <PictureAsPdf />
-                    </Icon>
-                    <span style={{ fontSize: "16px" }}> الفاتوره</span>
-                  </Button>
-                </div>
-              )}
+                  <Icon sx={{ margin: "0 5px" }}>
+                    <PictureAsPdf />
+                  </Icon>
+                  <span style={{ fontSize: "16px" }}> الفاتوره</span>
+                </Button>
+              </div>
               <Button
                 variant="contained"
                 onClick={() => navigate(`/orders/edit/${id}`)}
