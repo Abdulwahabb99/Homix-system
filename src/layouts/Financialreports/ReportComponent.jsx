@@ -25,7 +25,7 @@ function ReportComponent({ financialreportData }) {
   return (
     <MDBox py={3}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="dark"
@@ -35,7 +35,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               icon="leaderboard"
@@ -44,7 +44,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="success"
@@ -54,7 +54,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="error"
@@ -64,7 +64,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="primary"
@@ -74,7 +74,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="light"
@@ -84,7 +84,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="light"
@@ -94,7 +94,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="light"
@@ -104,7 +104,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="dark"
@@ -114,7 +114,7 @@ function ReportComponent({ financialreportData }) {
             />
           </MDBox>
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} md={6} lg={4}>
           <MDBox mb={1.5}>
             <ComplexStatisticsCard
               color="dark"

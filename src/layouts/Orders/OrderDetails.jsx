@@ -574,7 +574,8 @@ function OrderDetails() {
                                       type="file"
                                       hidden
                                       onChange={(e) => handleFileChange(e)}
-                                      accept="image/png, image/jpeg, image/jpg, application/pdf"
+                                      accept="image/png, image/jpeg, image/jpg"
+                                      // , application/pdf
                                     />
                                     <IconButton component="span">
                                       <AttachFileIcon />
