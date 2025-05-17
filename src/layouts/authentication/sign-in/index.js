@@ -44,7 +44,7 @@ function Basic() {
           setUser({ user: { ...response.data.data.user }, token: response.data.data.token })
         );
 
-        navigate("/home");
+        navigate("/");
       })
       .catch(() => {
         NotificationMeassage("error", "البريد الإلكتروني أو كلمة السر غير صحيحة");

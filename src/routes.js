@@ -20,7 +20,7 @@ const user = JSON.parse(localStorage.getItem("user"));
 const isVendor = user?.userType === "2";
 const isAdmin = user?.userType === "1";
 
-const routes = [
+export const adminRoutes = [
   {
     type: "collapse",
     name: "الرئيسية",
@@ -77,28 +77,26 @@ const routes = [
       </ProtectedRoutes>
     ),
   },
-  isAdmin
-    ? {
-        type: "collapse",
-        name: "المصانع",
-        key: "factories",
-        icon: <Icon fontSize="small">factory</Icon>,
-        route: "/factories",
-        component: (
-          <ProtectedRoutes>
-            <Suspense
-              fallback={
-                <div>
-                  <Spinner />
-                </div>
-              }
-            >
-              <Factories />
-            </Suspense>
-          </ProtectedRoutes>
-        ),
-      }
-    : {},
+  {
+    type: "collapse",
+    name: "المصانع",
+    key: "factories",
+    icon: <Icon fontSize="small">factory</Icon>,
+    route: "/factories",
+    component: (
+      <ProtectedRoutes>
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Factories />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
   {
     type: "collapse",
     name: "تقارير مالية",
@@ -111,35 +109,30 @@ const routes = [
       </ProtectedRoutes>
     ),
   },
-  isAdmin
-    ? {
-        type: "collapse",
-        name: "الموردين",
-        key: "vendors",
-        icon: <Icon fontSize="small">business</Icon>,
-        route: "/vendors",
-        component: (
-          <ProtectedRoutes>
-            <Vendors />
-          </ProtectedRoutes>
-        ),
-      }
-    : {},
-
-  isAdmin
-    ? {
-        type: "collapse",
-        name: "المستخدمون",
-        key: "users",
-        icon: <Icon fontSize="small">group</Icon>,
-        route: "/users",
-        component: (
-          <ProtectedRoutes>
-            <Users />
-          </ProtectedRoutes>
-        ),
-      }
-    : {},
+  {
+    type: "collapse",
+    name: "الموردين",
+    key: "vendors",
+    icon: <Icon fontSize="small">business</Icon>,
+    route: "/vendors",
+    component: (
+      <ProtectedRoutes>
+        <Vendors />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "المستخدمون",
+    key: "users",
+    icon: <Icon fontSize="small">group</Icon>,
+    route: "/users",
+    component: (
+      <ProtectedRoutes>
+        <Users />
+      </ProtectedRoutes>
+    ),
+  },
 ];
 
 export const vendorsRoutes = [
@@ -201,4 +194,139 @@ export const vendorsRoutes = [
   },
 ];
 
-export default routes;
+export const logisticsRoutes = [
+  // {
+  //   type: "collapse",
+  //   name: "الرئيسية",
+  //   key: "home",
+  //   icon: <Icon fontSize="small">home</Icon>,
+  //   route: "/home",
+  //   component: (
+  //     <ProtectedRoutes>
+  //       <Dashboard />
+  //     </ProtectedRoutes>
+  //   ),
+  // },
+  {
+    type: "collapse",
+    name: "المنتجات",
+    key: "products",
+    icon: <Icon fontSize="small">shopping_cart</Icon>,
+    route: "/products",
+    component: (
+      <ProtectedRoutes>
+        <Products />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "الطلبات",
+    key: "orders",
+    icon: <Icon fontSize="small">build</Icon>,
+    route: "/orders",
+    component: (
+      <ProtectedRoutes>
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Orders />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "الشحنات",
+    key: "shipments",
+    icon: <Icon fontSize="small">local_shipping</Icon>,
+    route: "/shipments",
+    component: (
+      <ProtectedRoutes>
+        <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
+];
+export const operationRoutes = [
+  // {
+  //   type: "collapse",
+  //   name: "الرئيسية",
+  //   key: "home",
+  //   icon: <Icon fontSize="small">home</Icon>,
+  //   route: "/home",
+  //   component: (
+  //     <ProtectedRoutes>
+  //       <Dashboard />
+  //     </ProtectedRoutes>
+  //   ),
+  // },
+  {
+    type: "collapse",
+    name: "المنتجات",
+    key: "products",
+    icon: <Icon fontSize="small">shopping_cart</Icon>,
+    route: "/products",
+    component: (
+      <ProtectedRoutes>
+        <Products />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "الطلبات",
+    key: "orders",
+    icon: <Icon fontSize="small">build</Icon>,
+    route: "/orders",
+    component: (
+      <ProtectedRoutes>
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Orders />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "المصانع",
+    key: "factories",
+    icon: <Icon fontSize="small">factory</Icon>,
+    route: "/factories",
+    component: (
+      <ProtectedRoutes>
+        <Suspense
+          fallback={
+            <div>
+              <Spinner />
+            </div>
+          }
+        >
+          <Factories />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "الشحنات",
+    key: "shipments",
+    icon: <Icon fontSize="small">local_shipping</Icon>,
+    route: "/shipments",
+    component: (
+      <ProtectedRoutes>
+        <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
+];

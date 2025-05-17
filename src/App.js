@@ -9,7 +9,6 @@ import themeDarkRTL from "assets/theme-dark/theme-rtl";
 import rtlPlugin from "stylis-plugin-rtl";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
-import routes from "routes";
 import SignIn from "layouts/authentication/sign-in";
 import { useMaterialUIController, setMiniSidenav } from "context";
 import homix from "assets/images/homix.png";
@@ -26,6 +25,9 @@ import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import ShipmentDetails from "./layouts/Shipments/components/ShipmentDetails";
 import OrderEdit from "layouts/Orders/OrderEdit/OrderEdit";
+import { adminRoutes } from "routes";
+import { operationRoutes } from "routes";
+import { logisticsRoutes } from "routes";
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
@@ -37,7 +39,11 @@ export default function App() {
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const { pathname } = useLocation();
   const reduxDispatch = useDispatch();
+
   const isVendor = user?.userType === "2";
+  const isAdmin = user?.userType === "1";
+  const isOperations = user?.userType === "3";
+  const isLogistics = user?.userType === "4";
 
   const rtlCache = useMemo(
     () =>
@@ -110,7 +116,15 @@ export default function App() {
               color={sidenavColor}
               brand={homix}
               brandName="HOMIX"
-              routes={!isVendor ? routes : vendorsRoutes}
+              routes={
+                isVendor
+                  ? vendorsRoutes
+                  : isAdmin
+                  ? adminRoutes
+                  : isOperations
+                  ? operationRoutes
+                  : logisticsRoutes
+              }
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
@@ -119,8 +133,20 @@ export default function App() {
         )}
         <Suspense fallback={<Spinner />}>
           <Routes>
-            {getRoutes(routes)}
-            <Route path="/" index element={<Navigate to="/home" />} />
+            {getRoutes(
+              isVendor
+                ? vendorsRoutes
+                : isAdmin
+                ? adminRoutes
+                : isOperations
+                ? operationRoutes
+                : logisticsRoutes
+            )}
+            <Route
+              path="/"
+              index
+              element={<Navigate to={isAdmin || isVendor ? "/home" : "/products"} />}
+            />
             <Route path="*" element={<NotFound to="/home" />} />
             <Route
               path="/authentication/sign-in"
