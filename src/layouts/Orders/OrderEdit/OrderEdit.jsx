@@ -126,7 +126,7 @@ function OrderEdit() {
       <DashboardNavbar />
       <ToastContainer />
       <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
-        <IconButton color="#344767" onClick={() => navigate("/factories")}>
+        <IconButton color="#344767" onClick={() => navigate(`/orders/${id}`)}>
           <ArrowNextIcon />
         </IconButton>
       </div>
