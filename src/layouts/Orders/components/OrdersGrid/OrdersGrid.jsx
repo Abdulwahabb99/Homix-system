@@ -110,17 +110,17 @@ function OrdersGrid({
       <AgGridReact
         ref={gridRef}
         rowData={rowData}
-        columnDefs={updatedColumnDefs}
+        columnDefs={columnDefs}
         defaultColDef={{
           ...defaultColDef,
           headerClass: styles.gridHeader,
         }}
-        rowSelection="multiple"
-        rowMultiSelectWithClick={true}
-        onSelectionChanged={onSelectionChanged}
+        // rowSelection="multiple"
+        // rowMultiSelectWithClick={true}
+        // onSelectionChanged={onSelectionChanged}
         enableRtl
         domLayout="normal"
-        enableCellTextSelection
+        // enableCellTextSelection
         rowHeight={"35rem"}
         headerHeight={"35rem"}
         modules={[CsvExportModule]}
