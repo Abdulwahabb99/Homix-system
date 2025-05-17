@@ -17,14 +17,14 @@ export default function useSocket(userId, onNotification) {
 
     socket.emit("subscribe", { userId });
 
-    socket.on("notifications", onNotification);
+    socket.on("notification", onNotification);
 
     socketRef.current = socket;
 
     return () => {
       socket.disconnect();
     };
-  }, [userId, onNotification]);
+  }, [userId]);
 
   return socketRef.current;
 }
