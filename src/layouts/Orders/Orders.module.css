@@ -37,21 +37,23 @@
   display: flex;
   align-items: center;
   width: 100%;
-  margin: 2rem 0 0 3.2rem;
+  padding: 0 10px;
+  /* margin: 2rem 0 0 3.2rem; */
 }
 .invoice {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-end;
-  margin: 1rem 3rem 0 0;
+  padding: 0 10px;
+  /* margin: 1rem 3rem 0 0; */
 }
 .billingDetails {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  margin: 1rem 0 0 1rem;
+  /* margin: 1rem 0 0 1rem; */
 }
 .billingPrice {
   display: flex;
@@ -63,7 +65,7 @@
 .DescriptionContainer {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 0 0 1rem 0;
 }
 .width80 {

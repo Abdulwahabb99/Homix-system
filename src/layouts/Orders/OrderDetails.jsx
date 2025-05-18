@@ -39,6 +39,7 @@ import axiosRequest from "shared/functions/axiosRequest";
 import BasicsInfoCard from "./components/BasicsInfoCard";
 import { manufactureStatusOptions } from "shared/utils/constants";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import PdfDataMobile from "./PdfDataMobile";
 
 export const statusoptions = [
   { label: "معلق", value: 1 },
@@ -279,7 +280,8 @@ function OrderDetails() {
     <>
       {orderDetails?.id && (
         <div style={{ display: "none" }}>
-          <PdfData ref={componentRef} orderDetails={orderDetails} />
+          <PdfDataMobile ref={componentRef} orderDetails={orderDetails} />
+          {/* <PdfData ref={componentRef} orderDetails={orderDetails} /> */}
         </div>
       )}
       <DashboardLayout>
