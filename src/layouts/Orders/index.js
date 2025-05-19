@@ -5,6 +5,7 @@ import Spinner from "components/Spinner/Spinner";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Button,
   FormControl,
   Grid,
   IconButton,
@@ -30,6 +31,7 @@ import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import BulkEditModal from "./components/BulkEditModal";
+import SearchIcon from "@mui/icons-material/Search";
 
 const ITEMS_PER_PAGE = 150;
 const statusValues = {
@@ -73,10 +75,16 @@ function Orders() {
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const [vendors, setVendors] = useState([]);
-  const [selectedVendor, setSelectedVendor] = useState(vendorIdParam || "");
-  const [orderStatus, setOrderStatus] = useState(orderStatusParam || "");
+  const [selectedVendor, setSelectedVendor] = useState(
+    vendorIdParam ? vendorIdParam?.split(",").map(Number) : []
+  );
+  const [orderStatus, setOrderStatus] = useState(
+    orderStatusParam ? orderStatusParam?.split(",").map(Number) : []
+  );
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState(paymentStatusParam || "");
-  const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(deliveryStatusParam || "");
+  const [selectedDeliveryStatus, setSelectedDeliveryStatus] = useState(
+    deliveryStatusParam ? deliveryStatusParam?.split(",").map(Number) : []
+  );
   const [users, setUsers] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
@@ -311,13 +319,14 @@ function Orders() {
     urlParams.delete("deliveryStatus");
     setSearchParams(urlParams);
     setSelectedPaymentStatus("");
-    setSelectedDeliveryStatus("");
-    setSelectedVendor("");
-    setOrderStatus("");
-    // setTimeout(() => {
-    //   fetchOrders();
-    //   // navigate("/orders");
-    // }, 300);
+    setSelectedDeliveryStatus([]);
+    setSelectedVendor([]);
+    setOrderStatus([]);
+    setTimeout(() => {
+      // fetchOrders();
+      window.location.href = "/orders";
+      // navigate("/orders");
+    }, 300);
   };
 
   const deleteOrder = () => {
@@ -568,13 +577,13 @@ function Orders() {
     }
   }, [
     page,
-    orderStatusParam,
+    // orderStatusParam,
     orderNumberParam,
-    vendorIdParam,
-    startDate,
-    endDate,
-    paymentStatusParam,
-    deliveryStatusParam,
+    // vendorIdParam,
+    // startDate,
+    // endDate,
+    // paymentStatusParam,
+    // deliveryStatusParam,
   ]);
 
   useEffect(() => {
@@ -639,6 +648,7 @@ function Orders() {
                   labelId="orderStatus"
                   id="orderStatus-select"
                   value={orderStatus}
+                  multiple
                   label="حالة الطلب"
                   onChange={(e) => handleChangeStatus(e.target.value)}
                   sx={{ height: 35 }}
@@ -663,7 +673,11 @@ function Orders() {
                     value={selectedVendor}
                     label="المصنعين"
                     fullWidth
-                    onChange={(e) => handleChangeVendor(e.target.value)}
+                    multiple
+                    onChange={(e) => {
+                      setSelectedVendor(e.target.value);
+                      updateParams({ vendorId: e.target.value });
+                    }}
                     sx={{ height: 35 }}
                   >
                     {vendors.map((option) => {
@@ -710,7 +724,11 @@ function Orders() {
                       value={selectedDeliveryStatus}
                       label="حاله التصنيع"
                       fullWidth
-                      onChange={(e) => handleChangeDeliveryStatus(e.target.value)}
+                      multiple
+                      onChange={(e) => {
+                        setSelectedDeliveryStatus(e.target.value);
+                        updateParams({ deliveryStatus: e.target.value });
+                      }}
                       sx={{ height: 35 }}
                     >
                       {DELIVERY_STATUS.map((option) => {
@@ -725,7 +743,7 @@ function Orders() {
                 </Grid>
               </>
             )}
-            <Grid item xs={12} md={5} lg={4}>
+            <Grid item xs={10} md={4} lg={4}>
               <DateRangePickerWrapper
                 startDate={startDate}
                 endDate={endDate}
@@ -734,6 +752,29 @@ function Orders() {
                 useDefaultPresets={true}
                 handleDatesChange={handleDatesChange}
               />{" "}
+            </Grid>
+            <Grid item xs={2} md={2} lg={2}>
+              <Button
+                variant="contained"
+                fontSize="large"
+                sx={{ color: "#fff" }}
+                disabled={
+                  !startDate &&
+                  !endDate &&
+                  !orderStatus.length &&
+                  !selectedDeliveryStatus.length &&
+                  !selectedVendor.length
+                }
+                // className={styles.downloadBtn}
+                onClick={() => {
+                  const searchParam = new URLSearchParams(window.location.search);
+                  const startDateParam = searchParam.get("startDate");
+                  const endDateParam = searchParam.get("endDate");
+                  fetchOrders(startDateParam, endDateParam);
+                }}
+              >
+                <SearchIcon />
+              </Button>
             </Grid>
           </Grid>
 
