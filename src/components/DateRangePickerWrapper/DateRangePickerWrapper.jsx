@@ -181,7 +181,7 @@ const DateRangePickerWrapper = ({
       }
       inputIconPosition="after"
       customInputIcon={null}
-      block
+      // block
     />
   );
 };

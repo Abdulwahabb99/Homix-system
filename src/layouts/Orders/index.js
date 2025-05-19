@@ -727,7 +727,7 @@ function Orders() {
                 </Grid>
               </>
             )}
-            <Grid item xs={12} md={5} lg={3}>
+            <Grid item xs={12} md={5} lg={6}>
               <DateRangePickerWrapper
                 startDate={startDate}
                 endDate={endDate}
