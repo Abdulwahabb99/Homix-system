@@ -85,7 +85,7 @@ function Orders() {
 
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
-  moment.locale("ar");
+  moment.locale("en");
   const { user, token } = useSelector((state) => state.auth);
   const isVendor = user.userType === "2";
 
@@ -159,9 +159,6 @@ function Orders() {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
-      })
-      .finally(() => {
-        setIsLoading(false);
       });
   };
 
@@ -245,7 +242,6 @@ function Orders() {
     toBeCollected,
     shippingFees,
     selectedVendor,
-    deliveryStatus,
     administrator,
     shippedFromInventory,
     totalCompanyDue,
@@ -260,7 +256,6 @@ function Orders() {
         shippingFees: shippingFees,
         toBeCollected: toBeCollected,
         vendorId: selectedVendor,
-        deliveryStatus: deliveryStatus,
         userId: administrator,
         shippedFromInventory: shippedFromInventory,
         totalVendorDue: totalVendorDue,
@@ -586,6 +581,9 @@ function Orders() {
       setUsers(data);
     });
   }, []);
+
+  console.log(startDate);
+  console.log(endDate);
 
   return (
     <DashboardLayout>

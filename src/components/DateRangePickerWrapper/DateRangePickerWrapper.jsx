@@ -15,57 +15,65 @@ const DateRangePickerWrapper = ({
   maxDaysRange = 31,
   isDirectionRTL = true,
   allowFutureDays = false,
-  className = "",
 }) => {
   const [focusedInput, setFocusedInput] = useState(null);
-  const [startDate, setStartDate] = useState(moment(initialStartDate, "DD-MM-YYYY"));
-  const [endDate, setEndDate] = useState(moment(initialEndDate, "DD-MM-YYYY"));
+  const [startDate, setStartDate] = useState(
+    initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null
+  );
+  const [endDate, setEndDate] = useState(
+    initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("en") : null
+  );
   const [prevStartDate, setPrevStartDate] = useState(startDate);
   const [prevEndDate, setPrevEndDate] = useState(endDate);
 
-  useEffect(() => {
-    moment.defineLocale("ar-sa-mine", {
-      parentLocale: "ar",
-      preparse: (string) => string,
-      postformat: (string) => string,
-    });
-  }, [isDirectionRTL]);
+  // useEffect(() => {
+  //   moment.defineLocale("ar-sa-mine", {
+  //     parentLocale: "ar",
+  //     preparse: (string) => string,
+  //     postformat: (string) => string,
+  //   });
+  // }, [isDirectionRTL]);
 
   useEffect(() => {
-    setStartDate(moment(initialStartDate, "DD-MM-YYYY"));
-    setEndDate(moment(initialEndDate, "DD-MM-YYYY"));
+    setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null);
+    setEndDate(initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("en") : null);
   }, [initialStartDate, initialEndDate]);
 
   const presets = [
-    { text: "اليوم", start: moment(), end: moment(), disabled: maxDaysRange < 1 },
+    {
+      text: "اليوم",
+      start: moment().locale("en"),
+      end: moment().locale("en"),
+      disabled: maxDaysRange < 1,
+    },
     {
       text: "أمس",
-      start: moment().subtract(1, "day"),
-      end: moment().subtract(1, "day"),
+      start: moment().locale("en").subtract(1, "day"),
+      end: moment().locale("en").subtract(1, "day"),
       disabled: maxDaysRange < 1,
     },
     {
       text: "آخر ٧ أيام",
-      start: moment().subtract(6, "days"),
-      end: moment(),
+      start: moment().locale("en").subtract(6, "days"),
+      end: moment().locale("en"),
       disabled: maxDaysRange < 7,
     },
     {
       text: "آخر ٣٠ يوم",
-      start: moment().subtract(29, "days"),
-      end: moment(),
+      start: moment().locale("en").subtract(29, "days"),
+      end: moment().locale("en"),
       disabled: maxDaysRange < 30,
     },
     {
       text: "هذا الشهر",
-      start: moment().startOf("month"),
-      end: moment(),
+      start: moment().locale("en").startOf("month"),
+      end: moment().locale("en"),
       disabled: maxDaysRange < 31,
     },
     {
       text: "الشهر السابق",
-      start: moment().subtract(1, "months").startOf("month"),
-      end: moment().subtract(1, "months").endOf("month"),
+      start: moment().locale("en").subtract(1, "months").startOf("month"),
+      end: moment().locale("en").subtract(1, "months").endOf("month"),
       disabled: maxDaysRange < 31,
     },
   ];
@@ -78,13 +86,13 @@ const DateRangePickerWrapper = ({
   const onFocusChange = (focused) => setFocusedInput(focused);
 
   const confirm = () => {
-    if (startDate && endDate) {
+    if (startDate && endDate && startDate.isValid() && endDate.isValid()) {
       setPrevStartDate(startDate);
       setPrevEndDate(endDate);
       setFocusedInput(null);
       handleDatesChange(
-        moment(startDate).format("DD-MM-YYYY"),
-        moment(endDate).format("DD-MM-YYYY")
+        moment(startDate).locale("en").format("DD-MM-YYYY"),
+        moment(endDate).locale("en").format("DD-MM-YYYY")
       );
     }
   };
@@ -101,7 +109,7 @@ const DateRangePickerWrapper = ({
   const isOutsideRange = (day) => {
     if (maxDaysRange === null) return false;
     if (!allowFutureDays) {
-      return day.isAfter(moment(), "day");
+      return day.isAfter(moment().locale("en"), "day");
     }
 
     return false;
@@ -163,13 +171,13 @@ const DateRangePickerWrapper = ({
       customCloseIcon={<span>&times;</span>}
       keepOpenOnDateSelect
       onClose={cancel}
-      isDayHighlighted={(day) => isSameDay(day, moment())}
+      isDayHighlighted={(day) => isSameDay(day, moment().locale("en"))}
       isOutsideRange={isOutsideRange}
       renderCalendarInfo={renderPresets}
       startDatePlaceholderText="من "
       endDatePlaceholderText="إلى "
       initialVisibleMonth={() =>
-        window.innerWidth > 768 ? moment().subtract(1, "month") : moment()
+        window.innerWidth > 768 ? moment().locale("en").subtract(1, "month") : moment().locale("en")
       }
       inputIconPosition="after"
       customInputIcon={null}

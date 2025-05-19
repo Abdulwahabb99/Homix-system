@@ -15,7 +15,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { DELIVERY_STATUS, PAYMENT_STATUS, statusoptions } from "../utils/constants";
+import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import axiosRequest from "shared/functions/axiosRequest";
 import moment from "moment";
 
@@ -28,7 +28,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
   const [selectedVendor, setSelectedVendor] = useState(data.items[0].product.vendorId);
-  const [deliveryStatus, setDeliveryStatus] = useState(data.deliveryStatus);
   const [administrator, setAdministrator] = useState(data?.userId ? data?.userId : null);
   const [shippedFromInventory, setShippedFromInventory] = useState(
     data.shippedFromInventory ? data.shippedFromInventory : false
@@ -106,26 +105,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               sx={{ height: 35 }}
             >
               {vendors.map((option) => {
-                return (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="orderStatus">حالة التصنيع</InputLabel>
-            <Select
-              fullWidth
-              labelId="deliveryStatus"
-              id="deliveryStatus"
-              value={deliveryStatus}
-              label="حالة التصنيع"
-              onChange={(e) => setDeliveryStatus(e.target.value)}
-              sx={{ height: 35 }}
-            >
-              {DELIVERY_STATUS.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
@@ -258,7 +237,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
               toBeCollected,
               shippingCost,
               selectedVendor,
-              deliveryStatus,
               administrator,
               shippedFromInventory,
               totalCompanyDue,
