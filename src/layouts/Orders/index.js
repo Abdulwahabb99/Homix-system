@@ -212,7 +212,7 @@ function Orders() {
               orderData: order,
               receivedAmount: order.receivedAmount,
               totalDiscounts: order.totalDiscounts,
-              code: order.name,
+              code: order.code,
               createdAt: order.createdAt,
               userId: order.userId,
               downPayment: order.downPayment,
@@ -423,7 +423,7 @@ function Orders() {
   const colDefs = [
     {
       field: "code",
-      headerName: "الكود التعريفي",
+      headerName: "رقم العملية",
       sortable: true,
       minWidth: 120,
       cellRenderer: (params) => (
