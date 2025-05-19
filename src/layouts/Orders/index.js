@@ -57,6 +57,7 @@ const PAGE = "page";
 function Orders() {
   const { startDate, endDate, handleDatesChange, handleReset } = useDateRange({
     defaultDays: 0,
+    useEndOfDay: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -582,9 +583,6 @@ function Orders() {
     });
   }, []);
 
-  console.log(startDate);
-  console.log(endDate);
-
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -727,7 +725,7 @@ function Orders() {
                 </Grid>
               </>
             )}
-            <Grid item xs={12} md={5} lg={6}>
+            <Grid item xs={12} md={5} lg={4}>
               <DateRangePickerWrapper
                 startDate={startDate}
                 endDate={endDate}

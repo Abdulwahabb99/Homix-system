@@ -6,7 +6,7 @@ export const useDateRange = ({
   queryParams = true,
   format = "DD-MM-YYYY",
   useStartOfDay = false,
-  useEndOfDay = false,
+  useEndOfDay = true,
   maxNoOfDays = null,
   maxNoOfDaysCallback = null,
   onChange,
@@ -94,28 +94,23 @@ export const useDateRange = ({
   );
 
   const handleReset = useCallback(() => {
-    const resetStart = moment().utc().startOf("day");
-    const resetEnd = moment().utc().endOf("day");
-
-    const newDateRange = useEndDate
-      ? { startDate: resetStart, endDate: resetEnd }
-      : { startDate: resetStart };
+    const newDateRange = useEndDate ? { startDate: "", endDate: "" } : { startDate: "" };
 
     setDateRange(newDateRange);
     if (onChange) onChange(newDateRange);
 
     if (queryParams) {
       const urlParams = new URLSearchParams(window.location.search);
-      urlParams.set("startDate", resetStart.locale("en").format(format));
+      urlParams.delete("startDate");
       if (useEndDate) {
-        urlParams.set("endDate", resetEnd.locale("en").format(format));
+        urlParams.delete("endDate");
       }
 
       const url = new URL(window.location.href);
       url.search = urlParams.toString().replaceAll("%2C", ",");
       window.history.pushState(null, "", url.toString());
     }
-  }, [format, onChange, queryParams, useEndDate]);
+  }, [onChange, queryParams, useEndDate]);
 
   return { startDate, endDate, handleDatesChange, handleReset };
 };
