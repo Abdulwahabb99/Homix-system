@@ -7,6 +7,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import {
   Checkbox,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -19,7 +20,7 @@ import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import axiosRequest from "shared/functions/axiosRequest";
 import moment from "moment";
 
-const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
+const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) => {
   const [users, setUsers] = useState([]);
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
@@ -246,7 +247,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors }) => {
           variant="contained"
           style={{ color: "#fff" }}
         >
-          تأكيد
+          {isSubmitting ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : "تأكيد"}{" "}
         </Button>
       </DialogActions>
     </Dialog>

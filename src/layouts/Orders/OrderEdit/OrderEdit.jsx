@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Button,
   Checkbox,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   Grid,
@@ -44,8 +45,10 @@ function OrderEdit() {
   const [shippedFromInventory, setShippedFromInventory] = useState(false);
   const [users, setUsers] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const editOrder = () => {
+    setIsSubmitting(true);
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
         status: orderStatus,
@@ -68,6 +71,9 @@ function OrderEdit() {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
   };
 
@@ -334,7 +340,7 @@ function OrderEdit() {
               style={{ color: "#fff" }}
               disabled={!orderStatus || !paymentStatus}
             >
-              حفظ
+              {isSubmitting ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : "حفظ"}{" "}
             </Button>
           </Grid>
         </Grid>

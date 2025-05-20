@@ -89,6 +89,7 @@ function Orders() {
   const [selectedRows, setSelectedRows] = useState([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const gridRef = useRef();
 
@@ -256,6 +257,7 @@ function Orders() {
     totalCompanyDue,
     expectedDeliveryDate
   ) => {
+    setIsSubmitting(true);
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
         status: orderStatus,
@@ -299,9 +301,11 @@ function Orders() {
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+        setIsEditModalOpen(false);
       });
-
-    setIsEditModalOpen(false);
   };
   const openEditModal = (value) => {
     setSelectedEditOrder(value);
@@ -611,6 +615,7 @@ function Orders() {
           onEdit={onEditConfirm}
           onClose={() => setIsEditModalOpen(false)}
           vendors={vendors}
+          isSubmitting={isSubmitting}
         />
       )}
       {isDeleteModalOpen && selectedEditOrder && (
