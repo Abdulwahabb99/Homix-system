@@ -49,6 +49,7 @@ export const statusoptions = [
   { label: "تم التسليم", value: 5 },
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
+  { label: "في المخزن ", value: 8 },
 ];
 
 const PAYMENT_STATUS = { 2: "مدفوع", 1: "دفع عند الاستلام" };

@@ -6,6 +6,7 @@ export const statusoptions = [
   { label: "تم التسليم", value: 5 },
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
+  { label: "في المخزن ", value: 8 },
 ];
 export const PAYMENT_STATUS = [
   { label: "مدفوع", value: 2 },
@@ -37,6 +38,7 @@ export const orderStatusValues = {
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
+  8: "في المخزن ",
 };
 export const deliveryStatusValues = {
   1: "في مده التصنيع",

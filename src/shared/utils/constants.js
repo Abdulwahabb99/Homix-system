@@ -133,6 +133,7 @@ const statusValues = {
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
+  8: "في المخزن ",
 };
 
 export const getStatusValue = (status) => {

@@ -42,6 +42,7 @@ const statusValues = {
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",
+  8: "في المخزن ",
 };
 export const statusoptions = [
   { label: "معلق", value: 1 },
@@ -51,6 +52,7 @@ export const statusoptions = [
   { label: "تم التسليم", value: 5 },
   { label: "مسترجع ", value: 6 },
   { label: "مستبدل ", value: 7 },
+  { label: "في المخزن ", value: 8 },
 ];
 const paymentStatus = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 const baseURI = `${process.env.REACT_APP_API_URL}`;

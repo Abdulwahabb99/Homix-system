@@ -9,9 +9,9 @@ import styles from "./OrdersGrid.module.css";
 import { Button, IconButton, Tooltip } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
-import EditSquareIcon from "@mui/icons-material/EditOutlined";
 import { useNavigate } from "react-router-dom";
-import CancelIcon from "@mui/icons-material/Close";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
 
 function OrdersGrid({
   columnDefs,
@@ -70,7 +70,7 @@ function OrdersGrid({
         <div className={styles.resetBtnBox}>
           <Tooltip title="تعديل جماعي">
             <IconButton onClick={enableBulkEdit} sx={{ fontSize: "20px" }}>
-              {isBulkEdited ? <CancelIcon /> : <EditSquareIcon />}
+              {!isBulkEdited ? <CheckBoxOutlineBlankIcon /> : <CheckBoxIcon />}
             </IconButton>
           </Tooltip>
           <Button sx={{ padding: "0" }} onClick={handleSearchClick}>
