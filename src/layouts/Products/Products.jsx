@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Button,
   Container,
   FormControl,
   Grid,
@@ -8,18 +9,18 @@ import {
   MenuItem,
   Pagination,
   Select,
+  TextField,
 } from "@mui/material";
 
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import MDBox from "components/MDBox";
 import Spinner from "components/Spinner/Spinner";
-import SearchComponent from "components/SearchComponent/SearchComponent";
 import ProductCard from "./components/ProductCard";
-import styles from "./Products.module.css";
 import axiosRequest from "shared/functions/axiosRequest";
 
 const ITEMS_PER_PAGE = 16;
+const PAGE = "page";
 
 function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -45,61 +46,53 @@ function Products() {
   const searchQueryParam = searchParams.get("searchQuery") || "";
 
   const updateURLParams = (params) => {
-    setSearchParams((prevParams) => {
-      const updatedParams = new URLSearchParams(prevParams);
-      Object.entries(params).forEach(([key, value]) => {
-        if (value) updatedParams.set(key, value);
-        else updatedParams.delete(key);
-      });
-      return updatedParams;
+    const updated = new URLSearchParams(searchParams);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        updated.set(key, value);
+      } else {
+        updated.delete(key);
+      }
     });
+
+    setSearchParams(updated);
   };
 
   const handlePageChange = (event, value) => {
     updateURLParams({ page: value.toString() });
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    updateURLParams({ searchQuery: searchText, page: 1 });
-  };
-
   const handleVendorChange = (vendors) => {
     setVendorsIds(vendors);
-    updateURLParams({ vendorsIds: vendors.join(","), page: 1 });
+    updateURLParams({ vendorsIds: vendors.join(",") });
   };
 
   const handleCategoryChange = (categories) => {
     setCategoriesIds(categories);
-    updateURLParams({ typesIds: categories.join(","), page: 1 });
+    updateURLParams({ typesIds: categories.join(",") });
   };
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = () => {
     setLoading(true);
-    try {
-      const baseUrl = `${process.env.REACT_APP_API_URL}/products`;
-      const queryParams = new URLSearchParams({
-        page,
-        size: ITEMS_PER_PAGE,
-        vendorsIds: selectedVendors.join(","),
-        typesIds: selectedCategories.join(","),
-        searchQuery: searchQueryParam,
+    const query = new URLSearchParams({
+      page,
+      size: ITEMS_PER_PAGE,
+      ...(selectedVendors.length && { vendorsIds: selectedVendors.join(",") }),
+      ...(selectedCategories.length && { typesIds: selectedCategories.join(",") }),
+      ...(searchQueryParam && { searchQuery: searchQueryParam }),
+    });
+    axiosRequest
+      .get(`${process.env.REACT_APP_API_URL}/products?${query}`)
+      .then(({ data: { data } }) => {
+        setProducts(data.products);
+        setTotalPages(data.totalPages);
+      })
+      .catch((error) => console.error("Error fetching products:", error))
+      .finally(() => {
+        setLoading(false);
       });
-      const response = await axiosRequest.get(`${baseUrl}?${queryParams}`);
-      if (response.data.force_logout) {
-        localStorage.removeItem("user");
-        return navigate("/authentication/sign-in");
-      }
-
-      const { products, totalPages } = response.data.data;
-      setProducts(products);
-      setTotalPages(totalPages);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, searchQueryParam, categoriesIds, vendorsIds, navigate]);
+  };
 
   const getVendors = () => {
     axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
@@ -124,7 +117,7 @@ function Products() {
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+  }, [page]);
 
   return (
     <DashboardLayout>
@@ -134,13 +127,16 @@ function Products() {
           <>
             <Grid container spacing={2} mb={4}>
               <Grid item xs={12} md={4} lg={3}>
-                <div className={styles.searchContainer}>
-                  <SearchComponent
-                    handleSearch={handleSearch}
-                    searchText={searchText}
-                    setSearchText={setSearchText}
-                  />
-                </div>
+                <TextField
+                  label="بحث"
+                  variant="outlined"
+                  value={searchText}
+                  onChange={(e) => {
+                    setSearchText(e.target.value);
+                    updateURLParams({ searchQuery: e.target.value });
+                  }}
+                  fullWidth
+                />
               </Grid>
 
               {isAdmin && (
@@ -221,6 +217,18 @@ function Products() {
                     })}
                   </Select>
                 </FormControl>
+              </Grid>
+              <Grid item xs={6} md={4} lg={3}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  style={{ color: "#fff" }}
+                  onClick={() => {
+                    updateURLParams({ page: 1 });
+                  }}
+                >
+                  بحث
+                </Button>
               </Grid>
             </Grid>
 
