@@ -224,6 +224,9 @@ function Products() {
                   color="primary"
                   style={{ color: "#fff" }}
                   onClick={() => {
+                    if (page === 1) {
+                      fetchProducts();
+                    }
                     updateURLParams({ page: 1 });
                   }}
                 >
