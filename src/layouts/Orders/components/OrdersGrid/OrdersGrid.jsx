@@ -6,10 +6,12 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import { CsvExportModule } from "@ag-grid-community/csv-export";
 import styles from "./OrdersGrid.module.css";
-import { Button, IconButton } from "@mui/material";
+import { Button, IconButton, Tooltip } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
+import EditSquareIcon from "@mui/icons-material/EditOutlined";
 import { useNavigate } from "react-router-dom";
+import CancelIcon from "@mui/icons-material/Close";
 
 function OrdersGrid({
   columnDefs,
@@ -27,11 +29,12 @@ function OrdersGrid({
   setIsBulkDeleteModalOpen,
   handleExport,
   isOrdersPage,
+  isBulkEdited,
+  enableBulkEdit,
 }) {
   const searchParam = new URLSearchParams(window.location.search);
   const startDateParam = searchParam.get("startDate");
   const endDateParam = searchParam.get("endDate");
-  const [isBulkEdited, setIsBulkEdited] = useState(false);
 
   const navigate = useNavigate();
   const onExportClick = () => {
@@ -65,15 +68,21 @@ function OrdersGrid({
     >
       <div className={styles.upperGridBtn}>
         <div className={styles.resetBtnBox}>
+          <Tooltip title="تعديل جماعي">
+            <IconButton onClick={enableBulkEdit} sx={{ fontSize: "20px" }}>
+              {isBulkEdited ? <CancelIcon /> : <EditSquareIcon />}
+            </IconButton>
+          </Tooltip>
           <Button sx={{ padding: "0" }} onClick={handleSearchClick}>
             البحث
           </Button>
           <Button sx={{ padding: "0" }} onClick={handleReset}>
             اعادة ضبط
           </Button>
-          {/* <Button sx={{ padding: "0" }} onClick={handleReset}>
-            اعادة ضبط
+          {/* <Button sx={{ padding: "0" }} onClick={enableBulkEdit}>
+            {isBulkEdited ? "الغاء" : "تعديل جماعي"}
           </Button> */}
+
           {selectedRows?.length > 1 && (
             <>
               <Button
@@ -114,7 +123,7 @@ function OrdersGrid({
       <AgGridReact
         ref={gridRef}
         rowData={rowData}
-        columnDefs={updatedColumnDefs}
+        columnDefs={isBulkEdited ? updatedColumnDefs : columnDefs}
         defaultColDef={{
           ...defaultColDef,
           headerClass: styles.gridHeader,

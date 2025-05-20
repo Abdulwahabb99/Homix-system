@@ -90,6 +90,7 @@ function Orders() {
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBulkEdited, setIsBulkEdited] = useState(false);
 
   const gridRef = useRef();
 
@@ -378,6 +379,7 @@ function Orders() {
         });
 
         setOrders(updatedOrders);
+        setIsBulkEdited(false);
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch(() => {
@@ -400,13 +402,12 @@ function Orders() {
           const idsSet = new Set(orderIds);
           const newOrders = orders.filter((order) => !idsSet.has(order.orderId));
           setOrders(newOrders);
-          NotificationMeassage("success", "تم التعديل بنجاح");
+          NotificationMeassage("success", "تم الحذف بنجاح");
+          setIsBulkDeleteModalOpen(false);
         })
         .catch(() => {
           NotificationMeassage("error", "حدث خطأ");
         });
-
-      setIsBulkDeleteModalOpen(false);
     }
   };
 
@@ -799,6 +800,8 @@ function Orders() {
             setIsBulkDeleteModalOpen={setIsBulkDeleteModalOpen}
             handleExport={handleExport}
             isOrdersPage
+            isBulkEdited={isBulkEdited}
+            enableBulkEdit={() => setIsBulkEdited((prev) => !prev)}
           />
           <Pagination
             count={totalPages}
