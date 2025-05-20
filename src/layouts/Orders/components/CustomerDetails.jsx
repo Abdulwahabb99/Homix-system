@@ -26,8 +26,38 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
         </MDTypography>
       </div>
 
-      <MDBox pt={1} px={3}>
-        <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>التسليم بمخازن هومكس </Typography>
+      <MDBox mt={0} mb={2} p={"0 24px"}>
+        <MDTypography variant="button" fontWeight="regular">
+          <MDTypography display="inline" variant="body2" verticalAlign="middle">
+            <Icon sx={{ color: "#333" }}>
+              <Phone />
+            </Icon>
+          </MDTypography>
+          &nbsp;
+          <Typography
+            variant="button"
+            // color="body2"
+            fontWeight="regular"
+            component="a"
+            href="tel:01055047847"
+            sx={{ textDecoration: "none", cursor: "pointer" }}
+          >
+            01055047847
+          </Typography>
+        </MDTypography>
+      </MDBox>
+      <MDBox mt={0} mb={2} p={"0 24px"}>
+        <MDTypography variant="button" fontWeight="regular">
+          <MDTypography display="inline" variant="body2" verticalAlign="middle">
+            <Icon sx={{ color: "#333" }}>
+              <Home />
+            </Icon>
+          </MDTypography>
+          &nbsp;
+          <MDTypography variant="button" color="text" fontWeight="regular">
+            المنصورية - الهرم - الطريق الرئيسي - زاوية أبو مسلم بجوار مسجد اهل التقوي
+          </MDTypography>
+        </MDTypography>
       </MDBox>
     </>
   ) : (

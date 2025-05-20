@@ -330,7 +330,7 @@ function ShipmentDetails() {
                           isShimpentDetails={true}
                         />
                       )}
-                      {user?.userType === "1" && (
+                      {/* {user?.userType === "1" && (
                         <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
                           <InputLabel id="orderStatus">حالة الشحنة</InputLabel>
                           <Select
@@ -350,7 +350,7 @@ function ShipmentDetails() {
                             })}
                           </Select>
                         </FormControl>
-                      )}{" "}
+                      )} */}
                     </Card>
                   </Grid>
                   <Grid item xs={12} md={6} lg={6}>
