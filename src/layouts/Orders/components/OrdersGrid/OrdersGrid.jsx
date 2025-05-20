@@ -115,9 +115,9 @@ function OrdersGrid({
           ...defaultColDef,
           headerClass: styles.gridHeader,
         }}
-        // rowSelection="multiple"
+        rowSelection="multiple"
         // rowMultiSelectWithClick={true}
-        // onSelectionChanged={onSelectionChanged}
+        onSelectionChanged={onSelectionChanged}
         enableRtl
         domLayout="normal"
         // enableCellTextSelection
