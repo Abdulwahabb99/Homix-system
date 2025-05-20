@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable react/prop-types */
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
@@ -31,6 +31,7 @@ function OrdersGrid({
   const searchParam = new URLSearchParams(window.location.search);
   const startDateParam = searchParam.get("startDate");
   const endDateParam = searchParam.get("endDate");
+  const [isBulkEdited, setIsBulkEdited] = useState(false);
 
   const navigate = useNavigate();
   const onExportClick = () => {
@@ -60,7 +61,7 @@ function OrdersGrid({
   return (
     <div
       className={"ag-theme-quartz"}
-      style={{ width: "100%", height: gridHeight ? gridHeight : "495px", marginTop: "10px" }}
+      style={{ width: "100%", height: gridHeight ? gridHeight : "495px", marginTop: "15px" }}
     >
       <div className={styles.upperGridBtn}>
         <div className={styles.resetBtnBox}>
@@ -70,6 +71,9 @@ function OrdersGrid({
           <Button sx={{ padding: "0" }} onClick={handleReset}>
             اعادة ضبط
           </Button>
+          {/* <Button sx={{ padding: "0" }} onClick={handleReset}>
+            اعادة ضبط
+          </Button> */}
           {selectedRows?.length > 1 && (
             <>
               <Button
@@ -110,7 +114,7 @@ function OrdersGrid({
       <AgGridReact
         ref={gridRef}
         rowData={rowData}
-        columnDefs={columnDefs}
+        columnDefs={updatedColumnDefs}
         defaultColDef={{
           ...defaultColDef,
           headerClass: styles.gridHeader,
