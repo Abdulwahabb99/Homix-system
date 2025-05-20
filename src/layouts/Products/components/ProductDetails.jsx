@@ -64,6 +64,27 @@ function ProductDetails() {
           <MDBox py={3}>
             <MDBox>
               <Grid container spacing={2} justifyContent={"center"}>
+                <Grid item xs={12} md={4} lg={4} sx={{ display: "flex", justifyContent: "center" }}>
+                  <Card
+                    sx={{
+                      maxWidth: 345,
+                      maxHeight: 387,
+                      minHeight: 370,
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      image={productDetails?.image}
+                      sx={{
+                        objectFit: "cover",
+                        maxHeight: "387",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    />
+                  </Card>
+                </Grid>
+
                 <Grid item xs={12} md={8} lg={8}>
                   <Card sx={{ height: "100%", width: "100%" }}>
                     <>
@@ -153,21 +174,6 @@ function ProductDetails() {
                         </MDBox>
                       </MDBox>
                     </>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={4} lg={4}>
-                  <Card
-                    sx={{
-                      maxWidth: 345,
-                      maxHeight: 387,
-                      minHeight: 370,
-                    }}
-                  >
-                    <CardMedia
-                      component="img"
-                      image={productDetails?.image}
-                      sx={{ objectFit: "cover", maxHeight: "387" }}
-                    />
                   </Card>
                 </Grid>
               </Grid>
