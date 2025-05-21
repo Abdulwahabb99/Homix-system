@@ -27,18 +27,20 @@ import {
   setMiniSidenav,
   setOpenConfigurator,
 } from "context";
+import { MenuItem } from "@mui/material";
+import MDTypography from "components/MDTypography";
 
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState("static");
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentNavbar, openConfigurator, darkMode } = controller;
-  // const [openMenu, setOpenMenu] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
-  // const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
-  // const handleCloseMenu = () => setOpenMenu(false);
+  const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
+  const handleCloseMenu = () => setOpenMenu(false);
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
@@ -51,6 +53,31 @@ function DashboardNavbar({ absolute, light, isMini }) {
       return colorValue;
     },
   });
+
+  const renderMenu = () => (
+    <Menu
+      anchorEl={openMenu}
+      anchorReference={null}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "left",
+      }}
+      open={Boolean(openMenu)}
+      onClose={handleCloseMenu}
+      sx={{ mt: 2 }}
+    >
+      <MenuItem>
+        <MDBox component={Link} py={0.5} display="flex" alignItems="center" lineHeight={1}>
+          <MDTypography variant="body1" color="secondary" lineHeight={0.75}>
+            <Icon>shopping_cart</Icon>{" "}
+          </MDTypography>
+          <MDTypography variant="button" fontWeight="regular" sx={{ ml: 1 }}>
+            Payment successfully completed{" "}
+          </MDTypography>
+        </MDBox>
+      </MenuItem>{" "}
+    </Menu>
+  );
 
   return (
     <AppBar
@@ -90,10 +117,14 @@ function DashboardNavbar({ absolute, light, isMini }) {
                 disableRipple
                 color="inherit"
                 sx={navbarIconButton}
-                onClick={handleConfiguratorOpen}
+                aria-controls="notification-menu"
+                aria-haspopup="true"
+                variant="contained"
+                onClick={handleOpenMenu}
               >
                 <Icon sx={iconsStyle}>notifications</Icon>
               </IconButton>
+              {renderMenu()}
             </MDBox>
           </MDBox>
         )}
