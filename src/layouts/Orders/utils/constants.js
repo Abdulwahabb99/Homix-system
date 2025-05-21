@@ -15,8 +15,7 @@ export const PAYMENT_STATUS = [
 export const DELIVERY_STATUS = [
   { label: "في مده التصنيع", value: 1 },
   { label: "أوشك علي التأخير", value: 2 },
-  { label: "تعدي المده", value: 3 },
-  { label: "متأخر", value: 4 },
+  { label: "متأخر", value: 3 },
 ];
 
 export const customerInitialState = {
@@ -43,8 +42,7 @@ export const orderStatusValues = {
 export const deliveryStatusValues = {
   1: "في مده التصنيع",
   2: "أوشك علي التأخير",
-  3: "تعدي المده",
-  4: "متأخر ",
+  3: "متأخر ",
 };
 
 export const paymentStatusValues = {
