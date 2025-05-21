@@ -209,7 +209,7 @@ function OrderDetails() {
   const getUser = () => {
     axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
       const users = res.data.data;
-      const user = users.find((user) => user.id === orderDetails.userId);
+      const user = users?.find((user) => user.id === orderDetails.userId);
       if (user) {
         setAdministrator(`${user.firstName} ${user.lastName}`);
       }
@@ -354,20 +354,22 @@ function OrderDetails() {
                   <span style={{ fontSize: "16px" }}> الفاتوره</span>
                 </Button>
               </div>
-              <Button
-                variant="contained"
-                onClick={() => navigate(`/orders/edit/${id}`)}
-                sx={{
-                  backgroundColor: "#4472C4",
-                  color: "#fff",
-                  padding: "5px 5px",
-                  borderRadius: "5px",
-                }}
-              >
-                <Icon sx={{ margin: "0 5px" }}>
-                  <EditIcon />
-                </Icon>
-              </Button>
+              {!isVendor && (
+                <Button
+                  variant="contained"
+                  onClick={() => navigate(`/orders/edit/${id}`)}
+                  sx={{
+                    backgroundColor: "#4472C4",
+                    color: "#fff",
+                    padding: "5px 5px",
+                    borderRadius: "5px",
+                  }}
+                >
+                  <Icon sx={{ margin: "0 5px" }}>
+                    <EditIcon />
+                  </Icon>
+                </Button>
+              )}
             </div>
 
             <MDBox py={3}>

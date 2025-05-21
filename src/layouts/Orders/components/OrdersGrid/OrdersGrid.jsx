@@ -68,21 +68,19 @@ function OrdersGrid({
     >
       <div className={styles.upperGridBtn}>
         <div className={styles.resetBtnBox}>
-          <Tooltip title="تعديل جماعي">
-            <IconButton onClick={enableBulkEdit} sx={{ fontSize: "20px" }}>
-              {!isBulkEdited ? <CheckBoxOutlineBlankIcon /> : <CheckBoxIcon />}
-            </IconButton>
-          </Tooltip>
+          {!isVendor && (
+            <Tooltip title="تعديل جماعي">
+              <IconButton onClick={enableBulkEdit} sx={{ fontSize: "20px" }}>
+                {!isBulkEdited ? <CheckBoxOutlineBlankIcon /> : <CheckBoxIcon />}
+              </IconButton>
+            </Tooltip>
+          )}
           <Button sx={{ padding: "0" }} onClick={handleSearchClick}>
             البحث
           </Button>
           <Button sx={{ padding: "0" }} onClick={handleReset}>
             اعادة ضبط
           </Button>
-          {/* <Button sx={{ padding: "0" }} onClick={enableBulkEdit}>
-            {isBulkEdited ? "الغاء" : "تعديل جماعي"}
-          </Button> */}
-
           {selectedRows?.length > 1 && (
             <>
               <Button

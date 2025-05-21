@@ -263,18 +263,18 @@ function Orders() {
     setIsSubmitting(true);
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
-        status: orderStatus,
+        ...(orderStatus && { status: orderStatus }),
+        ...(expectedDeliveryDate && { expectedDeliveryDate: expectedDeliveryDate }),
+        ...(selectedVendor && { vendorId: selectedVendor }),
+        ...(administrator && { userId: administrator }),
         commission: commission,
         paymentStatus: paymentStatus,
         downPayment: downPayment,
         shippingFees: shippingFees,
         toBeCollected: toBeCollected,
-        vendorId: selectedVendor,
-        userId: administrator,
         shippedFromInventory: shippedFromInventory,
         totalVendorDue: totalVendorDue,
         totalCompanyDue: totalCompanyDue,
-        expectedDeliveryDate: expectedDeliveryDate,
       })
       .then(({ data: { data } }) => {
         const newOrders = orders.map((order) => {
@@ -360,8 +360,8 @@ function Orders() {
       .put(`${baseURI}/orders/bulk-update`, {
         orderIds: orderIds,
         orderData: {
-          status: orderStatus,
-          paymentStatus: paymentStatus,
+          ...(orderStatus && { status: orderStatus }),
+          ...(paymentStatus && { paymentStatus: paymentStatus }),
           shippedFromInventory: shippedFromInventory,
         },
       })
@@ -372,9 +372,9 @@ function Orders() {
           if (idsSet.has(order.orderId)) {
             return {
               ...order,
-              status: orderStatus,
-              paymentStatus,
-              shippedFromInventory,
+              ...(orderStatus && { status: orderStatus }),
+              ...(paymentStatus && { paymentStatus: paymentStatus }),
+              shippedFromInventory: shippedFromInventory,
             };
           }
           return order;
@@ -522,7 +522,7 @@ function Orders() {
       minWidth: 130,
       valueGetter: (node) => getDeliveryStatusValue(node.data.deliveryStatus),
     },
-    {
+    !isVendor && {
       field: "type",
       headerName: "النوع",
       sortable: true,
@@ -723,34 +723,35 @@ function Orders() {
                     </Select>
                   </FormControl>{" "}
                 </Grid>
-                <Grid item xs={6} md={6} lg={3}>
-                  <FormControl fullWidth style={{ width: "100%" }}>
-                    <InputLabel id="deliveryStatus">حاله التصنيع</InputLabel>
-                    <Select
-                      labelId="deliveryStatus"
-                      id="deliveryStatus"
-                      value={selectedDeliveryStatus}
-                      label="حاله التصنيع"
-                      fullWidth
-                      multiple
-                      onChange={(e) => {
-                        setSelectedDeliveryStatus(e.target.value);
-                        updateParams({ deliveryStatus: e.target.value });
-                      }}
-                      sx={{ height: 35 }}
-                    >
-                      {DELIVERY_STATUS.map((option) => {
-                        return (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>{" "}
-                </Grid>
               </>
             )}
+            <Grid item xs={6} md={6} lg={3}>
+              <FormControl fullWidth style={{ width: "100%" }}>
+                <InputLabel id="deliveryStatus">حاله التصنيع</InputLabel>
+                <Select
+                  labelId="deliveryStatus"
+                  id="deliveryStatus"
+                  value={selectedDeliveryStatus}
+                  label="حاله التصنيع"
+                  fullWidth
+                  multiple
+                  onChange={(e) => {
+                    setSelectedDeliveryStatus(e.target.value);
+                    updateParams({ deliveryStatus: e.target.value });
+                  }}
+                  sx={{ height: 35 }}
+                >
+                  {DELIVERY_STATUS.map((option) => {
+                    return (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>{" "}
+            </Grid>
+
             <Grid item xs={10} md={4} lg={4}>
               <DateRangePickerWrapper
                 startDate={startDate}

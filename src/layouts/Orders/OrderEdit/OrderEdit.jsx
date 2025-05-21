@@ -81,7 +81,7 @@ function OrderEdit() {
     axiosRequest
       .get("/vendors")
       .then(({ data: { data } }) => {
-        const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
+        const newData = data?.map((vendor) => ({ label: vendor.name, value: vendor.id }));
         setVendors(newData);
       })
       .catch(() => {
@@ -119,7 +119,7 @@ function OrderEdit() {
 
   useEffect(() => {
     axiosRequest.get("/users").then(({ data: { data } }) => {
-      const newUsers = data.map((user) => ({
+      const newUsers = data?.map((user) => ({
         label: `${user.firstName} ${user.lastName}`,
         value: user.id,
       }));
@@ -152,7 +152,7 @@ function OrderEdit() {
                 onChange={(e) => setOrderStatus(e.target.value)}
                 sx={{ height: 43 }}
               >
-                {statusoptions.map((option) => (
+                {statusoptions?.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -173,7 +173,7 @@ function OrderEdit() {
                 onChange={(e) => setPaymentStatus(e.target.value)}
                 sx={{ height: 43 }}
               >
-                {PAYMENT_STATUS.map((option) => (
+                {PAYMENT_STATUS?.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -259,9 +259,9 @@ function OrderEdit() {
                 label="المسؤول"
                 onChange={(e) => setAdministrator(e.target.value)}
                 sx={{ height: 43 }}
-                disabled={!users.length > 0}
+                disabled={!users?.length > 0}
               >
-                {users.map((option) => (
+                {users?.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -281,9 +281,9 @@ function OrderEdit() {
                 label="المورد"
                 onChange={(e) => setSelectedVendor(e.target.value)}
                 sx={{ height: 43 }}
-                disabled={!vendors.length > 0}
+                disabled={!vendors?.length > 0}
               >
-                {vendors.map((option) => (
+                {vendors?.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
