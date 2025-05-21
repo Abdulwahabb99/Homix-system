@@ -295,6 +295,7 @@ function Orders() {
               totalVendorDue: data.totalVendorDue,
               totalCompanyDue: data.totalCompanyDue,
               expectedDeliveryDate: data.expectedDeliveryDate,
+              items: data.orderLines,
             };
           }
           return order;

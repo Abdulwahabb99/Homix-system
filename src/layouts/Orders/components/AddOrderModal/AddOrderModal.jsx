@@ -83,7 +83,7 @@ function AddOrderModal() {
         downPayment: orderDetails.downPayment,
         shippingFees: orderDetails.shippingCost,
         toBeCollected: orderDetails.toBeCollected,
-        status: orderDetails.status,
+        status: orderDetails.orderStatus,
         paymentStatus: orderDetails.paymentStatus,
         userId: orderDetails.administrator,
       })
@@ -101,6 +101,7 @@ function AddOrderModal() {
       setUsers(data);
     });
   }, []);
+  console.log(orderDetails);
 
   return (
     <DashboardLayout>
