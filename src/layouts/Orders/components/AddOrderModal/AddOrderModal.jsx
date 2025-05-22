@@ -101,7 +101,6 @@ function AddOrderModal() {
       setUsers(data);
     });
   }, []);
-  console.log(orderDetails);
 
   return (
     <DashboardLayout>

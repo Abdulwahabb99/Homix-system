@@ -445,7 +445,6 @@ function OrderDetails() {
                     const ordervariant = order?.product?.variants?.find(
                       (variant) => variant.shopifyId === order?.variant_id
                     );
-                    console.log(ordervariant);
 
                     return (
                       <Grid item xs={12} md={6} lg={6} key={order.id}>
