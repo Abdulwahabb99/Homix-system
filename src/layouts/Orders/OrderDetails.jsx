@@ -446,9 +446,7 @@ function OrderDetails() {
                       <Grid item xs={12} md={6} lg={6} key={order.id}>
                         <Card sx={{ padding: "20px", margin: "0px" }}>
                           <Box
-                            onClick={() => navigate(`/products/${order.product.id}`)}
                             sx={{
-                              cursor: "pointer",
                               display: "flex",
                               flexDirection: "column",
                               alignItems: "center",
@@ -471,7 +469,7 @@ function OrderDetails() {
                             </Typography>
                             <Chip
                               style={{ fontSize: "12px", marginTop: "6px" }}
-                              label={order?.product.variants[0].title}
+                              label={order?.product?.title}
                               color="primary"
                               variant="filled"
                               size="small"
@@ -489,26 +487,28 @@ function OrderDetails() {
                                 },
                               }}
                             />
-                            <Chip
-                              style={{ fontSize: "12px", marginTop: "6px" }}
-                              label={order?.product.type.name}
-                              color="primary"
-                              variant="filled"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#f0f0f0",
-                                border: "1px solid #000",
-                                color: "#000",
-                                whiteSpace: "normal",
-                                lineHeight: "20px",
-                                height: "auto",
-                                paddingY: "2px",
-                                "& .MuiChip-label": {
+                            {order?.product?.type?.name && (
+                              <Chip
+                                style={{ fontSize: "12px", marginTop: "6px" }}
+                                label={order?.product?.type?.name}
+                                color="primary"
+                                variant="filled"
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#f0f0f0",
+                                  border: "1px solid #000",
+                                  color: "#000",
                                   whiteSpace: "normal",
-                                  textAlign: "left",
-                                },
-                              }}
-                            />
+                                  lineHeight: "20px",
+                                  height: "auto",
+                                  paddingY: "2px",
+                                  "& .MuiChip-label": {
+                                    whiteSpace: "normal",
+                                    textAlign: "left",
+                                  },
+                                }}
+                              />
+                            )}
                           </Box>
                         </Card>
                       </Grid>
