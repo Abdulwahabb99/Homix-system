@@ -264,7 +264,10 @@ function Orders() {
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
         ...(orderStatus && { status: orderStatus }),
-        ...(expectedDeliveryDate && { expectedDeliveryDate: expectedDeliveryDate }),
+        ...(expectedDeliveryDate &&
+          expectedDeliveryDate !== "Invalid date" && {
+            expectedDeliveryDate: expectedDeliveryDate,
+          }),
         ...(selectedVendor && { vendorId: selectedVendor }),
         ...(administrator && { userId: administrator }),
         commission: commission,
