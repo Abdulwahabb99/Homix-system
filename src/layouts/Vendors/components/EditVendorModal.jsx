@@ -22,13 +22,14 @@ const EditVendorModal = ({ open, onEdit, onClose, data }) => {
             fullWidth
             label="البريد الالكتروني"
             name="email-field"
-            value={data.user.email}
+            value={data.user?.email}
+            InputProps={{ readOnly: true }}
           />
           <TextField
             fullWidth
             label="كلمة المرور"
-            autoComplete="new-password" // <- prevents autofill
-            name="new-password-field" // <- must not be 'password'
+            autoComplete="new-password"
+            name="new-password-field"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type={showPassword ? "text" : "password"}
