@@ -442,6 +442,11 @@ function OrderDetails() {
                     </Card>
                   </Grid>
                   {orderlines.map((order) => {
+                    const ordervariant = order?.product?.variants?.find(
+                      (variant) => variant.shopifyId === order?.variant_id
+                    );
+                    console.log(ordervariant);
+
                     return (
                       <Grid item xs={12} md={6} lg={6} key={order.id}>
                         <Card sx={{ padding: "20px", margin: "0px" }}>
@@ -467,26 +472,28 @@ function OrderDetails() {
                             <Typography sx={{ fontSize: "14px", color: "#000", marginTop: "4px" }}>
                               {Number(order?.product.variants[0].price).toFixed(0)} ج.م
                             </Typography>
-                            <Chip
-                              style={{ fontSize: "12px", marginTop: "6px" }}
-                              label={order?.product?.title}
-                              color="primary"
-                              variant="filled"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#f0f0f0",
-                                border: "1px solid #000",
-                                color: "#000",
-                                whiteSpace: "normal",
-                                lineHeight: "20px",
-                                height: "auto",
-                                paddingY: "2px",
-                                "& .MuiChip-label": {
+                            {ordervariant?.title !== "Default Title" && (
+                              <Chip
+                                style={{ fontSize: "12px", marginTop: "6px" }}
+                                label={ordervariant?.title}
+                                color="primary"
+                                variant="filled"
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#f0f0f0",
+                                  border: "1px solid #000",
+                                  color: "#000",
                                   whiteSpace: "normal",
-                                  textAlign: "left",
-                                },
-                              }}
-                            />
+                                  lineHeight: "20px",
+                                  height: "auto",
+                                  paddingY: "2px",
+                                  "& .MuiChip-label": {
+                                    whiteSpace: "normal",
+                                    textAlign: "left",
+                                  },
+                                }}
+                              />
+                            )}
                             {order?.product?.type?.name && (
                               <Chip
                                 style={{ fontSize: "12px", marginTop: "6px" }}
