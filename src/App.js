@@ -26,6 +26,7 @@ import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import useSocket from "./hooks/useSocket";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { addNotification } from "store/slices/notificationsSlice";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
@@ -58,6 +59,8 @@ export default function App() {
   useSocket(user?.id, (data) => {
     if (data?.message === "Successfully subscribed to notifications") return;
     setNotifications((prev) => [data, ...prev]);
+    reduxDispatch(addNotification(data)); //Save to Redux
+
     NotificationMeassage("info", "لديك إشعار جديد");
   });
   // Open sidenav when mouse enter on mini sidenav
@@ -117,7 +120,6 @@ export default function App() {
 
       return null;
     });
-  console.log(notifications);
 
   return (
     <CacheProvider value={rtlCache}>
