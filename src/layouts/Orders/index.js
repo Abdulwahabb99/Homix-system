@@ -299,6 +299,7 @@ function Orders() {
               totalCompanyDue: data.totalCompanyDue,
               expectedDeliveryDate: data.expectedDeliveryDate,
               items: data.orderLines,
+              totalPrice: data.totalPrice,
             };
           }
           return order;
@@ -478,13 +479,6 @@ function Orders() {
       headerName: "سعر البيع",
       sortable: false,
       minWidth: 100,
-      valueGetter: ({ data }) => {
-        let orderPrice = 0;
-        data.items?.forEach((item) => {
-          orderPrice += Number(item.price) * Number(item.quantity);
-        });
-        return Number(orderPrice.toFixed(0));
-      },
     },
     {
       field: "totalCost",

@@ -226,7 +226,7 @@ function OrderEdit() {
             />
           </Grid>
 
-          <Grid item xs={12} md={6} lg={6}>
+          {/* <Grid item xs={12} md={6} lg={6}>
             <TextField
               fullWidth
               label="إجمالي المستحق للبائع"
@@ -235,9 +235,9 @@ function OrderEdit() {
               type="number"
               style={{ margin: "5px 0" }}
             />
-          </Grid>
+          </Grid> */}
 
-          <Grid item xs={12} md={6} lg={6}>
+          {/* <Grid item xs={12} md={6} lg={6}>
             <TextField
               fullWidth
               label="إجمالي المستحق للشركة"
@@ -246,7 +246,7 @@ function OrderEdit() {
               type="number"
               style={{ margin: "5px 0" }}
             />
-          </Grid>
+          </Grid> */}
 
           <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
@@ -292,7 +292,7 @@ function OrderEdit() {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={6} lg={6}>
+          {/* <Grid item xs={12} md={6} lg={6}>
             <TextField
               fullWidth
               label="تاريخ التسليم المتوقع"
@@ -306,7 +306,7 @@ function OrderEdit() {
               }}
               InputLabelProps={{ shrink: true }}
             />
-          </Grid>
+          </Grid> */}
 
           <Grid item xs={12}>
             <FormControlLabel

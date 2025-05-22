@@ -27,7 +27,7 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
             </MDTypography>
             &nbsp;
             <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.orderLines[0].price).toFixed(0) || ""}
+              {Number(orderDetails.subTotalPrice).toFixed(0) || ""}
             </MDTypography>
           </MDTypography>
         </MDBox>
@@ -60,6 +60,28 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
         <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
+              الخصم :{" "}
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {Number(orderDetails.totalDiscounts).toFixed(0) || ""}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="h6" verticalAlign="middle">
+              اجمالي البيع :{" "}
+            </MDTypography>
+            &nbsp;
+            <MDTypography variant="button" color="text" fontWeight="medium">
+              {Number(orderDetails.totalPrice).toFixed(0) || ""}
+            </MDTypography>
+          </MDTypography>
+        </MDBox>
+        <MDBox mt={0} mb={2}>
+          <MDTypography variant="button" fontWeight="regular">
+            <MDTypography display="inline" variant="h6" verticalAlign="middle">
               جدية الشراء :{" "}
             </MDTypography>
             &nbsp;
@@ -79,7 +101,7 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
             </MDTypography>
           </MDTypography>
         </MDBox>
-        <MDBox mt={0} mb={2}>
+        {/* <MDBox mt={0} mb={2}>
           <MDTypography variant="button" fontWeight="regular">
             <MDTypography display="inline" variant="h6" verticalAlign="middle">
               إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺑﺎﺋﻊ:
@@ -100,7 +122,7 @@ function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpe
               {orderDetails.totalCompanyDue || 0}
             </MDTypography>
           </MDTypography>
-        </MDBox>
+        </MDBox> */}
       </MDBox>
     </>
   );

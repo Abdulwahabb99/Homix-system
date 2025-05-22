@@ -166,7 +166,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
             type="number"
             style={{ margin: "5px 0" }}
           /> */}
-          <TextField
+          {/* <TextField
             label="إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺑﺎﺋﻊ"
             fullWidth
             value={totalVendorDue}
@@ -181,7 +181,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
             onChange={(e) => setTotalCompanyDue(e.target.value)}
             style={{ margin: "5px 0" }}
             type="number"
-          />
+          /> */}
           {/* <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel style={{ margin: "5px 20px 0 0" }} id="manufacturingDate">
               تاريخ التسليم المتوقع{" "}

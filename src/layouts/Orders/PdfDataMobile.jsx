@@ -212,7 +212,7 @@ const PdfDataMobile = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {priceWithShippingAndDiscount.toFixed(1)} LE
+              {Number(orderDetails.totalPrice).toFixed(1)} LE
             </Grid>
           </Grid>
           <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}>
@@ -236,7 +236,7 @@ const PdfDataMobile = React.forwardRef(({ orderDetails }, ref) => {
               :
             </Grid>
             <Grid item md={2}>
-              {(priceWithShippingAndDiscount - Number(orderDetails.downPayment)).toFixed(1)} LE
+              {(Number(orderDetails.totalPrice) - Number(orderDetails.downPayment)).toFixed(1)} LE
             </Grid>
           </Grid>
         </Grid>
