@@ -23,7 +23,6 @@ import { setUser } from "store/slices/authSlice";
 import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
-import ShipmentDetails from "./layouts/Shipments/components/ShipmentDetails";
 import OrderEdit from "layouts/Orders/OrderEdit/OrderEdit";
 import { adminRoutes } from "routes";
 import { operationRoutes } from "routes";
