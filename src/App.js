@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense, use } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -27,6 +27,7 @@ import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrd
 import useSocket from "./hooks/useSocket";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { addNotification } from "store/slices/notificationsSlice";
+import { setNotifications } from "store/slices/notificationsSlice";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
@@ -38,7 +39,7 @@ export default function App() {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, layout, sidenavColor, darkMode } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [isUserInteracted, setIsUserInteracted] = useState(false);
 
   const { pathname } = useLocation();
   const reduxDispatch = useDispatch();
@@ -59,12 +60,16 @@ export default function App() {
   );
   useSocket(user?.id, (data) => {
     if (data?.message === "Successfully subscribed to notifications") return;
-    playNotificationSound();
-    setNotifications((prev) => [data, ...prev]);
+    if (isUserInteracted) {
+      playNotificationSound();
+    }
     reduxDispatch(addNotification(data));
-
+    const current = JSON.parse(localStorage.getItem("notifications")) || [];
+    const updated = [data, ...current];
+    localStorage.setItem("notifications", JSON.stringify(updated));
     NotificationMeassage("info", "لديك إشعار جديد");
   });
+
   // Open sidenav when mouse enter on mini sidenav
   const handleOnMouseEnter = () => {
     if (miniSidenav && !onMouseEnter) {
@@ -81,6 +86,19 @@ export default function App() {
     }
   };
 
+  const getRoutes = (allRoutes) =>
+    allRoutes.map((route) => {
+      if (route.collapse) {
+        return getRoutes(route.collapse);
+      }
+
+      if (route.route) {
+        return <Route exact path={route.route} element={route.component} key={route.key} />;
+      }
+
+      return null;
+    });
+
   useEffect(() => {
     const token = user?.token;
     if (token) {
@@ -91,12 +109,6 @@ export default function App() {
       }
     }
   }, [user?.token, reduxDispatch]);
-
-  // useEffect(() => {
-  //   if (user?.id && socket) {
-  //     socket.emit("subscribe", { userId: user.id });
-  //   }
-  // }, [socket, user?.id]);
 
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
@@ -110,18 +122,43 @@ export default function App() {
     }
   }, [reduxDispatch]);
 
-  const getRoutes = (allRoutes) =>
-    allRoutes.map((route) => {
-      if (route.collapse) {
-        return getRoutes(route.collapse);
-      }
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      setIsUserInteracted(true);
+      localStorage.setItem("userInteracted", "true");
 
-      if (route.route) {
-        return <Route exact path={route.route} element={route.component} key={route.key} />;
-      }
+      // إزالة كل الأحداث بعد أول تفاعل
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("keydown", handleUserInteraction);
+      window.removeEventListener("scroll", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
 
-      return null;
-    });
+    window.addEventListener("click", handleUserInteraction);
+    window.addEventListener("keydown", handleUserInteraction);
+    window.addEventListener("scroll", handleUserInteraction);
+    window.addEventListener("touchstart", handleUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("keydown", handleUserInteraction);
+      window.removeEventListener("scroll", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
+  }, []);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("notifications")) || [];
+    if (saved.length > 0) {
+      saved.forEach((notification) => {
+        if (!notification?.orderId) {
+          notification.orderId = notification.entityId;
+        }
+      });
+      reduxDispatch(setNotifications(saved));
+    }
+  }, []);
+  console.log(isUserInteracted);
 
   return (
     <CacheProvider value={rtlCache}>

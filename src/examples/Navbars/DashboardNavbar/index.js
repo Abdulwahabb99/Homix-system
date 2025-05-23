@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -27,7 +27,7 @@ import {
   setMiniSidenav,
   setOpenConfigurator,
 } from "context";
-import { MenuItem } from "@mui/material";
+import { Badge, MenuItem } from "@mui/material";
 import MDTypography from "components/MDTypography";
 import { useSelector } from "react-redux";
 
@@ -38,8 +38,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
   const notifications = useSelector((state) => state.notifications);
-  console.log("notifications", notifications);
   const unReadedNotifications = notifications.filter((notification) => !notification.readAt);
+
   console.log("unReadedNotifications", unReadedNotifications);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
@@ -69,18 +69,78 @@ function DashboardNavbar({ absolute, light, isMini }) {
       }}
       open={Boolean(openMenu)}
       onClose={handleCloseMenu}
-      sx={{ mt: 2 }}
+      PaperProps={{
+        sx: {
+          width: "320px",
+          p: 0,
+        },
+      }}
     >
-      <MenuItem>
-        <MDBox component={Link} py={0.5} display="flex" alignItems="center" lineHeight={1}>
-          <MDTypography variant="body1" color="secondary" lineHeight={0.75}>
-            <Icon>shopping_cart</Icon>{" "}
-          </MDTypography>
-          <MDTypography variant="button" fontWeight="regular" sx={{ ml: 1 }}>
-            Payment successfully completed{" "}
-          </MDTypography>
-        </MDBox>
-      </MenuItem>{" "}
+      <MDBox
+        sx={{
+          maxHeight: 300,
+          overflowY: "auto",
+        }}
+      >
+        {notifications.map((notification) => (
+          <MenuItem
+            key={notification.id}
+            sx={{
+              "&:hover": {
+                backgroundColor: "rgba(0, 171, 85, 0.1)",
+              },
+            }}
+            onClick={() => {
+              window.location.href = `/orders/${notification.orderId}`;
+              handleCloseMenu();
+            }}
+          >
+            <MDBox component={Link} py={0.5} display="flex" alignItems="center" lineHeight={1}>
+              <MDTypography
+                variant="button"
+                fontWeight="regular"
+                sx={{
+                  ml: 1,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  maxWidth: "230px",
+                }}
+              >
+                {notification.text}
+              </MDTypography>{" "}
+            </MDBox>
+          </MenuItem>
+        ))}
+      </MDBox>
+
+      {/* Sticky clear button */}
+      <MDBox
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          backgroundColor: "white",
+          borderTop: "1px solid #eee",
+          zIndex: 1,
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            reduxDispatch(clearNotifications());
+            localStorage.removeItem("notifications");
+            handleCloseMenu();
+          }}
+          sx={{
+            justifyContent: "center",
+            fontWeight: "bold",
+            color: "error.main",
+            "&:hover": {
+              backgroundColor: "rgba(255, 0, 0, 0.08)",
+            },
+          }}
+        >
+          مسح الكل
+        </MenuItem>
+      </MDBox>
     </Menu>
   );
 
@@ -117,18 +177,20 @@ function DashboardNavbar({ absolute, light, isMini }) {
               >
                 <Icon sx={iconsStyle}>settings</Icon>
               </IconButton>
-              <IconButton
-                size="small"
-                disableRipple
-                color="inherit"
-                sx={navbarIconButton}
-                aria-controls="notification-menu"
-                aria-haspopup="true"
-                variant="contained"
-                onClick={handleOpenMenu}
-              >
-                <Icon sx={iconsStyle}>notifications</Icon>
-              </IconButton>
+              <Badge badgeContent={unReadedNotifications.length} color="error">
+                <IconButton
+                  size="small"
+                  disableRipple
+                  color="inherit"
+                  sx={navbarIconButton}
+                  aria-controls="notification-menu"
+                  aria-haspopup="true"
+                  variant="contained"
+                  onClick={handleOpenMenu}
+                >
+                  <Icon sx={iconsStyle}>notifications</Icon>
+                </IconButton>
+              </Badge>
               {renderMenu()}
             </MDBox>
           </MDBox>

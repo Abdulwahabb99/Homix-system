@@ -17,7 +17,7 @@ import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import axiosRequest from "shared/functions/axiosRequest";
-import { addNotification } from "store/slices/notificationsSlice";
+import { setNotifications } from "store/slices/notificationsSlice";
 
 function Basic() {
   const [email, setEmail] = useState("");
@@ -61,9 +61,13 @@ function Basic() {
     axiosRequest
       .get(`${process.env.REACT_APP_API_URL}/notifications`)
       .then(({ data: { notifications } }) => {
-        console.log("notificationsNewwww", notifications);
-
-        dispatch(addNotification(notifications));
+        const newsNotifications = notifications.map((notification) => ({
+          ...notification,
+          readAt: notification.readAt ? new Date(notification.readAt) : null,
+          orderId: notification.entityId,
+        }));
+        dispatch(setNotifications(newsNotifications));
+        localStorage.setItem("notifications", JSON.stringify(notifications));
       });
   };
 
