@@ -40,7 +40,7 @@ function ReportComponent({ financialreportData }) {
             <ComplexStatisticsCard
               icon="leaderboard"
               title="السعر الاجمالي"
-              count={totalRevenue.toFixed(0) || 0}
+              count={totalRevenue?.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>
@@ -50,7 +50,7 @@ function ReportComponent({ financialreportData }) {
               color="success"
               icon="store"
               title="اجمالي التكلفة"
-              count={totalCost.toFixed(0) || 0}
+              count={totalCost?.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>
@@ -60,7 +60,7 @@ function ReportComponent({ financialreportData }) {
               color="error"
               icon={<CheckCircleIcon />}
               title="السعر الاجمالي للطلبات التي تم تسليمها"
-              count={deliveredOrders?.totalRevenue.toFixed(0) || 0}
+              count={deliveredOrders?.totalRevenue?.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>
@@ -70,7 +70,7 @@ function ReportComponent({ financialreportData }) {
               color="primary"
               icon={<PaidIcon />}
               title="صافي الربح"
-              count={totalProfit.toFixed(0) || 0}
+              count={totalProfit?.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>
@@ -80,7 +80,7 @@ function ReportComponent({ financialreportData }) {
               color="light"
               icon={<MonetizationOnIcon />}
               title="عمولة المنصة"
-              count={totalCommission.toFixed(0) || 0}
+              count={totalCommission?.toFixed(0) || 0}
             />
           </MDBox>
         </Grid>
