@@ -44,9 +44,10 @@ export default function App() {
   const reduxDispatch = useDispatch();
   const isVendor = user?.userType === "2";
 
-  // const socket = useSocket((data) => {
-  //   setNotifications((prev) => [data, ...prev]);
-  // });
+  const playNotificationSound = () => {
+    const audio = new Audio("/Notification.wav");
+    audio.play();
+  };
 
   const rtlCache = useMemo(
     () =>
@@ -58,8 +59,9 @@ export default function App() {
   );
   useSocket(user?.id, (data) => {
     if (data?.message === "Successfully subscribed to notifications") return;
+    playNotificationSound();
     setNotifications((prev) => [data, ...prev]);
-    reduxDispatch(addNotification(data)); //Save to Redux
+    reduxDispatch(addNotification(data));
 
     NotificationMeassage("info", "لديك إشعار جديد");
   });

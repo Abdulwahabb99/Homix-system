@@ -39,6 +39,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const route = useLocation().pathname.split("/").slice(1);
   const notifications = useSelector((state) => state.notifications);
   console.log("notifications", notifications);
+  const unReadedNotifications = notifications.filter((notification) => !notification.readAt);
+  console.log("unReadedNotifications", unReadedNotifications);
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
