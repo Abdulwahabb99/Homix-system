@@ -125,7 +125,6 @@ export default function App() {
   useEffect(() => {
     const handleUserInteraction = () => {
       setIsUserInteracted(true);
-      localStorage.setItem("userInteracted", "true");
 
       // إزالة كل الأحداث بعد أول تفاعل
       window.removeEventListener("click", handleUserInteraction);
@@ -158,7 +157,6 @@ export default function App() {
       reduxDispatch(setNotifications(saved));
     }
   }, []);
-  console.log(isUserInteracted);
 
   return (
     <CacheProvider value={rtlCache}>
