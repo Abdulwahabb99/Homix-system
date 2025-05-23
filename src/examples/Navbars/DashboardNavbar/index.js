@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -27,18 +27,50 @@ import {
   setMiniSidenav,
   setOpenConfigurator,
 } from "context";
+import { Badge, MenuItem } from "@mui/material";
+import MDTypography from "components/MDTypography";
+import { useDispatch, useSelector } from "react-redux";
+import { setNotifications } from "store/slices/notificationsSlice";
+import axiosRequest from "shared/functions/axiosRequest";
+import { clearNotifications } from "store/slices/notificationsSlice";
 
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState("static");
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentNavbar, openConfigurator, darkMode } = controller;
-  // const [openMenu, setOpenMenu] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
+  const notifications = useSelector((state) => state.notifications);
+  const unReadedNotifications = notifications.filter((notification) => !notification.readAt);
+  const reduxDispatch = useDispatch();
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
-  // const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
-  // const handleCloseMenu = () => setOpenMenu(false);
+  const handleOpenMenu = (event) => {
+    setOpenMenu(event.currentTarget);
+
+    const hasUnread = notifications.some((n) => !n.readAt);
+    if (!hasUnread) return;
+
+    const updatedNotifications = notifications.map((n) => ({
+      ...n,
+      readAt: n.readAt || new Date().toISOString(),
+    }));
+
+    reduxDispatch(setNotifications(updatedNotifications));
+    localStorage.setItem("notifications", JSON.stringify(updatedNotifications));
+    axiosRequest.put(`${process.env.REACT_APP_API_URL}/notifications`);
+  };
+
+  const handleDeleteNotifications = () => {
+    if (notifications.length === 0) return;
+    reduxDispatch(clearNotifications());
+    localStorage.removeItem("notifications");
+    handleCloseMenu();
+    axiosRequest.delete(`${process.env.REACT_APP_API_URL}/notifications`);
+  };
+
+  const handleCloseMenu = () => setOpenMenu(false);
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
@@ -51,6 +83,97 @@ function DashboardNavbar({ absolute, light, isMini }) {
       return colorValue;
     },
   });
+
+  const renderMenu = () => (
+    <Menu
+      anchorEl={openMenu}
+      anchorReference={null}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "left",
+      }}
+      open={Boolean(openMenu)}
+      onClose={handleCloseMenu}
+      PaperProps={{
+        sx: {
+          width: "320px",
+          p: 0,
+        },
+      }}
+    >
+      <MDBox
+        sx={{
+          maxHeight: 300,
+          overflowY: "auto",
+        }}
+      >
+        {notifications.length === 0 ? (
+          <MDBox py={2} textAlign="center">
+            <MDTypography variant="body2" color="text.secondary">
+              لا يوجد إشعارات حالياً
+            </MDTypography>
+          </MDBox>
+        ) : (
+          notifications.map((notification) => (
+            <MenuItem
+              key={notification.id}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "rgba(0, 171, 85, 0.1)",
+                },
+              }}
+              onClick={() => {
+                window.location.href = `/orders/${notification.orderId}`;
+                handleCloseMenu();
+              }}
+            >
+              <MDBox component={Link} py={0.5} display="flex" alignItems="center" lineHeight={1}>
+                <MDTypography
+                  variant="button"
+                  fontWeight="regular"
+                  sx={{
+                    ml: 1,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    maxWidth: "230px",
+                  }}
+                >
+                  {notification.text}
+                </MDTypography>
+              </MDBox>
+            </MenuItem>
+          ))
+        )}
+      </MDBox>
+
+      {/* Sticky clear button */}
+      <MDBox
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          backgroundColor: "white",
+          borderTop: "1px solid #eee",
+          zIndex: 1,
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            handleDeleteNotifications();
+          }}
+          sx={{
+            justifyContent: "center",
+            fontWeight: "bold",
+            color: "error.main",
+            "&:hover": {
+              backgroundColor: "rgba(255, 0, 0, 0.08)",
+            },
+          }}
+        >
+          مسح الكل
+        </MenuItem>
+      </MDBox>
+    </Menu>
+  );
 
   return (
     <AppBar
@@ -85,6 +208,21 @@ function DashboardNavbar({ absolute, light, isMini }) {
               >
                 <Icon sx={iconsStyle}>settings</Icon>
               </IconButton>
+              <Badge badgeContent={unReadedNotifications.length} color="error">
+                <IconButton
+                  size="small"
+                  disableRipple
+                  color="inherit"
+                  sx={navbarIconButton}
+                  aria-controls="notification-menu"
+                  aria-haspopup="true"
+                  variant="contained"
+                  onClick={handleOpenMenu}
+                >
+                  <Icon sx={iconsStyle}>notifications</Icon>
+                </IconButton>
+              </Badge>
+              {renderMenu()}
             </MDBox>
           </MDBox>
         )}

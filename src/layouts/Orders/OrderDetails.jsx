@@ -557,11 +557,11 @@ function OrderDetails() {
                                     <Chip
                                       key={index}
                                       label={
-                                        file.file.name?.length > 20
-                                          ? file.file.name.slice(0, 10) +
+                                        file.file?.name?.length > 20
+                                          ? file.file?.name.slice(0, 10) +
                                             "..." +
-                                            file.file.name.slice(-7)
-                                          : file?.file.name
+                                            file.file?.name.slice(-7)
+                                          : file?.file?.name
                                       }
                                       size="small"
                                       onDelete={() => handleRemoveFile(index)}

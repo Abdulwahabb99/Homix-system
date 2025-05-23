@@ -16,6 +16,8 @@ import { ToastContainer } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import axiosRequest from "shared/functions/axiosRequest";
+import { setNotifications } from "store/slices/notificationsSlice";
 
 function Basic() {
   const [email, setEmail] = useState("");
@@ -43,6 +45,7 @@ function Basic() {
         dispatch(
           setUser({ user: { ...response.data.data.user }, token: response.data.data.token })
         );
+        getNotifications();
 
         navigate("/");
       })
@@ -53,6 +56,21 @@ function Basic() {
         setIsLoading(false);
       });
   };
+
+  const getNotifications = () => {
+    axiosRequest
+      .get(`${process.env.REACT_APP_API_URL}/notifications`)
+      .then(({ data: { notifications } }) => {
+        const newsNotifications = notifications.map((notification) => ({
+          ...notification,
+          readAt: notification.readAt ? new Date(notification.readAt) : null,
+          orderId: notification.entityId,
+        }));
+        dispatch(setNotifications(newsNotifications));
+        localStorage.setItem("notifications", JSON.stringify(notifications));
+      });
+  };
+
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
   };
