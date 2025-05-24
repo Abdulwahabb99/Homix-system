@@ -31,6 +31,7 @@ import useSocket from "./hooks/useSocket";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { addNotification } from "store/slices/notificationsSlice";
 import { setNotifications } from "store/slices/notificationsSlice";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
@@ -50,7 +51,6 @@ export default function App() {
   const isVendor = user?.userType === "2";
   const isAdmin = user?.userType === "1";
   const isOperations = user?.userType === "3";
-  const isLogistics = user?.userType === "4";
 
   const playNotificationSound = () => {
     const audio = new Audio("/Notification.wav");
@@ -154,16 +154,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("notifications")) || [];
-    if (saved.length > 0) {
-      saved.forEach((notification) => {
-        if (!notification?.orderId) {
-          notification.orderId = notification.entityId;
-        }
-      });
-      reduxDispatch(setNotifications(saved));
+    const getNotifications = () => {
+      axiosRequest
+        .get(`${process.env.REACT_APP_API_URL}/notifications`)
+        .then(({ data: { notifications } }) => {
+          const newsNotifications = notifications?.map((notification) => ({
+            ...notification,
+            readAt: notification.readAt ? new Date(notification.readAt) : null,
+            orderId: notification.entityId,
+          }));
+
+          reduxDispatch(setNotifications(newsNotifications));
+          localStorage.setItem("notifications", JSON.stringify(notifications));
+        });
+    };
+    if (user) {
+      getNotifications();
     }
   }, []);
+
+  // useEffect(() => {
+  //   const saved = JSON.parse(localStorage.getItem("notifications")) || [];
+  //   if (saved.length > 0) {
+  //     saved.forEach((notification) => {
+  //       if (!notification?.orderId) {
+  //         notification.orderId = notification.entityId;
+  //       }
+  //     });
+  //     reduxDispatch(setNotifications(saved));
+  //   }
+  // }, []);
 
   return (
     <CacheProvider value={rtlCache}>

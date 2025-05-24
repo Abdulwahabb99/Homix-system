@@ -36,6 +36,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
   const logOut = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("notifications");
     navigate("/authentication/sign-in");
     window.location.reload();
   };
