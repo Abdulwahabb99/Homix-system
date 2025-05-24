@@ -51,23 +51,24 @@ function OrderEdit() {
     setIsSubmitting(true);
     axiosRequest
       .put(`${baseURI}/orders/${id}`, {
-        status: orderStatus,
-        commission: commission,
-        paymentStatus: paymentStatus,
-        downPayment: downPayment,
-        shippingFees: shippingFees,
-        toBeCollected: toBeCollected,
-        vendorId: selectedVendor,
-        deliveryStatus: deliveryStatus,
-        userId: administrator,
+        ...(orderStatus && { status: orderStatus }),
+        ...(commission && { commission: commission }),
+        ...(paymentStatus && { paymentStatus: paymentStatus }),
+        ...(downPayment && { downPayment: downPayment }),
+        ...(shippingFees && { shippingFees: shippingFees }),
+        ...(toBeCollected && { toBeCollected: toBeCollected }),
+        ...(deliveryStatus && { deliveryStatus: deliveryStatus }),
+        ...(selectedVendor && { vendorId: selectedVendor }),
+        ...(deliveryStatus && { deliveryStatus: deliveryStatus }),
+        ...(administrator && { userId: administrator }),
+        ...(totalVendorDue && { totalVendorDue: totalVendorDue }),
+        ...(totalCompanyDue && { totalCompanyDue: totalCompanyDue }),
+        ...(expectedDeliveryDate && { expectedDeliveryDate: expectedDeliveryDate }),
         shippedFromInventory: shippedFromInventory,
-        totalVendorDue: totalVendorDue,
-        totalCompanyDue: totalCompanyDue,
-        expectedDeliveryDate: expectedDeliveryDate,
       })
       .then(() => {
-        navigate(`/orders/${id}`);
         NotificationMeassage("success", "تم تعديل الطلب ");
+        navigate(`/orders/${id}`);
       })
       .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
