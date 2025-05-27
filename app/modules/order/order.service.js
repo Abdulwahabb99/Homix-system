@@ -1241,13 +1241,13 @@ class OrderService {
         );
       }
     }
-    if (order.shippingFees) {
+    if (orderData.shippingFees) {
       const subTotal = Number(order.subTotalPrice) || 0;
       const totalDiscounts = Number(order.totalDiscounts) || 0;
-      orderData.shippingFees = Number(order.shippingFees) || 0;
+      const shippingFees = Number(orderData.shippingFees) || 0;
       orderData.totalPrice =
         Number(subTotal) +
-        Number(orderData.shippingFees) -
+        Number(shippingFees) -
         Number(totalDiscounts);
     }
 
