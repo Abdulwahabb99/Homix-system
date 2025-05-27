@@ -3,7 +3,9 @@ import React, { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
 import Vendors from "layouts/Vendors/Vendors";
 const Products = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Products/Products"));
-const Dashboard = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/dashboard"));
+const Dashboard = React.lazy(() =>
+  import(/* webpackPrefetch: true */ "layouts/dashboardV2/dashboardV2")
+);
 const Orders = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Orders"));
 const ProtectedRoutes = React.lazy(() =>
   import(/* webpackPrefetch: true */ "components/ProtectedRoutes/ProtectedRoutes")
