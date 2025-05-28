@@ -1,11 +1,9 @@
 // components/StatsCard.jsx
 import React from "react";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import PropTypes from "prop-types";
 
 const StatsCard = ({ title, icon, value }) => {
-  const theme = useTheme();
-
   return (
     <Box
       sx={{
@@ -20,14 +18,12 @@ const StatsCard = ({ title, icon, value }) => {
           color: "#fff",
           px: 2,
           py: 2,
+          gap: 1,
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           alignItems: "center",
         }}
       >
-        <Typography fontWeight="bold" fontSize="18px">
-          {title}
-        </Typography>
         <Box
           sx={{
             backgroundColor: "#fff",
@@ -40,10 +36,14 @@ const StatsCard = ({ title, icon, value }) => {
         >
           {icon}
         </Box>
+
+        <Typography fontWeight="600" fontSize="20px" whiteSpace={"nowrap"}>
+          {title}
+        </Typography>
       </Box>
 
-      <Box sx={{ px: 2, py: 2, textAlign: "right" }}>
-        <Typography fontSize="20px" fontWeight="bold" color="#344054">
+      <Box sx={{ px: 2, py: 2, textAlign: "left" }}>
+        <Typography textAlign={"left"} fontSize="20px" fontWeight="bold" color="#45464E">
           {value}
         </Typography>
       </Box>

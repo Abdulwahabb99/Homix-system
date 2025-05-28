@@ -15,6 +15,7 @@ const DateRangePickerWrapper = ({
   maxDaysRange = 31,
   isDirectionRTL = true,
   allowFutureDays = false,
+  isMeduim = false,
 }) => {
   const [focusedInput, setFocusedInput] = useState(null);
   const [startDate, setStartDate] = useState(
@@ -164,7 +165,8 @@ const DateRangePickerWrapper = ({
       isRTL={isDirectionRTL}
       showClearDates
       reopenPickerOnClearDates
-      small
+      meduim={isMeduim ?? true}
+      small={!isMeduim ?? true}
       hideKeyboardShortcutsPanel
       numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
       readOnly
@@ -181,7 +183,7 @@ const DateRangePickerWrapper = ({
       }
       inputIconPosition="after"
       customInputIcon={null}
-      block
+      // block
     />
   );
 };
@@ -193,6 +195,7 @@ DateRangePickerWrapper.propTypes = {
   isDirectionRTL: PropTypes.bool,
   allowFutureDays: PropTypes.bool,
   className: PropTypes.string,
+  isMeduim: PropTypes.bool,
 };
 
 export default DateRangePickerWrapper;
