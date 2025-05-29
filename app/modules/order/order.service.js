@@ -64,6 +64,13 @@ class OrderService {
               });
             }
           } else {
+            const discount_allocations = line.discount_allocations || [];
+            const lineDiscount = discount_allocations.reduce(
+              (acc, item) => acc + Number(item.amount),
+              0
+            );
+            const discount = lineDiscount;
+            line.discount = discount;
             orders.push({
               ...order,
               line_items: [line],
@@ -71,7 +78,31 @@ class OrderService {
           }
         }
       } else {
-        orders.push(order);
+        const line = order.line_items[0];
+        const discount_allocations = line.discount_allocations || [];
+        const lineDiscount = discount_allocations.reduce(
+          (acc, item) => acc + Number(item.amount),
+          0
+        );
+        if (line.quantity > 1) {
+          const discount = lineDiscount / line.quantity;
+          //split line into multiple lines with quantity 1
+          for (let i = 0; i < line.quantity; i++) {
+            const newLine = { ...line, quantity: 1 };
+            newLine.discount = discount;
+            orders.push({
+              ...order,
+              line_items: [newLine],
+            });
+          }
+        } else {
+          const discount = lineDiscount;
+          line.discount = discount;
+          orders.push({
+            ...order,
+            line_items: [line],
+          });
+        }
       }
     });
 
@@ -1246,9 +1277,7 @@ class OrderService {
       const totalDiscounts = Number(order.totalDiscounts) || 0;
       const shippingFees = Number(orderData.shippingFees) || 0;
       orderData.totalPrice =
-        Number(subTotal) +
-        Number(shippingFees) -
-        Number(totalDiscounts);
+        Number(subTotal) + Number(shippingFees) - Number(totalDiscounts);
     }
 
     await order.update(orderData);
@@ -1569,7 +1598,10 @@ class OrderService {
       notifications.push(notification);
     }
     await Notification.bulkCreate(notifications);
-    const socketsIds = users.map((user) => user.socketIds).filter(sockets=> sockets && sockets.length > 0).flat();
+    const socketsIds = users
+      .map((user) => user.socketIds)
+      .filter((sockets) => sockets && sockets.length > 0)
+      .flat();
     if (socketsIds.length > 0) {
       for (const socketId of socketsIds) {
         global.socketIO.to(socketId).emit("notification", {
