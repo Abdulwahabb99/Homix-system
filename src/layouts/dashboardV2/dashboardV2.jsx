@@ -7,6 +7,7 @@ import React from "react";
 import SearchInput from "shared/components/SearchInput/SearchInput";
 import StatsCard from "shared/components/StatsCard/StatsCard";
 import MoneyRotateIcon from "shared/icons/MoneyRotateIcon";
+import TopSellingProductsTable from "./components/TopSellingProducts/TopSellingProducts";
 
 function dashboardV2() {
   const isSmallScreen = useMediaQuery("(max-width:1092px)");
@@ -41,7 +42,7 @@ function dashboardV2() {
           </Grid>
         </Grid>
 
-        <Grid container spacing={2} width={isSmallScreen ? "100%" : "70%"}>
+        <Grid container spacing={2} width={isSmallScreen ? "100%" : "70%"} mb={4}>
           <Grid item xs={12} sm={6} md={4}>
             <StatsCard title="عدد الطلبات" value="500 طلب" icon={<MoneyRotateIcon />} />
           </Grid>
@@ -50,6 +51,17 @@ function dashboardV2() {
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <StatsCard title="إجمالي التكلفة" value="1000 EGP" icon={<MoneyRotateIcon />} />
+          </Grid>
+        </Grid>
+
+        {/* Grid =>>>>> */}
+
+        <Grid container spacing={4} width={"100%"}>
+          <Grid item xs={12} sm={12} md={12} lg={6}>
+            <TopSellingProductsTable />
+          </Grid>
+          <Grid item xs={12} sm={12} md={12} lg={6}>
+            <TopSellingProductsTable />
           </Grid>
         </Grid>
       </Box>{" "}
