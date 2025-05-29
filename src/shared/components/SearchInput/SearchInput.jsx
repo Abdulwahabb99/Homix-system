@@ -18,16 +18,9 @@ const SearchInput = ({ value, onChange, onSearch }) => {
         borderRadius: "8px",
         border: "1px solid #E0E0E0",
         overflow: "hidden",
-        direction: "rtl",
+        // direction: "rtl",
       }}
     >
-      <InputBase
-        sx={{ ml: 1, flex: 1, px: 2 }}
-        placeholder="بحث"
-        value={value}
-        onChange={onChange}
-        inputProps={{ "aria-label": "بحث" }}
-      />
       <IconButton
         type="submit"
         sx={{
@@ -40,6 +33,13 @@ const SearchInput = ({ value, onChange, onSearch }) => {
       >
         <SearchIcon sx={{ color: "#6B7280" }} />
       </IconButton>
+      <InputBase
+        sx={{ ml: 1, flex: 1, px: 2 }}
+        placeholder="بحث"
+        value={value}
+        onChange={onChange}
+        inputProps={{ "aria-label": "بحث" }}
+      />
     </Paper>
   );
 };
