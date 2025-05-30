@@ -65,7 +65,7 @@ function dashboardV2() {
       <DashboardNavbar />
       <Box sx={{ px: 3, py: 2 }}>
         <Grid container spacing={2} width={"100%"} mb={4}>
-          <Grid item xs={12} sm={12} md={12} lg={8}>
+          <Grid item xs={12} sm={12} md={12} lg={6}>
             <SearchInput
             // value={search}
             // onChange={(e) => setSearch(e.target.value)}

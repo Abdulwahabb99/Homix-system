@@ -179,7 +179,7 @@ const TopSellingProductsTable = () => {
         أكثر 10 منتجات مبيعًا
       </Typography>
 
-      <Box sx={{ width: "100%", overflowX: "auto", overflowY: "scroll", maxHeight: 400 }}>
+      <Box sx={{ width: "100%", overflowX: "auto", maxHeight: 400 }}>
         <Box sx={{ minWidth: 600 }}>
           <DataGrid
             rows={rows}
