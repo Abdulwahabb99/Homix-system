@@ -4,3 +4,7 @@
 .DateRangePicker_picker {
   z-index: 10000000;
 }
+
+.custom-date-picker .DateRangePickerInput {
+  padding: 4px 25px;
+}

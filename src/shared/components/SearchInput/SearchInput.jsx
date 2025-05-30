@@ -18,13 +18,12 @@ const SearchInput = ({ value, onChange, onSearch }) => {
         borderRadius: "8px",
         border: "1px solid #E0E0E0",
         overflow: "hidden",
-        // direction: "rtl",
       }}
     >
       <IconButton
         type="submit"
         sx={{
-          p: "10px 25px",
+          px: "25px",
           backgroundColor: "#DDDFE2",
           borderRadius: 0,
           borderRight: "1px solid #E0E0E0",

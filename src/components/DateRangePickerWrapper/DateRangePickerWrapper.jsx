@@ -154,37 +154,40 @@ const DateRangePickerWrapper = ({
   );
 
   return (
-    <DateRangePicker
-      startDate={startDate}
-      endDate={endDate}
-      onDatesChange={onDatesChange}
-      focusedInput={focusedInput}
-      onFocusChange={onFocusChange}
-      startDateId="startDate"
-      endDateId="endDate"
-      isRTL={isDirectionRTL}
-      showClearDates
-      reopenPickerOnClearDates
-      meduim={isMeduim ?? true}
-      small={!isMeduim ?? true}
-      hideKeyboardShortcutsPanel
-      numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
-      readOnly
-      customCloseIcon={<span>&times;</span>}
-      keepOpenOnDateSelect
-      onClose={cancel}
-      isDayHighlighted={(day) => isSameDay(day, moment().locale("en"))}
-      isOutsideRange={isOutsideRange}
-      renderCalendarInfo={renderPresets}
-      startDatePlaceholderText="من "
-      endDatePlaceholderText="إلى "
-      initialVisibleMonth={() =>
-        window.innerWidth > 768 ? moment().locale("en").subtract(1, "month") : moment().locale("en")
-      }
-      inputIconPosition="after"
-      customInputIcon={null}
-      // block
-    />
+    <div className="custom-date-picker">
+      <DateRangePicker
+        startDate={startDate}
+        endDate={endDate}
+        onDatesChange={onDatesChange}
+        focusedInput={focusedInput}
+        onFocusChange={onFocusChange}
+        startDateId="startDate"
+        endDateId="endDate"
+        isRTL={isDirectionRTL}
+        showClearDates
+        reopenPickerOnClearDates
+        small
+        hideKeyboardShortcutsPanel
+        numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
+        readOnly
+        customCloseIcon={<span>&times;</span>}
+        keepOpenOnDateSelect
+        onClose={cancel}
+        isDayHighlighted={(day) => isSameDay(day, moment().locale("en"))}
+        isOutsideRange={isOutsideRange}
+        renderCalendarInfo={renderPresets}
+        startDatePlaceholderText="من "
+        endDatePlaceholderText="إلى "
+        initialVisibleMonth={() =>
+          window.innerWidth > 768
+            ? moment().locale("en").subtract(1, "month")
+            : moment().locale("en")
+        }
+        inputIconPosition="after"
+        customInputIcon={null}
+        block
+      />
+    </div>
   );
 };
 DateRangePickerWrapper.propTypes = {

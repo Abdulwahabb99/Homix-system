@@ -94,7 +94,14 @@ const columns = [
     filterable: false,
     renderCell: (params) => (
       <Box display="flex" alignItems="center" gap={1}>
-        <Avatar src={params.row.image} sx={{ width: 40, height: 40 }} />
+        <Box
+          component="img"
+          src={
+            "https://cdn.shopify.com/s/files/1/0699/1108/5302/files/D109-removebg-preview__1_-removebg-preview_1_.remini-enhanced.jpg?v=1738742239"
+          }
+          alt={params.row.name}
+          sx={{ width: 40, height: 40, borderRadius: "10%", objectFit: "cover" }}
+        />{" "}
         <Box gap={0}>
           <Typography
             sx={{ fontSize: "14px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0.14px" }}
@@ -151,14 +158,24 @@ const columns = [
 const TopSellingProductsTable = () => {
   return (
     <Box
-      p={2}
+      px={1}
+      py={2}
       border="1px solid #E0E0E0"
       borderRadius={2}
       sx={{
         backgroundColor: "inherit",
       }}
     >
-      <Typography variant="subtitle1" fontWeight="bold" color="#00314C" mb={2}>
+      <Typography
+        sx={{
+          fontSize: "16px",
+          fontWeight: 600,
+          lineHeight: "130%",
+        }}
+        color="#00314C"
+        mb={2}
+        mx={1}
+      >
         أكثر 10 منتجات مبيعًا
       </Typography>
 
