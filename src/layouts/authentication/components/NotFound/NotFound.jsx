@@ -11,7 +11,7 @@ const NotFound = () => {
     <DashboardLayout>
       <div style={{ textAlign: "center", marginTop: "50px" }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
-          <IconButton color="#344767" onClick={() => navigate("/home")}>
+          <IconButton color="#344767" onClick={() => navigate("/")}>
             <ArrowNextIcon />
           </IconButton>
         </div>

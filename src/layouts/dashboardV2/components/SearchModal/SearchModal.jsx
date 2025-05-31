@@ -88,16 +88,22 @@ function SearchModal({ open, onClose }) {
           padding: "16px",
           display: "flex",
           justifyContent: "center",
-          minHeight: "500px",
-          maxHeight: "500px",
+          minHeight: "400px",
+          maxHeight: "400px",
         }}
       >
         {orders.length > 0 && <OrderList orders={orders} />}
       </DialogContent>
       <DialogActions style={{ display: "flex", justifyContent: "center" }}>
-        <Button onClick={onClose} variant="contained" style={{ background: "#000", color: "#fff" }}>
-          إلغاء
-        </Button>
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center", padding: "16px" }}>
+          <Button
+            onClick={onClose}
+            variant="contained"
+            style={{ background: "#000", color: "#fff" }}
+          >
+            إلغاء
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

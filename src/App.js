@@ -226,7 +226,7 @@ export default function App() {
               index
               element={<Navigate to={isAdmin || isVendor ? "/home" : "/products"} />}
             />
-            <Route path="*" element={<NotFound to="/home" />} />
+            <Route path="*" element={<NotFound to="/" />} />
             <Route
               path="/authentication/sign-in"
               element={<SignIn to="/authentication/sign-in" />}
