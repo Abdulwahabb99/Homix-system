@@ -88,7 +88,7 @@ function SearchModal({ open, onClose }) {
           padding: "16px",
           display: "flex",
           justifyContent: "center",
-          minHeight: "400px",
+          minHeight: "300",
           maxHeight: "400px",
         }}
       >

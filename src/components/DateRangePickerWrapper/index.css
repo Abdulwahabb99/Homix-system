@@ -7,4 +7,11 @@
 
 .custom-date-picker .DateRangePickerInput {
   padding: 4px 25px;
+  background-color: inherit;
+}
+.custom-date-picker .DateRangePickerInput .DateInput {
+  background-color: inherit;
+}
+.custom-date-picker .DateRangePickerInput .DateInput_input {
+  background-color: inherit;
 }
