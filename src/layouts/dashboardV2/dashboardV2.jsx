@@ -15,10 +15,12 @@ import BankBuildingIcon from "shared/icons/BankBuildingIcon";
 import Spinner from "components/Spinner/Spinner";
 import MostVendorsSelling from "./components/MostVendorsSelling/MostVendorsSelling";
 import moment from "moment";
+import SearchModal from "./components/SearchModal/SearchModal";
 
 function dashboardV2() {
   const [financialreportData, setFinancialreportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const isSmallScreen = useMediaQuery("(max-width:1092px)");
   const user = JSON.parse(localStorage.getItem("user"));
   const searchParam = new URLSearchParams(window.location.search);
@@ -61,17 +63,21 @@ function dashboardV2() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
+      {isSearchModalOpen && (
+        <SearchModal
+          open={isSearchModalOpen}
+          onClose={() => {
+            setIsSearchModalOpen(false);
+          }}
+        />
+      )}
       {isLoading ? (
         <Spinner />
       ) : (
         <Box sx={{ px: 3, py: 2 }}>
           <Grid container spacing={2} width={"100%"} mb={4}>
             <Grid item xs={12} sm={12} md={12} lg={6}>
-              <SearchInput
-              // value={search}
-              // onChange={(e) => setSearch(e.target.value)}
-              // onSearch={() => console.log("Searching for:", search)}
-              />{" "}
+              <SearchInput onClick={() => setIsSearchModalOpen(true)} />
             </Grid>
             <Grid item xs={12} sm={12} md={12} lg={4}>
               <DateRangePickerWrapper

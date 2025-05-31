@@ -3,14 +3,10 @@ import { Box, InputBase, IconButton, Paper } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 
-const SearchInput = ({ value, onChange, onSearch }) => {
+const SearchInput = ({ onClick }) => {
   return (
-    <Paper
-      component="form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSearch();
-      }}
+    <Box
+      onClick={onClick}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -18,6 +14,10 @@ const SearchInput = ({ value, onChange, onSearch }) => {
         borderRadius: "8px",
         border: "1px solid #E0E0E0",
         overflow: "hidden",
+        cursor: "pointer",
+        "&:hover": {
+          borderColor: "#6B7280",
+        },
       }}
     >
       <IconButton
@@ -32,20 +32,12 @@ const SearchInput = ({ value, onChange, onSearch }) => {
       >
         <SearchIcon sx={{ color: "#6B7280" }} />
       </IconButton>
-      <InputBase
-        sx={{ ml: 1, flex: 1, px: 2 }}
-        placeholder="بحث"
-        value={value}
-        onChange={onChange}
-        inputProps={{ "aria-label": "بحث" }}
-      />
-    </Paper>
+      <Box sx={{ ml: 1, flex: 1, px: 2, fontSize: "14px" }}>بحث</Box>
+    </Box>
   );
 };
 
 export default SearchInput;
 SearchInput.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-  onSearch: PropTypes.func.isRequired,
+  onClick: PropTypes.func.isRequired,
 };

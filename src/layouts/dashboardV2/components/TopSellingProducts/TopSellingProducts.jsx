@@ -14,9 +14,7 @@ const columns = [
       <Box display="flex" alignItems="center" gap={1}>
         <Box
           component="img"
-          src={
-            "https://cdn.shopify.com/s/files/1/0699/1108/5302/files/D109-removebg-preview__1_-removebg-preview_1_.remini-enhanced.jpg?v=1738742239"
-          }
+          src={params.row.productImage}
           alt={params.row.productName}
           sx={{ width: 40, height: 40, borderRadius: "10%", objectFit: "cover" }}
         />{" "}
@@ -28,10 +26,10 @@ const columns = [
             {params.row.productName}
           </Typography>
           <Typography
-            sx={{ fontSize: "14px", fontWeight: 400, lineHeight: "140%", letterSpacing: "0.14px" }}
+            sx={{ fontSize: "12px", fontWeight: 400, lineHeight: "140%", letterSpacing: "0.14px" }}
             color="#1A73E8"
           >
-            {params.row.sku}
+            sku:{params.row.sku}
           </Typography>
         </Box>
       </Box>
@@ -76,8 +74,6 @@ const columns = [
 const TopSellingProductsTable = ({ rowData }) => {
   const newRowData = rowData?.map((row) => ({
     ...row,
-    productName: "دولاب خشبي EGT9 - سم 180*40*80",
-    sku: "skuA3659",
     id: row.productId,
   }));
 
