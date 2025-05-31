@@ -26,6 +26,7 @@ function dashboardV2() {
   const searchParam = new URLSearchParams(window.location.search);
   const startDateParam = searchParam.get("startDate");
   const endDateParam = searchParam.get("endDate");
+  const isVendor = user.userType === "2";
 
   const { startDate, endDate, handleDatesChange, handleReset } = useDateRange({
     defaultDays: 0,
@@ -119,16 +120,18 @@ function dashboardV2() {
           {/* Grid =>>>>> */}
 
           <Grid container spacing={4} width={"100%"}>
-            <Grid item xs={12} sm={12} md={12} lg={6}>
+            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />
               )}
             </Grid>
-            <Grid item xs={12} sm={12} md={12} lg={6}>
-              {financialreportData?.topTenVendors && (
-                <MostVendorsSelling rowData={financialreportData?.topTenVendors} />
-              )}{" "}
-            </Grid>
+            {!isVendor && (
+              <Grid item xs={12} sm={12} md={12} lg={6}>
+                {financialreportData?.topTenVendors && (
+                  <MostVendorsSelling rowData={financialreportData?.topTenVendors} />
+                )}{" "}
+              </Grid>
+            )}
           </Grid>
         </Box>
       )}
