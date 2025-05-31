@@ -38,7 +38,7 @@ function dashboardV2() {
     const url = `${process.env.REACT_APP_API_URL}/orders/financialReport?endDate=${
       endDateParam ? endDate : moment.utc().endOf("day")
     }&startDate=${startDateParam ? startDate : moment.utc().startOf("day")}`;
-    // const url = `${process.env.REACT_APP_API_URL}/orders/financialReport`;
+
     axiosRequest
       .get(url)
       .then(({ data }) => {
@@ -120,13 +120,13 @@ function dashboardV2() {
           {/* Grid =>>>>> */}
 
           <Grid container spacing={4} width={"100%"}>
-            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6}>
+            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6} sx={{ minWidth: "380px" }}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />
               )}
             </Grid>
             {!isVendor && (
-              <Grid item xs={12} sm={12} md={12} lg={6}>
+              <Grid item xs={12} sm={12} md={12} lg={6} sx={{ minWidth: "380px" }}>
                 {financialreportData?.topTenVendors && (
                   <MostVendorsSelling rowData={financialreportData?.topTenVendors} />
                 )}{" "}
