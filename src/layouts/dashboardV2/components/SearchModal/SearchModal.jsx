@@ -2,6 +2,7 @@
 import {
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -9,18 +10,41 @@ import {
   IconButton,
   InputBase,
 } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 import SearchIcon from "@mui/icons-material/Search";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import axiosRequest from "shared/functions/axiosRequest";
+import OrderList from "./components/OrderList";
 
 function SearchModal({ open, onClose }) {
+  const [searchValue, setSearchValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
+
+  const fetchOrders = () => {
+    setIsLoading(true);
+
+    axiosRequest
+      .get(`/orders?orderNumber=${searchValue}`)
+      .then(({ data }) => {
+        setOrders(data.data.orders);
+      })
+      .catch(() => {
+        NotificationMeassage("error", "حدث خطأ");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
-      <DialogContent>
+      <DialogTitle>
         <Box
           component="form"
           onSubmit={(e) => {
             e.preventDefault();
-            onSearch();
+            fetchOrders();
           }}
           sx={{
             display: "flex",
@@ -41,30 +65,40 @@ function SearchModal({ open, onClose }) {
             }}
             aria-label="search"
           >
-            <SearchIcon sx={{ color: "#6B7280" }} />
+            {isLoading ? (
+              <CircularProgress size={24} sx={{ color: "#6B7280" }} />
+            ) : (
+              <SearchIcon sx={{ color: "#6B7280" }} />
+            )}
           </IconButton>
           <InputBase
             sx={{ ml: 1, flex: 1, px: 2, fontSize: "14px" }}
             placeholder="بحث"
-            value={"hh"}
-            // onChange={onChange}
+            value={searchValue}
+            onChange={(e) => {
+              setSearchValue(e.target.value);
+            }}
             inputProps={{ "aria-label": "بحث" }}
-            // onFocus={onFocus}
+            autoFocus
           />
         </Box>{" "}
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          padding: "16px",
+          display: "flex",
+          justifyContent: "center",
+          minHeight: "500px",
+          maxHeight: "500px",
+        }}
+      >
+        {orders.length > 0 && <OrderList orders={orders} />}
       </DialogContent>
-      {/* <DialogActions style={{ display: "flex", justifyContent: "center" }}>
+      <DialogActions style={{ display: "flex", justifyContent: "center" }}>
         <Button onClick={onClose} variant="contained" style={{ background: "#000", color: "#fff" }}>
           إلغاء
         </Button>
-        <Button
-          onClick={handleConfirmDelete}
-          variant="contained"
-          style={{ color: "#fff", background: "red" }}
-        >
-          تأكيد
-        </Button>
-      </DialogActions> */}
+      </DialogActions>
     </Dialog>
   );
 }
