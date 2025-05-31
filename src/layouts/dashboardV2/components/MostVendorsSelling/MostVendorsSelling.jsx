@@ -8,7 +8,7 @@ const columns = [
   {
     field: "name",
     headerName: "الموردين",
-    flex: 1.5,
+    flex: 1,
     sortable: false,
     filterable: false,
     renderCell: (params) => (

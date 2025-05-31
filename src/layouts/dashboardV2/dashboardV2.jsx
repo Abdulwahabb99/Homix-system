@@ -119,14 +119,14 @@ function dashboardV2() {
 
           {/* Grid =>>>>> */}
 
-          <Grid container spacing={4} width={"100%"}>
-            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6} sx={{ minWidth: "380px" }}>
+          <Grid container spacing={4} width={"100%"} justifyContent={"center"}>
+            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6} sx={{ minWidth: "350px" }}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />
               )}
             </Grid>
             {!isVendor && (
-              <Grid item xs={12} sm={12} md={12} lg={6} sx={{ minWidth: "380px" }}>
+              <Grid item xs={12} sm={12} md={12} lg={6} sx={{ minWidth: "350px" }}>
                 {financialreportData?.topTenVendors && (
                   <MostVendorsSelling rowData={financialreportData?.topTenVendors} />
                 )}{" "}
