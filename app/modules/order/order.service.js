@@ -1060,10 +1060,13 @@ class OrderService {
         vendorsMap[line.product.vendor.id].revenue += +line.price;
         vendorsMap[line.product.vendor.id].profit +=
           +line.price - +line.cost - +line.commission - +line.tax;
+
         if (!productsMap[line.product.id]) {
           productsMap[line.product.id] = {
             productId: line.product.id,
-            productName: line.product.name,
+            productName: line.product.title,
+            productImage: line.product.image,
+            sku: line.sku || "",
             revenue: 0,
             profit: 0,
           };
