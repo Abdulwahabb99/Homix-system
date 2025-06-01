@@ -902,8 +902,8 @@ class OrderService {
           daysPassed: order.PoDate
             ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
             : "",
-          cost: order.totalCost,
-          price: order.subTotalPrice,
+          cost: line.cost,
+          price: line.price * line.quantity,
           userName: order.user
             ? `${order.user.firstName} ${order.user.lastName}`
             : "",
