@@ -321,7 +321,7 @@ class ProductsService {
     productsData = productsData.map((product) => {
       return {
         title: product.title,
-        vendorId: vendorsMap[product.vendor],
+        vendorId: vendorsMap[product.vendor].id,
         typeId: typesMap[product.product_type] || null,
         image: product.image
           ? product.image.src
