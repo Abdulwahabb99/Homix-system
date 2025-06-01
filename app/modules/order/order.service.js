@@ -883,33 +883,34 @@ class OrderService {
 
     // Add data rows
     orders.forEach((order) => {
-      const line = order.orderLines[0];
-      const variant = order.orderLines[0].product.variants.find(
-        (variant) => String(variant.shopifyId) === String(line.variant_id)
-      );
-      worksheet.addRow({
-        code: order.code,
-        orderNumber: order.orderNumber,
-        productName: order.orderLines[0].product.title,
-        quantity: order.orderLines[0].quantity,
-        vendorName: order.orderLines[0].product.vendor.name,
-        status: ORDER_STATUS_Arabic[order.status] || order.status,
-        paymentStatus:
-          PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
-        orderDate: order.PoDate
-          ? moment(order.PoDate).format("YYYY-MM-DD")
-          : "",
-        daysPassed: order.PoDate
-          ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
-          : "",
-        cost: order.totalCost,
-        price: order.subTotalPrice,
-        userName: order.user
-          ? `${order.user.firstName} ${order.user.lastName}`
-          : "",
-        productType: order.orderLines[0].product?.type?.name || "",
-        productCode: variant ? variant.sku : "",
-      });
+      for (const line of order.orderLines) {
+        const variant = line.product.variants.find(
+          (variant) => String(variant.shopifyId) === String(line.variant_id)
+        );
+        worksheet.addRow({
+          code: order.code,
+          orderNumber: order.orderNumber,
+          productName: line.product.title,
+          quantity: line.quantity,
+          vendorName: line.product.vendor.name,
+          status: ORDER_STATUS_Arabic[order.status] || order.status,
+          paymentStatus:
+            PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
+          orderDate: order.PoDate
+            ? moment(order.PoDate).format("YYYY-MM-DD")
+            : "",
+          daysPassed: order.PoDate
+            ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
+            : "",
+          cost: order.totalCost,
+          price: order.subTotalPrice,
+          userName: order.user
+            ? `${order.user.firstName} ${order.user.lastName}`
+            : "",
+          productType: line.product?.type?.name || "",
+          productCode: variant ? variant.sku : "",
+        });
+      }
     });
 
     // Set response headers
