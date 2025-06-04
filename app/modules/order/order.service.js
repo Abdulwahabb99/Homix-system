@@ -730,70 +730,16 @@ class OrderService {
       }
     }
     whereClause = whereClause[Op.and].length ? whereClause : {};
-    const orders = await Order.findAll({
-      include: [
-        {
-          model: OrderLine,
-          required: true,
-          as: "orderLines",
-          include: [
-            {
-              model: Product,
-              as: "product",
-              required: true,
-              include: [
-                {
-                  model: Vendor,
-                  as: "vendor",
-                  required: true,
-                },
-                {
-                  model: ProductType,
-                  as: "type",
-                  attributes: ["name"],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          model: Note,
-          as: "notesList",
-          required: false,
-          include: [
-            {
-              model: User,
-              as: "user",
-              required: false,
-              attributes: ["firstName", "lastName"],
-            },
-            {
-              model: Attachment,
-              as: "attachments",
-              required: false,
-            },
-          ],
-        },
-        {
-          model: Customer,
-          as: "customer",
-          required: false,
-        },
-        {
-          model: User,
-          as: "user",
-          required: false,
-          attributes: ["firstName", "lastName"],
-        },
-      ],
-      where: whereClause,
-      order: [["orderDate", "DESC"]],
-      subQuery: false,
-    });
 
-    const workbook = new ExcelJS.Workbook();
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
+
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
     const worksheet = workbook.addWorksheet("orders");
+
     worksheet.columns = [
       {
         header: "كود العملية",
@@ -880,48 +826,111 @@ class OrderService {
         style: { alignment: { horizontal: "right" } },
       },
     ];
+    const CHUNK_SIZE = 500;
+    let offset = 0;
+    let hasMore = true;
 
-    // Add data rows
-    orders.forEach((order) => {
-      for (const line of order.orderLines) {
-        const variant = line.product.variants.find(
-          (variant) => String(variant.shopifyId) === String(line.variant_id)
-        );
-        worksheet.addRow({
-          code: order.code,
-          orderNumber: order.orderNumber,
-          productName: line.product.title,
-          quantity: line.quantity,
-          vendorName: line.product.vendor.name,
-          status: ORDER_STATUS_Arabic[order.status] || order.status,
-          paymentStatus:
-            PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
-          orderDate: order.PoDate
-            ? moment(order.PoDate).format("YYYY-MM-DD")
-            : "",
-          daysPassed: order.PoDate
-            ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
-            : "",
-          cost: line.cost,
-          price: line.price * line.quantity,
-          userName: order.user
-            ? `${order.user.firstName} ${order.user.lastName}`
-            : "",
-          productType: line.product?.type?.name || "",
-          productCode: variant ? variant.sku : "",
-        });
+    while (hasMore) {
+      const chunk = await Order.findAll({
+        include: [
+          {
+            model: OrderLine,
+            required: true,
+            as: "orderLines",
+            include: [
+              {
+                model: Product,
+                as: "product",
+                required: true,
+                include: [
+                  {
+                    model: Vendor,
+                    as: "vendor",
+                    required: true,
+                  },
+                  {
+                    model: ProductType,
+                    as: "type",
+                    attributes: ["name"],
+                    required: false,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Note,
+            as: "notesList",
+            required: false,
+            include: [
+              {
+                model: User,
+                as: "user",
+                required: false,
+                attributes: ["firstName", "lastName"],
+              },
+              {
+                model: Attachment,
+                as: "attachments",
+                required: false,
+              },
+            ],
+          },
+          {
+            model: Customer,
+            as: "customer",
+            required: false,
+          },
+          {
+            model: User,
+            as: "user",
+            required: false,
+            attributes: ["firstName", "lastName"],
+          },
+        ],
+        where: whereClause,
+        order: [["orderDate", "DESC"]],
+        offset,
+        limit: CHUNK_SIZE,
+        subQuery: false,
+      });
+
+      hasMore = chunk.length === CHUNK_SIZE;
+      offset += CHUNK_SIZE;
+
+      for (const order of chunk) {
+        for (const line of order.orderLines) {
+          const variant = line.product.variants.find(
+            (variant) => String(variant.shopifyId) === String(line.variant_id)
+          );
+          worksheet.addRow({
+            code: order.code,
+            orderNumber: order.orderNumber,
+            productName: line.product.title,
+            quantity: line.quantity,
+            vendorName: line.product.vendor.name,
+            status: ORDER_STATUS_Arabic[order.status] || order.status,
+            paymentStatus:
+              PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
+            orderDate: order.PoDate
+              ? moment(order.PoDate).format("YYYY-MM-DD")
+              : "",
+            daysPassed: order.PoDate
+              ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
+              : "",
+            cost: line.cost,
+            price: line.price * line.quantity,
+            userName: order.user
+              ? `${order.user.firstName} ${order.user.lastName}`
+              : "",
+            productType: line.product?.type?.name || "",
+            productCode: variant ? variant.sku : "",
+          });
+        }
       }
-    });
+    }
 
-    // Set response headers
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
-
-    // Write to response stream
-    await workbook.xlsx.write(res);
+    await workbook.commit();
     res.end();
   }
 
