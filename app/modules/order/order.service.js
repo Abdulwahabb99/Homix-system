@@ -895,7 +895,7 @@ class OrderService {
         subQuery: false,
       });
 
-      hasMore = chunk.length === CHUNK_SIZE;
+      hasMore = chunk.length > 0;
       offset += CHUNK_SIZE;
 
       for (const order of chunk) {
