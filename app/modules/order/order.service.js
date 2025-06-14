@@ -895,9 +895,6 @@ class OrderService {
         subQuery: false,
       });
 
-      hasMore = chunk.length > 0;
-      offset += CHUNK_SIZE;
-
       for (const order of chunk) {
         for (const line of order.orderLines) {
           const variant = line.product.variants.find(
@@ -928,6 +925,8 @@ class OrderService {
           });
         }
       }
+      hasMore = chunk.length > 0;
+      offset += CHUNK_SIZE;
     }
 
     await workbook.commit();
