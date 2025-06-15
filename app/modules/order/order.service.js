@@ -465,12 +465,12 @@ class OrderService {
     if (vendorUser) {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.status"), {
-          [Op.gte]: ORDER_STATUS.IN_PROGRESS,
-        })
-      );
-      whereClause[Op.and].push(
-        sequelize.where(sequelize.col("Order.status"), {
-          [Op.ne]: ORDER_STATUS.CANCELED,
+          [Op.in]: [
+            ORDER_STATUS.IN_PROGRESS,
+            ORDER_STATUS.DELIVERED,
+            ORDER_STATUS.REFUNDED,
+            ORDER_STATUS.REPLACED,
+          ], // Add the statuses you want to include
         })
       );
     } else if (status) {
