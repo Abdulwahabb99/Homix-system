@@ -1249,8 +1249,7 @@ class OrderService {
         orderData[key] === ""
       ) {
         delete orderData[key];
-      }
-      else{
+      } else {
         logs.push({
           action: "update",
           entityType: "order",
@@ -1687,6 +1686,34 @@ class OrderService {
       status: true,
       statusCode: 200,
       message: "Files uploaded!",
+    };
+  }
+
+  static async saveMissingOrders() {
+    const orders = await Order.findAll({
+      where: {
+        orderNumber: null,
+      },
+      include: [
+        {
+          model: OrderLine,
+          as: "orderLines",
+          required: true,
+          include: [
+            {
+              model: Product,
+              as: "product",
+              required: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    return {
+      status: true,
+      statusCode: 200,
+      message: "Missing orders saved successfully",
     };
   }
 }
