@@ -113,19 +113,19 @@ class VendorsService {
     const existingVendorsNames = new Set(
       existingVendors.map((vendor) => vendor.name)
     );
-    const createdVendors = names.filter(
+    const createdVendors = uniqueNames.filter(
       (name) => !existingVendorsNames.has(name)
     );
     if (createdVendors.length) {
       const createdVendorsData = await Vendor.bulkCreate(
-        createdVendors.map((name) => ({ name }))
+        createdVendors.map((name) => ({ name, daysToDeliver: 0 }))
       );
       createdVendorsData.forEach((vendor) => {
         result[vendor.name] = vendor;
       });
     }
 
-    await UserService.saveUsersForVendorsWithNoUsers(createdVendors);
+    await UserService.saveUsersForVendorsWithNoUsers(Object.values(result));
     return result;
   }
   static async getVendorByNameAndSaveIfNotExist(name) {
