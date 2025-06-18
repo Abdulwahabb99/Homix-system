@@ -147,12 +147,12 @@ const startServer = async () => {
     app.use(globalErrorHandler);
     cron.schedule(
       //every minute
-      "* * * * *", // This cron expression runs the task every day at midnight
+      "* */2 * * *", // This cron expression runs the task every day at midnight
       async () => {
         try {
           console.log("Running cron task...");
-          await saveMissingOrders();
-          console.log("Cron task completed successfully.");
+          const result = await saveMissingOrders();
+          console.log("Cron task completed successfully." + result.message);
         } catch (error) {
           console.error("Error in cron task:", error);
         }
