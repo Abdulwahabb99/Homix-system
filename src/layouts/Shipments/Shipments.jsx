@@ -33,8 +33,6 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import SearchDialog from "./components/SearchDialog/SearchDialog";
 const ITEMS_PER_PAGE = 150;
 
-// Reducer Initial State
-
 export default function Shipments() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -143,6 +141,9 @@ export default function Shipments() {
     dispatch({ type: "SET_FIELD", field, value });
 
     const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("page", 1);
+    updateParams({ page: 1 });
+
     const paramKeyMap = {
       selectedShipmentStatus: "shipmentStatus",
       selectedShipmentTybe: "shipmentType",
@@ -171,6 +172,8 @@ export default function Shipments() {
 
     // update only orderNumber param in URL
     const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("page", 1);
+    updateParams({ page: 1 });
 
     if (orderNumber) {
       urlParams.set("orderNumber", orderNumber);
@@ -280,6 +283,20 @@ export default function Shipments() {
     state.orderNumber,
     state.shippingCompany,
   ]);
+
+  const updateParams = (params = {}) => {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        urlParams.set(key, value);
+      } else {
+        urlParams.delete(key);
+      }
+    });
+
+    navigate(`?${urlParams.toString()}`);
+  };
 
   const handlePageChange = (_, value) => {
     updateParams({ page: value });
