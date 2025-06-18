@@ -45,6 +45,29 @@ class OrderService {
   }
   static async saveImportedOrders(ordersFromShopify, isShipment = false, user) {
     let orders = [];
+
+    const orderNames = ordersFromShopify.map((order) => order.name);
+    const existingOrders = await Order.findAll({
+      where: {
+        name: {
+          [Op.in]: orderNames,
+        },
+      },
+      attributes: ["name"],
+    });
+    const existingOrdersSet = new Set(
+      existingOrders.map((order) => order.name)
+    );
+    ordersFromShopify = ordersFromShopify.filter(
+      (order) => !existingOrdersSet.has(order.name)
+    );
+    if (!ordersFromShopify || ordersFromShopify.length === 0) {
+      return {
+        status: true,
+        statusCode: 200,
+        message: "No new orders to import",
+      };
+    }
     ordersFromShopify.forEach((order) => {
       if (order.line_items.length > 1) {
         for (const line of order.line_items) {
@@ -1690,31 +1713,11 @@ class OrderService {
   }
 
   static async saveMissingOrders() {
-    const orders = await Order.findAll({
-      where: {
-        orderNumber: null,
-      },
-      include: [
-        {
-          model: OrderLine,
-          as: "orderLines",
-          required: true,
-          include: [
-            {
-              model: Product,
-              as: "product",
-              required: true,
-            },
-          ],
-        },
-      ],
+    const result = await OrderService.importOrders({
+      created_at_min: moment().startOf("day").toISOString(),
     });
 
-    return {
-      status: true,
-      statusCode: 200,
-      message: "Missing orders saved successfully",
-    };
+    return result
   }
 }
 module.exports = OrderService;
