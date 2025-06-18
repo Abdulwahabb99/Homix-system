@@ -17,6 +17,7 @@ const { connectToDb } = require("./config/db.config");
 const createDefaultData = require("./config/defaultData.seeder");
 const { Server } = require("socket.io");
 const User = require("./app/modules/user/user.model");
+const cron = require("node-cron");
 
 const startServer = async () => {
   try {
@@ -143,6 +144,23 @@ const startServer = async () => {
 
     // Global error handling middleware
     app.use(globalErrorHandler);
+    cron.schedule(
+      //every minute
+      "0 0 * * *", // This cron expression runs the task every day at midnight
+      async () => {
+        try {
+          console.log("Running cron task...");
+          await saveMissingOrders();
+          console.log("Cron task completed successfully.");
+        } catch (error) {
+          console.error("Error in cron task:", error);
+        }
+      },
+      {
+        scheduled: true,
+        timezone: "Africa/Cairo",
+      }
+    );
 
     // Listen on the HTTP server instead of the Express app
     server.listen(port, async () => {
