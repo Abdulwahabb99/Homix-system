@@ -18,6 +18,7 @@ const createDefaultData = require("./config/defaultData.seeder");
 const { Server } = require("socket.io");
 const User = require("./app/modules/user/user.model");
 const cron = require("node-cron");
+const { saveMissingOrders } = require("./app/modules/order/order.service");
 
 const startServer = async () => {
   try {
