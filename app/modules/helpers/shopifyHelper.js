@@ -7,7 +7,7 @@ class ShopifyHelper {
     callbackFunction
   ) {
     const data = [];
-    if (path === "orders") {
+    if (path === "orderswwwwwwwwwwwwwwwwww") {
       const query = {
         limit: 1,
         fields: fields.join(","),

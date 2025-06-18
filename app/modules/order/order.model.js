@@ -244,7 +244,7 @@ Order.hasMany(Note, {
     entityType: "order", // This ensures only notes with entityType='order' are included
   },
 });
-Order.sync({ alter: true }).then(() => {
-  console.log("Order table synced");
-});
+// Order.sync({ alter: true }).then(() => {
+//   console.log("Order table synced");
+// });
 module.exports = Order;

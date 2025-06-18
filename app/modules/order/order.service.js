@@ -24,6 +24,7 @@ const {
 const moment = require("moment-timezone");
 const Attachment = require("../attachments/attachment.model");
 const ProductType = require("../product/productType.model");
+const Log = require("../logs/log.model");
 const PREFIX = "H";
 const CUSTOM_PREFIX = "CU";
 
@@ -1193,6 +1194,7 @@ class OrderService {
   }
   static async updateOrder(orderId, orderData, user) {
     const order = await Order.findByPk(orderId);
+    const logs = [];
     if (!order) {
       return {
         status: false,
@@ -1202,6 +1204,14 @@ class OrderService {
     }
     //filter out the order Data
     if (orderData.vendorId) {
+      logs.push({
+        action: "update",
+        entityType: "order",
+        entityId: order.id,
+        userId: user.id,
+        field: "vendorId",
+        to: orderData.vendorId,
+      });
       const orderLines = await OrderLine.findAll({
         where: {
           orderId: orderId,
@@ -1231,14 +1241,27 @@ class OrderService {
       Reflect.deleteProperty(orderData, "vendorId");
     }
 
-    Object.keys(orderData).forEach(
-      (key) =>
-        (orderData[key] === undefined ||
-          orderData[key] === null ||
-          orderData[key] === "Invalid date" ||
-          orderData[key] === "") &&
-        delete orderData[key]
-    );
+    Object.keys(orderData).forEach((key) => {
+      if (
+        orderData[key] === undefined ||
+        orderData[key] === null ||
+        orderData[key] === "Invalid date" ||
+        orderData[key] === ""
+      ) {
+        delete orderData[key];
+      }
+      else{
+        logs.push({
+          action: "update",
+          entityType: "order",
+          entityId: order.id,
+          userId: user.id,
+          field: key,
+          from: order[key],
+          to: orderData[key],
+        });
+      }
+    });
     if (orderData.status) {
       if (Number(order.status) !== Number(orderData.status)) {
         if (orderData.status == ORDER_STATUS.IN_PROGRESS) {
@@ -1293,6 +1316,7 @@ class OrderService {
     }
 
     await order.update(orderData);
+    await Log.bulkCreate(logs);
     const returnedOrder = await Order.findOne({
       where: {
         id: orderId,
@@ -1352,6 +1376,7 @@ class OrderService {
   }
   static async BulkUpdate(body, user) {
     const { orderIds, orderData } = body;
+    const logs = [];
     Object.keys(orderData).forEach(
       (key) =>
         (orderData[key] === undefined ||
@@ -1372,6 +1397,15 @@ class OrderService {
         },
       });
       for (const order of orders) {
+        logs.push({
+          action: "update",
+          entityType: "order",
+          entityId: order.id,
+          userId: user.id,
+          field: key,
+          from: order[orderData[key]],
+          to: orderData[key],
+        });
         if (Number(order.status) !== Number(orderData.status)) {
           await OrderService.sendNotification(
             order.id,
@@ -1399,6 +1433,7 @@ class OrderService {
         },
       },
     });
+    await Log.bulkCreate(logs);
 
     return {
       status: true,
@@ -1407,7 +1442,7 @@ class OrderService {
     };
   }
 
-  static async deleteOrder(orderId) {
+  static async deleteOrder(orderId, user) {
     const order = await Order.findByPk(orderId);
     if (!order) {
       return {
@@ -1416,6 +1451,12 @@ class OrderService {
         message: "Order not found",
       };
     }
+    await Log.create({
+      action: "delete",
+      entityType: "order",
+      entityId: order.id,
+      userId: user.id,
+    });
     await order.destroy();
     return {
       status: true,

@@ -115,7 +115,7 @@ class OrderController {
   static async deleteOrder(req, res, next) {
     try {
       const { orderId } = req.params;
-      const result = await OrderService.deleteOrder(orderId);
+      const result = await OrderService.deleteOrder(orderId,req.user);
       res.status(result.statusCode).json(result);
     } catch (error) {
       return next(new AppError(error.message, 500));
