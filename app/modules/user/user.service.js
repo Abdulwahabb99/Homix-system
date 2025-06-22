@@ -274,7 +274,7 @@ class UserService {
           await user.destroy();
         }
       } else {
-        const ExistingUser = User.findOne({
+        const ExistingUser = await User.findOne({
           where: {
             email: `${vendor.name.toLowerCase()}@${
               process.env.SHOPIFY_STORE
