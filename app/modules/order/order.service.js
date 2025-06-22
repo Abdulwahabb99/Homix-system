@@ -185,7 +185,7 @@ class OrderService {
       .filter((order) => order.customer)
       .map((order) => {
         const line = order.line_items[0];
-        const product = line.product_id
+        const product = line.product_id 
           ? productsMap[line.product_id]
           : productsMap["custom"];
         if (!product) {
@@ -1115,7 +1115,7 @@ class OrderService {
       totalCommission += +order.commission;
       totalTax += +order.totalTax;
       totalPaid += +order.totalPrice;
-      subTotal += +order.subTotal;
+      subTotal += +order.subTotalPrice;
       totalDownPayment += +order.downPayment;
       totalToBeCollected += +order.toBeCollected;
     }
