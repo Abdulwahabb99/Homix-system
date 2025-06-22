@@ -273,6 +273,8 @@ class UserService {
         } else {
           await user.destroy();
         }
+      } else {
+        await UserService.saveUsersForVendors([vendor]);
       }
 
       await transaction.commit();

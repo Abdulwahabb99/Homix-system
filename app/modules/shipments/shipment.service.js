@@ -27,7 +27,7 @@ class ShipmentService {
     endDate,
     shipmentStartDate,
     shipmentEndDate,
-    orderNumber
+    orderNumber,
   }) {
     let whereClause = {
       [Op.and]: [
@@ -228,11 +228,13 @@ class ShipmentService {
   }
   static async updateShipment(shipmentId, shipmentData) {
     //filter out the shipment Data
-    Object.keys(shipmentData).forEach(
-      (key) =>
-        shipmentData[key] === undefined ||
-        (shipmentData[key] === null && delete shipmentData[key])
-    );
+    Object.keys(shipmentData).forEach((key) => {
+      if (key === "shippingReceiveDate" && shipmentData[key] === "") {
+        shipmentData[key] = null;
+      } else if (key === "deliveryDate" && shipmentData[key] === "") {
+        shipmentData[key] = null;
+      }
+    });
     const shipment = await Shipment.findByPk(shipmentId);
     if (!shipment) {
       return {
