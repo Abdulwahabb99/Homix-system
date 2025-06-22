@@ -1163,7 +1163,7 @@ class OrderService {
         ordersCount: count,
         totalTax,
         totalCost,
-        totalRevenue,
+        totalRevenue :total,
         totalDiscount,
         totalProfit,
         totalCommission,
