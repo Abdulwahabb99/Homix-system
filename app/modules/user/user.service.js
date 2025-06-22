@@ -283,12 +283,14 @@ class UserService {
           paranoid: false,
         });
         if (ExistingUser) {
-          await ExistingUser.update({
-            vendorId: vendor.id,
-          });
-          if (ExistingUser.deletedAt) {
-            await ExistingUser.restore();
-          }
+          await User.update(
+            { deletedAt: null, vendorId: vendor.id },
+            {
+              where: {
+                id: ExistingUser.id,
+              },
+            }
+          );
         } else {
           await User.create({
             email: `${vendor.name.toLowerCase()}@${
