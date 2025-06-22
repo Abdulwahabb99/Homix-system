@@ -274,7 +274,37 @@ class UserService {
           await user.destroy();
         }
       } else {
-        await UserService.saveUsersForVendors([vendor]);
+        ExistingUser = User.findOne({
+          where: {
+            email: `${vendor.name.toLowerCase()}@${
+              process.env.SHOPIFY_STORE
+            }.com`,
+          },
+          paranoid: false,
+        });
+        if (ExistingUser) {
+          await ExistingUser.update({
+            vendorId: vendor.id,
+          });
+          if (ExistingUser.deletedAt) {
+            await ExistingUser.restore();
+          }
+        } else {
+          await User.create({
+            email: `${vendor.name.toLowerCase()}@${
+              process.env.SHOPIFY_STORE
+            }.com`,
+            firstName: vendor.name,
+            userType: USER_TYPES.VENDOR,
+            vendorId: vendor.id,
+            password: await bcrypt.hash(
+              `${UserService.capitalizeFirstLetter(
+                vendor.name.toLowerCase()
+              )}#${process.env.DEFAULT_PASSWORD}`,
+              10
+            ),
+          });
+        }
       }
 
       await transaction.commit();
