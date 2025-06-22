@@ -185,7 +185,7 @@ class OrderService {
       .filter((order) => order.customer)
       .map((order) => {
         const line = order.line_items[0];
-        const product = line.product_id 
+        const product = line.product_id
           ? productsMap[line.product_id]
           : productsMap["custom"];
         if (!product) {
@@ -1007,6 +1007,30 @@ class OrderService {
       ],
       where: whereClause,
     });
+
+    let whereClause2 = {
+      [Op.and]: [
+        sequelize.where(sequelize.col("deletedAt"), {
+          [Op.gte]: startStartDate,
+        }),
+        sequelize.where(sequelize.col("deletedAt"), {
+          [Op.lte]: endOfEndDate,
+        }),
+      ],
+    };
+
+    if (vendorId && vendorId !== "0") {
+      whereClause2[Op.and].push(
+        sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
+          [Op.eq]: vendorId,
+        })
+      );
+    }
+    const deletedOrders = await Order.findAll({
+      paranoid: false,
+      where: whereClause2,
+    });
+
     let totalCost = 0;
     let totalRevenue = 0;
     let totalDiscount = 0;
@@ -1018,6 +1042,7 @@ class OrderService {
     let subTotal = 0;
     let totalDownPayment = 0;
     let totalToBeCollected = 0;
+    let shippingFees =0
     const DeliveredOrders = {
       ordersCount: 0,
       totalTax: 0,
@@ -1030,6 +1055,10 @@ class OrderService {
       subTotal: 0,
       totalDownPayment: 0,
       totalToBeCollected: 0,
+    };
+    const DeletedOrders = {
+      subTotal: 0,
+      totalDiscount: 0,
     };
     // const halfCompletedOrders = {
     //   ordersCount: 0,
@@ -1046,6 +1075,10 @@ class OrderService {
     // };
     const vendorsMap = {};
     const productsMap = {};
+    for (const order of deletedOrders) {
+      DeletedOrders.subTotal += +order.subTotalPrice;
+      DeletedOrders.totalDiscount += +order.totalDiscounts;
+    }
     for (const order of orders) {
       if (order.status === ORDER_STATUS.DELIVERED) {
         DeliveredOrders.ordersCount++;
@@ -1118,8 +1151,11 @@ class OrderService {
       subTotal += +order.subTotalPrice;
       totalDownPayment += +order.downPayment;
       totalToBeCollected += +order.toBeCollected;
+      shippingFees += +order.shippingFees || 0;
     }
+    const returns= DeletedOrders.subTotal - DeletedOrders.totalDiscount;
     totalProfit = totalRevenue - totalCost - totalCommission - totalTax;
+    const total =subTotal- totalDiscount - returns + shippingFees;
     return {
       status: true,
       statusCode: 200,
@@ -1717,7 +1753,7 @@ class OrderService {
       created_at_min: moment().startOf("day").toISOString(),
     });
 
-    return result
+    return result;
   }
 }
 module.exports = OrderService;
