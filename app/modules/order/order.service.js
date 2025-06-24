@@ -1026,10 +1026,6 @@ class OrderService {
         })
       );
     }
-    const deletedOrders = await Order.findAll({
-      paranoid: false,
-      where: whereClause2,
-    });
 
     let totalCost = 0;
     let totalRevenue = 0;
@@ -1042,7 +1038,7 @@ class OrderService {
     let subTotal = 0;
     let totalDownPayment = 0;
     let totalToBeCollected = 0;
-    let shippingFees =0
+    let shippingFees = 0;
     const DeliveredOrders = {
       ordersCount: 0,
       totalTax: 0,
@@ -1075,10 +1071,7 @@ class OrderService {
     // };
     const vendorsMap = {};
     const productsMap = {};
-    for (const order of deletedOrders) {
-      DeletedOrders.subTotal += +order.subTotalPrice;
-      DeletedOrders.totalDiscount += +order.totalDiscounts;
-    }
+
     for (const order of orders) {
       if (order.status === ORDER_STATUS.DELIVERED) {
         DeliveredOrders.ordersCount++;
@@ -1153,9 +1146,8 @@ class OrderService {
       totalToBeCollected += +order.toBeCollected;
       shippingFees += +order.shippingFees || 0;
     }
-    const returns= DeletedOrders.subTotal - DeletedOrders.totalDiscount;
     totalProfit = totalRevenue - totalCost - totalCommission - totalTax;
-    const total =subTotal- totalDiscount - returns + shippingFees;
+    const total = subTotal - totalDiscount + shippingFees;
     return {
       status: true,
       statusCode: 200,
@@ -1163,7 +1155,7 @@ class OrderService {
         ordersCount: count,
         totalTax,
         totalCost,
-        totalRevenue :total,
+        totalRevenue: total,
         totalDiscount,
         totalProfit,
         totalCommission,
@@ -1455,15 +1447,17 @@ class OrderService {
         },
       });
       for (const order of orders) {
-        logs.push({
-          action: "update",
-          entityType: "order",
-          entityId: order.id,
-          userId: user.id,
-          field: key,
-          from: order[orderData[key]],
-          to: orderData[key],
-        });
+        Object.keys(orderData).forEach((key) =>
+          logs.push({
+            action: "update",
+            entityType: "order",
+            entityId: order.id,
+            userId: user.id,
+            field: key,
+            from: order[orderData[key]],
+            to: orderData[key],
+          })
+        );
         if (Number(order.status) !== Number(orderData.status)) {
           await OrderService.sendNotification(
             order.id,
