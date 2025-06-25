@@ -147,7 +147,7 @@ const startServer = async () => {
     app.use(globalErrorHandler);
     cron.schedule(
       //every minute
-      "* */2 * * *", // This cron expression runs the task every day at midnight
+      "0 */2 * * *", // This cron expression runs the task every day at midnight
       async () => {
         try {
           console.log("Running cron task...");
