@@ -1744,7 +1744,7 @@ class OrderService {
 
   static async saveMissingOrders() {
     const result = await OrderService.importOrders({
-      created_at_min: moment().startOf("week").toISOString(),
+      created_at_min: moment().subtract(1,"week").toISOString(),
     });
 
     return result;
