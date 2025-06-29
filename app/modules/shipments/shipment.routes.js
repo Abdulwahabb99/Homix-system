@@ -27,6 +27,8 @@ const ShipmentRouter = express.Router();
 ShipmentRouter.post("/", ShipmentController.createShipment);
 
 
+ShipmentRouter.get("/export", ShipmentController.exportShipments);
+
 /**
  * @swagger
  * /shipments:

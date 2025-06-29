@@ -117,5 +117,20 @@ class ShipmentController {
       return next(new AppError(error.message, 500));
     }
   }
+  static async exportShipments(req, res, next) {
+    try {
+      let vendorUser = false;
+      if (req.vendorId) {
+        req.query.vendorId = req.vendorId;
+        vendorUser = true;
+      }
+      await ShipmentService.exportShipments(res, {
+        ...req.query,
+        vendorUser,
+      });
+    } catch (error) {
+      return next(new AppError(error.message, 500));
+    }
+  }
 }
 module.exports = ShipmentController;
