@@ -487,14 +487,25 @@ class OrderService {
     }
 
     if (vendorUser) {
+      const allowedVendorStatuses = [
+        ORDER_STATUS.IN_PROGRESS,
+        ORDER_STATUS.DELIVERED,
+        ORDER_STATUS.REFUNDED,
+        ORDER_STATUS.REPLACED,
+      ];
+      const statuses = allowedVendorStatuses;
+
+      if (status) {
+        const requestedStatuses = status.split(",").map((s) => Number(s));
+        if (requestedStatuses.length) {
+          statuses = requestedStatuses.filter((s) =>
+            allowedVendorStatuses.includes(s)
+          );
+        }
+      }
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.status"), {
-          [Op.in]: [
-            ORDER_STATUS.IN_PROGRESS,
-            ORDER_STATUS.DELIVERED,
-            ORDER_STATUS.REFUNDED,
-            ORDER_STATUS.REPLACED,
-          ], // Add the statuses you want to include
+          [Op.in]: statuses,
         })
       );
     } else if (status) {
@@ -1744,7 +1755,7 @@ class OrderService {
 
   static async saveMissingOrders() {
     const result = await OrderService.importOrders({
-      created_at_min: moment().subtract(1,"week").toISOString(),
+      created_at_min: moment().subtract(1, "week").toISOString(),
     });
 
     return result;
