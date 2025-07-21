@@ -494,7 +494,7 @@ class OrderService {
         ORDER_STATUS.REPLACED,
         ORDER_STATUS.IN_INVENTORY,
       ];
-      const statuses = allowedVendorStatuses;
+      let statuses = allowedVendorStatuses;
 
       if (status) {
         const requestedStatuses = status.split(",").map((s) => Number(s));
