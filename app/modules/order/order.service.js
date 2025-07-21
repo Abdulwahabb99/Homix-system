@@ -492,6 +492,7 @@ class OrderService {
         ORDER_STATUS.DELIVERED,
         ORDER_STATUS.REFUNDED,
         ORDER_STATUS.REPLACED,
+        ORDER_STATUS.IN_INVENTORY,
       ];
       const statuses = allowedVendorStatuses;
 
