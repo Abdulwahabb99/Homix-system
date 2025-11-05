@@ -521,10 +521,30 @@ class OrderService {
     }
     whereClause = whereClause[Op.and].length ? whereClause : {};
 
-    // Use subQuery for better COUNT performance when no vendor filters
-    const useSubQuery = !vendorName && !vendorId;
+    // Optimize count query when no vendor filters (avoid expensive joins for count)
+    let count;
+    let useOptimizedCount = !vendorName && !vendorId;
 
-    const orders = await Order.findAndCountAll({
+    if (useOptimizedCount) {
+      // Build simple WHERE clause for direct Order table query
+      const simpleWhere = {};
+      if (whereClause[Op.and]) {
+        for (const condition of whereClause[Op.and]) {
+          // Only include conditions that don't reference joined tables
+          const condStr = JSON.stringify(condition);
+          if (!condStr.includes('orderLines') && !condStr.includes('product') && !condStr.includes('vendor')) {
+            Object.assign(simpleWhere, condition);
+          }
+        }
+      }
+      // Fast count without joins
+      count = await Order.count({
+        where: Object.keys(simpleWhere).length ? simpleWhere : whereClause,
+      });
+    }
+
+    const queryMethod = useOptimizedCount ? 'findAll' : 'findAndCountAll';
+    const orders = await Order[queryMethod]({
       include: [
         {
           model: OrderLine,
@@ -535,13 +555,13 @@ class OrderService {
               model: Product,
               as: "product",
               required: true,
-              attributes: ["id", "title", "image", "vendorId", "typeId", "variants"], // Only needed fields
+              attributes: ["id", "title", "image", "vendorId", "typeId", "variants"],
               include: [
                 {
                   model: Vendor,
                   as: "vendor",
                   required: true,
-                  attributes: ["id", "name", "daysToDeliver"], // Only needed fields
+                  attributes: ["id", "name", "daysToDeliver"],
                 },
                 {
                   model: ProductType,
@@ -558,7 +578,7 @@ class OrderService {
           as: "notesList",
           required: false,
           separate: true, // Load in separate query to avoid cartesian product
-          limit: 10, // Limit notes per order
+          limit: 10,
           include: [
             {
               model: User,
@@ -577,17 +597,25 @@ class OrderService {
           model: Customer,
           as: "customer",
           required: false,
-          attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"], // Only needed fields
+          attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"],
         },
       ],
       where: whereClause,
       order: [["orderDate", "DESC"]],
       limit: Number(size),
       offset: (page - 1) * Number(size),
-      subQuery: useSubQuery,
-      distinct: !useSubQuery,
+      // Use distinct when filtering by vendor to handle duplicates from joins
+      distinct: vendorName || vendorId ? true : false,
+      // subQuery causes "missing FROM-clause" errors with nested where clauses
+      subQuery: false,
     });
-    for (const order of orders.rows) {
+
+    // Format response consistently
+    const result = useOptimizedCount
+      ? { rows: orders, count: count }
+      : orders; // orders is from findAndCountAll if vendor filters present
+
+    for (const order of result.rows) {
       if (order.expectedDeliveryDate) {
         if (
           moment(order.expectedDeliveryDate).isBefore(
@@ -610,8 +638,8 @@ class OrderService {
       status: true,
       statusCode: 200,
       data: {
-        orders: orders.rows,
-        totalPages: Math.ceil(orders.count / Number(size)),
+        orders: result.rows,
+        totalPages: Math.ceil(result.count / Number(size)),
       },
     };
   }
