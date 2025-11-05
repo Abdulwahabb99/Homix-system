@@ -520,6 +520,10 @@ class OrderService {
       }
     }
     whereClause = whereClause[Op.and].length ? whereClause : {};
+
+    // Use subQuery for better COUNT performance when no vendor filters
+    const useSubQuery = !vendorName && !vendorId;
+
     const orders = await Order.findAndCountAll({
       include: [
         {
@@ -531,11 +535,13 @@ class OrderService {
               model: Product,
               as: "product",
               required: true,
+              attributes: ["id", "title", "image", "vendorId", "typeId", "variants"], // Only needed fields
               include: [
                 {
                   model: Vendor,
                   as: "vendor",
                   required: true,
+                  attributes: ["id", "name", "daysToDeliver"], // Only needed fields
                 },
                 {
                   model: ProductType,
@@ -551,6 +557,8 @@ class OrderService {
           model: Note,
           as: "notesList",
           required: false,
+          separate: true, // Load in separate query to avoid cartesian product
+          limit: 10, // Limit notes per order
           include: [
             {
               model: User,
@@ -569,13 +577,15 @@ class OrderService {
           model: Customer,
           as: "customer",
           required: false,
+          attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"], // Only needed fields
         },
       ],
       where: whereClause,
       order: [["orderDate", "DESC"]],
       limit: Number(size),
       offset: (page - 1) * Number(size),
-      subQuery: false,
+      subQuery: useSubQuery,
+      distinct: !useSubQuery,
     });
     for (const order of orders.rows) {
       if (order.expectedDeliveryDate) {
