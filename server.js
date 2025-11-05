@@ -139,7 +139,7 @@ const startServer = async () => {
 
     app.use("/", mainRouter);
     // Handle 404 errors
-    app.all("*", (req, res, next) => {
+    app.all("*", (req, res, next) => {  
       next(new NotFoundError(`Can't find ${req.originalUrl} on this server!`));
     });
 

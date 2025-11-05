@@ -37,6 +37,20 @@ const Customer = sequelize.define(
     tableName: "customers",
     timestamps: true,
     paranoid: true,
+    indexes: [
+      {
+        fields: ["shopifyId"],
+      },
+      {
+        fields: ["email"],
+      },
+      {
+        fields: ["phoneNumber"],
+      },
+      {
+        fields: ["deletedAt"],
+      },
+    ],
   }
 );
 
