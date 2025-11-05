@@ -526,20 +526,26 @@ class OrderService {
     let useOptimizedCount = !vendorName && !vendorId;
 
     if (useOptimizedCount) {
-      // Build simple WHERE clause for direct Order table query
-      const simpleWhere = {};
+      // Build simple WHERE clause for direct Order table query (no joins needed)
+      const simpleConditions = [];
       if (whereClause[Op.and]) {
         for (const condition of whereClause[Op.and]) {
           // Only include conditions that don't reference joined tables
           const condStr = JSON.stringify(condition);
           if (!condStr.includes('orderLines') && !condStr.includes('product') && !condStr.includes('vendor')) {
-            Object.assign(simpleWhere, condition);
+            simpleConditions.push(condition);
           }
         }
       }
+
+      // Build WHERE clause for count
+      const countWhere = simpleConditions.length > 0
+        ? { [Op.and]: simpleConditions }
+        : whereClause;
+
       // Fast count without joins
       count = await Order.count({
-        where: Object.keys(simpleWhere).length ? simpleWhere : whereClause,
+        where: countWhere,
       });
     }
 
