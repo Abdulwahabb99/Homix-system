@@ -914,6 +914,9 @@ class OrderService {
     let offset = 0;
     let hasMore = true;
 
+    // Optimize includes - load orderLines separately when no vendor filters
+    const useOptimizedQuery = !vendorName && !vendorId;
+
     while (hasMore) {
       const chunk = await Order.findAll({
         include: [
@@ -921,16 +924,19 @@ class OrderService {
             model: OrderLine,
             required: true,
             as: "orderLines",
+            separate: useOptimizedQuery, // Load separately when no vendor filters
             include: [
               {
                 model: Product,
                 as: "product",
                 required: true,
+                attributes: ["id", "title", "variants", "vendorId", "typeId"],
                 include: [
                   {
                     model: Vendor,
                     as: "vendor",
                     required: true,
+                    attributes: ["id", "name"],
                   },
                   {
                     model: ProductType,
@@ -943,27 +949,10 @@ class OrderService {
             ],
           },
           {
-            model: Note,
-            as: "notesList",
-            required: false,
-            include: [
-              {
-                model: User,
-                as: "user",
-                required: false,
-                attributes: ["firstName", "lastName"],
-              },
-              {
-                model: Attachment,
-                as: "attachments",
-                required: false,
-              },
-            ],
-          },
-          {
             model: Customer,
             as: "customer",
             required: false,
+            attributes: ["id", "firstName", "lastName"],
           },
           {
             model: User,
