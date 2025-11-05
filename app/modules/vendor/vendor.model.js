@@ -18,6 +18,14 @@ const Vendor = sequelize.define(
     tableName: "vendors",
     timestamps: true,
     paranoid: true,
+    indexes: [
+      {
+        fields: ["name"],
+      },
+      {
+        fields: ["deletedAt"],
+      },
+    ],
   }
 );
 

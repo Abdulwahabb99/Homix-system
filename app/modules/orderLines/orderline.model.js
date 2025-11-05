@@ -110,6 +110,25 @@ const OrderLine = sequelize.define(
     tableName: "orderLines",
     timestamps: true,
     paranoid: true,
+    indexes: [
+      {
+        fields: ["orderId"],
+      },
+      {
+        fields: ["productId"],
+      },
+      {
+        fields: ["shopifyId"],
+      },
+      {
+        fields: ["deletedAt"],
+      },
+      // Composite index for common join pattern
+      {
+        fields: ["orderId", "productId"],
+        name: "orderline_order_product_idx",
+      },
+    ],
   }
 );
 

@@ -42,6 +42,28 @@ const Product = sequelize.define(
     tableName: "products",
     timestamps: true,
     paranoid: true,
+    indexes: [
+      {
+        fields: ["vendorId"],
+      },
+      {
+        fields: ["typeId"],
+      },
+      {
+        fields: ["shopifyId"],
+      },
+      {
+        fields: ["deletedAt"],
+      },
+      {
+        fields: ["status"],
+      },
+      // Composite index for common query pattern
+      {
+        fields: ["vendorId", "deletedAt"],
+        name: "product_vendor_deleted_idx",
+      },
+    ],
   }
 );
 
