@@ -549,63 +549,67 @@ class OrderService {
       });
     }
 
+    // Build include array - use separate queries when no vendor filters for better performance
+    const includes = [
+      {
+        model: OrderLine,
+        required: true,
+        as: "orderLines",
+        separate: useOptimizedCount, // Load in separate query when no vendor filters
+        include: [
+          {
+            model: Product,
+            as: "product",
+            required: true,
+            attributes: ["id", "title", "image", "vendorId", "typeId", "variants"],
+            include: [
+              {
+                model: Vendor,
+                as: "vendor",
+                required: true,
+                attributes: ["id", "name", "daysToDeliver"],
+              },
+              {
+                model: ProductType,
+                as: "type",
+                attributes: ["name"],
+                required: false,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        model: Note,
+        as: "notesList",
+        required: false,
+        separate: true, // Always load notes separately
+        limit: 10,
+        include: [
+          {
+            model: User,
+            as: "user",
+            required: false,
+            attributes: ["firstName", "lastName"],
+          },
+          {
+            model: Attachment,
+            as: "attachments",
+            required: false,
+          },
+        ],
+      },
+      {
+        model: Customer,
+        as: "customer",
+        required: false,
+        attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"],
+      },
+    ];
+
     const queryMethod = useOptimizedCount ? 'findAll' : 'findAndCountAll';
     const orders = await Order[queryMethod]({
-      include: [
-        {
-          model: OrderLine,
-          required: true,
-          as: "orderLines",
-          include: [
-            {
-              model: Product,
-              as: "product",
-              required: true,
-              attributes: ["id", "title", "image", "vendorId", "typeId", "variants"],
-              include: [
-                {
-                  model: Vendor,
-                  as: "vendor",
-                  required: true,
-                  attributes: ["id", "name", "daysToDeliver"],
-                },
-                {
-                  model: ProductType,
-                  as: "type",
-                  attributes: ["name"],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          model: Note,
-          as: "notesList",
-          required: false,
-          separate: true, // Load in separate query to avoid cartesian product
-          limit: 10,
-          include: [
-            {
-              model: User,
-              as: "user",
-              required: false,
-              attributes: ["firstName", "lastName"],
-            },
-            {
-              model: Attachment,
-              as: "attachments",
-              required: false,
-            },
-          ],
-        },
-        {
-          model: Customer,
-          as: "customer",
-          required: false,
-          attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"],
-        },
-      ],
+      include: includes,
       where: whereClause,
       order: [["orderDate", "DESC"]],
       limit: Number(size),
