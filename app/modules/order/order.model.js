@@ -223,6 +223,38 @@ const Order = sequelize.define(
       {
         fields: ["shipmentStatus"],
       },
+      // New indexes for query optimization
+      {
+        fields: ["name"],
+      },
+      {
+        fields: ["number"],
+      },
+      {
+        fields: ["orderDate"],
+      },
+      {
+        fields: ["expectedDeliveryDate"],
+      },
+      {
+        fields: ["custom"],
+      },
+      {
+        fields: ["deletedAt"],
+      },
+      // Composite indexes for common query patterns
+      {
+        fields: ["orderDate", "status"],
+        name: "order_date_status_idx",
+      },
+      {
+        fields: ["status", "expectedDeliveryDate"],
+        name: "status_expected_delivery_idx",
+      },
+      {
+        fields: ["orderDate", "deletedAt"],
+        name: "order_date_deleted_at_idx",
+      },
     ],
   }
 );
