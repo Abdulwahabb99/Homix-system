@@ -20,7 +20,7 @@ import typography from "assets/theme-dark/base/typography";
 // Material Dashboard 2 React Helper Functions
 import pxToRem from "assets/theme-dark/functions/pxToRem";
 
-const { white, text, info, secondary } = colors;
+const { white, text, primary, secondary } = colors;
 const { size } = typography;
 
 const contained = {
@@ -64,14 +64,15 @@ const contained = {
   },
 
   primary: {
-    backgroundColor: info.main,
+    backgroundColor: primary.main,
+    color: white.main,
 
     "&:hover": {
-      backgroundColor: info.main,
+      backgroundColor: primary.focus,
     },
 
     "&:focus:not(:hover)": {
-      backgroundColor: info.focus,
+      backgroundColor: primary.focus,
     },
   },
 

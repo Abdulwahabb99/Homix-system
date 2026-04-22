@@ -1,32 +1,15 @@
 /**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-/**
- * The base colors for the Material Dashboard 2 React.
- * You can add new color using this file.
- * You can customized the colors for the entire Material Dashboard 2 React using thie file.
+ * Homix fintech palette — primary #063146
  */
 
 const colors = {
   background: {
-    default: "#f0f2f5",
+    default: "#f4f6f8",
   },
 
   text: {
-    main: "#7b809a",
-    focus: "#7b809a",
+    main: "#64748b",
+    focus: "#475569",
   },
 
   transparent: {
@@ -39,224 +22,172 @@ const colors = {
   },
 
   black: {
-    light: "#000000",
-    main: "#000000",
-    focus: "#000000",
+    light: "#0f172a",
+    main: "#0f172a",
+    focus: "#0f172a",
   },
 
   primary: {
-    main: "#e91e63",
-    focus: "#e91e63",
+    main: "#063146",
+    focus: "#0a4a66",
+    light: "rgba(6, 49, 70, 0.08)",
+    dark: "#042433",
   },
 
   secondary: {
-    main: "#7b809a",
-    focus: "#8f93a9",
+    main: "#475569",
+    focus: "#334155",
   },
 
   info: {
-    main: "#1A73E8",
-    focus: "#1662C4",
+    main: "#0ea5e9",
+    focus: "#0284c7",
   },
 
   success: {
-    main: "#4CAF50",
-    focus: "#67bb6a",
+    main: "#10b981",
+    focus: "#059669",
   },
 
   warning: {
-    main: "#fb8c00",
-    focus: "#fc9d26",
+    main: "#f59e0b",
+    focus: "#d97706",
   },
 
   error: {
-    main: "#F44335",
-    focus: "#f65f53",
+    main: "#ef4444",
+    focus: "#dc2626",
   },
 
   light: {
-    main: "#f0f2f5",
-    focus: "#f0f2f5",
+    main: "#f1f5f9",
+    focus: "#e2e8f0",
   },
 
   dark: {
-    main: "#344767",
-    focus: "#2c3c58",
+    main: "#0f172a",
+    focus: "#020617",
   },
 
   grey: {
-    100: "#f8f9fa",
-    200: "#f0f2f5",
-    300: "#dee2e6",
-    400: "#ced4da",
-    500: "#adb5bd",
-    600: "#6c757d",
-    700: "#495057",
-    800: "#343a40",
-    900: "#212529",
+    100: "#f8fafc",
+    200: "#f1f5f9",
+    300: "#e2e8f0",
+    400: "#cbd5e1",
+    500: "#94a3b8",
+    600: "#64748b",
+    700: "#475569",
+    800: "#334155",
+    900: "#0f172a",
   },
 
   gradients: {
     primary: {
-      main: "#EC407A",
-      state: "#D81B60",
+      main: "#0a4a66",
+      state: "#063146",
     },
 
     secondary: {
-      main: "#747b8a",
-      state: "#495361",
+      main: "#64748b",
+      state: "#475569",
     },
 
     info: {
-      main: "#49a3f1",
-      state: "#1A73E8",
+      main: "#38bdf8",
+      state: "#0ea5e9",
     },
 
     success: {
-      main: "#66BB6A",
-      state: "#43A047",
+      main: "#34d399",
+      state: "#10b981",
     },
 
     warning: {
-      main: "#FFA726",
-      state: "#FB8C00",
+      main: "#fbbf24",
+      state: "#f59e0b",
     },
 
     error: {
-      main: "#EF5350",
-      state: "#E53935",
+      main: "#f87171",
+      state: "#ef4444",
     },
 
     light: {
-      main: "#EBEFF4",
-      state: "#CED4DA",
+      main: "#f8fafc",
+      state: "#e2e8f0",
     },
 
     dark: {
-      main: "#42424a",
-      state: "#191919",
+      main: "#0e3d52",
+      state: "#063146",
     },
   },
 
   socialMediaColors: {
-    facebook: {
-      main: "#3b5998",
-      dark: "#344e86",
-    },
-
-    twitter: {
-      main: "#55acee",
-      dark: "#3ea1ec",
-    },
-
-    instagram: {
-      main: "#125688",
-      dark: "#0e456d",
-    },
-
-    linkedin: {
-      main: "#0077b5",
-      dark: "#00669c",
-    },
-
-    pinterest: {
-      main: "#cc2127",
-      dark: "#b21d22",
-    },
-
-    youtube: {
-      main: "#e52d27",
-      dark: "#d41f1a",
-    },
-
-    vimeo: {
-      main: "#1ab7ea",
-      dark: "#13a3d2",
-    },
-
-    slack: {
-      main: "#3aaf85",
-      dark: "#329874",
-    },
-
-    dribbble: {
-      main: "#ea4c89",
-      dark: "#e73177",
-    },
-
-    github: {
-      main: "#24292e",
-      dark: "#171a1d",
-    },
-
-    reddit: {
-      main: "#ff4500",
-      dark: "#e03d00",
-    },
-
-    tumblr: {
-      main: "#35465c",
-      dark: "#2a3749",
-    },
+    facebook: { main: "#3b5998", dark: "#344e86" },
+    twitter: { main: "#55acee", dark: "#3ea1ec" },
+    instagram: { main: "#125688", dark: "#0e456d" },
+    linkedin: { main: "#0077b5", dark: "#00669c" },
+    pinterest: { main: "#cc2127", dark: "#b21d22" },
+    youtube: { main: "#e52d27", dark: "#d41f1a" },
+    vimeo: { main: "#1ab7ea", dark: "#13a3d2" },
+    slack: { main: "#3aaf85", dark: "#329874" },
+    dribbble: { main: "#ea4c89", dark: "#e73177" },
+    github: { main: "#24292e", dark: "#171a1d" },
+    reddit: { main: "#ff4500", dark: "#e03d00" },
+    tumblr: { main: "#35465c", dark: "#2a3749" },
   },
 
   badgeColors: {
     primary: {
-      background: "#f8b3ca",
-      text: "#cc084b",
+      background: "rgba(6, 49, 70, 0.12)",
+      text: "#063146",
     },
-
     secondary: {
-      background: "#d7d9e1",
-      text: "#6c757d",
+      background: "#e2e8f0",
+      text: "#475569",
     },
-
     info: {
-      background: "#aecef7",
-      text: "#095bc6",
+      background: "rgba(14, 165, 233, 0.15)",
+      text: "#0369a1",
     },
-
     success: {
-      background: "#bce2be",
-      text: "#339537",
+      background: "rgba(16, 185, 129, 0.15)",
+      text: "#047857",
     },
-
     warning: {
-      background: "#ffd59f",
-      text: "#c87000",
+      background: "rgba(245, 158, 11, 0.15)",
+      text: "#b45309",
     },
-
     error: {
-      background: "#fcd3d0",
-      text: "#f61200",
+      background: "rgba(239, 68, 68, 0.12)",
+      text: "#b91c1c",
     },
-
     light: {
       background: "#ffffff",
-      text: "#c7d3de",
+      text: "#94a3b8",
     },
-
     dark: {
-      background: "#8097bf",
-      text: "#1e2e4a",
+      background: "rgba(15, 23, 42, 0.1)",
+      text: "#0f172a",
     },
   },
 
   coloredShadows: {
-    primary: "#e91e62",
-    secondary: "#110e0e",
-    info: "#00bbd4",
-    success: "#4caf4f",
-    warning: "#ff9900",
-    error: "#f44336",
-    light: "#adb5bd",
-    dark: "#404040",
+    primary: "#063146",
+    secondary: "#1e293b",
+    info: "#0ea5e9",
+    success: "#10b981",
+    warning: "#f59e0b",
+    error: "#ef4444",
+    light: "#e2e8f0",
+    dark: "#0f172a",
   },
 
-  inputBorderColor: "#d2d6da",
+  inputBorderColor: "#cbd5e1",
 
   tabs: {
-    indicator: { boxShadow: "#ddd" },
+    indicator: { boxShadow: "#e2e8f0" },
   },
 };
 

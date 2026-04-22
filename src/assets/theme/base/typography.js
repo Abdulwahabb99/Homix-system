@@ -27,8 +27,11 @@ import pxToRem from "assets/theme/functions/pxToRem";
 
 const { dark } = colors;
 
+const interFontStack =
+  '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
 const baseProperties = {
-  fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+  fontFamily: interFontStack,
   fontWeightLighter: 100,
   fontWeightLight: 300,
   fontWeightRegular: 400,
@@ -132,9 +135,10 @@ const typography = {
   button: {
     fontFamily: baseProperties.fontFamily,
     fontSize: baseProperties.fontSizeSM,
-    fontWeight: baseProperties.fontWeightLight,
+    fontWeight: baseProperties.fontWeightMedium,
     lineHeight: 1.5,
-    textTransform: "uppercase",
+    textTransform: "none",
+    letterSpacing: "0.01em",
   },
 
   caption: {

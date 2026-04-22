@@ -1,13 +1,9 @@
-import { useContext, useState } from "react";
-import Card from "@mui/material/Card";
-import Grid from "@mui/material/Grid";
-import FacebookIcon from "@mui/icons-material/Facebook";
-import GitHubIcon from "@mui/icons-material/GitHub";
-import GoogleIcon from "@mui/icons-material/Google";
+import { useState } from "react";
+import Box from "@mui/material/Box";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
-import { Button, TextField, IconButton, InputAdornment } from "@mui/material";
+import { IconButton, InputAdornment } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Spinner from "components/Spinner/Spinner";
@@ -18,6 +14,7 @@ import { setUser } from "store/slices/authSlice";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import axiosRequest from "shared/functions/axiosRequest";
 import { setNotifications } from "store/slices/notificationsSlice";
+import { Card, Button, Input } from "components/ui";
 
 function Basic() {
   const [email, setEmail] = useState("");
@@ -82,66 +79,58 @@ function Basic() {
     <BasicLayout>
       <ToastContainer />
       {!isLoading ? (
-        <Card>
-          <MDBox
-            variant="gradient"
-            bgColor="info"
-            borderRadius="lg"
-            coloredShadow="info"
-            mx={2}
-            mt={-3}
-            p={2}
-            mb={1}
-            textAlign="center"
+        <Card variant="outlined" hover>
+          <Box
+            sx={{
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              color: "common.white",
+              px: 3,
+              py: 3,
+              textAlign: "center",
+            }}
           >
-            <MDTypography variant="h4" fontWeight="medium" color="white" mt={1}>
-              تسجيل دخول
+            <MDTypography
+              variant="h5"
+              fontWeight={600}
+              color="white"
+              sx={{ letterSpacing: "0.02em" }}
+            >
+              تسجيل الدخول
             </MDTypography>
-            <Grid container spacing={3} justifyContent="center" sx={{ mt: 1, mb: 2 }}>
-              <Grid item xs={2}>
-                <MDTypography variant="body1" color="white">
-                  <FacebookIcon color="inherit" />
-                </MDTypography>
-              </Grid>
-              <Grid item xs={2}>
-                <MDTypography variant="body1" color="white">
-                  <GitHubIcon color="inherit" />
-                </MDTypography>
-              </Grid>
-              <Grid item xs={2}>
-                <MDTypography variant="body1" color="white">
-                  <GoogleIcon color="inherit" />
-                </MDTypography>
-              </Grid>
-            </Grid>
-          </MDBox>
-          <MDBox pt={4} pb={3} px={3}>
+            <MDTypography variant="body2" color="white" sx={{ mt: 1, opacity: 0.88 }}>
+              مرحبًا بك في Homix
+            </MDTypography>
+          </Box>
+          <MDBox pt={3} pb={3} px={3}>
             <form onSubmit={handleSignInClick}>
               <MDBox mb={2}>
-                <TextField
+                <Input
                   value={email}
                   onChange={handleEmailChange}
                   id="email"
-                  label="email"
+                  label="البريد الإلكتروني"
                   type="email"
-                  variant="outlined"
-                  fullWidth
                   autoFocus
+                  autoComplete="email"
                 />
               </MDBox>
               <MDBox mb={2}>
-                <TextField
+                <Input
                   value={password}
                   onChange={handlePasswordChange}
                   id="password"
-                  label="password"
+                  label="كلمة المرور"
                   type={showPassword ? "text" : "password"}
-                  variant="outlined"
-                  fullWidth
+                  autoComplete="current-password"
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
+                        <IconButton
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          edge="end"
+                          aria-label="إظهار كلمة المرور"
+                        >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
@@ -149,15 +138,9 @@ function Basic() {
                   }}
                 />
               </MDBox>
-              <MDBox mt={4} mb={1}>
-                <Button
-                  style={{ color: "#fff", fontSize: "1rem" }}
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  type="submit"
-                >
-                  تسجيل دخول
+              <MDBox mt={3} mb={1}>
+                <Button variant="contained" color="primary" fullWidth type="submit" size="large">
+                  تسجيل الدخول
                 </Button>
               </MDBox>
             </form>

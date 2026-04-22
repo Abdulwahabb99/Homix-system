@@ -158,24 +158,34 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
         }
       />
       <List>{renderRoutes}</List>
-      <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "8px" }}>
+      <MDBox
+        width="100%"
+        display="flex"
+        justifyContent="center"
+        mt={2}
+        mb={1}
+        px={2}
+        sx={{ "& .MuiButton-root": { minHeight: 44 } }}
+      >
         <Button
-          style={{ color: "#fff", fontSize: "1rem", width: "70%" }}
+          fullWidth
           variant="contained"
           color="primary"
           type="button"
           onClick={logOut}
+          disableElevation
+          sx={{ maxWidth: 280, borderRadius: 2, textTransform: "none", fontWeight: 600 }}
         >
-          <LogoutIcon />
+          <LogoutIcon sx={{ fontSize: 20 }} />
         </Button>
-      </div>
+      </MDBox>
     </SidenavRoot>
   );
 }
 
 // Setting default values for the props of Sidenav
 Sidenav.defaultProps = {
-  color: "info",
+  color: "primary",
   brand: "",
 };
 

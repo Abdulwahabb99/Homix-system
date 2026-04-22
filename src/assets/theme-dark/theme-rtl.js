@@ -53,6 +53,7 @@ import divider from "assets/theme-dark/components/divider";
 import tableContainer from "assets/theme-dark/components/table/tableContainer";
 import tableHead from "assets/theme-dark/components/table/tableHead";
 import tableCell from "assets/theme-dark/components/table/tableCell";
+import tableRow from "assets/theme-dark/components/table/tableRow";
 import linearProgress from "assets/theme-dark/components/linearProgress";
 import breadcrumbs from "assets/theme-dark/components/breadcrumbs";
 import slider from "assets/theme-dark/components/slider";
@@ -86,6 +87,7 @@ import dialogActions from "assets/theme-dark/components/dialog/dialogActions";
 
 export default createTheme({
   direction: "rtl",
+  shape: { borderRadius: 10 },
   breakpoints: { ...breakpoints },
   palette: { ...colors },
   typography: { ...typography },
@@ -126,6 +128,7 @@ export default createTheme({
     MuiTableContainer: { ...tableContainer },
     MuiTableHead: { ...tableHead },
     MuiTableCell: { ...tableCell },
+    MuiTableRow: { ...tableRow },
     MuiLinearProgress: { ...linearProgress },
     MuiBreadcrumbs: { ...breadcrumbs },
     MuiSlider: { ...slider },

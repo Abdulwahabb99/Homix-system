@@ -11,7 +11,7 @@ function Spinner() {
         height: "100vh", // Adjust based on your needs
       }}
     >
-      <CircularProgress />
+      <CircularProgress color="primary" thickness={4} size={48} />
     </Box>
   );
 }

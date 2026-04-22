@@ -21,7 +21,7 @@ import colors from "assets/theme-dark/base/colors";
 import pxToRem from "assets/theme-dark/functions/pxToRem";
 
 const { borderRadius } = borders;
-const { light } = colors;
+const { light, primary } = colors;
 
 const linearProgress = {
   styleOverrides: {
@@ -44,6 +44,7 @@ const linearProgress = {
       height: pxToRem(6),
       borderRadius: borderRadius.sm,
       position: "absolute",
+      backgroundColor: primary.main,
       transform: `translate(0, 0) !important`,
       transition: "width 0.6s ease !important",
     },
