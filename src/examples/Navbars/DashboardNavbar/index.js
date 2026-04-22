@@ -22,7 +22,8 @@ import {
   navbarMobileMenu,
 } from "examples/Navbars/DashboardNavbar/styles";
 import { useMaterialUIController, setTransparentNavbar, setMiniSidenav } from "context";
-import { Badge, MenuItem } from "@mui/material";
+import { Badge, ListItemIcon, MenuItem } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
 import MDTypography from "components/MDTypography";
 import { useDispatch, useSelector } from "react-redux";
 import { setNotifications } from "store/slices/notificationsSlice";
@@ -240,8 +241,31 @@ function DashboardNavbar({ absolute, light, isMini }) {
               >
                 <MenuItem
                   onClick={handleLogout}
-                  sx={{ py: 1.25, color: "error.main", fontWeight: 600, fontSize: "0.875rem" }}
+                  sx={{
+                    py: 1.25,
+                    color: "error.main",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    gap: 0.5,
+                    "&:hover": {
+                      color: "error.dark",
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? "rgba(239, 68, 68, 0.12)"
+                          : "rgba(239, 68, 68, 0.08)",
+                    },
+                    "& .MuiListItemIcon-root": {
+                      minWidth: 36,
+                      color: "inherit",
+                    },
+                    "& .MuiListItemIcon-root svg": {
+                      color: "inherit",
+                    },
+                  }}
                 >
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" />
+                  </ListItemIcon>
                   تسجيل الخروج
                 </MenuItem>
               </Menu>
