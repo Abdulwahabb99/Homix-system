@@ -2,6 +2,10 @@
  * Shared MUI DataGrid styles for dashboard reports (matches Homix global theme).
  * Avoid hacks on virtualScroller — they break layout in @mui/x-data-grid v5.
  */
+
+/** ارتفاع موحّد لمنطقة الجدول (مع تمرير عند كثرة الصفوف) حتى جدولي الصفحة الرئيسية يبقوا متساويين */
+export const DASHBOARD_TABLE_BODY_HEIGHT_PX = 400;
+
 export function getDashboardDataGridSx(theme) {
   const headerBg =
     theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)";

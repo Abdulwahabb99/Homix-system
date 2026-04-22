@@ -10,12 +10,19 @@
   width: 100%;
 }
 
+/* لا تستخدم padding موحّد يطمس DateRangePickerInput__showClearDates (مساحة زر المسح).
+   في RTL: ال× على يمين الحاوية؛ padding-right كافٍ + padding-left يسمح بإظهار التاريخ (من) بوضوح */
 .custom-date-picker .DateRangePickerInput {
   box-sizing: border-box;
   min-height: 40px;
   max-height: 40px;
   height: 40px;
-  padding: 0 8px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  /* يمين: مساحة لزر المسح (كان يضيع مع padding: 0 8px) */
+  padding-right: 40px !important;
+  /* يسار/شمال: دفع محتوى الحقل (من) بعيداً قليلاً عن الحافة */
+  padding-left: 10px !important;
   display: flex;
   align-items: center;
   background-color: inherit;

@@ -160,7 +160,7 @@ function dashboardV2() {
             </Grid>
           </Grid>
 
-          <Grid container spacing={3} width="100%" justifyContent="center">
+          <Grid container spacing={3} width="100%" alignItems="stretch" justifyContent="center">
             <Grid item xs={12} lg={isVendor ? 12 : 6}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />

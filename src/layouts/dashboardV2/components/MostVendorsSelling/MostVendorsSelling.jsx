@@ -3,7 +3,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import PersonDoctorIcon from "shared/icons/PersonDoctorIcon";
-import { getDashboardDataGridSx } from "../dashboardDataGridSx";
+import { DASHBOARD_TABLE_BODY_HEIGHT_PX, getDashboardDataGridSx } from "../dashboardDataGridSx";
 
 const getColumns = (theme) => {
   const primary = theme.palette.primary.main;
@@ -92,13 +92,13 @@ const MostVendorsSelling = ({ rowData }) => {
 
   if (!rowData?.length) return null;
 
-  const rowCount = newRowData.length;
-  const gridHeight = Math.min(40 + 52 * rowCount + 2, 400);
-
   return (
     <Box
       sx={{
         p: 0,
+        minHeight: "100%",
+        display: "flex",
+        flexDirection: "column",
         borderRadius: 2,
         overflow: "hidden",
         border: "1px solid",
@@ -125,7 +125,14 @@ const MostVendorsSelling = ({ rowData }) => {
         </Typography>
       </Box>
 
-      <Box sx={{ width: "100%", overflowX: "auto" }}>
+      <Box
+        sx={{
+          width: "100%",
+          minHeight: DASHBOARD_TABLE_BODY_HEIGHT_PX,
+          flex: 1,
+          overflowX: "auto",
+        }}
+      >
         <DataGrid
           rows={newRowData}
           columns={columns}
@@ -134,7 +141,7 @@ const MostVendorsSelling = ({ rowData }) => {
           disableColumnMenu
           rowHeight={52}
           sx={{
-            height: `${gridHeight}px`,
+            height: DASHBOARD_TABLE_BODY_HEIGHT_PX,
             width: "100%",
             ...getDashboardDataGridSx(theme),
           }}
