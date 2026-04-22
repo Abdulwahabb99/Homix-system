@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
@@ -762,7 +763,15 @@ function Orders() {
                       setSelectionModel([]);
                     }}
                     size="small"
-                    sx={{ border: "1px solid", borderColor: "divider" }}
+                    color="primary"
+                    sx={{
+                      color: "primary.main",
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+                      "&:hover": {
+                        bgcolor: (t) => alpha(t.palette.primary.main, 0.15),
+                        borderColor: "primary.dark",
+                      },
+                    }}
                   >
                     {isBulkEditMode ? (
                       <CheckBoxIcon fontSize="small" />
@@ -778,7 +787,18 @@ function Orders() {
                 <Button
                   size="small"
                   variant="outlined"
+                  color="primary"
                   onClick={() => setIsBulkEditModalOpen(true)}
+                  sx={(t) => ({
+                    fontWeight: 600,
+                    borderColor: t.palette.primary.main,
+                    color: t.palette.primary.main,
+                    backgroundColor: alpha(t.palette.primary.main, 0.08),
+                    "&:hover": {
+                      borderColor: t.palette.primary.dark,
+                      backgroundColor: alpha(t.palette.primary.main, 0.14),
+                    },
+                  })}
                 >
                   تعديل المحدد
                 </Button>
@@ -787,6 +807,16 @@ function Orders() {
                   color="error"
                   variant="outlined"
                   onClick={() => setIsBulkDeleteModalOpen(true)}
+                  sx={(t) => ({
+                    fontWeight: 600,
+                    borderColor: t.palette.error.main,
+                    color: t.palette.error.main,
+                    backgroundColor: alpha(t.palette.error.main, 0.08),
+                    "&:hover": {
+                      borderColor: t.palette.error.dark,
+                      backgroundColor: alpha(t.palette.error.main, 0.14),
+                    },
+                  })}
                 >
                   حذف المحدد
                 </Button>
