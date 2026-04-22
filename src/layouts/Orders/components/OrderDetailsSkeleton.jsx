@@ -61,7 +61,6 @@ export default function OrderDetailsSkeleton() {
               borderRadius: 2.5,
               border: "1px solid",
               borderColor: "divider",
-              borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
               overflow: "hidden",
               boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
             }}
@@ -85,7 +84,6 @@ export default function OrderDetailsSkeleton() {
                 borderRadius: 2.5,
                 border: "1px solid",
                 borderColor: "divider",
-                borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
                 overflow: "hidden",
                 boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
               }}
@@ -112,7 +110,6 @@ export default function OrderDetailsSkeleton() {
               borderRadius: 2.5,
               border: "1px solid",
               borderColor: "divider",
-              borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
             }}
           >
             <Skeleton width="100%" height={200} variant="rectangular" sx={{ borderRadius: 0 }} />
@@ -135,7 +132,6 @@ export default function OrderDetailsSkeleton() {
               borderRadius: 2.5,
               border: "1px solid",
               borderColor: "divider",
-              borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
             }}
           >
             <Skeleton variant="rounded" height={88} />
@@ -154,7 +150,6 @@ export default function OrderDetailsSkeleton() {
             borderRadius: 2.5,
             border: "1px solid",
             borderColor: "divider",
-            borderInlineStart: (t) => `3px solid ${t.palette.info.main}`,
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>

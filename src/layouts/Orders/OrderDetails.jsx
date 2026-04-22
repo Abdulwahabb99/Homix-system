@@ -14,19 +14,16 @@ import {
   Button,
   Card,
   Chip,
-  FormControl,
   Grid,
   IconButton,
   InputAdornment,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
+import { SelectComponent } from "components/ui";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
 import OrderInfoCard from "./components/OrderInfoCard";
@@ -45,7 +42,6 @@ const homixCardSx = {
   borderRadius: 2.5,
   border: "1px solid",
   borderColor: "divider",
-  borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
   bgcolor: "background.paper",
   boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
   overflow: "hidden",
@@ -53,7 +49,6 @@ const homixCardSx = {
 
 const financeCardSx = {
   ...homixCardSx,
-  borderInlineStart: (t) => `3px solid ${t.palette.success.main}`,
 };
 
 function SectionHeader({ children, count }) {
@@ -102,39 +97,6 @@ SectionHeader.propTypes = {
   count: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
-const getManufactureFormControlSx = (theme) => ({
-  width: "100%",
-  mt: 2,
-  mx: 0,
-  px: 2,
-  pb: 2,
-  "& .MuiInputLabel-root": {
-    fontSize: "0.875rem",
-    color: PRIMARY,
-    "&.Mui-focused": { color: PRIMARY },
-    "&.MuiInputLabel-shrink": { color: PRIMARY },
-    // يبقي عنوان حالة التصنيع داخل الإطار في RTL (ما يطلعش بره يمين/شمال)
-    left: "auto",
-    right: "auto",
-    insetInlineStart: theme.spacing(1.75),
-    insetInlineEnd: theme.spacing(1.75),
-    maxWidth: `calc(100% - ${theme.spacing(3.5)})`,
-    transformOrigin: theme.direction === "rtl" ? "top right" : "top left",
-  },
-  "& .MuiInputLabel-root.MuiInputLabel-shrink": {
-    transformOrigin: theme.direction === "rtl" ? "top right" : "top left",
-  },
-  "& .MuiOutlinedInput-root": {
-    minHeight: 52,
-    borderRadius: 2,
-    backgroundColor: "background.paper",
-    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.28)" },
-    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.45)" },
-    "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
-  },
-  "& .MuiSelect-select": { py: 1.75, px: 1.5, fontSize: "0.875rem" },
-});
-
 export const statusoptions = [
   { label: "معلق", value: 1 },
   { label: "مؤكد", value: 3 },
@@ -178,6 +140,7 @@ function OrderDetails() {
   });
 
   const changeManufactureStatus = (status) => {
+    if (status == null) return;
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
         manufactureStatus: status,
@@ -609,25 +572,14 @@ function OrderDetails() {
                         orderTotalToBeCollected={orderTotalToBeCollected}
                       />
                     )}
-                    <FormControl fullWidth variant="outlined" sx={getManufactureFormControlSx}>
-                      <InputLabel id="manufactureStatus">حالة التصنيع</InputLabel>
-                      <Select
-                        labelId="manufactureStatus"
-                        id="manufactureStatus-select"
-                        value={manufactureStatus}
-                        label="حالة التصنيع"
-                        onChange={(e) => changeManufactureStatus(e.target.value)}
-                        color="primary"
-                      >
-                        {manufactureStatusOptions.map((option) => {
-                          return (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          );
-                        })}
-                      </Select>
-                    </FormControl>
+                    <SelectComponent
+                      id="order-manufacture-status"
+                      label="حالة التصنيع"
+                      options={manufactureStatusOptions}
+                      value={manufactureStatus}
+                      onChange={changeManufactureStatus}
+                      withSectionBorder
+                    />
                   </Card>
                 </Grid>
                 <Grid item xs={12} sx={{ mt: { xs: 0.5, md: 0 } }}>
@@ -851,7 +803,6 @@ function OrderDetails() {
                       sx={{
                         ...homixCardSx,
                         p: 2.5,
-                        borderInlineStart: (t) => `3px solid ${t.palette.info.main}`,
                       }}
                     >
                       <Box
