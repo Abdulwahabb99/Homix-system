@@ -9,7 +9,7 @@ import rtlPlugin from "stylis-plugin-rtl";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 import SignIn from "layouts/authentication/sign-in";
-import { useMaterialUIController, setMiniSidenav } from "context";
+import { useMaterialUIController } from "context";
 import homix from "assets/images/homix.png";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
@@ -39,9 +39,8 @@ const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/Sh
 
 export default function App() {
   const user = JSON.parse(localStorage.getItem("user"));
-  const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, layout, sidenavColor, darkMode } = controller;
-  const [onMouseEnter, setOnMouseEnter] = useState(false);
+  const [controller] = useMaterialUIController();
+  const { layout, sidenavColor, darkMode } = controller;
   const [isUserInteracted, setIsUserInteracted] = useState(false);
 
   const { pathname } = useLocation();
@@ -75,22 +74,6 @@ export default function App() {
     localStorage.setItem("notifications", JSON.stringify(updated));
     NotificationMeassage("info", "لديك إشعار جديد");
   });
-
-  // Open sidenav when mouse enter on mini sidenav
-  const handleOnMouseEnter = () => {
-    if (miniSidenav && !onMouseEnter) {
-      setMiniSidenav(dispatch, false);
-      setOnMouseEnter(true);
-    }
-  };
-
-  // Close sidenav when mouse leave mini sidenav
-  const handleOnMouseLeave = () => {
-    if (onMouseEnter) {
-      setMiniSidenav(dispatch, true);
-      setOnMouseEnter(false);
-    }
-  };
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
@@ -203,8 +186,6 @@ export default function App() {
                   ? operationRoutes
                   : logisticsRoutes
               }
-              onMouseEnter={handleOnMouseEnter}
-              onMouseLeave={handleOnMouseLeave}
             />
           </>
         )}

@@ -15,28 +15,25 @@ Coded by www.creative-tim.com
 
 // Material Dashboard 2 React base styles
 import colors from "assets/theme-dark/base/colors";
-import borders from "assets/theme-dark/base/borders";
-
-// Material Dashboard 2 React helper functions
 import pxToRem from "assets/theme-dark/functions/pxToRem";
 
 const { background } = colors;
-const { borderRadius } = borders;
 
 const sidenav = {
   styleOverrides: {
     root: {
-      width: pxToRem(250),
+      width: pxToRem(260),
       whiteSpace: "nowrap",
       border: "none",
     },
 
     paper: {
-      width: pxToRem(250),
+      width: pxToRem(260),
       backgroundColor: background.sidenav,
-      height: `calc(100vh - ${pxToRem(32)})`,
-      margin: pxToRem(16),
-      borderRadius: borderRadius.xl,
+      height: "100vh",
+      maxHeight: "100vh",
+      margin: 0,
+      borderRadius: 0,
       border: "none",
     },
 

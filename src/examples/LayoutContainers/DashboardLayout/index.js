@@ -42,9 +42,9 @@ function DashboardLayout({ children }) {
         p: 3,
         position: "relative",
 
-        [breakpoints.up("xl")]: {
-          marginLeft: miniSidenav ? pxToRem(120) : pxToRem(274),
-          transition: transitions.create(["margin-left", "margin-right"], {
+        [breakpoints.up("lg")]: {
+          marginInlineStart: miniSidenav ? pxToRem(104) : pxToRem(284),
+          transition: transitions.create(["margin-inline-start", "margin-inline-end"], {
             easing: transitions.easing.easeInOut,
             duration: transitions.duration.standard,
           }),

@@ -51,6 +51,7 @@ function SidenavCollapse({ icon, name, active, ...rest }) {
             whiteSidenav,
             darkMode,
             sidenavColor,
+            miniSidenav,
           })
         }
       >
@@ -60,7 +61,9 @@ function SidenavCollapse({ icon, name, active, ...rest }) {
           }
         >
           {typeof icon === "string" ? (
-            <Icon sx={(theme) => collapseIcon(theme, { active })}>{icon}</Icon>
+            <Icon sx={(theme) => collapseIcon(theme, { active, whiteSidenav, darkMode })}>
+              {icon}
+            </Icon>
           ) : (
             icon
           )}

@@ -1,10 +1,13 @@
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
 import Icon from "@mui/material/Icon";
+import IconButton from "@mui/material/IconButton";
+import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
@@ -16,9 +19,10 @@ import {
   setTransparentSidenav,
   setWhiteSidenav,
 } from "context";
+
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
+  const { miniSidenav, transparentSidenav, whiteSidenav, darkMode } = controller;
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
   let textColor = "white";
@@ -29,19 +33,21 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   }
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
+  const toggleSidenavWidth = () => setMiniSidenav(dispatch, !miniSidenav);
+  /* عند الشاشة الضيقة: mini فقط. لا نعيّن expanded عند التنقل أو عند الشاشة العريضة — اختيار المستخدم يبقى. */
   useEffect(() => {
-    function handleMiniSidenav() {
-      setMiniSidenav(dispatch, window.innerWidth < 1200);
-      setTransparentSidenav(dispatch, window.innerWidth < 1200 ? false : transparentSidenav);
-      setWhiteSidenav(dispatch, window.innerWidth < 1200 ? false : whiteSidenav);
+    function applyViewportSidenav() {
+      const narrow = window.innerWidth < 1200;
+      if (narrow) {
+        setMiniSidenav(dispatch, true);
+      }
+      setTransparentSidenav(dispatch, narrow ? false : transparentSidenav);
+      setWhiteSidenav(dispatch, narrow ? false : whiteSidenav);
     }
-    window.addEventListener("resize", handleMiniSidenav);
-    // Call the handleMiniSidenav function to set the state with the initial value.
-    handleMiniSidenav();
-
-    // Remove event listener on cleanup
-    return () => window.removeEventListener("resize", handleMiniSidenav);
-  }, [dispatch, location]);
+    applyViewportSidenav();
+    window.addEventListener("resize", applyViewportSidenav);
+    return () => window.removeEventListener("resize", applyViewportSidenav);
+  }, [dispatch, transparentSidenav, whiteSidenav]);
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes.map(({ type, name, icon, title, noCollapse, key, href, route }) => {
@@ -106,9 +112,9 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
       variant="permanent"
       ownerState={{ transparentSidenav, whiteSidenav, miniSidenav, darkMode }}
     >
-      <MDBox pt={3} pb={1} px={4} textAlign="center">
+      <MDBox pt={2} pb={1.5} px={2}>
         <MDBox
-          display={{ xs: "block", xl: "none" }}
+          display={{ xs: "block", lg: "none" }}
           position="absolute"
           top={0}
           right={0}
@@ -120,24 +126,60 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </MDTypography>
         </MDBox>
-        <MDBox component={NavLink} to="/" display="flex" alignItems="center">
-          {brand && (
-            <MDBox
-              sx={{ borderRadius: "50px" }}
-              component="img"
-              src={brand}
-              alt="Brand"
-              width="2rem"
-            />
-          )}
+        <MDBox
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1}
+          width="100%"
+        >
           <MDBox
-            width={!brandName && "100%"}
-            sx={(theme) => sidenavLogoLabel(theme, { miniSidenav })}
+            component={NavLink}
+            to="/"
+            display="flex"
+            alignItems="center"
+            minWidth={0}
+            sx={{ flex: 1, justifyContent: miniSidenav ? "center" : "flex-start" }}
           >
-            <MDTypography component="h6" variant="button" fontWeight="medium" color={textColor}>
-              {brandName}
-            </MDTypography>
+            {brand && (
+              <MDBox
+                sx={{ borderRadius: "12px" }}
+                component="img"
+                src={brand}
+                alt="Brand"
+                width={miniSidenav ? "2.25rem" : "2rem"}
+                height={miniSidenav ? "2.25rem" : "2rem"}
+              />
+            )}
+            <MDBox
+              width={!brandName && "100%"}
+              sx={(theme) => sidenavLogoLabel(theme, { miniSidenav })}
+            >
+              <MDTypography
+                component="h6"
+                variant="button"
+                fontWeight="700"
+                color={textColor}
+                noWrap
+                sx={{ fontSize: "0.95rem" }}
+              >
+                {brandName}
+              </MDTypography>
+            </MDBox>
           </MDBox>
+          <IconButton
+            size="small"
+            onClick={toggleSidenavWidth}
+            aria-label={miniSidenav ? "توسيع القائمة" : "تصغير القائمة"}
+            sx={{
+              display: { xs: "none", lg: "inline-flex" },
+              color: "text.secondary",
+              flexShrink: 0,
+              "&:hover": { color: "primary.main", bgcolor: "rgba(6, 49, 70, 0.06)" },
+            }}
+          >
+            {miniSidenav ? <MenuOpenIcon fontSize="small" /> : <MenuIcon fontSize="small" />}
+          </IconButton>
         </MDBox>
       </MDBox>
       <Divider

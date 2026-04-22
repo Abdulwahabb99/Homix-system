@@ -2,45 +2,68 @@
 =========================================================
 * Material Dashboard 2 React - v2.2.0
 =========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
+ */
 function collapseItem(theme, ownerState) {
   const { palette, transitions, breakpoints, boxShadows, borders, functions } = theme;
-  const { active, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = ownerState;
+  const { active, transparentSidenav, whiteSidenav, darkMode, sidenavColor, miniSidenav } =
+    ownerState;
 
-  const { white, dark, transparent, grey, gradients } = palette;
+  const { dark, transparent, grey, gradients, primary } = palette;
   const { md } = boxShadows;
   const { borderRadius } = borders;
   const { pxToRem, rgba, linearGradient } = functions;
 
+  const isLightNav = whiteSidenav && !darkMode;
+  const lightActive = isLightNav && active;
+
+  let textColor;
+  if (lightActive) {
+    textColor = primary.main;
+  } else if ((transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)) {
+    textColor = dark.main;
+  } else {
+    textColor = white.main;
+  }
+
+  let bg;
+  if (lightActive) {
+    bg = "rgba(6, 49, 70, 0.1)";
+  } else if (active) {
+    bg = linearGradient(gradients[sidenavColor].main, gradients[sidenavColor].state);
+  } else {
+    bg = transparent.main;
+  }
+
   return {
-    background: active
-      ? linearGradient(gradients[sidenavColor].main, gradients[sidenavColor].state)
-      : transparent.main,
-    color:
-      (transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)
-        ? dark.main
-        : white.main,
+    background: bg,
+    color: textColor,
     display: "flex",
     alignItems: "center",
     width: "100%",
     padding: `${pxToRem(8)} ${pxToRem(10)}`,
-    margin: `${pxToRem(1.5)} ${pxToRem(16)}`,
-    borderRadius: borderRadius.md,
+    margin: `${pxToRem(6)} ${pxToRem(12)}`,
+    borderRadius: borderRadius.lg,
+    ...(lightActive && {
+      borderInlineStart: `3px solid ${primary.main}`,
+      boxShadow: "none",
+    }),
     cursor: "pointer",
     userSelect: "none",
     whiteSpace: "nowrap",
-    boxShadow: active && !whiteSidenav && !darkMode && !transparentSidenav ? md : "none",
-    [breakpoints.up("xl")]: {
-      transition: transitions.create(["box-shadow", "background-color"], {
+    boxShadow: lightActive
+      ? "none"
+      : active && !whiteSidenav && !darkMode && !transparentSidenav
+      ? md
+      : "none",
+    [breakpoints.up("lg")]: {
+      ...(miniSidenav && {
+        justifyContent: "center",
+        paddingLeft: pxToRem(4),
+        paddingRight: pxToRem(4),
+        marginLeft: pxToRem(8),
+        marginRight: pxToRem(8),
+      }),
+      transition: transitions.create(["box-shadow", "background-color", "width"], {
         easing: transitions.easing.easeInOut,
         duration: transitions.duration.shorter,
       }),
@@ -51,10 +74,14 @@ function collapseItem(theme, ownerState) {
         let backgroundValue;
 
         if (!active) {
-          backgroundValue =
-            transparentSidenav && !darkMode
-              ? grey[300]
-              : rgba(whiteSidenav ? grey[400] : white.main, 0.2);
+          if (isLightNav) {
+            backgroundValue = rgba(primary.main, 0.06);
+          } else {
+            backgroundValue =
+              transparentSidenav && !darkMode
+                ? grey[300]
+                : rgba(whiteSidenav ? grey[400] : white.main, 0.2);
+          }
         }
 
         return backgroundValue;
@@ -67,17 +94,36 @@ function collapseIconBox(theme, ownerState) {
   const { palette, transitions, borders, functions } = theme;
   const { transparentSidenav, whiteSidenav, darkMode, active } = ownerState;
 
-  const { white, dark } = palette;
+  const { dark, primary } = palette;
   const { borderRadius } = borders;
-  const { pxToRem } = functions;
+  const { pxToRem, rgba } = functions;
+
+  const isLightNav = whiteSidenav && !darkMode;
+
+  let mainColor;
+  if (isLightNav) {
+    mainColor = active ? primary.main : rgba(dark.main, 0.65);
+  } else if ((transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)) {
+    mainColor = dark.main;
+  } else {
+    mainColor = white.main;
+  }
+
+  let svgColor;
+  if (isLightNav) {
+    svgColor = active ? primary.main : rgba(dark.main, 0.65);
+  } else if (active) {
+    svgColor = white.main;
+  } else if (transparentSidenav || whiteSidenav) {
+    svgColor = dark.main;
+  } else {
+    svgColor = white.main;
+  }
 
   return {
     minWidth: pxToRem(32),
     minHeight: pxToRem(32),
-    color:
-      (transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)
-        ? dark.main
-        : white.main,
+    color: mainColor,
     borderRadius: borderRadius.md,
     display: "grid",
     placeItems: "center",
@@ -86,16 +132,21 @@ function collapseIconBox(theme, ownerState) {
       duration: transitions.duration.standard,
     }),
 
-    /* أيقونة بيضاء على التدرّج عند active + سايدبار أبيض (إصلاح التباين) */
     "& svg, svg g": {
-      color: active ? white.main : transparentSidenav || whiteSidenav ? dark.main : white.main,
+      color: svgColor,
     },
   };
 }
 
-const collapseIcon = ({ palette: { white, gradients } }, { active }) => ({
-  color: active ? white.main : gradients.dark.state,
-});
+const collapseIcon = (theme, { active, whiteSidenav, darkMode }) => {
+  const { palette } = theme;
+  const { gradients, primary, grey } = palette;
+  const isLightNav = whiteSidenav && !darkMode;
+  if (isLightNav) {
+    return { color: active ? primary.main : grey[600] };
+  }
+  return { color: active ? white.main : gradients.dark.state };
+};
 
 function collapseText(theme, ownerState) {
   const { typography, transitions, breakpoints, functions } = theme;
@@ -107,7 +158,7 @@ function collapseText(theme, ownerState) {
   return {
     marginLeft: pxToRem(10),
 
-    [breakpoints.up("xl")]: {
+    [breakpoints.up("lg")]: {
       opacity: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : 1,
       maxWidth: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : "100%",
       marginLeft: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : pxToRem(10),
