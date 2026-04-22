@@ -1,39 +1,79 @@
 import React from "react";
-import { Box, InputBase, IconButton, Paper } from "@mui/material";
+import { Box, InputBase, Paper } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 
+/** Aligned to DateRangePicker in `index.css` (40px) */
+const TOOLBAR_H = 40;
+
 const SearchInput = ({ onClick }) => {
   return (
-    <Box
+    <Paper
+      component="div"
+      elevation={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="فتح البحث"
       sx={{
         display: "flex",
         alignItems: "center",
         width: "100%",
-        borderRadius: "8px",
-        border: "1px solid #E0E0E0",
+        height: TOOLBAR_H,
+        minHeight: TOOLBAR_H,
+        maxHeight: TOOLBAR_H,
+        borderRadius: 1.5,
         overflow: "hidden",
         cursor: "pointer",
+        border: "1px solid",
+        borderColor: "divider",
+        transition: "border-color 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
-          borderColor: "#6B7280",
+          borderColor: "primary.main",
+          boxShadow: "0 0 0 1px rgba(6, 49, 70, 0.1)",
+        },
+        "&:focus-visible": {
+          outline: "2px solid",
+          outlineColor: "primary.main",
+          outlineOffset: 2,
         },
       }}
     >
-      <IconButton
-        type="submit"
+      <Box
+        aria-hidden
         sx={{
-          px: "25px",
-          backgroundColor: "#DDDFE2",
-          borderRadius: 0,
-          borderRight: "1px solid #E0E0E0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 40,
+          flexShrink: 0,
+          alignSelf: "stretch",
+          background: (t) =>
+            t.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.07)",
+          borderInlineEnd: "1px solid",
+          borderColor: "divider",
         }}
-        aria-label="search"
       >
-        <SearchIcon sx={{ color: "#6B7280" }} />
-      </IconButton>
-      <Box sx={{ ml: 1, flex: 1, px: 2, fontSize: "14px" }}>بحث</Box>
-    </Box>
+        <SearchIcon sx={{ color: "primary.main", fontSize: 20 }} />
+      </Box>
+      <InputBase
+        readOnly
+        sx={{
+          flex: 1,
+          height: 1,
+          px: 1.5,
+          fontSize: "0.8125rem",
+        }}
+        placeholder="بحث سريع عن الطلبات…"
+        inputProps={{ "aria-readonly": true }}
+      />
+    </Paper>
   );
 };
 

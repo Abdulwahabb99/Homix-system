@@ -1,87 +1,85 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Button,
-  Container,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Pagination,
-  Select,
-  TextField,
-} from "@mui/material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Box, Grid, Pagination, Stack, TextField, Typography } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import MDBox from "components/MDBox";
-import Spinner from "components/Spinner/Spinner";
 import ProductCard from "./components/ProductCard";
+import {
+  ProductsFilterDialog,
+  ProductsFilterTriggerButton,
+} from "./components/ProductsFilterDialog";
 import axiosRequest from "shared/functions/axiosRequest";
+import Spinner from "components/Spinner/Spinner";
 
 const ITEMS_PER_PAGE = 16;
-const PAGE = "page";
 
 function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user.userType === "1";
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState(searchParams.get("searchQuery") || "");
-  const [selectedVendors, setSelectedVendors] = useState(
-    searchParams.get("vendorsIds")?.split(",").map(Number) || []
-  );
-  const [vendorsIds, setVendorsIds] = useState([]);
-  const [categoriesIds, setCategoriesIds] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState(
-    searchParams.get("typesIds")?.split(",").map(Number) || []
-  );
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
 
-  const page = parseInt(searchParams.get("page")) || 1;
+  const page = parseInt(searchParams.get("page"), 10) || 1;
   const searchQueryParam = searchParams.get("searchQuery") || "";
 
-  const updateURLParams = (params) => {
-    const updated = new URLSearchParams(searchParams);
+  const selectedVendors = useMemo(() => {
+    const raw = searchParams.get("vendorsIds");
+    if (!raw) return [];
+    return raw
+      .split(",")
+      .map((s) => Number(s))
+      .filter((n) => !Number.isNaN(n));
+  }, [searchParams]);
 
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        updated.set(key, value);
+  const selectedCategories = useMemo(() => {
+    const raw = searchParams.get("typesIds");
+    if (!raw) return [];
+    return raw
+      .split(",")
+      .map((s) => Number(s))
+      .filter((n) => !Number.isNaN(n));
+  }, [searchParams]);
+
+  const filterActiveCount = selectedVendors.length + selectedCategories.length;
+
+  const setParams = (updates) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        next.set(key, value);
       } else {
-        updated.delete(key);
+        next.delete(key);
       }
     });
-
-    setSearchParams(updated);
+    setSearchParams(next);
   };
 
   const handlePageChange = (event, value) => {
-    updateURLParams({ page: value.toString() });
+    setParams({ page: String(value) });
   };
 
-  const handleVendorChange = (vendors) => {
-    setVendorsIds(vendors);
-    updateURLParams({ vendorsIds: vendors.join(",") });
-  };
-
-  const handleCategoryChange = (categories) => {
-    setCategoriesIds(categories);
-    updateURLParams({ typesIds: categories.join(",") });
-  };
-
-  const fetchProducts = () => {
+  const fetchProducts = useCallback(() => {
     setLoading(true);
+    const p = parseInt(searchParams.get("page"), 10) || 1;
+    const searchQuery = searchParams.get("searchQuery") || "";
+    const vendorsIds = searchParams.get("vendorsIds");
+    const typesIds = searchParams.get("typesIds");
+
     const query = new URLSearchParams({
-      page,
-      size: ITEMS_PER_PAGE,
-      ...(selectedVendors.length && { vendorsIds: selectedVendors.join(",") }),
-      ...(selectedCategories.length && { typesIds: selectedCategories.join(",") }),
-      ...(searchQueryParam && { searchQuery: searchQueryParam }),
+      page: String(p),
+      size: String(ITEMS_PER_PAGE),
     });
+    if (vendorsIds) query.set("vendorsIds", vendorsIds);
+    if (typesIds) query.set("typesIds", typesIds);
+    if (searchQuery) query.set("searchQuery", searchQuery);
+
     axiosRequest
       .get(`${process.env.REACT_APP_API_URL}/products?${query}`)
       .then(({ data: { data } }) => {
@@ -89,10 +87,12 @@ function Products() {
         setTotalPages(data.totalPages);
       })
       .catch((error) => console.error("Error fetching products:", error))
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+      .finally(() => setLoading(false));
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const getVendors = () => {
     axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
@@ -105,8 +105,7 @@ function Products() {
     axiosRequest
       .get(`${process.env.REACT_APP_API_URL}/products/types`)
       .then(({ data: { data } }) => {
-        const categoryOptions = data.map((c) => ({ label: c.name, value: c.id }));
-        setCategories(categoryOptions);
+        setCategories(data.map((c) => ({ label: c.name, value: c.id })));
       });
   };
 
@@ -115,149 +114,174 @@ function Products() {
     getCategories();
   }, []);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [page]);
+  const handleSearchChange = (e) => {
+    setParams({ searchQuery: e.target.value, page: "1" });
+  };
+
+  const handleApplyFilters = (vendorsList, categoryList) => {
+    if (isAdmin) {
+      setParams({
+        page: "1",
+        vendorsIds: vendorsList.length ? vendorsList.join(",") : "",
+        typesIds: categoryList.length ? categoryList.join(",") : "",
+      });
+    } else {
+      setParams({
+        page: "1",
+        vendorsIds: "",
+        typesIds: categoryList.length ? categoryList.join(",") : "",
+      });
+    }
+  };
+
+  const handleResetFilters = () => {
+    const next = new URLSearchParams();
+    next.set("page", "1");
+    setSearchParams(next);
+  };
+
+  const searchFieldStyles = {
+    flex: 1,
+    minWidth: 0,
+    "& .MuiInputLabel-root": {
+      fontSize: "0.8125rem",
+      color: "primary.main",
+      "&.Mui-focused": {
+        color: "primary.main",
+      },
+    },
+    "& .MuiOutlinedInput-root": {
+      height: 40,
+      borderRadius: 1.5,
+      fontSize: "0.8125rem",
+      "&:hover .MuiOutlinedInput-notchedOutline": {
+        borderColor: "rgba(6, 49, 70, 0.35)",
+      },
+      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: "primary.main",
+        borderWidth: 2,
+      },
+    },
+  };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <MDBox py={3}>
-        {!loading ? (
+      <Box
+        sx={{
+          px: { xs: 2, sm: 3 },
+          py: 2.5,
+          maxWidth: 1680,
+          mx: "auto",
+          width: "100%",
+        }}
+      >
+        <Stack spacing={0.5} mb={2.5}>
+          <Typography variant="h6" fontWeight={700} color="text.primary" fontSize="1.1rem">
+            المنتجات
+          </Typography>
+          <Typography variant="body2" color="text.secondary" fontSize="0.8125rem">
+            ابحث عن المنتج، أو اضبط الموردين والتصنيفات من أيقونة التصفية
+          </Typography>
+        </Stack>
+
+        {loading ? (
+          <Spinner />
+        ) : (
           <>
-            <Grid container spacing={2} mb={4}>
-              <Grid item xs={12} md={4} lg={3}>
+            <Box
+              sx={{
+                p: 2,
+                mb: 2.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "background.paper",
+                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 12px rgba(15, 23, 42, 0.04)",
+              }}
+            >
+              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ width: "100%" }}>
                 <TextField
                   label="بحث"
+                  placeholder="اسم المنتج…"
                   variant="outlined"
-                  value={searchText}
-                  onChange={(e) => {
-                    setSearchText(e.target.value);
-                    updateURLParams({ searchQuery: e.target.value });
+                  size="small"
+                  value={searchQueryParam}
+                  onChange={handleSearchChange}
+                  sx={searchFieldStyles}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ style: { fontSize: "0.8125rem" } }}
+                  InputProps={{
+                    endAdornment: <SearchIcon sx={{ color: "text.disabled", fontSize: 18 }} />,
                   }}
-                  fullWidth
                 />
-              </Grid>
+                <ProductsFilterTriggerButton
+                  onClick={() => setFilterDialogOpen(true)}
+                  activeCount={filterActiveCount}
+                />
+              </Stack>
+            </Box>
 
-              {isAdmin && (
-                <Grid item xs={6} md={4} lg={3}>
-                  <FormControl fullWidth>
-                    <InputLabel id="vendors">الموردين</InputLabel>
-                    <Select
-                      labelId="vendors"
-                      id="vendors"
-                      multiple
-                      value={selectedVendors}
-                      label="الموردين"
-                      onChange={(e) => setSelectedVendors(e.target.value)}
-                      onClose={() => {
-                        handleVendorChange(selectedVendors);
-                      }}
-                      sx={{ height: 43 }}
-                      renderValue={(selected) =>
-                        selected
-                          .map((value) => vendors.find((option) => option.value === value)?.label)
-                          .join(", ")
-                      }
-                    >
-                      {vendors.map((option) => {
-                        const isSelected = selectedVendors.includes(option.value);
-                        return (
-                          <MenuItem
-                            key={option.value}
-                            value={option.value}
-                            style={{
-                              margin: "5px 0",
-                              color: "#000",
-                              backgroundColor: isSelected ? "#e0e0e0" : "inherit",
-                            }}
-                          >
-                            {option.label}
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
+            <ProductsFilterDialog
+              open={filterDialogOpen}
+              onClose={() => setFilterDialogOpen(false)}
+              isAdmin={isAdmin}
+              vendors={vendors}
+              categories={categories}
+              selectedVendors={selectedVendors}
+              selectedCategories={selectedCategories}
+              onApply={handleApplyFilters}
+              onReset={handleResetFilters}
+            />
 
-              <Grid item xs={6} md={4} lg={3}>
-                <FormControl fullWidth>
-                  <InputLabel id="categories">التصنيفات</InputLabel>
-                  <Select
-                    labelId="categories"
-                    id="categories"
-                    multiple
-                    value={selectedCategories}
-                    label="التصنيفات"
-                    onChange={(e) => setSelectedCategories(e.target.value)}
-                    onClose={() => handleCategoryChange(selectedCategories)}
-                    sx={{ height: 43 }}
-                    renderValue={(selected) =>
-                      selected
-                        .map((value) => categories.find((option) => option.value === value)?.label)
-                        .join(", ")
-                    }
-                  >
-                    {categories.map((option) => {
-                      const isSelected = selectedCategories.includes(option.value);
-                      return (
-                        <MenuItem
-                          key={option.value}
-                          value={option.value}
-                          style={{
-                            margin: "5px 0",
-                            color: "#000",
-                            backgroundColor: isSelected ? "#e0e0e0" : "inherit",
-                          }}
-                        >
-                          {option.label}
-                        </MenuItem>
-                      );
-                    })}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={4} lg={3}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  style={{ color: "#fff" }}
-                  onClick={() => {
-                    if (page === 1) {
-                      fetchProducts();
-                    }
-                    updateURLParams({ page: 1 });
-                  }}
-                >
-                  بحث
-                </Button>
-              </Grid>
-            </Grid>
-
-            <Container>
-              <Grid container spacing={1}>
+            {products.length === 0 ? (
+              <Box
+                sx={{
+                  py: 8,
+                  textAlign: "center",
+                  borderRadius: 3,
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  bgcolor: "action.hover",
+                }}
+              >
+                <Typography color="text.secondary">
+                  لا توجد منتجات مطابقة للتصفية الحالية
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
                 {products.map((product) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                    <MDBox mb={1.5}>
-                      <ProductCard product={product} />
-                    </MDBox>
+                    <ProductCard product={product} />
                   </Grid>
                 ))}
               </Grid>
+            )}
 
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                sx={{ display: "flex", justifyContent: "center", mt: 3 }}
-              />
-            </Container>
+            {totalPages > 1 && (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 3, mb: 1 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size="medium"
+                  showFirstButton
+                  showLastButton
+                  sx={{
+                    "& .MuiPaginationItem-root": {
+                      borderRadius: 1.5,
+                      fontWeight: 600,
+                      fontSize: "0.8125rem",
+                    },
+                  }}
+                />
+              </Box>
+            )}
           </>
-        ) : (
-          <Spinner />
         )}
-      </MDBox>
+      </Box>
     </DashboardLayout>
   );
 }

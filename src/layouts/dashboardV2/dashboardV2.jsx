@@ -1,9 +1,10 @@
-import { Box, Grid, useMediaQuery } from "@mui/material";
+import { Box, Grid, Stack, Typography } from "@mui/material";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useDateRange } from "hooks/useDateRange";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SearchInput from "shared/components/SearchInput/SearchInput";
 import StatsCard from "shared/components/StatsCard/StatsCard";
 import MoneyRotateIcon from "shared/icons/MoneyRotateIcon";
@@ -18,10 +19,10 @@ import moment from "moment";
 import SearchModal from "./components/SearchModal/SearchModal";
 
 function dashboardV2() {
+  const navigate = useNavigate();
   const [financialreportData, setFinancialreportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const isSmallScreen = useMediaQuery("(max-width:1092px)");
   const user = JSON.parse(localStorage.getItem("user"));
   const searchParam = new URLSearchParams(window.location.search);
   const startDateParam = searchParam.get("startDate");
@@ -75,61 +76,101 @@ function dashboardV2() {
       {isLoading ? (
         <Spinner />
       ) : (
-        <Box sx={{ px: 3, pt: 2, pb: 4 }}>
-          <Grid container spacing={2} width={"100%"} mb={4}>
-            <Grid item xs={12} sm={12} md={12} lg={6}>
-              <SearchInput onClick={() => setIsSearchModalOpen(true)} />
-            </Grid>
-            <Grid item xs={12} sm={12} md={12} lg={4}>
-              <DateRangePickerWrapper
-                startDate={startDateParam ? startDate : moment.utc().startOf("day")}
-                endDate={endDateParam ? endDate : moment.utc().endOf("day")}
-                allowPastDays={true}
-                allowFutureDays={false}
-                useDefaultPresets={true}
-                handleDatesChange={handleDatesChange}
-                isMeduim
-              />{" "}
-            </Grid>
-          </Grid>
+        <Box
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pt: 2.5,
+            pb: 5,
+            maxWidth: 1680,
+            mx: "auto",
+            width: "100%",
+            minHeight: "60vh",
+          }}
+        >
+          <Stack spacing={0.5} mb={3}>
+            <Typography variant="h5" fontWeight={700} color="text.primary" letterSpacing="0.02em">
+              لوحة المعلومات
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              نظرة على الأداء المالي، وأكثر المنتجات والموردين مبيعًا
+            </Typography>
+          </Stack>
 
-          <Grid container spacing={2} width={isSmallScreen ? "100%" : "70%"} mb={4}>
+          <Box
+            mb={3}
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06)",
+            }}
+          >
+            <Grid container spacing={1.5} alignItems="center" columnSpacing={2}>
+              <Grid item xs={12} md={6} lg={6}>
+                <SearchInput onClick={() => setIsSearchModalOpen(true)} />
+              </Grid>
+              <Grid item xs={12} md={6} lg={6}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    minHeight: 40,
+                    "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
+                      width: "100% !important",
+                    },
+                  }}
+                >
+                  <DateRangePickerWrapper
+                    startDate={startDateParam ? startDate : moment.utc().startOf("day")}
+                    endDate={endDateParam ? endDate : moment.utc().endOf("day")}
+                    allowPastDays={true}
+                    allowFutureDays={false}
+                    useDefaultPresets={true}
+                    handleDatesChange={handleDatesChange}
+                    isMeduim
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Grid container spacing={2} mb={3} sx={{ maxWidth: 1100 }}>
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="عدد الطلبات"
-                value={`${financialreportData?.ordersCount} طلب`}
+                value={`${financialreportData?.ordersCount ?? 0} طلب`}
                 icon={<BanknoteShieldIcon />}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="إجمالي المبيعات"
-                value={`${financialreportData?.totalRevenue.toFixed(0)} EGP`}
+                value={`${(financialreportData?.totalRevenue ?? 0).toFixed(0)} EGP`}
                 icon={<BankBuildingIcon />}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="إجمالي التكلفة"
-                value={`${financialreportData?.totalCost.toFixed(0)} EGP`}
+                value={`${(financialreportData?.totalCost ?? 0).toFixed(0)} EGP`}
                 icon={<MoneyRotateIcon />}
               />
             </Grid>
           </Grid>
 
-          {/* Grid =>>>>> */}
-
-          <Grid container spacing={4} width={"100%"} justifyContent={"center"}>
-            <Grid item xs={12} sm={12} md={12} lg={isVendor ? 12 : 6} sx={{ minWidth: "310px" }}>
+          <Grid container spacing={3} width="100%" justifyContent="center">
+            <Grid item xs={12} lg={isVendor ? 12 : 6}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />
               )}
             </Grid>
             {!isVendor && (
-              <Grid item xs={12} sm={12} md={12} lg={6} sx={{ minWidth: "310px" }}>
+              <Grid item xs={12} lg={6}>
                 {financialreportData?.topTenVendors && (
                   <MostVendorsSelling rowData={financialreportData?.topTenVendors} />
-                )}{" "}
+                )}
               </Grid>
             )}
           </Grid>

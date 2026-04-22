@@ -1,14 +1,23 @@
-import { Card, CardMedia, Chip, Grid, IconButton } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardContent,
+  CardMedia,
+  Chip,
+  Divider,
+  Grid,
+  IconButton,
+  Stack,
+  Typography,
+} from "@mui/material";
 import axios from "axios";
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
 import Spinner from "components/Spinner/Spinner";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import ArrowNextIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import styles from "../Products.module.css";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -48,141 +57,195 @@ function ProductDetails() {
     };
 
     getProductDetails();
-  }, []);
+  }, [id, navigate]);
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <div className={styles.productDetailsHeader}>
-        <IconButton color="#344767" onClick={() => navigate(-1)}>
-          <ArrowNextIcon />
-        </IconButton>
-      </div>
+      <Box
+        sx={{
+          maxWidth: 1200,
+          mx: "auto",
+          width: "100%",
+          px: { xs: 2, sm: 3 },
+          py: 2.5,
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 3 }}>
+          <IconButton
+            onClick={() => navigate(-1)}
+            aria-label="الرجوع"
+            size="small"
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              color: "primary.main",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <ArrowBackIosNewIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+          <Box>
+            <Typography variant="caption" color="text.secondary" display="block">
+              تفاصيل المنتج
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="text.primary">
+              {isLoading ? "…" : productDetails?.title || "—"}
+            </Typography>
+          </Box>
+        </Stack>
 
-      {!isLoading && productDetails ? (
-        <>
-          <MDBox py={3}>
-            <MDBox>
-              <Grid container spacing={2} justifyContent={"center"}>
-                <Grid item xs={12} md={4} lg={4} sx={{ display: "flex", justifyContent: "center" }}>
-                  <Card
+        {isLoading ? (
+          <Spinner />
+        ) : productDetails ? (
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={5} lg={4}>
+              <Card
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: "0 4px 24px rgba(15, 23, 42, 0.08)",
+                }}
+              >
+                <Box sx={{ bgcolor: "action.hover", aspectRatio: "1", maxHeight: 420 }}>
+                  <CardMedia
+                    component="img"
+                    image={productDetails?.image}
+                    alt={productDetails?.title}
                     sx={{
-                      maxWidth: 345,
-                      maxHeight: 387,
-                      minHeight: 370,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
                     }}
-                  >
-                    <CardMedia
-                      component="img"
-                      image={productDetails?.image}
-                      sx={{
-                        objectFit: "cover",
-                        maxHeight: "387",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    />
-                  </Card>
-                </Grid>
+                  />
+                </Box>
+              </Card>
+            </Grid>
 
-                <Grid item xs={12} md={8} lg={8}>
-                  <Card sx={{ height: "100%", width: "100%" }}>
-                    <>
-                      <MDBox pt={2} px={3}>
-                        <MDBox mt={0} mb={2}>
-                          <MDTypography variant="h6">{productDetails.title}</MDTypography>
-                        </MDBox>
-                      </MDBox>
-                      <MDBox pt={1} px={3}>
-                        <MDBox mt={0} mb={0}>
-                          <MDBox mt={0} mb={0}>
-                            <MDTypography variant="h6">الخيارات</MDTypography>
-                          </MDBox>
-                          {productDetails.variants.map((variant, inedx) => (
-                            <div key={variant.shopifyId}>
-                              <MDTypography variant="button">
-                                <div>
-                                  {variant.title !== "Default Title" && <div>{variant.title}</div>}
-                                  <div>
-                                    <MDTypography
-                                      display="inline"
-                                      variant="h6"
-                                      verticalAlign="middle"
-                                    >
-                                      السعر :
-                                    </MDTypography>
-                                    &nbsp;
-                                    <MDTypography variant="button" color="text" key={inedx}>
-                                      {Number(variant.price).toFixed(0)} ج.م
-                                    </MDTypography>
-                                  </div>
-                                  <div>
-                                    <MDTypography
-                                      display="inline"
-                                      variant="h6"
-                                      verticalAlign="middle"
-                                    >
-                                      التكلفة :
-                                    </MDTypography>
-                                    &nbsp;
-                                    <MDTypography variant="button" color="text" key={inedx}>
-                                      {Number(variant.cost).toFixed(0)} ج.م
-                                    </MDTypography>
-                                  </div>
-                                </div>
-                              </MDTypography>
-                            </div>
+            <Grid item xs={12} md={7} lg={8}>
+              <Stack spacing={2.5}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="overline" color="text.secondary" fontWeight={600}>
+                      اسم المنتج
+                    </Typography>
+                    <Typography variant="h5" fontWeight={700} sx={{ mt: 0.5, mb: 2 }}>
+                      {productDetails.title}
+                    </Typography>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 2 }}>
+                      الخيارات والأسعار
+                    </Typography>
+                    <Stack spacing={1.5}>
+                      {productDetails.variants.map((variant) => (
+                        <Box
+                          key={variant.shopifyId || variant.title}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            bgcolor: "action.hover",
+                          }}
+                        >
+                          {variant.title !== "Default Title" && (
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                              {variant.title}
+                            </Typography>
+                          )}
+                          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                سعر البيع
+                              </Typography>
+                              <Typography variant="h6" fontWeight={800} color="primary">
+                                {Number(variant.price).toFixed(0)} ج.م
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                التكلفة
+                              </Typography>
+                              <Typography variant="h6" fontWeight={700} color="text.primary">
+                                {Number(variant.cost).toFixed(0)} ج.م
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  elevation={0}
+                  sx={{
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          المورد
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {productDetails.vendor?.name}
+                        </Typography>
+                      </Box>
+                      <Divider />
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ mb: 1 }}
+                        >
+                          التصنيفات
+                        </Typography>
+                        <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
+                          {productDetails?.categories?.map((category) => (
+                            <Chip
+                              key={category.categoryId}
+                              label={category.category?.title}
+                              size="medium"
+                              sx={{
+                                fontWeight: 500,
+                                borderRadius: 2,
+                                bgcolor: "rgba(6, 49, 70, 0.08)",
+                                color: "primary.main",
+                                border: "1px solid",
+                                borderColor: "rgba(6, 49, 70, 0.2)",
+                              }}
+                            />
                           ))}
-                        </MDBox>
-
-                        <MDBox mt={0}>
-                          <MDTypography variant="button">
-                            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-                              المورد:
-                            </MDTypography>
-                            &nbsp;
-                            <MDTypography variant="button" color="text">
-                              {productDetails.vendor.name}
-                            </MDTypography>
-                          </MDTypography>
-                        </MDBox>
-                        <MDBox mt={0} mb={2}>
-                          <MDTypography variant="button">
-                            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-                              التصنيفات:
-                            </MDTypography>
-                            &nbsp;
-                            {productDetails?.categories.map((category) => {
-                              return (
-                                <Chip
-                                  style={{ fontSize: "12px" }}
-                                  key={category.categoryId}
-                                  label={category.category.title}
-                                  color="primary"
-                                  variant="filled"
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: "#f0f0f0",
-                                    margin: "2px 4px 2px 0",
-                                    border: "1px solid #00000099",
-                                    color: "#00000099",
-                                  }}
-                                />
-                              );
-                            })}
-                          </MDTypography>
-                        </MDBox>
-                      </MDBox>
-                    </>
-                  </Card>
-                </Grid>
-              </Grid>
-            </MDBox>
-          </MDBox>
-        </>
-      ) : (
-        <Spinner />
-      )}
+                        </Stack>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Grid>
+          </Grid>
+        ) : (
+          <Box sx={{ py: 6, textAlign: "center" }}>
+            <Typography color="text.secondary">تعذر عرض هذا المنتج</Typography>
+          </Box>
+        )}
+      </Box>
     </DashboardLayout>
   );
 }

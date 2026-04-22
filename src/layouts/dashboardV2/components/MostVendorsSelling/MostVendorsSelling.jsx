@@ -1,134 +1,144 @@
 import * as React from "react";
-import { Box, Typography, Avatar } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import PersonDoctorIcon from "shared/icons/PersonDoctorIcon";
+import { getDashboardDataGridSx } from "../dashboardDataGridSx";
 
-const columns = [
-  {
-    field: "name",
-    headerName: "الموردين",
-    flex: 1,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => (
-      <Box display="flex" alignItems="center" gap={1}>
-        <PersonDoctorIcon />
+const getColumns = (theme) => {
+  const primary = theme.palette.primary.main;
+  const info = theme.palette.info.main;
+  const text = theme.palette.text.primary;
 
-        <Box gap={0}>
-          <Typography
-            sx={{ fontSize: "14px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0.14px" }}
-            color="#00314C"
+  return [
+    {
+      field: "name",
+      headerName: "الموردين",
+      flex: 1.2,
+      minWidth: 200,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Box display="flex" alignItems="center" gap={1.25} width="1%" minWidth={0} py={0.25}>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              bgcolor: "rgba(6, 49, 70, 0.08)",
+              color: "primary.main",
+            }}
           >
-            {params.row.vendorName}
-          </Typography>
-          <Typography
-            sx={{ fontSize: "14px", fontWeight: 400, lineHeight: "140%", letterSpacing: "0.14px" }}
-            color="#1A73E8"
-          >
-            {params.row.sku}
-          </Typography>
+            <PersonDoctorIcon />
+          </Box>
+          <Box minWidth={0}>
+            <Typography
+              noWrap
+              title={params.row.vendorName}
+              sx={{ fontSize: "0.8125rem", fontWeight: 600, lineHeight: 1.3 }}
+              color={primary}
+            >
+              {params.row.vendorName}
+            </Typography>
+            <Typography sx={{ fontSize: "0.7rem", fontWeight: 400, mt: 0.1 }} color={info}>
+              {params.row.sku}
+            </Typography>
+          </Box>
         </Box>
-      </Box>
-    ),
-  },
-  {
-    field: "sellPrice",
-    headerName: "إجمالي المبيعات",
-    flex: 0.7,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => (
-      <Box display="flex" alignItems="center" gap={1}>
-        <Typography
-          sx={{ fontSize: "14px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0.14px" }}
-          color="#45464E"
-        >
+      ),
+    },
+    {
+      field: "sellPrice",
+      headerName: "إجمالي المبيعات",
+      flex: 0.5,
+      minWidth: 125,
+      maxWidth: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600 }} color={text}>
           EGP {Number(params.row.revenue).toFixed(0)}
         </Typography>
-      </Box>
-    ),
-  },
-  {
-    field: "costPrice",
-    headerName: "إجمالي التكلفة",
-    flex: 0.7,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => (
-      <Box display="flex" alignItems="center" gap={1}>
-        <Typography
-          sx={{ fontSize: "14px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0.14px" }}
-          color="#45464E"
-        >
+      ),
+    },
+    {
+      field: "costPrice",
+      headerName: "إجمالي التكلفة",
+      flex: 0.5,
+      minWidth: 125,
+      maxWidth: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600 }} color={text}>
           EGP {Number(params.row.profit).toFixed(0)}
         </Typography>
-      </Box>
-    ),
-  },
-];
+      ),
+    },
+  ];
+};
 
 const MostVendorsSelling = ({ rowData }) => {
+  const theme = useTheme();
+  const columns = getColumns(theme);
   const newRowData = rowData?.map((row) => ({
     ...row,
     id: row.vendorId,
   }));
 
+  if (!rowData?.length) return null;
+
+  const rowCount = newRowData.length;
+  const gridHeight = Math.min(40 + 52 * rowCount + 2, 400);
+
   return (
     <Box
-      px={1}
-      py={2}
-      border="1px solid #E0E0E0"
-      borderRadius={2}
       sx={{
-        backgroundColor: "inherit",
+        p: 0,
+        borderRadius: 2,
+        overflow: "hidden",
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05)",
       }}
     >
-      <Typography
+      <Box
         sx={{
-          fontSize: "16px",
-          fontWeight: 600,
-          lineHeight: "130%",
+          px: 2,
+          py: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          background: (t) =>
+            t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(6, 49, 70, 0.04)",
         }}
-        color="#00314C"
-        mb={2}
-        mx={1}
       >
-        أكثر {rowData.length} موردين مبيعاً
-      </Typography>
+        <Typography variant="subtitle2" fontWeight={700} color="primary" fontSize="0.9375rem">
+          أكثر {rowData.length} موردين مبيعاً
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+          إجماليات لكل مورد
+        </Typography>
+      </Box>
 
-      <Box sx={{ width: "100%", overflowX: "auto", maxHeight: 400 }}>
-        <Box sx={{ minWidth: 600 }}>
-          <DataGrid
-            rows={newRowData}
-            columns={columns}
-            disableRowSelectionOnClick
-            hideFooter
-            disableColumnMenu
-            sx={{
-              height: 350,
-              "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus": {
-                outline: "none",
-              },
-              "& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus-within": {
-                outline: "none",
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "#DDDFE2",
-                fontSize: "12px",
-                fontWeight: 700,
-                lineHeight: "140%",
-                minHeight: "40px !important",
-                maxHeight: "40px !important",
-              },
-              "& .MuiDataGrid-columnHeader": {
-                minHeight: "40px !important",
-                maxHeight: "40px !important",
-              },
-              fontFamily: "inherit",
-            }}
-          />
-        </Box>
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
+        <DataGrid
+          rows={newRowData}
+          columns={columns}
+          disableRowSelectionOnClick
+          hideFooter
+          disableColumnMenu
+          rowHeight={52}
+          sx={{
+            height: `${gridHeight}px`,
+            width: "100%",
+            ...getDashboardDataGridSx(theme),
+          }}
+        />
       </Box>
     </Box>
   );

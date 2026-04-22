@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import React from "react";
-import { Card, CardContent, CardMedia, Chip, Typography } from "@mui/material";
+import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 const ProductCard = ({ product }) => {
@@ -9,56 +9,157 @@ const ProductCard = ({ product }) => {
     navigate(`/products/${product.id}`);
   };
 
+  const price = Number(product?.variants?.at(0)?.price);
+  const priceLabel = Number.isFinite(price) ? price.toFixed(0) : "—";
+
   return (
     <Card
-      sx={{
-        maxWidth: 370,
-        maxHeight: 450,
-        minHeight: 450,
-        "@media (max-width: 600px)": {
-          maxHeight: "none",
-        },
-        cursor: "pointer",
-        boxShadow: "none",
-      }}
+      elevation={0}
       onClick={navigateToProduct}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigateToProduct();
+        }
+      }}
+      aria-label={`عرض ${product?.title}`}
+      sx={{
+        height: "100%",
+        maxHeight: 320,
+        cursor: "pointer",
+        borderRadius: 2.5,
+        border: "1px solid",
+        borderColor: "divider",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+        transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: (t) =>
+            t.palette.mode === "dark"
+              ? "0 6px 20px rgba(0,0,0,0.3)"
+              : "0 8px 24px rgba(6, 49, 70, 0.12)",
+          borderColor: "primary.light",
+        },
+        "&:focus-visible": {
+          outline: "2px solid",
+          outlineColor: "primary.main",
+          outlineOffset: 2,
+        },
+      }}
     >
-      <CardMedia
-        component="img"
-        image={product?.image}
-        alt={product?.title}
-        sx={{ objectFit: "fill", maxHeight: "200px" }}
-      />
-      <CardContent>
+      <Box
+        component="div"
+        sx={{
+          width: "100%",
+          height: 140,
+          flexShrink: 0,
+          bgcolor: (t) => (t.palette.mode === "dark" ? "action.hover" : "grey.100"),
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          component="img"
+          src={product?.image}
+          alt={product?.title || ""}
+          sx={{
+            maxWidth: "100%",
+            maxHeight: "100%",
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+            objectPosition: "center",
+            display: "block",
+            mx: "auto",
+          }}
+        />
+      </Box>
+      <CardContent
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          textAlign: "right",
+          gap: 0.5,
+          py: 1.25,
+          px: 1.5,
+          "&:last-child": { pb: 1.25 },
+        }}
+      >
         <Typography
-          gutterBottom
-          variant="h6"
-          component="div"
-          sx={{ fontSize: "15px", fontWeight: 800 }}
+          component="h3"
+          color="text.primary"
+          title={product?.title}
+          sx={{
+            fontSize: "0.8125rem",
+            fontWeight: 600,
+            lineHeight: 1.35,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            minHeight: 32,
+            maxHeight: 38,
+            m: 0,
+          }}
         >
           {product?.title}
         </Typography>
-        <Typography variant="h6" color="black">
-          {Number(product?.variants.at(0)?.price).toFixed(0) || 0}
-          <span style={{ margin: "0 2px" }}> ج.م</span>
-        </Typography>
-        <Typography sx={{ fontSize: "12px" }} color="text.secondary">
-          {product.vendor.name}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "flex-end",
+            gap: 0.4,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography
+            component="span"
+            sx={{ fontSize: "0.875rem", fontWeight: 800, color: "primary.main", lineHeight: 1.2 }}
+          >
+            {priceLabel}
+          </Typography>
+          <Typography component="span" variant="caption" color="text.secondary" fontSize="0.7rem">
+            ج.م
+          </Typography>
+        </Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          display="block"
+          fontSize="0.7rem"
+          sx={{ opacity: 0.85, textAlign: "right" }}
+        >
+          {product.vendor?.name}
         </Typography>
         {product?.type?.name && (
-          <Chip
-            style={{ fontSize: "12px" }}
-            label={product?.type?.name}
-            color="primary"
-            variant="filled"
-            size="small"
-            sx={{
-              backgroundColor: "#f0f0f0",
-              margin: "2px 2px 2px 0",
-              border: "1px solid #00000099",
-              color: "#00000099",
-            }}
-          />
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5 }}>
+            <Chip
+              label={product.type.name}
+              size="small"
+              sx={{
+                height: 22,
+                maxWidth: "100%",
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                borderRadius: 1.5,
+                bgcolor: "rgba(6, 49, 70, 0.07)",
+                color: "primary.main",
+                border: "1px solid",
+                borderColor: "rgba(6, 49, 70, 0.15)",
+                "& .MuiChip-label": { px: 1, overflow: "hidden", textOverflow: "ellipsis" },
+              }}
+            />
+          </Box>
         )}
       </CardContent>
     </Card>

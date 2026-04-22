@@ -5,13 +5,41 @@
   z-index: 10000000;
 }
 
+/* Compact toolbar row — same visual height as SearchInput (40px) */
+.custom-date-picker {
+  width: 100%;
+}
+
 .custom-date-picker .DateRangePickerInput {
-  padding: 4px 25px;
+  box-sizing: border-box;
+  min-height: 40px;
+  max-height: 40px;
+  height: 40px;
+  padding: 0 8px !important;
+  display: flex;
+  align-items: center;
   background-color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-radius: 8px !important;
 }
-.custom-date-picker .DateRangePickerInput .DateInput {
-  background-color: inherit;
+
+.custom-date-picker .DateRangePickerInput .DateInput,
+.custom-date-picker .DateRangePickerInput .DateInput_1,
+.custom-date-picker .DateRangePickerInput .DateInput_2 {
+  background-color: transparent;
+  flex: 1;
+  min-width: 0;
 }
-.custom-date-picker .DateRangePickerInput .DateInput_input {
-  background-color: inherit;
+
+.custom-date-picker .DateRangePickerInput .DateInput_input,
+.custom-date-picker .DateRangePickerInput .DateInput_input_1,
+.custom-date-picker .DateRangePickerInput .DateInput_input_2 {
+  background-color: transparent !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.2 !important;
+  padding: 4px 6px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  font-weight: 500;
+  color: inherit;
 }
