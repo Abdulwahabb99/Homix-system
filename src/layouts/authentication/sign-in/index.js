@@ -2,7 +2,7 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
-import BasicLayout from "layouts/authentication/components/BasicLayout";
+import SignInSplitLayout from "layouts/authentication/components/AuthSplitLayout";
 import { IconButton, InputAdornment } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -76,7 +76,7 @@ function Basic() {
     setPassword(e.target.value);
   };
   return (
-    <BasicLayout>
+    <SignInSplitLayout>
       <ToastContainer />
       {!isLoading ? (
         <Card variant="outlined" hover>
@@ -97,9 +97,6 @@ function Basic() {
               sx={{ letterSpacing: "0.02em" }}
             >
               تسجيل الدخول
-            </MDTypography>
-            <MDTypography variant="body2" color="white" sx={{ mt: 1, opacity: 0.88 }}>
-              مرحبًا بك في Homix
             </MDTypography>
           </Box>
           <MDBox pt={3} pb={3} px={3}>
@@ -149,7 +146,7 @@ function Basic() {
       ) : (
         <Spinner />
       )}
-    </BasicLayout>
+    </SignInSplitLayout>
   );
 }
 
