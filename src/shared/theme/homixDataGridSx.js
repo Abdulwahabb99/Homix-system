@@ -3,6 +3,8 @@
  * Use across dashboard and list pages. Avoid virtualScroller hacks in DataGrid v5.
  */
 
+import { alpha } from "@mui/material/styles";
+
 export const HOMIX_TABLE_DEFAULT_HEIGHT_PX = 520;
 
 export const DASHBOARD_TABLE_BODY_HEIGHT_PX = 400;
@@ -13,9 +15,15 @@ export const DASHBOARD_TILES_AND_TABLES_GRID_SX = {
   mx: "auto",
 };
 
+/** خلفية الترويسة: أوضح من `rgba(…,0.06)` لتمييز رأس الجدول عن خلايا الجسم */
+export function getHomixDataGridHeaderBackground(theme) {
+  return theme.palette.mode === "dark"
+    ? alpha(theme.palette.common.white, 0.1)
+    : alpha(theme.palette.primary.main, 0.16);
+}
+
 export function getHomixDataGridSx(theme) {
-  const headerBg =
-    theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)";
+  const headerBg = getHomixDataGridHeaderBackground(theme);
   const border = theme.palette.divider;
 
   return {

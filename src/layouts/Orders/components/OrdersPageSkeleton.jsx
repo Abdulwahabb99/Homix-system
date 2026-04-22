@@ -1,6 +1,8 @@
 import { Box, Skeleton, Stack } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import PropTypes from "prop-types";
 import React from "react";
+import { getHomixDataGridHeaderBackground } from "shared/theme/homixDataGridSx";
 
 /** يطابق HomixDataTable في صفحة الطلبات (height) */
 const ORDERS_TABLE_SKELETON_HEIGHT_PX = 560;
@@ -11,6 +13,9 @@ const TABLE_HEADER_PX = 40;
  * هيكل الجدول فقط (نفس ارتفاع HomixDataTable) — لتحميل البيانات من السيرفر بدل spinner الـ DataGrid
  */
 export function OrdersTableSkeleton() {
+  const theme = useTheme();
+  const headerBackground = getHomixDataGridHeaderBackground(theme);
+
   return (
     <Box
       aria-busy={true}
@@ -30,7 +35,7 @@ export function OrdersTableSkeleton() {
       }}
     >
       <Box
-        sx={(theme) => ({
+        sx={{
           display: "flex",
           alignItems: "center",
           flexShrink: 0,
@@ -39,9 +44,8 @@ export function OrdersTableSkeleton() {
           height: TABLE_HEADER_PX,
           borderBottom: "1px solid",
           borderColor: "divider",
-          backgroundColor:
-            theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)",
-        })}
+          backgroundColor: headerBackground,
+        }}
       >
         {Array.from({ length: 7 }).map((_, i) => (
           <Skeleton
