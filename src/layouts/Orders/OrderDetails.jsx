@@ -506,7 +506,7 @@ function OrderDetails() {
               <SectionHeader>ملخّص الطلب</SectionHeader>
 
               <Grid container spacing={2.5}>
-                <Grid item xs={12} md={6} lg={6}>
+                <Grid item xs={12}>
                   {orderDetails?.customer && (
                     <CustomerDetails
                       customerName={`${orderDetails?.customer.firstName} ${orderDetails.customer.lastName}`}

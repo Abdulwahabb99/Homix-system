@@ -19,7 +19,7 @@ const cardShell = (theme) => ({
 
 const rowSx = (theme) => ({
   display: "flex",
-  alignItems: "flex-start",
+  alignItems: "center",
   gap: 1.25,
   p: 1.25,
   borderRadius: 1.5,
@@ -55,7 +55,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
         <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
           <Stack spacing={1.5}>
             <Box sx={rowSx(theme)}>
-              <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+              <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
               <Box minWidth={0}>
                 <Typography variant="caption" color="text.secondary" display="block">
                   هاتف
@@ -63,14 +63,19 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
                 <Link
                   href="tel:01055047847"
                   underline="hover"
-                  sx={{ fontWeight: 600, color: "primary.main", display: "block" }}
+                  sx={{
+                    fontWeight: 600,
+                    color: "primary.main",
+                    display: "block",
+                    textAlign: "start",
+                  }}
                 >
                   01055047847
                 </Link>
               </Box>
             </Box>
             <Box sx={rowSx(theme)}>
-              <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+              <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
               <Box minWidth={0}>
                 <Typography variant="caption" color="text.secondary" display="block">
                   العنوان
@@ -123,7 +128,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
         </Typography>
         <Stack spacing={1.5}>
           <Box sx={rowSx(theme)}>
-            <EmailIcon sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+            <EmailIcon sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
             <Box minWidth={0} flex={1}>
               <Typography variant="caption" color="text.secondary" display="block">
                 البريد
@@ -134,7 +139,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
             </Box>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+            <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
             <Box minWidth={0} flex={1}>
               <Typography variant="caption" color="text.secondary" display="block">
                 العنوان
@@ -149,19 +154,33 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
             </Box>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
-            <Box minWidth={0} flex={1}>
+            <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+            <Box
+              minWidth={0}
+              flex={1}
+              sx={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}
+            >
               <Typography variant="caption" color="text.secondary" display="block">
                 الجوال
               </Typography>
-              <Typography
-                variant="body2"
-                color="text.primary"
-                dir="ltr"
-                sx={{ textAlign: "right" }}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "flex-start",
+                  width: "100%",
+                }}
               >
-                {phoneNumber ? phoneNumber : ""}
-              </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.primary"
+                  component="span"
+                  dir="ltr"
+                  sx={{ m: 0, textAlign: "left" }}
+                >
+                  {phoneNumber ? phoneNumber : ""}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Stack>

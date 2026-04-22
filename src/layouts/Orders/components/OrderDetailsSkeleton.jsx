@@ -54,7 +54,30 @@ export default function OrderDetailsSkeleton() {
       </Box>
 
       <Grid container spacing={2.5}>
-        {[0, 1, 2].map((i) => (
+        <Grid item xs={12}>
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 2.5,
+              border: "1px solid",
+              borderColor: "divider",
+              borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
+              overflow: "hidden",
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+            }}
+          >
+            <Box sx={{ px: 2, py: 1.25, borderBottom: "1px solid", borderColor: "divider" }}>
+              <Skeleton width="45%" height={22} />
+              <Skeleton width="70%" height={14} sx={{ mt: 0.5 }} />
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <Skeleton width="100%" height={18} />
+              <Skeleton width="95%" height={18} sx={{ mt: 1.25 }} />
+              <Skeleton width="80%" height={18} sx={{ mt: 1.25 }} />
+            </Box>
+          </Card>
+        </Grid>
+        {[0, 1].map((i) => (
           <Grid item xs={12} md={6} key={i}>
             <Card
               elevation={0}
