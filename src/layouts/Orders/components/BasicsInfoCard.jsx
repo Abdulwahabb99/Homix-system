@@ -36,44 +36,94 @@ function BasicsInfoCard({ orderDetails }) {
           bgcolor: alpha(theme.palette.info.main, 0.06),
         }}
       >
-        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+        <Typography
+          variant="subtitle2"
+          fontWeight={700}
+          color="text.primary"
+          component="h3"
+          sx={{ fontSize: "1.03rem" }}
+        >
           حالة الطلب والمتابعة
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mt: 0.25, fontSize: "0.77rem" }}
+        >
           التسليم، المسؤول، ومصدر الشحن
         </Typography>
       </Box>
       <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
         <Stack spacing={1.5}>
           <Box sx={rowSx(theme)}>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ fontSize: "0.77rem" }}
+            >
               حالة الطلب
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="text.primary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="text.primary"
+              sx={{ fontSize: "0.88rem" }}
+            >
               {getStatusValue(orderDetails.status)}
             </Typography>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ fontSize: "0.77rem" }}
+            >
               حالة التصنيع
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="text.primary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="text.primary"
+              sx={{ fontSize: "0.88rem" }}
+            >
               {getDeliveryStatusValue(orderDetails.deliveryStatus)}
             </Typography>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ fontSize: "0.77rem" }}
+            >
               المسؤول
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="text.primary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="text.primary"
+              sx={{ fontSize: "0.88rem" }}
+            >
               {orderDetails.administrator ? orderDetails.administrator : "لا يوجد"}
             </Typography>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ fontSize: "0.77rem" }}
+            >
               مكان التسليم
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="text.primary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="text.primary"
+              sx={{ fontSize: "0.88rem" }}
+            >
               {orderDetails.shippedFromInventory ? "مخازن هومكس" : "عنوان العميل"}
             </Typography>
           </Box>

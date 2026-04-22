@@ -4,6 +4,30 @@ import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 
 const PRIMARY = "primary.main";
 
+/** يدمج خصائص MUI المتداخلة حتى لا يحذف formControlSx الـ color/size الافتراضي */
+function mergeFormControlSx(base, extra) {
+  if (!extra) return base;
+  const keysToDeepMerge = [
+    "& .MuiInputLabel-root",
+    "& .MuiOutlinedInput-root",
+    "& .MuiSelect-select",
+  ];
+  const out = { ...base, ...extra };
+  for (const k of keysToDeepMerge) {
+    if (
+      base[k] &&
+      extra[k] &&
+      typeof base[k] === "object" &&
+      !Array.isArray(base[k]) &&
+      typeof extra[k] === "object" &&
+      !Array.isArray(extra[k])
+    ) {
+      out[k] = { ...base[k], ...extra[k] };
+    }
+  }
+  return out;
+}
+
 const getDefaultFormControlStyles = (theme) => ({
   width: "100%",
   "& .MuiInputLabel-root": {
@@ -11,6 +35,10 @@ const getDefaultFormControlStyles = (theme) => ({
     color: PRIMARY,
     "&.Mui-focused": { color: PRIMARY },
     "&.MuiInputLabel-shrink": { color: PRIMARY },
+    "&.MuiInputLabel-outlined": {
+      color: PRIMARY,
+      "&.MuiInputLabel-shrink": { color: PRIMARY },
+    },
   },
   "& .MuiOutlinedInput-root": {
     minHeight: 52,
@@ -98,10 +126,29 @@ function SelectComponent({
             typeof formControlSxFromProps === "function"
               ? formControlSxFromProps(theme)
               : formControlSxFromProps;
-          return { ...base, ...extra };
+          return mergeFormControlSx(base, extra);
         }}
       >
-        {label ? <InputLabel id={labelId}>{label}</InputLabel> : null}
+        {label ? (
+          <InputLabel
+            id={labelId}
+            color={error ? "error" : "primary"}
+            sx={(theme) => ({
+              // عنوان الحقل دائماً لون الـ primary (MUI الافتراضي يعرّض text.secondary)
+              ...(!error && {
+                color: theme.palette.primary.main,
+                "&.Mui-focused": { color: theme.palette.primary.main },
+                "&.MuiInputLabel-shrink": { color: theme.palette.primary.main },
+                "&.MuiInputLabel-outlined": {
+                  color: theme.palette.primary.main,
+                  "&.MuiInputLabel-shrink": { color: theme.palette.primary.main },
+                },
+              }),
+            })}
+          >
+            {label}
+          </InputLabel>
+        ) : null}
         <Select
           name={name}
           id={selectId}

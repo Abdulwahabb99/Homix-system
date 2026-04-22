@@ -58,7 +58,7 @@ function SectionHeader({ children, count }) {
         display: "flex",
         alignItems: "center",
         gap: 1.5,
-        mb: 2,
+        mb: 1.75,
         mt: 0,
         flexWrap: "wrap",
       }}
@@ -67,11 +67,11 @@ function SectionHeader({ children, count }) {
         sx={{ width: 3, minHeight: 24, borderRadius: 0.5, bgcolor: "primary.main", flexShrink: 0 }}
       />
       <Typography
-        variant="subtitle1"
+        variant="subtitle2"
         fontWeight={800}
         color="text.primary"
         component="h2"
-        fontSize="1.05rem"
+        sx={{ fontSize: "1.01rem" }}
       >
         {children}
       </Typography>
@@ -82,7 +82,7 @@ function SectionHeader({ children, count }) {
           sx={{
             height: 24,
             fontWeight: 700,
-            fontSize: "0.7rem",
+            fontSize: "0.76rem",
             bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
             color: "primary.dark",
           }}
@@ -423,16 +423,15 @@ function OrderDetails() {
                         variant="caption"
                         color="text.secondary"
                         display="block"
-                        fontSize="0.75rem"
+                        sx={{ fontSize: "0.77rem" }}
                       >
                         تفاصيل الطلب
                       </Typography>
                       <Typography
-                        variant="h6"
+                        variant="subtitle1"
                         fontWeight={800}
                         color="text.primary"
-                        fontSize="1.15rem"
-                        sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                        sx={{ fontSize: "1.12rem", overflow: "hidden", textOverflow: "ellipsis" }}
                       >
                         {orderDetails?.name || orderDetails?.code || "—"}
                       </Typography>
@@ -440,8 +439,7 @@ function OrderDetails() {
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          fontSize="0.8125rem"
-                          sx={{ mt: 0.25 }}
+                          sx={{ mt: 0.25, fontSize: "0.84rem" }}
                         >
                           رقم العملية: {orderDetails.code}
                         </Typography>
@@ -469,7 +467,7 @@ function OrderDetails() {
                         size="small"
                         sx={{
                           fontWeight: 600,
-                          fontSize: "0.8125rem",
+                          fontSize: "0.84rem",
                           height: 32,
                           flexShrink: 0,
                           bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
@@ -579,6 +577,16 @@ function OrderDetails() {
                       value={manufactureStatus}
                       onChange={changeManufactureStatus}
                       withSectionBorder
+                      formControlSx={{
+                        "& .MuiInputLabel-root": { fontSize: "0.89rem" },
+                        "& .MuiOutlinedInput-root": { minHeight: 52 },
+                        "& .MuiSelect-select": {
+                          fontSize: "0.88rem",
+                          py: 1.55,
+                          px: 1.5,
+                          textAlign: "start",
+                        },
+                      }}
                     />
                   </Card>
                 </Grid>
@@ -593,7 +601,7 @@ function OrderDetails() {
                   );
                   const lineChipSx = {
                     mt: 0.75,
-                    fontSize: "0.75rem",
+                    fontSize: "0.82rem",
                     whiteSpace: "normal",
                     lineHeight: 1.35,
                     height: "auto",
@@ -628,13 +636,18 @@ function OrderDetails() {
                             gap: 1,
                           }}
                         >
-                          <Typography variant="caption" fontWeight={800} color="primary.main">
+                          <Typography
+                            variant="caption"
+                            fontWeight={800}
+                            color="primary.main"
+                            sx={{ fontSize: "0.77rem" }}
+                          >
                             منتج
                           </Typography>
                           <Chip
                             label={`#${lineIndex + 1}`}
                             size="small"
-                            sx={{ height: 24, fontWeight: 800, fontSize: "0.7rem" }}
+                            sx={{ height: 24, fontWeight: 800, fontSize: "0.76rem" }}
                           />
                         </Box>
                         <Box
@@ -672,7 +685,11 @@ function OrderDetails() {
                           >
                             {order?.title}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.5, fontSize: "0.88rem" }}
+                          >
                             {order?.product?.variants?.[0]
                               ? `${Number(order.product.variants[0].price).toFixed(0)} ج.م`
                               : "—"}
@@ -813,14 +830,18 @@ function OrderDetails() {
                         gap={1}
                       >
                         <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                          <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontSize: "0.82rem" }}
+                          >
                             {new Date(comment.createdAt).toLocaleString()}
                           </Typography>
                           <Chip
                             label={commentMaker}
                             size="small"
                             sx={{
-                              fontSize: "0.7rem",
+                              fontSize: "0.76rem",
                               height: 24,
                               bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
                               color: "primary.dark",
@@ -915,7 +936,15 @@ function OrderDetails() {
                           </Box>
                         </>
                       ) : (
-                        <Typography variant="body1" sx={{ mt: 1, whiteSpace: "pre-wrap" }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            whiteSpace: "pre-wrap",
+                            fontSize: "0.95rem",
+                            lineHeight: 1.55,
+                          }}
+                        >
                           {comment.text}
                         </Typography>
                       )}

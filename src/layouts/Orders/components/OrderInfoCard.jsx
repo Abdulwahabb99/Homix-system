@@ -34,10 +34,19 @@ function OrderInfoCard({ orderDetails, isShimpentDetails }) {
         ...(i === rows.length - 1 && { borderBottom: "none", pb: 0 }),
       }}
     >
-      <Typography variant="caption" color="text.secondary" sx={{ flex: "0 0 auto" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ flex: "0 0 auto", fontSize: "0.77rem" }}
+      >
         {item.label}
       </Typography>
-      <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ textAlign: "left" }}>
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color="text.primary"
+        sx={{ textAlign: "left", fontSize: "0.88rem" }}
+      >
         {item.value}
       </Typography>
     </Box>
@@ -62,10 +71,20 @@ function OrderInfoCard({ orderDetails, isShimpentDetails }) {
           bgcolor: alpha(theme.palette.success.main, 0.04),
         }}
       >
-        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+        <Typography
+          variant="subtitle2"
+          fontWeight={700}
+          color="text.primary"
+          component="h3"
+          sx={{ fontSize: "1.03rem" }}
+        >
           {isShimpentDetails ? "تفاصيل الشحنة" : "تفاصيل مالية للطلب"}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mt: 0.25, fontSize: "0.77rem" }}
+        >
           الأسعار، الخصم، وما يُستحق
         </Typography>
       </Box>

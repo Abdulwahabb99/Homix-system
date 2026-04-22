@@ -46,17 +46,28 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
             gap: 1,
           }}
         >
-          <LocalShippingIcon sx={{ color: "primary.main" }} />
-          <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+          <LocalShippingIcon sx={{ color: "primary.main", fontSize: 23 }} />
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            color="text.primary"
+            component="h3"
+            sx={{ fontSize: "1.03rem" }}
+          >
             بيانات الشحن
           </Typography>
         </Box>
         <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
           <Stack spacing={1.5}>
             <Box sx={rowSx(theme)}>
-              <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+              <Phone sx={{ fontSize: 23, color: "primary.main", flexShrink: 0 }} />
               <Box minWidth={0}>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ fontSize: "0.77rem" }}
+                >
                   هاتف
                 </Typography>
                 <Link
@@ -64,6 +75,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
                   underline="hover"
                   sx={{
                     fontWeight: 600,
+                    fontSize: "0.88rem",
                     color: "primary.main",
                     display: "block",
                     textAlign: "start",
@@ -74,15 +86,20 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
               </Box>
             </Box>
             <Box sx={rowSx(theme)}>
-              <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+              <Home sx={{ fontSize: 23, color: "primary.main", flexShrink: 0 }} />
               <Box minWidth={0}>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ fontSize: "0.77rem" }}
+                >
                   العنوان
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.primary"
-                  sx={{ lineHeight: 1.5, fontWeight: 500 }}
+                  sx={{ lineHeight: 1.5, fontWeight: 500, fontSize: "0.88rem" }}
                 >
                   المنصورية - الهرم - الطريق الرئيسي - زاوية أبو مسلم بجوار مسجد اهل التقوي
                 </Typography>
@@ -105,13 +122,24 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
           bgcolor: alpha(theme.palette.primary.main, 0.05),
         }}
       >
-        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+        <Typography
+          variant="subtitle2"
+          fontWeight={700}
+          color="text.primary"
+          component="h3"
+          sx={{ fontSize: "1.03rem" }}
+        >
           العميل
         </Typography>
         {customerName ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5 }}>
-            <PersonIcon sx={{ color: "primary.main", fontSize: 22 }} />
-            <Typography variant="body1" fontWeight={600} color="text.primary">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.25 }}>
+            <PersonIcon sx={{ color: "primary.main", fontSize: 23 }} />
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="text.primary"
+              sx={{ fontSize: "0.95rem" }}
+            >
               {customerName}
             </Typography>
           </Box>
@@ -121,45 +149,64 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ display: "block", mb: 1.5, fontWeight: 600 }}
+          sx={{ display: "block", mb: 1.5, fontWeight: 600, fontSize: "0.77rem" }}
         >
           معلومات الاتصال
         </Typography>
         <Stack spacing={1.5}>
           <Box sx={rowSx(theme)}>
-            <EmailIcon sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+            <EmailIcon sx={{ fontSize: 23, color: "primary.main", flexShrink: 0 }} />
             <Box minWidth={0} flex={1}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ fontSize: "0.77rem" }}
+              >
                 البريد
               </Typography>
-              <Typography variant="body2" color="text.primary" sx={{ wordBreak: "break-word" }}>
+              <Typography
+                variant="body2"
+                color="text.primary"
+                sx={{ wordBreak: "break-word", fontSize: "0.88rem" }}
+              >
                 {email}
               </Typography>
             </Box>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+            <Home sx={{ fontSize: 23, color: "primary.main", flexShrink: 0 }} />
             <Box minWidth={0} flex={1}>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ fontSize: "0.77rem" }}
+              >
                 العنوان
               </Typography>
               <Typography
                 variant="body2"
                 color="text.primary"
-                sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}
+                sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "0.88rem" }}
               >
                 {address}
               </Typography>
             </Box>
           </Box>
           <Box sx={rowSx(theme)}>
-            <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0 }} />
+            <Phone sx={{ fontSize: 23, color: "primary.main", flexShrink: 0 }} />
             <Box
               minWidth={0}
               flex={1}
               sx={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}
             >
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ fontSize: "0.77rem" }}
+              >
                 الجوال
               </Typography>
               <Box
@@ -175,7 +222,7 @@ function CustomerDetails({ customerName, email, address, phoneNumber, shippedFro
                   color="text.primary"
                   component="span"
                   dir="ltr"
-                  sx={{ m: 0, textAlign: "left" }}
+                  sx={{ m: 0, textAlign: "left", fontSize: "0.88rem" }}
                 >
                   {phoneNumber ? phoneNumber : ""}
                 </Typography>

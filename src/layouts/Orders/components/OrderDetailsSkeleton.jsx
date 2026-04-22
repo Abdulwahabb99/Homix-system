@@ -6,9 +6,9 @@ import React from "react";
  */
 function SectionLine() {
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2, mt: 0 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.75, mt: 0 }}>
       <Skeleton variant="rounded" width={3} height={24} />
-      <Skeleton width={140} height={22} />
+      <Skeleton width={136} height={24} />
       <Skeleton variant="rounded" width={32} height={24} />
     </Box>
   );
@@ -37,9 +37,9 @@ export default function OrderDetailsSkeleton() {
         >
           <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: 1.5 }} />
           <Box sx={{ flex: 1, minWidth: 120 }}>
-            <Skeleton width={90} height={16} sx={{ mb: 0.5 }} />
-            <Skeleton width={{ xs: "85%", sm: 320 }} height={32} />
-            <Skeleton width={160} height={16} sx={{ mt: 0.5 }} />
+            <Skeleton width={88} height={17} sx={{ mb: 0.5 }} />
+            <Skeleton width={{ xs: "85%", sm: 316 }} height={32} />
+            <Skeleton width={164} height={17} sx={{ mt: 0.5 }} />
           </Box>
           <Stack direction="row" flexWrap="wrap" gap={1}>
             <Skeleton variant="rounded" width={100} height={32} />
