@@ -1,130 +1,78 @@
 /* eslint-disable react/prop-types */
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
-import React from "react";
+import { Box, Stack, Typography, useTheme, alpha } from "@mui/material";
 
-function OrderInfoCard({ orderDetails, orderTotalCost, orderTotalPrice, isShimpentDetails }) {
+function OrderInfoCard({ orderDetails, isShimpentDetails }) {
   const user = JSON.parse(localStorage.getItem("user"));
   const isVendor = user?.userType === "2";
+  const theme = useTheme();
 
-  function formatDateStringToArabic(dateString) {
-    const date = new Date(dateString);
-    const options = { day: "2-digit", month: "2-digit", year: "2-digit" };
-    const formatter = new Intl.DateTimeFormat("ar-EG", options);
-    return formatter.format(date);
+  const rows = [
+    { label: "سعر البيع", value: Number(orderDetails.subTotalPrice).toFixed(0) || "" },
+    { label: "سعر التكلفة", value: Number(orderDetails.orderLines[0].cost).toFixed(0) || "" },
+  ];
+  if (!isVendor) {
+    rows.push({ label: "تكلفة الشحن", value: orderDetails.shippingFees || 0 });
   }
+  rows.push(
+    { label: "الخصم", value: Number(orderDetails.totalDiscounts).toFixed(0) || "" },
+    { label: "اجمالي البيع", value: Number(orderDetails.totalPrice).toFixed(0) || "" },
+    { label: "جدية الشراء", value: orderDetails.downPayment || 0 },
+    { label: "المبلغ المطلوب تحصيله", value: orderDetails.toBeCollected || 0 }
+  );
+
+  const row = (item, i) => (
+    <Box
+      key={`${item.label}-${i}`}
+      sx={{
+        display: "flex",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        gap: 1.5,
+        py: 0.9,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        ...(i === rows.length - 1 && { borderBottom: "none", pb: 0 }),
+      }}
+    >
+      <Typography variant="caption" color="text.secondary" sx={{ flex: "0 0 auto" }}>
+        {item.label}
+      </Typography>
+      <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ textAlign: "left" }}>
+        {item.value}
+      </Typography>
+    </Box>
+  );
 
   return (
-    <>
-      <MDBox pt={2} px={3}>
-        <MDTypography variant="h5" fontWeight="medium">
-          {isShimpentDetails ? "تفاصيل الشحنة" : "تفاصيل الطلب"}
-        </MDTypography>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              سعر البيع :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.subTotalPrice).toFixed(0) || ""}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              سعر التكلفة :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.orderLines[0].cost).toFixed(0) || ""}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        {!isVendor && (
-          <>
-            <MDBox mt={0} mb={2}>
-              <MDTypography variant="button" fontWeight="regular">
-                <MDTypography display="inline" variant="h6" verticalAlign="middle">
-                  تكلفة الشحن :{" "}
-                </MDTypography>
-                &nbsp;
-                <MDTypography variant="button" color="text" fontWeight="medium">
-                  {orderDetails.shippingFees || 0}
-                </MDTypography>
-              </MDTypography>
-            </MDBox>
-          </>
-        )}{" "}
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              الخصم :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.totalDiscounts).toFixed(0) || ""}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              اجمالي البيع :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {Number(orderDetails.totalPrice).toFixed(0) || ""}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              جدية الشراء :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.downPayment || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              المبلغ المطلوب تحصيله :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.toBeCollected || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        {/* <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق ﻟﻠﺑﺎﺋﻊ:
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.totalVendorDue || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              إﺟﻣﺎﻟﻲ اﻟﻣﺳﺗﺣق للشركة:
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
-              {orderDetails.totalCompanyDue || 0}
-            </MDTypography>
-          </MDTypography>
-        </MDBox> */}
-      </MDBox>
-    </>
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          pt: 2,
+          pb: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.success.main, 0.04),
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+          {isShimpentDetails ? "تفاصيل الشحنة" : "تفاصيل مالية للطلب"}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+          الأسعار، الخصم، وما يُستحق
+        </Typography>
+      </Box>
+      <Stack spacing={0} sx={{ px: 2, py: 1.5, flex: 1 }}>
+        {rows.map((item, i) => row(item, i))}
+      </Stack>
+    </Box>
   );
 }
 

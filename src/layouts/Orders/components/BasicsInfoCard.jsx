@@ -1,68 +1,86 @@
 /* eslint-disable react/prop-types */
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
-import React from "react";
-import { getDeliveryStatusValue } from "shared/utils/constants";
-import { getStatusValue } from "shared/utils/constants";
+import { Box, Card, CardContent, Stack, Typography, useTheme, alpha } from "@mui/material";
+import { getDeliveryStatusValue, getStatusValue } from "shared/utils/constants";
+
+const rowSx = (theme) => ({
+  p: 1.25,
+  borderRadius: 1.5,
+  bgcolor: alpha(theme.palette.info.main, 0.04),
+  border: "1px solid",
+  borderColor: alpha(theme.palette.divider, 0.6),
+});
 
 function BasicsInfoCard({ orderDetails }) {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const isVendor = user?.userType === "2";
+  const theme = useTheme();
 
   return (
-    <>
-      <MDBox pt={2} px={3}>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular"></MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              حالة الطلب :{" "}
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 2.5,
+        border: "1px solid",
+        borderColor: "divider",
+        borderInlineStart: (t) => `3px solid ${t.palette.info.main}`,
+        bgcolor: "background.paper",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          py: 1.25,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.info.main, 0.06),
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+          حالة الطلب والمتابعة
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+          التسليم، المسؤول، ومصدر الشحن
+        </Typography>
+      </Box>
+      <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
+        <Stack spacing={1.5}>
+          <Box sx={rowSx(theme)}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              حالة الطلب
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               {getStatusValue(orderDetails.status)}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              حالة التصنيع :
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
+            </Typography>
+          </Box>
+          <Box sx={rowSx(theme)}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              حالة التصنيع
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               {getDeliveryStatusValue(orderDetails.deliveryStatus)}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              المسؤول :
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
+            </Typography>
+          </Box>
+          <Box sx={rowSx(theme)}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              المسؤول
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               {orderDetails.administrator ? orderDetails.administrator : "لا يوجد"}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="h6" verticalAlign="middle">
-              مكان التسليم :
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
+            </Typography>
+          </Box>
+          <Box sx={rowSx(theme)}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              مكان التسليم
+            </Typography>
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               {orderDetails.shippedFromInventory ? "مخازن هومكس" : "عنوان العميل"}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-      </MDBox>
-    </>
+            </Typography>
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 

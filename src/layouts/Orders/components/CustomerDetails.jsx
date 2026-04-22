@@ -1,132 +1,172 @@
 import { Home, Phone } from "@mui/icons-material";
-import { Icon, Typography } from "@mui/material";
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
-import React from "react";
+import { Box, Card, CardContent, Link, Stack, Typography, useTheme, alpha } from "@mui/material";
 import EmailIcon from "@mui/icons-material/Email";
 import PersonIcon from "@mui/icons-material/Person";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+
+const cardShell = (theme) => ({
+  height: "100%",
+  borderRadius: 2.5,
+  border: "1px solid",
+  borderColor: "divider",
+  borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
+  bgcolor: "background.paper",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+  overflow: "hidden",
+  display: "flex",
+  flexDirection: "column",
+});
+
+const rowSx = (theme) => ({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 1.25,
+  p: 1.25,
+  borderRadius: 1.5,
+  bgcolor: alpha(theme.palette.primary.main, 0.04),
+  border: "1px solid",
+  borderColor: alpha(theme.palette.divider, 0.6),
+});
+
 // eslint-disable-next-line react/prop-types
 function CustomerDetails({ customerName, email, address, phoneNumber, shippedFromInventory }) {
-  return shippedFromInventory ? (
-    <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "16px 24px",
+  const theme = useTheme();
+
+  if (shippedFromInventory) {
+    return (
+      <Card sx={cardShell(theme)}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1.25,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            bgcolor: alpha(theme.palette.primary.main, 0.05),
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <LocalShippingIcon sx={{ color: "primary.main" }} />
+          <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
+            بيانات الشحن
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
+          <Stack spacing={1.5}>
+            <Box sx={rowSx(theme)}>
+              <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+              <Box minWidth={0}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  هاتف
+                </Typography>
+                <Link
+                  href="tel:01055047847"
+                  underline="hover"
+                  sx={{ fontWeight: 600, color: "primary.main", display: "block" }}
+                >
+                  01055047847
+                </Link>
+              </Box>
+            </Box>
+            <Box sx={rowSx(theme)}>
+              <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+              <Box minWidth={0}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  العنوان
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.primary"
+                  sx={{ lineHeight: 1.5, fontWeight: 500 }}
+                >
+                  المنصورية - الهرم - الطريق الرئيسي - زاوية أبو مسلم بجوار مسجد اهل التقوي
+                </Typography>
+              </Box>
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={cardShell(theme)}>
+      <Box
+        sx={{
+          px: 2,
+          py: 1.25,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.primary.main, 0.05),
         }}
       >
-        <Icon sx={{ color: "#333", marginRight: "8px" }}>
-          <LocalShippingIcon />
-        </Icon>
-
-        <MDTypography variant="h6" fontWeight="medium">
-          بيانات الشحن
-        </MDTypography>
-      </div>
-
-      <MDBox mt={0} mb={2} p={"0 24px"}>
-        <MDTypography variant="button" fontWeight="regular">
-          <MDTypography display="inline" variant="body2" verticalAlign="middle">
-            <Icon sx={{ color: "#333" }}>
-              <Phone />
-            </Icon>
-          </MDTypography>
-          &nbsp;
-          <Typography
-            variant="button"
-            // color="body2"
-            fontWeight="regular"
-            component="a"
-            href="tel:01055047847"
-            sx={{ textDecoration: "none", cursor: "pointer" }}
-          >
-            01055047847
-          </Typography>
-        </MDTypography>
-      </MDBox>
-      <MDBox mt={0} mb={2} p={"0 24px"}>
-        <MDTypography variant="button" fontWeight="regular">
-          <MDTypography display="inline" variant="body2" verticalAlign="middle">
-            <Icon sx={{ color: "#333" }}>
-              <Home />
-            </Icon>
-          </MDTypography>
-          &nbsp;
-          <MDTypography variant="button" color="text" fontWeight="regular">
-            المنصورية - الهرم - الطريق الرئيسي - زاوية أبو مسلم بجوار مسجد اهل التقوي
-          </MDTypography>
-        </MDTypography>
-      </MDBox>
-    </>
-  ) : (
-    <>
-      <MDBox pt={2} px={3}>
-        <MDTypography variant="h6" fontWeight="medium">
+        <Typography variant="subtitle1" fontWeight={700} color="text.primary" component="h3">
           العميل
-        </MDTypography>
-        <MDBox mt={0} mb={2}>
-          <MDTypography variant="button" fontWeight="regular">
-            <MDTypography display="inline" variant="body2" verticalAlign="middle">
-              <Icon sx={{ color: "#333" }}>
-                <PersonIcon />
-              </Icon>
-            </MDTypography>
-            &nbsp;
-            <MDTypography variant="button" color="text" fontWeight="medium">
+        </Typography>
+        {customerName ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5 }}>
+            <PersonIcon sx={{ color: "primary.main", fontSize: 22 }} />
+            <Typography variant="body1" fontWeight={600} color="text.primary">
               {customerName}
-            </MDTypography>
-          </MDTypography>
-        </MDBox>
-      </MDBox>
-      <div>
-        <MDBox pt={1} px={3}>
-          <MDTypography variant="h6" fontWeight="medium">
-            معلومات العميل
-          </MDTypography>
-          <MDBox mt={0} mb={2}>
-            <MDTypography variant="button" fontWeight="regular">
-              <MDTypography display="inline" variant="body2" verticalAlign="middle">
-                <Icon sx={{ color: "#333" }}>
-                  <EmailIcon />
-                </Icon>
-              </MDTypography>
-              &nbsp;
-              <MDTypography variant="button" color="text" fontWeight="regular">
+            </Typography>
+          </Box>
+        ) : null}
+      </Box>
+      <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mb: 1.5, fontWeight: 600 }}
+        >
+          معلومات الاتصال
+        </Typography>
+        <Stack spacing={1.5}>
+          <Box sx={rowSx(theme)}>
+            <EmailIcon sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+            <Box minWidth={0} flex={1}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                البريد
+              </Typography>
+              <Typography variant="body2" color="text.primary" sx={{ wordBreak: "break-word" }}>
                 {email}
-              </MDTypography>
-            </MDTypography>
-          </MDBox>
-          <MDBox mt={0} mb={2}>
-            <MDTypography variant="button" fontWeight="regular">
-              <MDTypography display="inline" variant="body2" verticalAlign="middle">
-                <Icon sx={{ color: "#333" }}>
-                  <Home />
-                </Icon>
-              </MDTypography>
-              &nbsp;
-              <MDTypography variant="button" color="text" fontWeight="regular">
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={rowSx(theme)}>
+            <Home sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+            <Box minWidth={0} flex={1}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                العنوان
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.primary"
+                sx={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}
+              >
                 {address}
-              </MDTypography>
-            </MDTypography>
-          </MDBox>
-          <MDBox mt={0} mb={2}>
-            <MDTypography variant="button" fontWeight="regular">
-              <MDTypography display="inline" variant="body2" verticalAlign="middle">
-                <Icon sx={{ color: "#333" }}>
-                  <Phone />
-                </Icon>
-              </MDTypography>
-              &nbsp;
-              <MDTypography variant="button" color="text" fontWeight="regular">
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={rowSx(theme)}>
+            <Phone sx={{ fontSize: 22, color: "primary.main", flexShrink: 0, mt: 0.1 }} />
+            <Box minWidth={0} flex={1}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                الجوال
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.primary"
+                dir="ltr"
+                sx={{ textAlign: "right" }}
+              >
                 {phoneNumber ? phoneNumber : ""}
-              </MDTypography>
-            </MDTypography>
-          </MDBox>
-        </MDBox>
-      </div>
-    </>
+              </Typography>
+            </Box>
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 

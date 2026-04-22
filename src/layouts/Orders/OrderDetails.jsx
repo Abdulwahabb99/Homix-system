@@ -1,16 +1,13 @@
 import axios from "axios";
-import MDBox from "components/MDBox";
+import PropTypes from "prop-types";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import styles from "./Orders.module.css";
-import ArrowNextIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import PictureAsPdf from "@mui/icons-material/PictureAsPdf";
-import MDTypography from "components/MDTypography";
-import Spinner from "components/Spinner/Spinner";
 import CustomerDetails from "./components/CustomerDetails";
 import {
   Box,
@@ -19,27 +16,114 @@ import {
   Chip,
   FormControl,
   Grid,
-  Icon,
   IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   TextField,
   Typography,
-  useMediaQuery,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
 import OrderInfoCard from "./components/OrderInfoCard";
-import PdfData from "./PdfData";
 import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
 import BasicsInfoCard from "./components/BasicsInfoCard";
 import { manufactureStatusOptions } from "shared/utils/constants";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import PdfDataMobile from "./PdfDataMobile";
+import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
+
+const PRIMARY = "primary.main";
+
+const homixCardSx = {
+  height: "100%",
+  borderRadius: 2.5,
+  border: "1px solid",
+  borderColor: "divider",
+  borderInlineStart: (t) => `3px solid ${t.palette.primary.main}`,
+  bgcolor: "background.paper",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+  overflow: "hidden",
+};
+
+const financeCardSx = {
+  ...homixCardSx,
+  borderInlineStart: (t) => `3px solid ${t.palette.success.main}`,
+};
+
+function SectionHeader({ children, count }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        mb: 2,
+        mt: 0,
+        flexWrap: "wrap",
+      }}
+    >
+      <Box
+        sx={{ width: 3, minHeight: 24, borderRadius: 0.5, bgcolor: "primary.main", flexShrink: 0 }}
+      />
+      <Typography
+        variant="subtitle1"
+        fontWeight={800}
+        color="text.primary"
+        component="h2"
+        fontSize="1.05rem"
+      >
+        {children}
+      </Typography>
+      {count != null && (
+        <Chip
+          label={count}
+          size="small"
+          sx={{
+            height: 24,
+            fontWeight: 700,
+            fontSize: "0.7rem",
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+            color: "primary.dark",
+          }}
+        />
+      )}
+    </Box>
+  );
+}
+
+SectionHeader.propTypes = {
+  children: PropTypes.node,
+  count: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+};
+
+const manufactureFormControlSx = {
+  width: "100%",
+  mt: 2,
+  mx: 0,
+  px: 2,
+  pb: 2,
+  "& .MuiInputLabel-root": {
+    fontSize: "0.875rem",
+    color: PRIMARY,
+    "&.Mui-focused": { color: PRIMARY },
+    "&.MuiInputLabel-shrink": { color: PRIMARY },
+  },
+  "& .MuiOutlinedInput-root": {
+    minHeight: 52,
+    borderRadius: 2,
+    backgroundColor: "background.paper",
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.28)" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.45)" },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
+  },
+  "& .MuiSelect-select": { py: 1.75, px: 1.5, fontSize: "0.875rem" },
+};
 
 export const statusoptions = [
   { label: "معلق", value: 1 },
@@ -77,8 +161,6 @@ function OrderDetails() {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const componentRef = useRef();
-  const isSmallScreen = useMediaQuery("(max-width:600px)");
-  const isAdmin = user.userType === "1";
   const isVendor = user.userType === "2";
 
   const handlePrint = useReactToPrint({
@@ -263,19 +345,21 @@ function OrderDetails() {
         setOrderDetails(data.data);
         setOrderlines(data.data.orderLines);
         setManufactureStatus(data.data.manufactureStatus);
-        const orderedComments = data.data?.notesList.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        const list = data.data?.notesList ?? [];
+        const orderedComments = list
+          .slice()
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setComments(orderedComments);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching order:", error);
+        NotificationMeassage("error", "حدث خطأ أثناء تحميل الطلب");
       } finally {
         setIsLoading(false);
       }
     };
 
     getOrderDetails();
-  }, []);
+  }, [id, navigate]);
 
   return (
     <>
@@ -298,315 +382,403 @@ function OrderDetails() {
             data={slectedOrderLine}
           />
         )}
-        {!isLoading ? (
-          <>
-            <div className={styles.orderDetailsHeader}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <IconButton color="#344767" onClick={() => navigate("/orders")}>
-                  <ArrowNextIcon />
-                </IconButton>
-                <MDTypography variant="h5" fontWeight="medium">
-                  {orderDetails?.name}
-                </MDTypography>
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                gap: 5,
-              }}
-            >
-              {orderDetails?.paymentStatus && (
-                <div
-                  style={{
-                    background: "#4472C4",
-                    color: "#fff",
-                    padding: "7px 7px",
-                    borderRadius: "5px",
-                    fontSize: "16px",
-                  }}
-                >
-                  {getPaymentValue(orderDetails?.paymentStatus)}
-                </div>
-              )}
-              <div
-                onClick={handlePrint}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
+        <Box
+          sx={{
+            maxWidth: 1680,
+            mx: "auto",
+            width: "100%",
+            px: { xs: 2, sm: 3 },
+            py: 2.5,
+            minHeight: "50vh",
+          }}
+        >
+          {isLoading ? (
+            <OrderDetailsSkeleton />
+          ) : !orderDetails ? null : (
+            <>
+              <Box
+                sx={{
+                  p: 2.5,
+                  mb: 2.5,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  background: (t) =>
+                    t.palette.mode === "dark"
+                      ? "rgba(255,255,255,0.03)"
+                      : "linear-gradient(135deg, rgba(6, 49, 70, 0.06) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,1) 100%)",
+                  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
                 }}
               >
-                <Button
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "#4472C4",
-                    color: "#fff",
-                    padding: "5px 5px",
-                    borderRadius: "5px",
-                  }}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  flexWrap="wrap"
+                  useFlexGap
+                  sx={{ gap: 1.5 }}
                 >
-                  <Icon sx={{ margin: "0 5px" }}>
-                    <PictureAsPdf />
-                  </Icon>
-                  <span style={{ fontSize: "16px" }}> الفاتوره</span>
-                </Button>
-              </div>
-              {!isVendor && (
-                <Button
-                  variant="contained"
-                  onClick={() => navigate(`/orders/edit/${id}`)}
-                  sx={{
-                    backgroundColor: "#4472C4",
-                    color: "#fff",
-                    padding: "5px 5px",
-                    borderRadius: "5px",
-                  }}
-                >
-                  <Icon sx={{ margin: "0 5px" }}>
-                    <EditIcon />
-                  </Icon>
-                </Button>
-              )}
-            </div>
+                  <IconButton
+                    onClick={() => navigate(-1)}
+                    aria-label="رجوع"
+                    size="small"
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "background.paper",
+                      color: "primary.main",
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
+                  >
+                    <ArrowBackIosNewIcon sx={{ fontSize: 18, transform: "scaleX(-1)" }} />
+                  </IconButton>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      fontSize="0.75rem"
+                    >
+                      تفاصيل الطلب
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      fontWeight={800}
+                      color="text.primary"
+                      fontSize="1.15rem"
+                    >
+                      {orderDetails?.name || orderDetails?.code || "—"}
+                    </Typography>
+                    {orderDetails?.code && orderDetails?.name && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        fontSize="0.8125rem"
+                        sx={{ mt: 0.25 }}
+                      >
+                        رقم العملية: {orderDetails.code}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} alignItems="center">
+                    {orderDetails?.paymentStatus && (
+                      <Chip
+                        label={getPaymentValue(orderDetails?.paymentStatus)}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.8125rem",
+                          height: 32,
+                          bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                          color: "primary.main",
+                          border: "1px solid",
+                          borderColor: (t) => alpha(t.palette.primary.main, 0.28),
+                        }}
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<PictureAsPdf fontSize="small" />}
+                      onClick={handlePrint}
+                      size="small"
+                      sx={{ fontWeight: 600, borderColor: "primary.main" }}
+                    >
+                      الفاتورة
+                    </Button>
+                    {!isVendor && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<EditIcon />}
+                        onClick={() => navigate(`/orders/edit/${id}`)}
+                        size="small"
+                        sx={{ fontWeight: 600, boxShadow: "none" }}
+                      >
+                        تعديل
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+              </Box>
 
-            <MDBox py={3}>
-              <MDBox>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "100%" }}>
-                      {orderDetails?.customer && (
-                        <CustomerDetails
-                          customerName={`${orderDetails?.customer.firstName} ${orderDetails.customer.lastName}`}
-                          email={orderDetails?.customer.email}
-                          address={
-                            orderDetails?.customer.address
-                              ? orderDetails.customer.address
-                              : orderDetails.customer.address2
-                          }
-                          phoneNumber={
-                            orderDetails?.customer.phoneNumber
-                              ? orderDetails.customer.phoneNumber
-                              : ""
-                          }
-                          shippedFromInventory={orderDetails.shippedFromInventory}
-                        />
-                      )}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "100%" }}>
-                      {orderDetails && (
-                        <BasicsInfoCard
-                          orderDetails={{ ...orderDetails, administrator }}
-                          orderTotalCost={orderTotalCost}
-                          orderTotalPrice={orderTotalPrice}
-                          orderTotalShipping={orderTotalShipping}
-                          orderTotalToBeCollected={orderTotalToBeCollected}
-                        />
-                      )}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "100%" }}>
-                      {orderDetails && (
-                        <OrderInfoCard
-                          orderDetails={{ ...orderDetails, administrator }}
-                          orderTotalCost={orderTotalCost}
-                          orderTotalPrice={orderTotalPrice}
-                          orderTotalShipping={orderTotalShipping}
-                          orderTotalToBeCollected={orderTotalToBeCollected}
-                        />
-                      )}
-                      <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
-                        <InputLabel id="manufactureStatus">حالة التصنيع</InputLabel>
-                        <Select
-                          labelId="manufactureStatus"
-                          id="manufactureStatus-select"
-                          value={manufactureStatus}
-                          label="حالة التصنيع"
-                          onChange={(e) => changeManufactureStatus(e.target.value)}
-                          sx={{ height: 35, background: "#eee" }}
+              <SectionHeader>ملخّص الطلب</SectionHeader>
+
+              <Grid container spacing={2.5}>
+                <Grid item xs={12} md={6} lg={6}>
+                  {orderDetails?.customer && (
+                    <CustomerDetails
+                      customerName={`${orderDetails?.customer.firstName} ${orderDetails.customer.lastName}`}
+                      email={orderDetails?.customer.email}
+                      address={
+                        orderDetails?.customer.address
+                          ? orderDetails.customer.address
+                          : orderDetails.customer.address2
+                      }
+                      phoneNumber={
+                        orderDetails?.customer.phoneNumber ? orderDetails.customer.phoneNumber : ""
+                      }
+                      shippedFromInventory={orderDetails.shippedFromInventory}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12} md={6} lg={6}>
+                  {orderDetails && (
+                    <BasicsInfoCard
+                      orderDetails={{ ...orderDetails, administrator }}
+                      orderTotalCost={orderTotalCost}
+                      orderTotalPrice={orderTotalPrice}
+                      orderTotalShipping={orderTotalShipping}
+                      orderTotalToBeCollected={orderTotalToBeCollected}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12} md={6} lg={6}>
+                  <Card
+                    sx={{
+                      ...financeCardSx,
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                    }}
+                  >
+                    {orderDetails && (
+                      <OrderInfoCard
+                        orderDetails={{ ...orderDetails, administrator }}
+                        orderTotalCost={orderTotalCost}
+                        orderTotalPrice={orderTotalPrice}
+                        orderTotalShipping={orderTotalShipping}
+                        orderTotalToBeCollected={orderTotalToBeCollected}
+                      />
+                    )}
+                    <FormControl fullWidth variant="outlined" sx={manufactureFormControlSx}>
+                      <InputLabel id="manufactureStatus">حالة التصنيع</InputLabel>
+                      <Select
+                        labelId="manufactureStatus"
+                        id="manufactureStatus-select"
+                        value={manufactureStatus}
+                        label="حالة التصنيع"
+                        onChange={(e) => changeManufactureStatus(e.target.value)}
+                        color="primary"
+                      >
+                        {manufactureStatusOptions.map((option) => {
+                          return (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sx={{ mt: { xs: 0.5, md: 0 } }}>
+                  <Box sx={{ pt: 1 }}>
+                    <SectionHeader count={orderlines.length}>المنتجات</SectionHeader>
+                  </Box>
+                </Grid>
+                {orderlines.map((order, lineIndex) => {
+                  const ordervariant = order?.product?.variants?.find(
+                    (variant) => variant.shopifyId === order?.variant_id
+                  );
+                  const lineChipSx = {
+                    mt: 0.75,
+                    fontSize: "0.75rem",
+                    whiteSpace: "normal",
+                    lineHeight: 1.35,
+                    height: "auto",
+                    py: 0.5,
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+                    border: "1px solid",
+                    borderColor: "rgba(6, 49, 70, 0.22)",
+                    color: "text.primary",
+                    "& .MuiChip-label": { whiteSpace: "normal" },
+                  };
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={order.id}>
+                      <Card
+                        sx={{
+                          ...homixCardSx,
+                          display: "flex",
+                          flexDirection: "column",
+                          height: "100%",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 1.5,
+                            py: 1,
+                            borderBottom: "1px solid",
+                            borderColor: "divider",
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                          }}
                         >
-                          {manufactureStatusOptions.map((option) => {
-                            return (
-                              <MenuItem key={option.value} value={option.value}>
-                                {option.label}
-                              </MenuItem>
-                            );
-                          })}
-                        </Select>
-                      </FormControl>
-                    </Card>
-                  </Grid>
-                  {orderlines.map((order) => {
-                    const ordervariant = order?.product?.variants?.find(
-                      (variant) => variant.shopifyId === order?.variant_id
-                    );
-
-                    return (
-                      <Grid item xs={12} md={6} lg={6} key={order.id}>
-                        <Card sx={{ padding: "20px", margin: "0px" }}>
+                          <Typography variant="caption" fontWeight={800} color="primary.main">
+                            منتج
+                          </Typography>
+                          <Chip
+                            label={`#${lineIndex + 1}`}
+                            size="small"
+                            sx={{ height: 24, fontWeight: 800, fontSize: "0.7rem" }}
+                          />
+                        </Box>
+                        <Box
+                          sx={{
+                            p: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                            flex: 1,
+                          }}
+                        >
                           <Box
+                            component="img"
+                            src={order?.product?.image}
+                            alt={order?.title}
                             sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              textAlign: "center",
-                              padding: "10px 0",
+                              width: "100%",
+                              maxWidth: 280,
+                              height: "auto",
+                              maxHeight: 300,
+                              objectFit: "cover",
+                              borderRadius: 2,
+                              border: "1px solid",
+                              borderColor: "divider",
+                            }}
+                          />
+                          <Typography
+                            sx={{
+                              fontSize: "0.95rem",
+                              fontWeight: 600,
+                              color: "primary.main",
+                              mt: 1.5,
                             }}
                           >
-                            <img
-                              src={order?.product.image}
-                              alt={order.title}
-                              width={300}
-                              height={300}
-                              style={{ borderRadius: 6 }}
-                            />
-                            <Typography sx={{ fontSize: "15px", color: "#000", marginTop: "10px" }}>
-                              {order?.title}
-                            </Typography>
-                            <Typography sx={{ fontSize: "14px", color: "#000", marginTop: "4px" }}>
-                              {Number(order?.product.variants[0].price).toFixed(0)} ج.م
-                            </Typography>
-                            {ordervariant?.title !== "Default Title" && (
-                              <Chip
-                                style={{ fontSize: "12px", marginTop: "6px" }}
-                                label={ordervariant?.title}
-                                color="primary"
-                                variant="filled"
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#f0f0f0",
-                                  border: "1px solid #000",
-                                  color: "#000",
-                                  whiteSpace: "normal",
-                                  lineHeight: "20px",
-                                  height: "auto",
-                                  paddingY: "2px",
-                                  "& .MuiChip-label": {
-                                    whiteSpace: "normal",
-                                    textAlign: "left",
-                                  },
-                                }}
-                              />
-                            )}
-                            {order?.product?.type?.name && (
-                              <Chip
-                                style={{ fontSize: "12px", marginTop: "6px" }}
-                                label={order?.product?.type?.name}
-                                color="primary"
-                                variant="filled"
-                                size="small"
-                                sx={{
-                                  backgroundColor: "#f0f0f0",
-                                  border: "1px solid #000",
-                                  color: "#000",
-                                  whiteSpace: "normal",
-                                  lineHeight: "20px",
-                                  height: "auto",
-                                  paddingY: "2px",
-                                  "& .MuiChip-label": {
-                                    whiteSpace: "normal",
-                                    textAlign: "left",
-                                  },
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
-                  <Grid item xs={12} md={12} lg={12} sx={{ margin: "5px 0" }}>
-                    <Card sx={{ padding: "10px 13px", margin: "10px" }}>
-                      <Box component="form" display="flex" alignItems="center" gap={1}>
-                        <TextField
-                          fullWidth
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="اكتب تعليقك هنا..."
-                          multiline
-                          rows={2}
-                          variant="outlined"
-                          sx={{
-                            flexGrow: 1,
-                            "& .MuiOutlinedInput-root": {
-                              "& fieldset": {
-                                borderColor: "#999",
-                              },
-                              "&:hover fieldset": {
-                                borderColor: "#115293",
-                              },
-                              "&.Mui-focused fieldset": {
-                                borderColor: "#0d47a1",
-                              },
-                            },
-                            "& .MuiInputBase-input::placeholder": {
-                              color: "#999",
-                              opacity: 1,
-                            },
-                          }}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                {selectedFiles?.length > 0 ? (
-                                  selectedFiles?.map((file, index) => (
-                                    <Chip
-                                      key={index}
-                                      label={
-                                        file.file?.name?.length > 20
-                                          ? file.file?.name.slice(0, 10) +
-                                            "..." +
-                                            file.file?.name.slice(-7)
-                                          : file?.file?.name
-                                      }
-                                      size="small"
-                                      onDelete={() => handleRemoveFile(index)}
-                                      variant="outlined"
-                                      sx={{
-                                        maxWidth: "120px",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                        fontSize: "12px",
-                                        margin: "0 5px",
-                                      }}
-                                    />
-                                  ))
-                                ) : (
-                                  <label htmlFor="comment-attachment">
-                                    <input
-                                      id="comment-attachment"
-                                      type="file"
-                                      hidden
-                                      onChange={(e) => handleFileChange(e)}
-                                      accept="image/png, image/jpeg, image/jpg"
-                                      // , application/pdf
-                                    />
-                                    <IconButton component="span">
-                                      <AttachFileIcon />
-                                    </IconButton>
-                                  </label>
-                                )}
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                        <Button
-                          disabled={!commentText && !selectedFiles?.length}
-                          variant="contained"
-                          sx={{ backgroundColor: "#007aff", color: "#fff" }}
-                          onClick={handleAddComment}
-                        >
-                          إضافة
-                        </Button>
-                      </Box>
-                    </Card>
-                  </Grid>{" "}
+                            {order?.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {order?.product?.variants?.[0]
+                              ? `${Number(order.product.variants[0].price).toFixed(0)} ج.م`
+                              : "—"}
+                          </Typography>
+                          {ordervariant?.title !== "Default Title" && (
+                            <Chip label={ordervariant?.title} size="small" sx={lineChipSx} />
+                          )}
+                          {order?.product?.type?.name && (
+                            <Chip label={order?.product?.type?.name} size="small" sx={lineChipSx} />
+                          )}
+                        </Box>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+                <Grid item xs={12}>
+                  <Box sx={{ pt: 2 }}>
+                    <SectionHeader>تعليق جديد</SectionHeader>
+                  </Box>
                 </Grid>
+                <Grid item xs={12}>
+                  <Card sx={{ ...homixCardSx, p: 2 }}>
+                    <Box
+                      component="form"
+                      display="flex"
+                      alignItems="flex-end"
+                      flexWrap="wrap"
+                      gap={1.5}
+                    >
+                      <TextField
+                        fullWidth
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="اكتب تعليقك هنا..."
+                        multiline
+                        rows={2}
+                        variant="outlined"
+                        size="small"
+                        color="primary"
+                        sx={{
+                          flex: "1 1 240px",
+                          minWidth: 0,
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 1.5,
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "primary.main",
+                              borderWidth: 2,
+                            },
+                          },
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              {selectedFiles?.length > 0 ? (
+                                selectedFiles?.map((file, index) => (
+                                  <Chip
+                                    key={index}
+                                    label={
+                                      file.file?.name?.length > 20
+                                        ? file.file?.name.slice(0, 10) +
+                                          "..." +
+                                          file.file?.name.slice(-7)
+                                        : file?.file?.name
+                                    }
+                                    size="small"
+                                    onDelete={() => handleRemoveFile(index)}
+                                    variant="outlined"
+                                    sx={{
+                                      maxWidth: "120px",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                      fontSize: "12px",
+                                      margin: "0 5px",
+                                    }}
+                                  />
+                                ))
+                              ) : (
+                                <label htmlFor="comment-attachment">
+                                  <input
+                                    id="comment-attachment"
+                                    type="file"
+                                    hidden
+                                    onChange={(e) => handleFileChange(e)}
+                                    accept="image/png, image/jpeg, image/jpg"
+                                    // , application/pdf
+                                  />
+                                  <IconButton component="span">
+                                    <AttachFileIcon />
+                                  </IconButton>
+                                </label>
+                              )}
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <Button
+                        disabled={!commentText && !selectedFiles?.length}
+                        variant="contained"
+                        color="primary"
+                        onClick={handleAddComment}
+                        sx={{ fontWeight: 600, minWidth: 96, flexShrink: 0 }}
+                      >
+                        إضافة
+                      </Button>
+                    </Box>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 4, mb: 2 }}>
+                <SectionHeader>سجل التعليقات</SectionHeader>
+              </Box>
+
+              <Stack spacing={2} sx={{ mt: 0 }}>
                 {comments.map((comment, index) => {
                   const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
                   const imageUrl = comment?.attachments?.[0]?.url
@@ -618,31 +790,46 @@ function OrderDetails() {
                   return (
                     <Card
                       key={index}
-                      sx={{ mb: 2, p: 2, backgroundColor: "#fdfdfd", border: "1px solid #ddd" }}
+                      elevation={0}
+                      sx={{
+                        ...homixCardSx,
+                        p: 2.5,
+                        borderInlineStart: (t) => `3px solid ${t.palette.info.main}`,
+                      }}
                     >
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="body2" color="text.secondary">
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        flexWrap="wrap"
+                        gap={1}
+                      >
+                        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                          <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
                             {new Date(comment.createdAt).toLocaleString()}
                           </Typography>
                           <Chip
                             label={commentMaker}
                             size="small"
                             sx={{
-                              backgroundColor: "#e0e0e0",
-                              color: "#000",
-                              fontSize: "11px",
-                              borderRadius: "4px",
-                              height: "24px",
+                              fontSize: "0.7rem",
+                              height: 24,
+                              bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                              color: "primary.dark",
                             }}
                           />
                         </Box>
-                        <Box display="flex" gap={1}>
+                        <Box display="flex" gap={0.75}>
                           <IconButton
                             size="small"
                             onClick={() => {
                               setEditingIndex(index);
                               setEditedCommentText(comment.text);
+                            }}
+                            sx={{
+                              border: "1px solid",
+                              borderColor: "divider",
+                              bgcolor: "background.paper",
                             }}
                           >
                             <EditIcon fontSize="small" />
@@ -651,6 +838,11 @@ function OrderDetails() {
                             size="small"
                             color="error"
                             onClick={() => deleteComment(comment.id)}
+                            sx={{
+                              border: "1px solid",
+                              borderColor: (t) => alpha(t.palette.error.main, 0.35),
+                              bgcolor: (t) => alpha(t.palette.error.main, 0.04),
+                            }}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
@@ -687,12 +879,14 @@ function OrderDetails() {
                             onChange={(e) => setEditedCommentText(e.target.value)}
                             multiline
                             size="small"
+                            color="primary"
                             sx={{ mt: 1 }}
                           />
                           <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
                             <Button
                               variant="contained"
                               size="small"
+                              color="primary"
                               onClick={() => {
                                 const updated = [...comments];
                                 updated[index].text = editedCommentText;
@@ -700,12 +894,11 @@ function OrderDetails() {
                                 setEditingIndex(null);
                                 updateComment(comment.id);
                               }}
-                              sx={{ color: "#fff" }}
                             >
                               حفظ
                             </Button>
                             <Button
-                              variant="text"
+                              variant="outlined"
                               size="small"
                               onClick={() => setEditingIndex(null)}
                             >
@@ -721,12 +914,10 @@ function OrderDetails() {
                     </Card>
                   );
                 })}
-              </MDBox>
-            </MDBox>
-          </>
-        ) : (
-          <Spinner />
-        )}
+              </Stack>
+            </>
+          )}
+        </Box>
       </DashboardLayout>
     </>
   );
