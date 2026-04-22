@@ -36,6 +36,7 @@ import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import HomixDataTable from "shared/components/HomixDataTable/HomixDataTable";
 import HomixFilterIconButton from "shared/components/HomixFilterIconButton/HomixFilterIconButton";
 import OrdersFilterDialog from "layouts/Orders/components/OrdersFilterDialog";
+import OrdersPageSkeleton from "layouts/Orders/components/OrdersPageSkeleton";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 const ITEMS_PER_PAGE = 30;
@@ -125,6 +126,7 @@ function Orders() {
   const [totalPages, setTotalPages] = useState(0);
   const [users, setUsers] = useState([]);
   const [isExportLoading, setIsExportLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const navigate = useNavigate();
   const { user, token } = useSelector((state) => state.auth);
@@ -217,7 +219,10 @@ function Orders() {
         setTotalPages(data.data.totalPages);
       })
       .catch(() => NotificationMeassage("error", "حدث خطأ"))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      });
   }, [
     searchParams,
     startDate,
@@ -553,6 +558,7 @@ function Orders() {
 
   const serverRowCount = Math.max(0, totalPages * ITEMS_PER_PAGE);
   const gridPage0 = page - 1;
+  const showInitialSkeleton = isInitialLoad && isLoading;
 
   return (
     <DashboardLayout>
@@ -617,192 +623,203 @@ function Orders() {
           width: "100%",
         }}
       >
-        <Stack
-          spacing={0.5}
-          mb={2.5}
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={1}
-        >
-          <Box>
-            <Typography variant="h6" fontWeight={700} color="text.primary" fontSize="1.1rem">
-              الطلبات
-            </Typography>
-            <Typography variant="body2" color="text.secondary" fontSize="0.8125rem">
-              بحث مباشر، تصفية من الأيقونة، والفترة من التاريخ أدناه
-            </Typography>
-          </Box>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Button
-              size="small"
-              variant="text"
-              onClick={handleFullReset}
-              sx={{ color: "text.secondary", fontWeight: 600 }}
+        {showInitialSkeleton ? (
+          <OrdersPageSkeleton isVendor={isVendor} />
+        ) : (
+          <>
+            <Stack
+              spacing={0.5}
+              mb={2.5}
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              flexWrap="wrap"
+              gap={1}
             >
-              إعادة الضبط
-            </Button>
-            {!isVendor && (
-              <>
-                <IconButton
-                  onClick={handleExport}
+              <Box>
+                <Typography variant="h6" fontWeight={700} color="text.primary" fontSize="1.1rem">
+                  الطلبات
+                </Typography>
+                <Typography variant="body2" color="text.secondary" fontSize="0.8125rem">
+                  بحث مباشر، تصفية من الأيقونة، والفترة من التاريخ أدناه
+                </Typography>
+              </Box>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Button
                   size="small"
-                  color="primary"
-                  disabled={isExportLoading}
-                  aria-busy={isExportLoading}
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}
+                  variant="text"
+                  onClick={handleFullReset}
+                  sx={{ color: "text.secondary", fontWeight: 600 }}
                 >
-                  <Box
-                    component="span"
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {isExportLoading ? (
-                      <CircularProgress color="inherit" size={20} thickness={4} />
-                    ) : (
-                      <DownloadIcon fontSize="small" />
-                    )}
-                  </Box>
-                </IconButton>
-                <IconButton
-                  onClick={() => navigate("/orders/add")}
-                  size="small"
-                  color="primary"
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </>
-            )}
-          </Stack>
-        </Stack>
+                  إعادة الضبط
+                </Button>
+                {!isVendor && (
+                  <>
+                    <IconButton
+                      onClick={handleExport}
+                      size="small"
+                      color="primary"
+                      disabled={isExportLoading}
+                      aria-busy={isExportLoading}
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          width: 20,
+                          height: 20,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {isExportLoading ? (
+                          <CircularProgress color="inherit" size={20} thickness={4} />
+                        ) : (
+                          <DownloadIcon fontSize="small" />
+                        )}
+                      </Box>
+                    </IconButton>
+                    <IconButton
+                      onClick={() => navigate("/orders/add")}
+                      size="small"
+                      color="primary"
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </>
+                )}
+              </Stack>
+            </Stack>
 
-        <Box
-          sx={{
-            p: 2,
-            mb: 2.5,
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 12px rgba(15, 23, 42, 0.04)",
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ width: "100%", mb: 2 }}>
-            <TextField
-              label="رقم الطلب"
-              placeholder="ابحث برقم الطلب…"
-              variant="outlined"
-              size="small"
-              type="search"
-              value={orderNumber}
-              onChange={(e) => setParams({ page: "1", orderNumber: e.target.value })}
-              sx={searchFieldStyles}
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ style: { fontSize: "0.8125rem" } }}
-              InputProps={{
-                endAdornment: <SearchIcon sx={{ color: "text.disabled", fontSize: 18 }} />,
+            <Box
+              sx={{
+                p: 2,
+                mb: 2.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "background.paper",
+                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 12px rgba(15, 23, 42, 0.04)",
               }}
-            />
-            <HomixFilterIconButton
-              onClick={() => setFilterDialogOpen(true)}
-              activeCount={filterActiveCount}
-            />
-          </Stack>
-          <Box
-            sx={{
-              display: "flex",
-              width: "100%",
-              alignItems: "center",
-              "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
-                width: "100% !important",
-              },
-            }}
-          >
-            <DateRangePickerWrapper
-              startDate={startDate}
-              endDate={endDate}
-              allowPastDays
-              allowFutureDays={false}
-              useDefaultPresets
-              isMeduim
-              handleDatesChange={handleDatesChange}
-            />
-          </Box>
-        </Box>
-
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={1.5}
-          mb={1.5}
-        >
-          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-            {!isVendor && (
-              <Tooltip title="تبديل اختيار عدة صفوف">
-                <span>
-                  <IconButton
-                    onClick={() => {
-                      setIsBulkEditMode((b) => !b);
-                      setSelectionModel([]);
-                    }}
-                    size="small"
-                    sx={{ border: "1px solid", borderColor: "divider" }}
-                  >
-                    {isBulkEditMode ? (
-                      <CheckBoxIcon fontSize="small" />
-                    ) : (
-                      <CheckBoxOutlineBlankIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </span>
-              </Tooltip>
-            )}
-            {!isVendor && isBulkEditMode && selectionModel.length > 1 && (
-              <>
-                <Button
-                  size="small"
+            >
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1.5}
+                sx={{ width: "100%", mb: 2 }}
+              >
+                <TextField
+                  label="رقم الطلب"
+                  placeholder="ابحث برقم الطلب…"
                   variant="outlined"
-                  onClick={() => setIsBulkEditModalOpen(true)}
-                >
-                  تعديل المحدد
-                </Button>
-                <Button
                   size="small"
-                  color="error"
-                  variant="outlined"
-                  onClick={() => setIsBulkDeleteModalOpen(true)}
-                >
-                  حذف المحدد
-                </Button>
-              </>
-            )}
-          </Stack>
-        </Stack>
+                  type="search"
+                  value={orderNumber}
+                  onChange={(e) => setParams({ page: "1", orderNumber: e.target.value })}
+                  sx={searchFieldStyles}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ style: { fontSize: "0.8125rem" } }}
+                  InputProps={{
+                    endAdornment: <SearchIcon sx={{ color: "text.disabled", fontSize: 18 }} />,
+                  }}
+                />
+                <HomixFilterIconButton
+                  onClick={() => setFilterDialogOpen(true)}
+                  activeCount={filterActiveCount}
+                />
+              </Stack>
+              <Box
+                sx={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "center",
+                  "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
+                    width: "100% !important",
+                  },
+                }}
+              >
+                <DateRangePickerWrapper
+                  startDate={startDate}
+                  endDate={endDate}
+                  allowPastDays
+                  allowFutureDays={false}
+                  useDefaultPresets
+                  isMeduim
+                  handleDatesChange={handleDatesChange}
+                />
+              </Box>
+            </Box>
 
-        <HomixDataTable
-          rows={orders}
-          columns={columns}
-          getRowId={(r) => r.orderId}
-          loading={isLoading}
-          height={560}
-          page={gridPage0}
-          pageSize={ITEMS_PER_PAGE}
-          rowCount={serverRowCount}
-          paginationMode="server"
-          onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
-          checkboxSelection={!isVendor && isBulkEditMode}
-          selectionModel={!isVendor && isBulkEditMode ? selectionModel : []}
-          onSelectionModelChange={(m) => setSelectionModel(m)}
-        />
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              flexWrap="wrap"
+              gap={1.5}
+              mb={1.5}
+            >
+              <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                {!isVendor && (
+                  <Tooltip title="تبديل اختيار عدة صفوف">
+                    <span>
+                      <IconButton
+                        onClick={() => {
+                          setIsBulkEditMode((b) => !b);
+                          setSelectionModel([]);
+                        }}
+                        size="small"
+                        sx={{ border: "1px solid", borderColor: "divider" }}
+                      >
+                        {isBulkEditMode ? (
+                          <CheckBoxIcon fontSize="small" />
+                        ) : (
+                          <CheckBoxOutlineBlankIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
+                {!isVendor && isBulkEditMode && selectionModel.length > 1 && (
+                  <>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setIsBulkEditModalOpen(true)}
+                    >
+                      تعديل المحدد
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onClick={() => setIsBulkDeleteModalOpen(true)}
+                    >
+                      حذف المحدد
+                    </Button>
+                  </>
+                )}
+              </Stack>
+            </Stack>
+
+            <HomixDataTable
+              rows={orders}
+              columns={columns}
+              getRowId={(r) => r.orderId}
+              loading={isLoading}
+              height={560}
+              page={gridPage0}
+              pageSize={ITEMS_PER_PAGE}
+              rowCount={serverRowCount}
+              paginationMode="server"
+              onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
+              checkboxSelection={!isVendor && isBulkEditMode}
+              selectionModel={!isVendor && isBulkEditMode ? selectionModel : []}
+              onSelectionModelChange={(m) => setSelectionModel(m)}
+            />
+          </>
+        )}
       </Box>
     </DashboardLayout>
   );
