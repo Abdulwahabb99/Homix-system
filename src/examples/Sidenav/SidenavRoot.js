@@ -95,12 +95,33 @@ export default styled(Drawer)(({ theme, ownerState }) => {
   });
 
   return {
+    // الجذر docked بعرض 260px رغم أن الـ paper fixed؛ يسبب overflow/شريط أبيض في RTL على الموبايل
+    [breakpoints.down("lg")]: {
+      width: 0,
+      minWidth: 0,
+      maxWidth: 0,
+      overflow: "visible",
+    },
     "& .MuiDrawer-paper": {
       boxShadow: xxl,
       border: "none",
       borderInlineEnd: `1px solid ${theme.palette.divider}`,
 
       ...(miniSidenav ? drawerCloseStyles() : drawerOpenStyles()),
+
+      [breakpoints.down("lg")]: {
+        position: "fixed",
+        margin: 0,
+        boxSizing: "border-box",
+        insetInlineStart: 0,
+        insetBlockStart: 0,
+        insetBlockEnd: 0,
+        minHeight: "100dvh",
+        maxHeight: "100dvh",
+        /* insetInlineStart: 0 في RTL يلصق الـ Sidenav بحافة الـ viewport؛ width يشمل safe-area إن وُجد */
+        width: `min(calc(${expandedWidth}px + env(safe-area-inset-right, 0px)), 100vw)`,
+        maxWidth: "100vw",
+      },
     },
   };
 });
