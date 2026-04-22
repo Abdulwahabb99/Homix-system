@@ -27,7 +27,7 @@ const ProductCard = ({ product }) => {
       aria-label={`عرض ${product?.title}`}
       sx={{
         height: "100%",
-        maxHeight: 360,
+        maxHeight: 420,
         cursor: "pointer",
         borderRadius: 2.5,
         border: "1px solid",
@@ -64,8 +64,8 @@ const ProductCard = ({ product }) => {
           component="div"
           sx={{
             width: "100%",
-            minHeight: 168,
-            height: 168,
+            minHeight: 220,
+            height: 220,
             borderRadius: 2,
             bgcolor: (t) => (t.palette.mode === "dark" ? "action.hover" : "grey.100"),
             display: "flex",
