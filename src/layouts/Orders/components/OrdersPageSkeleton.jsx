@@ -8,7 +8,108 @@ const SKELETON_ROWS = 9;
 const TABLE_HEADER_PX = 40;
 
 /**
- * تخطيط تقريبي لصفحة الطلبات: عنوان، شريط أدوات، بطاقة بحث+تاريخ، جدول.
+ * هيكل الجدول فقط (نفس ارتفاع HomixDataTable) — لتحميل البيانات من السيرفر بدل spinner الـ DataGrid
+ */
+export function OrdersTableSkeleton() {
+  return (
+    <Box
+      aria-busy={true}
+      aria-label="جاري تحميل الطلبات"
+      sx={{
+        width: "100%",
+        minWidth: 0,
+        height: ORDERS_TABLE_SKELETON_HEIGHT_PX,
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 12px rgba(15, 23, 42, 0.04)",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={(theme) => ({
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          gap: 0.5,
+          px: 1.5,
+          height: TABLE_HEADER_PX,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          backgroundColor:
+            theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)",
+        })}
+      >
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton
+            key={i}
+            variant="rounded"
+            height={20}
+            animation="wave"
+            sx={{ flex: i === 0 ? 0.6 : 1, minWidth: 48, borderRadius: 0.5 }}
+          />
+        ))}
+      </Box>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1.5,
+              height: 52,
+              flexShrink: 0,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              "&:last-of-type": { borderBottom: "none" },
+            }}
+          >
+            {Array.from({ length: 7 }).map((__, j) => (
+              <Skeleton
+                key={j}
+                variant="rounded"
+                height={18}
+                animation="wave"
+                sx={{ flex: j === 0 ? 0.6 : 1, minWidth: 40, borderRadius: 0.5 }}
+              />
+            ))}
+          </Box>
+        ))}
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          flexShrink: 0,
+          gap: 1,
+          px: 1.5,
+          height: 52,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Skeleton width={120} height={32} variant="rounded" sx={{ borderRadius: 1 }} />
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * تخطيط تقريبي لصفحة الطلبات بالكامل (للاستخدام اختياري: عنوان، فلاتر، جدول)
  */
 function OrdersPageSkeleton({ isVendor = false }) {
   return (
@@ -74,97 +175,7 @@ function OrdersPageSkeleton({ isVendor = false }) {
         </Stack>
       )}
 
-      <Box
-        sx={{
-          width: "100%",
-          minWidth: 0,
-          height: ORDERS_TABLE_SKELETON_HEIGHT_PX,
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 12px rgba(15, 23, 42, 0.04)",
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          sx={(theme) => ({
-            display: "flex",
-            alignItems: "center",
-            flexShrink: 0,
-            gap: 0.5,
-            px: 1.5,
-            height: TABLE_HEADER_PX,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            backgroundColor:
-              theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)",
-          })}
-        >
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              variant="rounded"
-              height={20}
-              animation="wave"
-              sx={{ flex: i === 0 ? 0.6 : 1, minWidth: 48, borderRadius: 0.5 }}
-            />
-          ))}
-        </Box>
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-            <Box
-              key={i}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                px: 1.5,
-                height: 52,
-                flexShrink: 0,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                "&:last-of-type": { borderBottom: "none" },
-              }}
-            >
-              {Array.from({ length: 7 }).map((__, j) => (
-                <Skeleton
-                  key={j}
-                  variant="rounded"
-                  height={18}
-                  animation="wave"
-                  sx={{ flex: j === 0 ? 0.6 : 1, minWidth: 40, borderRadius: 0.5 }}
-                />
-              ))}
-            </Box>
-          ))}
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            flexShrink: 0,
-            gap: 1,
-            px: 1.5,
-            height: 52,
-            borderTop: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Skeleton width={120} height={32} variant="rounded" sx={{ borderRadius: 1 }} />
-        </Box>
-      </Box>
+      <OrdersTableSkeleton />
     </>
   );
 }
