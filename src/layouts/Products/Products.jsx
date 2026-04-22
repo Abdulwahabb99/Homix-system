@@ -10,8 +10,8 @@ import {
   ProductsFilterDialog,
   ProductsFilterTriggerButton,
 } from "./components/ProductsFilterDialog";
+import ProductsPageSkeleton from "./components/ProductsPageSkeleton";
 import axiosRequest from "shared/functions/axiosRequest";
-import Spinner from "components/Spinner/Spinner";
 
 const ITEMS_PER_PAGE = 16;
 
@@ -186,7 +186,7 @@ function Products() {
         </Stack>
 
         {loading ? (
-          <Spinner />
+          <ProductsPageSkeleton />
         ) : (
           <>
             <Box

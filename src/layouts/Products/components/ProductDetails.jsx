@@ -2,19 +2,22 @@ import {
   Box,
   Card,
   CardContent,
-  CardMedia,
   Chip,
+  Collapse,
   Divider,
   Grid,
   IconButton,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import Spinner from "components/Spinner/Spinner";
+import ProductDetailsSkeleton from "./ProductDetailsSkeleton";
+import { ProductDetailsProductImage } from "./ProductDetailsImageFrame";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -24,6 +27,7 @@ function ProductDetails() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [isLoading, setIsLoading] = useState(true);
   const [productDetails, setProductDetails] = useState(null);
+  const [optionsPricesOpen, setOptionsPricesOpen] = useState(false);
   const navigate = useNavigate();
 
   axios.interceptors.request.use(
@@ -84,20 +88,28 @@ function ProductDetails() {
               "&:hover": { bgcolor: "action.hover" },
             }}
           >
-            <ArrowBackIosNewIcon sx={{ fontSize: 18 }} />
+            <ArrowBackIosNewIcon sx={{ fontSize: 18, transform: "scaleX(-1)" }} />
           </IconButton>
           <Box>
             <Typography variant="caption" color="text.secondary" display="block">
               تفاصيل المنتج
             </Typography>
-            <Typography variant="h6" fontWeight={700} color="text.primary">
-              {isLoading ? "…" : productDetails?.title || "—"}
-            </Typography>
+            {isLoading ? (
+              <Skeleton
+                variant="text"
+                height={32}
+                sx={{ width: { xs: "75%", sm: 280 }, borderRadius: 0.5 }}
+              />
+            ) : (
+              <Typography variant="h6" fontWeight={700} color="text.primary">
+                {productDetails?.title || "—"}
+              </Typography>
+            )}
           </Box>
         </Stack>
 
         {isLoading ? (
-          <Spinner />
+          <ProductDetailsSkeleton />
         ) : productDetails ? (
           <Grid container spacing={3}>
             <Grid item xs={12} md={5} lg={4}>
@@ -111,18 +123,11 @@ function ProductDetails() {
                   boxShadow: "0 4px 24px rgba(15, 23, 42, 0.08)",
                 }}
               >
-                <Box sx={{ bgcolor: "action.hover", aspectRatio: "1", maxHeight: 420 }}>
-                  <CardMedia
-                    component="img"
-                    image={productDetails?.image}
-                    alt={productDetails?.title}
-                    sx={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </Box>
+                <ProductDetailsProductImage
+                  src={productDetails?.image}
+                  alt={productDetails?.title || ""}
+                  title={productDetails?.title}
+                />
               </Card>
             </Grid>
 
@@ -144,47 +149,133 @@ function ProductDetails() {
                       {productDetails.title}
                     </Typography>
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 2 }}>
-                      الخيارات والأسعار
-                    </Typography>
-                    <Stack spacing={1.5}>
-                      {productDetails.variants.map((variant) => (
-                        <Box
-                          key={variant.shopifyId || variant.title}
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            border: "1px solid",
-                            borderColor: "divider",
-                            bgcolor: "action.hover",
-                          }}
+                    <Box
+                      onClick={() => setOptionsPricesOpen((v) => !v)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setOptionsPricesOpen((v) => !v);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      id="options-prices-header"
+                      aria-expanded={optionsPricesOpen}
+                      aria-controls="options-prices-panel"
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1.5,
+                        width: "100%",
+                        p: 1.5,
+                        mx: -1.5,
+                        my: 0,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        textAlign: "start",
+                        border: "1px dashed",
+                        borderColor: "rgba(6, 49, 70, 0.28)",
+                        bgcolor: (t) =>
+                          t.palette.mode === "dark"
+                            ? "rgba(6, 49, 70, 0.12)"
+                            : "rgba(6, 49, 70, 0.04)",
+                        transition: "background-color 0.2s, border-color 0.2s",
+                        "&:hover": {
+                          borderColor: "primary.light",
+                          bgcolor: (t) =>
+                            t.palette.mode === "dark"
+                              ? "rgba(6, 49, 70, 0.18)"
+                              : "rgba(6, 49, 70, 0.07)",
+                        },
+                        "&:focus-visible": {
+                          outline: "2px solid",
+                          outlineColor: "primary.main",
+                          outlineOffset: 2,
+                        },
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          component="span"
+                          variant="subtitle1"
+                          fontWeight={700}
+                          color="primary"
+                          display="block"
                         >
-                          {variant.title !== "Default Title" && (
-                            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                              {variant.title}
-                            </Typography>
-                          )}
-                          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">
-                                سعر البيع
-                              </Typography>
-                              <Typography variant="h6" fontWeight={800} color="primary">
-                                {Number(variant.price).toFixed(0)} ج.م
-                              </Typography>
+                          الخيارات والأسعار
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ mt: 0.25 }}
+                        >
+                          اضغط لعرض الخيارات والأسعار أو إخفائها
+                        </Typography>
+                      </Box>
+                      <ExpandMoreIcon
+                        aria-hidden
+                        sx={{
+                          flexShrink: 0,
+                          color: "primary.main",
+                          transform: optionsPricesOpen ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 0.2s ease",
+                        }}
+                      />
+                    </Box>
+                    <Collapse in={optionsPricesOpen} id="options-prices-panel" unmountOnExit>
+                      <Stack
+                        spacing={1.5}
+                        sx={{ pt: 2 }}
+                        role="region"
+                        aria-labelledby="options-prices-header"
+                      >
+                        {(productDetails.variants || []).length === 0 ? (
+                          <Typography variant="body2" color="text.secondary">
+                            لا توجد خيارات مسجّلة لهذا المنتج.
+                          </Typography>
+                        ) : (
+                          (productDetails.variants || []).map((variant) => (
+                            <Box
+                              key={variant.shopifyId || variant.title}
+                              sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                border: "1px solid",
+                                borderColor: "divider",
+                                bgcolor: "action.hover",
+                              }}
+                            >
+                              {variant.title !== "Default Title" && (
+                                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                                  {variant.title}
+                                </Typography>
+                              )}
+                              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary">
+                                    سعر البيع
+                                  </Typography>
+                                  <Typography variant="h6" fontWeight={800} color="primary">
+                                    {Number(variant.price).toFixed(0)} ج.م
+                                  </Typography>
+                                </Box>
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary">
+                                    التكلفة
+                                  </Typography>
+                                  <Typography variant="h6" fontWeight={700} color="text.primary">
+                                    {Number(variant.cost).toFixed(0)} ج.م
+                                  </Typography>
+                                </Box>
+                              </Stack>
                             </Box>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">
-                                التكلفة
-                              </Typography>
-                              <Typography variant="h6" fontWeight={700} color="text.primary">
-                                {Number(variant.cost).toFixed(0)} ج.م
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </Box>
-                      ))}
-                    </Stack>
+                          ))
+                        )}
+                      </Stack>
+                    </Collapse>
                   </CardContent>
                 </Card>
 
