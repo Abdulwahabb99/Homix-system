@@ -1,7 +1,10 @@
 import { Box, Grid, Skeleton, Stack } from "@mui/material";
 import PropTypes from "prop-types";
 import React from "react";
-import { DASHBOARD_TABLE_BODY_HEIGHT_PX, DASHBOARD_TILES_AND_TABLES_GRID_SX } from "./dashboardDataGridSx";
+import {
+  DASHBOARD_TABLE_BODY_HEIGHT_PX,
+  DASHBOARD_TILES_AND_TABLES_GRID_SX,
+} from "./dashboardDataGridSx";
 
 function StatsCardSkeleton() {
   return (
@@ -118,7 +121,13 @@ export default function DashboardV2Skeleton({ isVendor = false }) {
         </Grid>
       </Box>
 
-      <Grid container spacing={2} mb={3} sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}>
+      <Grid
+        container
+        spacing={2}
+        mb={3}
+        alignItems="flex-start"
+        sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}
+      >
         <Grid item xs={12} sm={6} md={4}>
           <StatsCardSkeleton />
         </Grid>

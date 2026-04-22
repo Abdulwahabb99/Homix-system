@@ -137,7 +137,13 @@ function dashboardV2() {
             </Grid>
           </Box>
 
-          <Grid container spacing={2} mb={3} sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}>
+          <Grid
+            container
+            spacing={2}
+            mb={3}
+            alignItems="flex-start"
+            sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}
+          >
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="عدد الطلبات"

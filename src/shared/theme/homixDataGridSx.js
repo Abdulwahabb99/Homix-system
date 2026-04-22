@@ -9,10 +9,11 @@ export const HOMIX_TABLE_DEFAULT_HEIGHT_PX = 520;
 
 export const DASHBOARD_TABLE_BODY_HEIGHT_PX = 400;
 
+/** صف الـ tiles والجداول في لوحة المعلومات: نفس عرض صف البحث/التاريخ (بدون تقييد 1100px) */
 export const DASHBOARD_TILES_AND_TABLES_GRID_SX = {
-  maxWidth: 1100,
   width: "100%",
-  mx: "auto",
+  maxWidth: "100%",
+  justifyContent: "flex-start",
 };
 
 /** خلفية الترويسة: أوضح من `rgba(…,0.06)` لتمييز رأس الجدول عن خلايا الجسم */
