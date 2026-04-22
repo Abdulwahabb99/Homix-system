@@ -298,24 +298,25 @@ function ProductsFilterTriggerButton({ onClick, activeCount }) {
         onClick={onClick}
         aria-label="فتح التصفية"
         sx={{
-          minWidth: 48,
-          width: 48,
-          height: 40,
-          minHeight: 40,
-          maxHeight: 40,
+          minWidth: 52,
+          width: 52,
+          height: 42,
+          minHeight: 42,
+          maxHeight: 42,
           p: 0,
           borderRadius: 1.5,
-          borderColor: "primary.main",
           borderWidth: 2,
+          /* Default: حدود أخف عن الـ hover */
+          borderColor: "rgba(6, 49, 70, 0.22)",
           color: "primary.main",
-          backgroundColor: "rgba(6, 49, 70, 0.06)",
+          backgroundColor: "rgba(6, 49, 70, 0.04)",
           "&:hover": {
             borderColor: "primary.main",
-            backgroundColor: "rgba(6, 49, 70, 0.12)",
+            backgroundColor: "rgba(6, 49, 70, 0.1)",
           },
         }}
       >
-        <FilterListIcon sx={{ fontSize: 22, color: "primary.main" }} />
+        <FilterListIcon sx={{ fontSize: 25, color: "primary.main" }} />
       </Button>
       {activeCount > 0 && (
         <Box

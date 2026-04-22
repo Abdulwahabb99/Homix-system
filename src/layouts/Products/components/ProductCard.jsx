@@ -27,7 +27,7 @@ const ProductCard = ({ product }) => {
       aria-label={`عرض ${product?.title}`}
       sx={{
         height: "100%",
-        maxHeight: 320,
+        maxHeight: 360,
         cursor: "pointer",
         borderRadius: 2.5,
         border: "1px solid",
@@ -53,41 +53,52 @@ const ProductCard = ({ product }) => {
       }}
     >
       <Box
-        component="div"
         sx={{
           width: "100%",
-          height: 140,
           flexShrink: 0,
-          bgcolor: (t) => (t.palette.mode === "dark" ? "action.hover" : "grey.100"),
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          overflow: "hidden",
+          pt: 1.25,
+          px: 1.25,
         }}
       >
         <Box
-          component="img"
-          src={product?.image}
-          alt={product?.title || ""}
+          component="div"
           sx={{
-            maxWidth: "100%",
-            maxHeight: "100%",
-            width: "auto",
-            height: "auto",
-            objectFit: "contain",
-            objectPosition: "center",
-            display: "block",
-            mx: "auto",
+            width: "100%",
+            minHeight: 168,
+            height: 168,
+            borderRadius: 2,
+            bgcolor: (t) => (t.palette.mode === "dark" ? "action.hover" : "grey.100"),
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "hidden",
           }}
-        />
+        >
+          <Box
+            component="img"
+            src={product?.image}
+            alt={product?.title || ""}
+            sx={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+              objectPosition: "center",
+              display: "block",
+              borderRadius: 1.5,
+            }}
+          />
+        </Box>
       </Box>
       <CardContent
         sx={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          alignItems: "stretch",
-          textAlign: "right",
+          justifyContent: "flex-start",
+          alignItems: "flex-start",
+          textAlign: "start",
           gap: 0.5,
           py: 1.25,
           px: 1.5,
@@ -109,6 +120,7 @@ const ProductCard = ({ product }) => {
             minHeight: 32,
             maxHeight: 38,
             m: 0,
+            width: "100%",
           }}
         >
           {product?.title}
@@ -117,9 +129,10 @@ const ProductCard = ({ product }) => {
           sx={{
             display: "flex",
             alignItems: "baseline",
-            justifyContent: "flex-end",
+            justifyContent: "flex-start",
             gap: 0.4,
             flexWrap: "wrap",
+            width: "100%",
           }}
         >
           <Typography
@@ -137,12 +150,12 @@ const ProductCard = ({ product }) => {
           color="text.secondary"
           display="block"
           fontSize="0.7rem"
-          sx={{ opacity: 0.85, textAlign: "right" }}
+          sx={{ opacity: 0.85, textAlign: "start", width: "100%" }}
         >
           {product.vendor?.name}
         </Typography>
         {product?.type?.name && (
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 0.5, width: "100%" }}>
             <Chip
               label={product.type.name}
               size="small"
