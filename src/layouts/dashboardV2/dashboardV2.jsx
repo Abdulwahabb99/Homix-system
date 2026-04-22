@@ -9,6 +9,7 @@ import SearchInput from "shared/components/SearchInput/SearchInput";
 import StatsCard from "shared/components/StatsCard/StatsCard";
 import MoneyRotateIcon from "shared/icons/MoneyRotateIcon";
 import TopSellingProductsTable from "./components/TopSellingProducts/TopSellingProducts";
+import { DASHBOARD_TILES_AND_TABLES_GRID_SX } from "./components/dashboardDataGridSx";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import BanknoteShieldIcon from "shared/icons/BanknoteShieldIcon";
@@ -136,7 +137,7 @@ function dashboardV2() {
             </Grid>
           </Box>
 
-          <Grid container spacing={2} mb={3} sx={{ maxWidth: 1100 }}>
+          <Grid container spacing={2} mb={3} sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}>
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="عدد الطلبات"
@@ -160,7 +161,7 @@ function dashboardV2() {
             </Grid>
           </Grid>
 
-          <Grid container spacing={3} width="100%" alignItems="stretch" justifyContent="center">
+          <Grid container spacing={2} alignItems="stretch" sx={DASHBOARD_TILES_AND_TABLES_GRID_SX}>
             <Grid item xs={12} lg={isVendor ? 12 : 6}>
               {financialreportData?.topTenProducts && (
                 <TopSellingProductsTable rowData={financialreportData?.topTenProducts} />

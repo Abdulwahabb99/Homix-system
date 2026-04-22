@@ -6,6 +6,13 @@
 /** ارتفاع موحّد لمنطقة الجدول (مع تمرير عند كثرة الصفوف) حتى جدولي الصفحة الرئيسية يبقوا متساويين */
 export const DASHBOARD_TABLE_BODY_HEIGHT_PX = 400;
 
+/** صف الـ stats cards والجداول: نفس العرض والمحاذاة (موبايل + ديسكتوب) */
+export const DASHBOARD_TILES_AND_TABLES_GRID_SX = {
+  maxWidth: 1100,
+  width: "100%",
+  mx: "auto",
+};
+
 export function getDashboardDataGridSx(theme) {
   const headerBg =
     theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.06)";
