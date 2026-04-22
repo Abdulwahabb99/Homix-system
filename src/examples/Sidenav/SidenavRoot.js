@@ -19,7 +19,13 @@ import { styled } from "@mui/material/styles";
 
 export default styled(Drawer)(({ theme, ownerState }) => {
   const { palette, boxShadows, transitions, breakpoints, functions } = theme;
-  const { transparentSidenav, whiteSidenav, miniSidenav, darkMode } = ownerState;
+  const {
+    transparentSidenav,
+    whiteSidenav,
+    miniSidenav,
+    darkMode,
+    isMobileOverlay = false,
+  } = ownerState;
 
   const expandedWidth = 260;
   const miniWidth = 80;
@@ -94,34 +100,62 @@ export default styled(Drawer)(({ theme, ownerState }) => {
     },
   });
 
+  const mobileOverlayPaper = {
+    position: "fixed",
+    margin: 0,
+    boxSizing: "border-box",
+    insetInlineStart: 0,
+    insetBlockStart: 0,
+    insetBlockEnd: 0,
+    minHeight: "100dvh",
+    maxHeight: "100dvh",
+    width: `min(calc(${expandedWidth}px + env(safe-area-inset-right, 0px)), 100vw)`,
+    maxWidth: "100vw",
+  };
+
   return {
-    // الجذر docked بعرض 260px رغم أن الـ paper fixed؛ يسبب overflow/شريط أبيض في RTL على الموبايل
-    [breakpoints.down("lg")]: {
-      width: 0,
-      minWidth: 0,
-      maxWidth: 0,
-      overflow: "visible",
-    },
-    "& .MuiDrawer-paper": {
-      boxShadow: xxl,
-      border: "none",
-      borderInlineEnd: `1px solid ${theme.palette.divider}`,
-
-      ...(miniSidenav ? drawerCloseStyles() : drawerOpenStyles()),
-
+    // دائمًا: الـ root العريض 260 يسبب overflow فقط عند permanent على شاشة ضيقة؛ مع temporary (موبايل) لا يلزم
+    ...(!isMobileOverlay && {
       [breakpoints.down("lg")]: {
-        position: "fixed",
-        margin: 0,
-        boxSizing: "border-box",
-        insetInlineStart: 0,
-        insetBlockStart: 0,
-        insetBlockEnd: 0,
-        minHeight: "100dvh",
-        maxHeight: "100dvh",
-        /* insetInlineStart: 0 في RTL يلصق الـ Sidenav بحافة الـ viewport؛ width يشمل safe-area إن وُجد */
-        width: `min(calc(${expandedWidth}px + env(safe-area-inset-right, 0px)), 100vw)`,
-        maxWidth: "100vw",
+        width: 0,
+        minWidth: 0,
+        maxWidth: 0,
+        overflow: "visible",
       },
-    },
+    }),
+    "& .MuiDrawer-paper": isMobileOverlay
+      ? {
+          background: backgroundValue,
+          margin: 0,
+          borderRadius: 0,
+          top: 0,
+          boxSizing: "border-box",
+          height: "100dvh",
+          minHeight: "100dvh",
+          maxHeight: "100dvh",
+          boxShadow: xxl,
+          border: "none",
+          borderInlineEnd: `1px solid ${theme.palette.divider}`,
+          transform: "none",
+          ...mobileOverlayPaper,
+        }
+      : {
+          boxShadow: xxl,
+          border: "none",
+          borderInlineEnd: `1px solid ${theme.palette.divider}`,
+          ...(miniSidenav ? drawerCloseStyles() : drawerOpenStyles()),
+          [breakpoints.down("lg")]: {
+            position: "fixed",
+            margin: 0,
+            boxSizing: "border-box",
+            insetInlineStart: 0,
+            insetBlockStart: 0,
+            insetBlockEnd: 0,
+            minHeight: "100dvh",
+            maxHeight: "100dvh",
+            width: `min(calc(${expandedWidth}px + env(safe-area-inset-right, 0px)), 100vw)`,
+            maxWidth: "100vw",
+          },
+        },
   };
 });

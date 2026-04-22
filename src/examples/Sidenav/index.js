@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
@@ -21,6 +23,9 @@ import {
 } from "context";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
+  const theme = useTheme();
+  // يطابق useEffect: شاشة ضيقة أقل من 1200 (قيمة xl في الثيم)
+  const isMobileOverlay = useMediaQuery(theme.breakpoints.down("xl"));
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode } = controller;
   const location = useLocation();
@@ -60,6 +65,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           key={key}
           target="_blank"
           rel="noreferrer"
+          onClick={isMobileOverlay ? closeSidenav : undefined}
           sx={{ textDecoration: "none" }}
         >
           <SidenavCollapse
@@ -70,7 +76,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           />
         </Link>
       ) : (
-        <NavLink key={key} to={route}>
+        <NavLink key={key} to={route} onClick={isMobileOverlay ? closeSidenav : undefined}>
           <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
         </NavLink>
       );
@@ -109,8 +115,24 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   return (
     <SidenavRoot
       {...rest}
-      variant="permanent"
-      ownerState={{ transparentSidenav, whiteSidenav, miniSidenav, darkMode }}
+      variant={isMobileOverlay ? "temporary" : "permanent"}
+      {...(isMobileOverlay
+        ? {
+            open: !miniSidenav,
+            onClose: closeSidenav,
+            ModalProps: {
+              keepMounted: true,
+              BackdropProps: { sx: { backgroundColor: "rgba(0,0,0,0.45)" } },
+            },
+          }
+        : {})}
+      ownerState={{
+        transparentSidenav,
+        whiteSidenav,
+        miniSidenav,
+        darkMode,
+        isMobileOverlay,
+      }}
     >
       <MDBox pt={2} pb={1.5} px={2}>
         <MDBox
@@ -136,6 +158,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           <MDBox
             component={NavLink}
             to="/"
+            onClick={isMobileOverlay ? closeSidenav : undefined}
             display="flex"
             alignItems="center"
             minWidth={0}
