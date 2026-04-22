@@ -21,12 +21,7 @@ import {
   navbarIconButton,
   navbarMobileMenu,
 } from "examples/Navbars/DashboardNavbar/styles";
-import {
-  useMaterialUIController,
-  setTransparentNavbar,
-  setMiniSidenav,
-  setOpenConfigurator,
-} from "context";
+import { useMaterialUIController, setTransparentNavbar, setMiniSidenav } from "context";
 import { Badge, MenuItem } from "@mui/material";
 import MDTypography from "components/MDTypography";
 import { useDispatch, useSelector } from "react-redux";
@@ -37,15 +32,31 @@ import { clearNotifications } from "store/slices/notificationsSlice";
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState("static");
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav, transparentNavbar, openConfigurator, darkMode } = controller;
+  const { miniSidenav, transparentNavbar, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(false);
+  const [settingsMenuAnchor, setSettingsMenuAnchor] = useState(null);
+  const navigate = useNavigate();
   const route = useLocation().pathname.split("/").slice(1);
   const notifications = useSelector((state) => state.notifications);
   const unReadedNotifications = notifications.filter((notification) => !notification.readAt);
   const reduxDispatch = useDispatch();
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
+
+  const handleOpenSettingsMenu = (event) => {
+    setSettingsMenuAnchor(event.currentTarget);
+  };
+  const handleCloseSettingsMenu = () => {
+    setSettingsMenuAnchor(null);
+  };
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("notifications");
+    handleCloseSettingsMenu();
+    navigate("/authentication/sign-in");
+    window.location.reload();
+  };
+
   const handleOpenMenu = (event) => {
     setOpenMenu(event.currentTarget);
 
@@ -71,6 +82,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
   };
 
   const handleCloseMenu = () => setOpenMenu(false);
+
+  const openSettingsMenu = Boolean(settingsMenuAnchor);
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
@@ -204,10 +217,34 @@ function DashboardNavbar({ absolute, light, isMini }) {
                 disableRipple
                 color="inherit"
                 sx={navbarIconButton}
-                onClick={handleConfiguratorOpen}
+                id="settings-menu-button"
+                aria-controls={openSettingsMenu ? "settings-menu" : undefined}
+                aria-haspopup="true"
+                aria-expanded={openSettingsMenu ? "true" : undefined}
+                onClick={handleOpenSettingsMenu}
               >
                 <Icon sx={iconsStyle}>settings</Icon>
               </IconButton>
+              <Menu
+                id="settings-menu"
+                MenuListProps={{ "aria-labelledby": "settings-menu-button" }}
+                anchorEl={settingsMenuAnchor}
+                open={openSettingsMenu}
+                onClose={handleCloseSettingsMenu}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                PaperProps={{
+                  elevation: 3,
+                  sx: { minWidth: 200, borderRadius: 1.5 },
+                }}
+              >
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{ py: 1.25, color: "error.main", fontWeight: 600, fontSize: "0.875rem" }}
+                >
+                  تسجيل الخروج
+                </MenuItem>
+              </Menu>
               <Badge badgeContent={unReadedNotifications.length} color="error">
                 <IconButton
                   size="small"

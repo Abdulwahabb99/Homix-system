@@ -16,7 +16,7 @@ function collapseItem(theme, ownerState) {
   const { palette, transitions, breakpoints, boxShadows, borders, functions } = theme;
   const { active, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = ownerState;
 
-  const { white, transparent, dark, grey, gradients } = palette;
+  const { white, dark, transparent, grey, gradients } = palette;
   const { md } = boxShadows;
   const { borderRadius } = borders;
   const { pxToRem, rgba, linearGradient } = functions;
@@ -86,8 +86,9 @@ function collapseIconBox(theme, ownerState) {
       duration: transitions.duration.standard,
     }),
 
+    /* أيقونة بيضاء على التدرّج عند active + سايدبار أبيض (إصلاح التباين) */
     "& svg, svg g": {
-      color: transparentSidenav || whiteSidenav ? dark.main : white.main,
+      color: active ? white.main : transparentSidenav || whiteSidenav ? dark.main : white.main,
     },
   };
 }

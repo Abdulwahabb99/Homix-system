@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Sidenav from "examples/Sidenav";
-import Configurator from "examples/Configurator";
 import themeRTL from "assets/theme/theme-rtl";
 import themeDarkRTL from "assets/theme-dark/theme-rtl";
 import rtlPlugin from "stylis-plugin-rtl";
@@ -207,7 +206,6 @@ export default function App() {
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
-            <Configurator />
           </>
         )}
         <Suspense fallback={<Spinner />}>

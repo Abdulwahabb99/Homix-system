@@ -1,5 +1,5 @@
 import { useContext, useEffect } from "react";
-import { useLocation, NavLink, useNavigate } from "react-router-dom";
+import { useLocation, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
@@ -16,15 +16,11 @@ import {
   setTransparentSidenav,
   setWhiteSidenav,
 } from "context";
-import { Button } from "@mui/material";
-import LogoutIcon from "@mui/icons-material/Logout";
-
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
-  const navigate = useNavigate();
   let textColor = "white";
   if (transparentSidenav || (whiteSidenav && !darkMode)) {
     textColor = "dark";
@@ -33,13 +29,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   }
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
-
-  const logOut = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("notifications");
-    navigate("/authentication/sign-in");
-    window.location.reload();
-  };
   useEffect(() => {
     function handleMiniSidenav() {
       setMiniSidenav(dispatch, window.innerWidth < 1200);
@@ -158,27 +147,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
         }
       />
       <List>{renderRoutes}</List>
-      <MDBox
-        width="100%"
-        display="flex"
-        justifyContent="center"
-        mt={2}
-        mb={1}
-        px={2}
-        sx={{ "& .MuiButton-root": { minHeight: 44 } }}
-      >
-        <Button
-          fullWidth
-          variant="contained"
-          color="primary"
-          type="button"
-          onClick={logOut}
-          disableElevation
-          sx={{ maxWidth: 280, borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-        >
-          <LogoutIcon sx={{ fontSize: 20 }} />
-        </Button>
-      </MDBox>
     </SidenavRoot>
   );
 }
