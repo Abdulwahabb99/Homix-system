@@ -13,8 +13,8 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import BanknoteShieldIcon from "shared/icons/BanknoteShieldIcon";
 import BankBuildingIcon from "shared/icons/BankBuildingIcon";
-import Spinner from "components/Spinner/Spinner";
 import MostVendorsSelling from "./components/MostVendorsSelling/MostVendorsSelling";
+import DashboardV2Skeleton from "./components/DashboardV2Skeleton";
 import moment from "moment";
 import SearchModal from "./components/SearchModal/SearchModal";
 
@@ -74,7 +74,7 @@ function dashboardV2() {
         />
       )}
       {isLoading ? (
-        <Spinner />
+        <DashboardV2Skeleton />
       ) : (
         <Box
           sx={{
