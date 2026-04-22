@@ -8,7 +8,7 @@ function collapseItem(theme, ownerState) {
   const { active, transparentSidenav, whiteSidenav, darkMode, sidenavColor, miniSidenav } =
     ownerState;
 
-  const { dark, transparent, grey, gradients, primary } = palette;
+  const { white, dark, transparent, grey, gradients, primary } = palette;
   const { md } = boxShadows;
   const { borderRadius } = borders;
   const { pxToRem, rgba, linearGradient } = functions;
@@ -94,7 +94,7 @@ function collapseIconBox(theme, ownerState) {
   const { palette, transitions, borders, functions } = theme;
   const { transparentSidenav, whiteSidenav, darkMode, active } = ownerState;
 
-  const { dark, primary } = palette;
+  const { white, dark, primary } = palette;
   const { borderRadius } = borders;
   const { pxToRem, rgba } = functions;
 
@@ -140,7 +140,7 @@ function collapseIconBox(theme, ownerState) {
 
 const collapseIcon = (theme, { active, whiteSidenav, darkMode }) => {
   const { palette } = theme;
-  const { gradients, primary, grey } = palette;
+  const { white, gradients, primary, grey } = palette;
   const isLightNav = whiteSidenav && !darkMode;
   if (isLightNav) {
     return { color: active ? primary.main : grey[600] };
