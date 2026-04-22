@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
@@ -38,9 +39,11 @@ import HomixDataTable from "shared/components/HomixDataTable/HomixDataTable";
 import HomixFilterIconButton from "shared/components/HomixFilterIconButton/HomixFilterIconButton";
 import OrdersFilterDialog from "layouts/Orders/components/OrdersFilterDialog";
 import { OrdersTableSkeleton } from "layouts/Orders/components/OrdersPageSkeleton";
+import { orderKeys, userKeys, vendorKeys } from "query/keys";
+import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
-const ITEMS_PER_PAGE = 30;
+const ITEMS_PER_PAGE = ORDERS_LIST_PAGE_SIZE;
 
 /* يطابق الـ API — أسماء العرض */
 const statusValues = {
@@ -112,23 +115,19 @@ function Orders() {
     [searchParams, setSearchParams]
   );
 
-  const [isLoading, setIsLoading] = useState(true);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEditOrder, setSelectedEditOrder] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [vendors, setVendors] = useState([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBulkEditMode, setIsBulkEditMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [users, setUsers] = useState([]);
   const [isExportLoading, setIsExportLoading] = useState(false);
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, token } = useSelector((state) => state.auth);
   const isVendor = user.userType === "2";
 
@@ -162,99 +161,80 @@ function Orders() {
   const getDeliveryValue = (s) => deliveryStatusValues[s] ?? "";
   const getPaymentValue = (s) => paymentStatus[s] ?? "";
 
-  const fetchOrders = useCallback(() => {
-    setIsLoading(true);
-    const p = parseInt(searchParams.get("page"), 10) || 1;
-    const query = new URLSearchParams({ page: String(p), size: String(ITEMS_PER_PAGE) });
-    if (orderNumberParam) query.set("orderNumber", orderNumberParam);
-    if (vendorIdParam) query.set("vendorId", vendorIdParam);
-    if (orderStatusParam) query.set("status", orderStatusParam);
-    if (paymentStatusParam) query.set("paymentStatus", paymentStatusParam);
-    if (deliveryStatusParam) query.set("deliveryStatus", deliveryStatusParam);
-    if (startDate) query.set("startDate", startDate.utc().toISOString());
-    if (endDate) query.set("endDate", endDate.utc().toISOString());
+  const ordersListFiltersKey = useMemo(
+    () =>
+      JSON.stringify({
+        p: page,
+        on: orderNumberParam,
+        v: vendorIdParam,
+        s: orderStatusParam,
+        ps: paymentStatusParam,
+        ds: deliveryStatusParam,
+        sd: startDate ? startDate.utc().toISOString() : null,
+        ed: endDate ? endDate.utc().toISOString() : null,
+      }),
+    [
+      page,
+      orderNumberParam,
+      vendorIdParam,
+      orderStatusParam,
+      paymentStatusParam,
+      deliveryStatusParam,
+      startDate,
+      endDate,
+    ]
+  );
 
-    axiosRequest
-      .get(`/orders?${query}`)
-      .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-          return;
-        }
-        const newOrders = data.data.orders
-          .map((order) => ({
-            orderNumber: order.orderNumber,
-            items: order.orderLines,
-            totalPrice: order.totalPrice,
-            subTotalPrice: order.subTotalPrice,
-            status: order.status,
-            deliveryStatus: order.deliveryStatus,
-            customerName: order.customer
-              ? `${order.customer.firstName} ${order.customer.lastName}`
-              : "",
-            orderId: order.id,
-            date: order.orderDate,
-            toBeCollected: order.toBeCollected,
-            shippingFees: order.shippingFees,
-            paymentStatus: order.paymentStatus,
-            notes: order.notes,
-            commission: order.commission,
-            PoDate: order.PoDate,
-            totalCost: Number(order.totalCost).toFixed(1),
-            orderData: order,
-            receivedAmount: order.receivedAmount,
-            totalDiscounts: order.totalDiscounts,
-            code: order.code,
-            createdAt: order.createdAt,
-            userId: order.userId,
-            downPayment: order.downPayment,
-            totalVendorDue: order.totalVendorDue,
-            totalCompanyDue: order.totalCompanyDue,
-            expectedDeliveryDate: order.expectedDeliveryDate,
-            type: order.orderLines[0]?.product?.type?.name,
-          }))
-          .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
-        setOrders(newOrders);
-        setTotalPages(data.data.totalPages);
-      })
-      .catch(() => NotificationMeassage("error", "حدث خطأ"))
-      .finally(() => setIsLoading(false));
-  }, [
-    searchParams,
-    startDate,
-    endDate,
-    orderStatusParam,
-    vendorIdParam,
-    orderNumberParam,
-    paymentStatusParam,
-    deliveryStatusParam,
-    navigate,
-  ]);
+  const {
+    data: ordersListData,
+    isFetching: ordersFetching,
+    isError: ordersQueryError,
+  } = useQuery({
+    queryKey: orderKeys.list(ordersListFiltersKey),
+    queryFn: () =>
+      fetchOrdersList({
+        params: {
+          page,
+          orderNumberParam,
+          vendorIdParam,
+          orderStatusParam,
+          paymentStatusParam,
+          deliveryStatusParam,
+          startDate,
+          endDate,
+        },
+        navigate,
+      }),
+  });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  const orders = ordersListData?.orders ?? [];
+  const totalPages = ordersListData?.totalPages ?? 0;
 
-  const getVendors = () => {
-    axiosRequest
-      .get("/vendors")
-      .then(({ data: { data } }) => {
-        setVendors([
-          { label: "هومكس", value: "0" },
-          ...data.map((v) => ({ label: v.name, value: v.id })),
-        ]);
-      })
-      .catch(() => NotificationMeassage("error", "حدث خطأ"));
-  };
+  const { data: vendors = [] } = useQuery({
+    queryKey: vendorKeys.list(),
+    queryFn: async () => {
+      const { data: body } = await axiosRequest.get("/vendors");
+      return [
+        { label: "هومكس", value: "0" },
+        ...body.data.map((v) => ({ label: v.name, value: v.id })),
+      ];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: userKeys.list(),
+    queryFn: async () => {
+      const { data: body } = await axiosRequest.get(`${baseURI}/users`);
+      return body.data;
+    },
+    enabled: Boolean(token),
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
-    getVendors();
-  }, []);
-
-  useEffect(() => {
-    axiosRequest.get(`${baseURI}/users`).then(({ data: { data } }) => setUsers(data));
-  }, [token]);
+    if (ordersQueryError) NotificationMeassage("error", "حدث خطأ");
+  }, [ordersQueryError]);
 
   const onEditConfirm = (
     id,
@@ -288,14 +268,8 @@ function Orders() {
         totalVendorDue,
         totalCompanyDue,
       })
-      .then(({ data: { data } }) => {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.orderId === data.id
-              ? { ...o, status: data.status, items: data.orderLines, totalPrice: data.totalPrice }
-              : o
-          )
-        );
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch(() => NotificationMeassage("error", "حدث خطأ"))
@@ -330,7 +304,7 @@ function Orders() {
 
   const deleteOrder = () => {
     axiosRequest.delete(`${baseURI}/orders/${selectedEditOrder.orderId}`).then(() => {
-      setOrders((o) => o.filter((x) => x.orderId !== selectedEditOrder.orderId));
+      queryClient.invalidateQueries({ queryKey: orderKeys.all() });
       NotificationMeassage("success", "تم حذف الطلب");
       setIsDeleteModalOpen(false);
     });
@@ -353,19 +327,7 @@ function Orders() {
         },
       })
       .then(() => {
-        const ids = new Set(orderIds);
-        setOrders((prev) =>
-          prev.map((o) =>
-            ids.has(o.orderId)
-              ? {
-                  ...o,
-                  ...(orderSt && { status: orderSt }),
-                  ...(pay && { paymentStatus: pay }),
-                  ...(shippedFromInventory !== undefined && { shippedFromInventory }),
-                }
-              : o
-          )
-        );
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch(() => NotificationMeassage("error", "حدث خطأ"));
@@ -378,8 +340,7 @@ function Orders() {
     axiosRequest
       .delete(`${baseURI}/orders/bulk-delete`, { data: { orderIds } })
       .then(() => {
-        const ids = new Set(orderIds);
-        setOrders((o) => o.filter((x) => !ids.has(x.orderId)));
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         setSelectionModel([]);
         NotificationMeassage("success", "تم الحذف بنجاح");
         setIsBulkDeleteModalOpen(false);
@@ -825,7 +786,7 @@ function Orders() {
           </Stack>
         </Stack>
 
-        {isLoading ? (
+        {ordersFetching ? (
           <OrdersTableSkeleton />
         ) : (
           <HomixDataTable
