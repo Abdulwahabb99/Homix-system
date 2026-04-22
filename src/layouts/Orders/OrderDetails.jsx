@@ -102,7 +102,7 @@ SectionHeader.propTypes = {
   count: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
-const manufactureFormControlSx = {
+const getManufactureFormControlSx = (theme) => ({
   width: "100%",
   mt: 2,
   mx: 0,
@@ -113,6 +113,16 @@ const manufactureFormControlSx = {
     color: PRIMARY,
     "&.Mui-focused": { color: PRIMARY },
     "&.MuiInputLabel-shrink": { color: PRIMARY },
+    // يبقي عنوان حالة التصنيع داخل الإطار في RTL (ما يطلعش بره يمين/شمال)
+    left: "auto",
+    right: "auto",
+    insetInlineStart: theme.spacing(1.75),
+    insetInlineEnd: theme.spacing(1.75),
+    maxWidth: `calc(100% - ${theme.spacing(3.5)})`,
+    transformOrigin: theme.direction === "rtl" ? "top right" : "top left",
+  },
+  "& .MuiInputLabel-root.MuiInputLabel-shrink": {
+    transformOrigin: theme.direction === "rtl" ? "top right" : "top left",
   },
   "& .MuiOutlinedInput-root": {
     minHeight: 52,
@@ -123,7 +133,7 @@ const manufactureFormControlSx = {
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
   },
   "& .MuiSelect-select": { py: 1.75, px: 1.5, fontSize: "0.875rem" },
-};
+});
 
 export const statusoptions = [
   { label: "معلق", value: 1 },
@@ -410,57 +420,86 @@ function OrderDetails() {
                   boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
                 }}
               >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={1.5}
-                  flexWrap="wrap"
-                  useFlexGap
-                  sx={{ gap: 1.5 }}
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: { xs: "stretch", sm: "center" },
+                    gap: { xs: 2, sm: 1.5 },
+                    width: "100%",
+                    minWidth: 0,
+                    overflow: "visible",
+                  }}
                 >
-                  <IconButton
-                    onClick={() => navigate(-1)}
-                    aria-label="رجوع"
-                    size="small"
+                  <Box
                     sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: "background.paper",
-                      color: "primary.main",
-                      "&:hover": { bgcolor: "action.hover" },
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      minWidth: 0,
+                      flex: { sm: 1 },
                     }}
                   >
-                    <ArrowBackIosNewIcon sx={{ fontSize: 18, transform: "scaleX(-1)" }} />
-                  </IconButton>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      fontSize="0.75rem"
+                    <IconButton
+                      onClick={() => navigate(-1)}
+                      aria-label="رجوع"
+                      size="small"
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: "background.paper",
+                        color: "primary.main",
+                        flexShrink: 0,
+                        "&:hover": { bgcolor: "action.hover" },
+                      }}
                     >
-                      تفاصيل الطلب
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      fontWeight={800}
-                      color="text.primary"
-                      fontSize="1.15rem"
-                    >
-                      {orderDetails?.name || orderDetails?.code || "—"}
-                    </Typography>
-                    {orderDetails?.code && orderDetails?.name && (
+                      <ArrowBackIosNewIcon sx={{ fontSize: 18, transform: "scaleX(-1)" }} />
+                    </IconButton>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
-                        fontSize="0.8125rem"
-                        sx={{ mt: 0.25 }}
+                        display="block"
+                        fontSize="0.75rem"
                       >
-                        رقم العملية: {orderDetails.code}
+                        تفاصيل الطلب
                       </Typography>
-                    )}
+                      <Typography
+                        variant="h6"
+                        fontWeight={800}
+                        color="text.primary"
+                        fontSize="1.15rem"
+                        sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                      >
+                        {orderDetails?.name || orderDetails?.code || "—"}
+                      </Typography>
+                      {orderDetails?.code && orderDetails?.name && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontSize="0.8125rem"
+                          sx={{ mt: 0.25 }}
+                        >
+                          رقم العملية: {orderDetails.code}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
-                  <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    flexWrap="wrap"
+                    useFlexGap
+                    spacing={1}
+                    alignItems="center"
+                    sx={{
+                      flexShrink: 0,
+                      gap: 1,
+                      width: { xs: "100%", sm: "auto" },
+                      maxWidth: "100%",
+                      justifyContent: { xs: "flex-start", sm: "flex-end" },
+                      alignSelf: { sm: "center" },
+                    }}
+                  >
                     {orderDetails?.paymentStatus && (
                       <Chip
                         label={getPaymentValue(orderDetails?.paymentStatus)}
@@ -469,6 +508,7 @@ function OrderDetails() {
                           fontWeight: 600,
                           fontSize: "0.8125rem",
                           height: 32,
+                          flexShrink: 0,
                           bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
                           color: "primary.main",
                           border: "1px solid",
@@ -483,7 +523,19 @@ function OrderDetails() {
                       startIcon={<PictureAsPdf fontSize="small" />}
                       onClick={handlePrint}
                       size="small"
-                      sx={{ fontWeight: 600, borderColor: "primary.main" }}
+                      sx={{
+                        fontWeight: 600,
+                        borderColor: "primary.main",
+                        color: "primary.main",
+                        flexShrink: 0,
+                        minWidth: "max-content",
+                        whiteSpace: "nowrap",
+                        bgcolor: "background.paper",
+                        "&:hover": {
+                          borderColor: "primary.main",
+                          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                        },
+                      }}
                     >
                       الفاتورة
                     </Button>
@@ -494,13 +546,18 @@ function OrderDetails() {
                         startIcon={<EditIcon />}
                         onClick={() => navigate(`/orders/edit/${id}`)}
                         size="small"
-                        sx={{ fontWeight: 600, boxShadow: "none" }}
+                        sx={{
+                          fontWeight: 600,
+                          boxShadow: "none",
+                          flexShrink: 0,
+                          minWidth: "max-content",
+                        }}
                       >
                         تعديل
                       </Button>
                     )}
                   </Stack>
-                </Stack>
+                </Box>
               </Box>
 
               <SectionHeader>ملخّص الطلب</SectionHeader>
@@ -552,7 +609,7 @@ function OrderDetails() {
                         orderTotalToBeCollected={orderTotalToBeCollected}
                       />
                     )}
-                    <FormControl fullWidth variant="outlined" sx={manufactureFormControlSx}>
+                    <FormControl fullWidth variant="outlined" sx={getManufactureFormControlSx}>
                       <InputLabel id="manufactureStatus">حالة التصنيع</InputLabel>
                       <Select
                         labelId="manufactureStatus"
