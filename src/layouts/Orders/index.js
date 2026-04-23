@@ -7,7 +7,6 @@ import {
   IconButton,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -20,8 +19,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
 import AddIcon from "@mui/icons-material/Add";
-import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
-import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import moment from "moment";
@@ -122,7 +119,6 @@ function Orders() {
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isBulkEditMode, setIsBulkEditMode] = useState(false);
   const [selectionModel, setSelectionModel] = useState([]);
   const [isExportLoading, setIsExportLoading] = useState(false);
 
@@ -715,35 +711,7 @@ function Orders() {
           mb={1.5}
         >
           <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-            {!isVendor && (
-              <Tooltip title="تبديل اختيار عدة صفوف">
-                <span>
-                  <IconButton
-                    onClick={() => {
-                      setIsBulkEditMode((b) => !b);
-                      setSelectionModel([]);
-                    }}
-                    size="small"
-                    color="primary"
-                    sx={{
-                      color: "primary.main",
-                      bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
-                      "&:hover": {
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.15),
-                        borderColor: "primary.dark",
-                      },
-                    }}
-                  >
-                    {isBulkEditMode ? (
-                      <CheckBoxIcon fontSize="small" />
-                    ) : (
-                      <CheckBoxOutlineBlankIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </span>
-              </Tooltip>
-            )}
-            {!isVendor && isBulkEditMode && selectionModel.length > 1 && (
+            {!isVendor && selectionModel.length > 0 && (
               <>
                 <Button
                   size="small"
@@ -799,8 +767,8 @@ function Orders() {
             rowCount={serverRowCount}
             paginationMode="server"
             onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
-            checkboxSelection={!isVendor && isBulkEditMode}
-            selectionModel={!isVendor && isBulkEditMode ? selectionModel : []}
+            checkboxSelection={!isVendor}
+            selectionModel={!isVendor ? selectionModel : []}
             onSelectionModelChange={(m) => setSelectionModel(m)}
           />
         )}
