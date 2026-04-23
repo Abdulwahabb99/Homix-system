@@ -26,7 +26,6 @@ import "moment-timezone";
 import "moment/locale/ar";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import { useDateRange } from "hooks/useDateRange";
-import { deliveryStatusValues } from "layouts/Orders/utils/constants";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
@@ -36,6 +35,8 @@ import HomixDataTable from "shared/components/HomixDataTable/HomixDataTable";
 import HomixFilterIconButton from "shared/components/HomixFilterIconButton/HomixFilterIconButton";
 import OrdersFilterDialog from "layouts/Orders/components/OrdersFilterDialog";
 import { OrdersTableSkeleton } from "layouts/Orders/components/OrdersPageSkeleton";
+import { OrdersMobileList } from "layouts/Orders/components/OrdersMobileList";
+import { DeliveryStatusChip, OrderStatusChip } from "layouts/Orders/components/OrderStatusChips";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
 
@@ -47,17 +48,6 @@ function rangeDateToIso(d: any) {
   return (moment.isMoment(d) ? d : moment.utc(String(d), "DD-MM-YYYY")).toISOString();
 }
 
-/* يطابق الـ API — أسماء العرض */
-const statusValues = {
-  1: "معلق",
-  3: "مؤكد",
-  4: "ملغي",
-  2: "قيد التصنيع ",
-  5: "تم التسليم",
-  6: "مسترجع ",
-  7: "مستبدل ",
-  8: "في المخزن ",
-};
 const paymentStatus = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 
 function Orders() {
@@ -159,8 +149,6 @@ function Orders() {
     return today.getTime() > start.getTime() ? `منذ ${diffDays} يوم` : "";
   };
 
-  const getStatusValue = (s) => statusValues[s] ?? "";
-  const getDeliveryValue = (s) => deliveryStatusValues[s] ?? "";
   const getPaymentValue = (s) => paymentStatus[s] ?? "";
 
   const ordersListFiltersKey = useMemo(
@@ -424,9 +412,9 @@ function Orders() {
       {
         field: "status",
         headerName: "حالة الطلب",
-        minWidth: 100,
+        minWidth: 120,
         sortable: false,
-        valueGetter: (p) => getStatusValue(p.row.status),
+        renderCell: (p) => <OrderStatusChip status={p.row.status} />,
       },
       { field: "totalPrice", headerName: "سعر البيع", minWidth: 100, sortable: false, flex: 0.5 },
       {
@@ -467,9 +455,9 @@ function Orders() {
       {
         field: "deliveryStatus",
         headerName: "الحالة",
-        minWidth: 120,
-        valueGetter: (p) => getDeliveryValue(p.row.deliveryStatus),
+        minWidth: 150,
         sortable: false,
+        renderCell: (p) => <DeliveryStatusChip deliveryStatus={p.row.deliveryStatus} />,
       },
     ];
     if (!isVendor)
@@ -763,20 +751,46 @@ function Orders() {
         {ordersFetching ? (
           <OrdersTableSkeleton />
         ) : (
-          <HomixDataTable
-            rows={orders}
-            columns={columns}
-            getRowId={(r) => r.orderId}
-            height={560}
-            page={gridPage0}
-            pageSize={ITEMS_PER_PAGE}
-            rowCount={serverRowCount}
-            paginationMode="server"
-            onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
-            checkboxSelection={!isVendor}
-            selectionModel={!isVendor ? selectionModel : []}
-            onSelectionModelChange={(m) => setSelectionModel(m)}
-          />
+          <>
+            <Box sx={{ display: { xs: "block", md: "none" } }}>
+              <OrdersMobileList
+                orders={orders}
+                isVendor={isVendor}
+                users={users}
+                selectionModel={!isVendor ? selectionModel : []}
+                onSelectionModelChange={(m) => setSelectionModel(m)}
+                onEdit={(row) => {
+                  openEdit(row);
+                  setIsEditModalOpen(true);
+                }}
+                onDelete={(row) => {
+                  openEdit(row);
+                  setIsDeleteModalOpen(true);
+                }}
+                page={page}
+                totalPages={totalPages}
+                onPageChange={(p) => setParams({ page: String(p) })}
+                navigate={navigate}
+                calculateDaysFromPoDate={calculateDaysFromPoDate}
+              />
+            </Box>
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <HomixDataTable
+                rows={orders}
+                columns={columns}
+                getRowId={(r) => r.orderId}
+                height={560}
+                page={gridPage0}
+                pageSize={ITEMS_PER_PAGE}
+                rowCount={serverRowCount}
+                paginationMode="server"
+                onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
+                checkboxSelection={!isVendor}
+                selectionModel={!isVendor ? selectionModel : []}
+                onSelectionModelChange={(m) => setSelectionModel(m)}
+              />
+            </Box>
+          </>
         )}
       </Box>
     </DashboardLayout>
