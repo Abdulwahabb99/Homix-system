@@ -521,77 +521,13 @@ function OrderDetails() {
                 </Box>
               </Box>
 
-              <SectionHeader>ملخّص الطلب</SectionHeader>
-
+              {/*
+                ترتيب عالمي شائع: بنود/منتجات الطلب (ما تم شراؤه) → بيانات العميل/الشحن
+                → ملخص الحالة والمالية. المنتجات + العميل نصف-صف (6+6) من md.
+              */}
               <Grid container spacing={2.5}>
-                <Grid item xs={12}>
-                  {orderDetails?.customer && (
-                    <CustomerDetails
-                      customerName={`${orderDetails?.customer.firstName} ${orderDetails.customer.lastName}`}
-                      email={orderDetails?.customer.email}
-                      address={
-                        orderDetails?.customer.address
-                          ? orderDetails.customer.address
-                          : orderDetails.customer.address2
-                      }
-                      phoneNumber={
-                        orderDetails?.customer.phoneNumber ? orderDetails.customer.phoneNumber : ""
-                      }
-                      shippedFromInventory={orderDetails.shippedFromInventory}
-                    />
-                  )}
-                </Grid>
-                <Grid item xs={12} md={6} lg={6}>
-                  {orderDetails && (
-                    <BasicsInfoCard
-                      orderDetails={{ ...orderDetails, administrator }}
-                      orderTotalCost={orderTotalCost}
-                      orderTotalPrice={orderTotalPrice}
-                      orderTotalShipping={orderTotalShipping}
-                      orderTotalToBeCollected={orderTotalToBeCollected}
-                    />
-                  )}
-                </Grid>
-                <Grid item xs={12} md={6} lg={6}>
-                  <Card
-                    sx={{
-                      ...financeCardSx,
-                      display: "flex",
-                      flexDirection: "column",
-                      height: "100%",
-                    }}
-                  >
-                    {orderDetails && (
-                      <OrderInfoCard
-                        orderDetails={{ ...orderDetails, administrator }}
-                        orderTotalCost={orderTotalCost}
-                        orderTotalPrice={orderTotalPrice}
-                        orderTotalShipping={orderTotalShipping}
-                        orderTotalToBeCollected={orderTotalToBeCollected}
-                      />
-                    )}
-                    <SelectComponent
-                      id="order-manufacture-status"
-                      label="حالة التصنيع"
-                      options={manufactureStatusOptions}
-                      value={manufactureStatus}
-                      onChange={changeManufactureStatus}
-                      withSectionBorder
-                      formControlSx={{
-                        "& .MuiInputLabel-root": { fontSize: "0.89rem" },
-                        "& .MuiOutlinedInput-root": { minHeight: 52 },
-                        "& .MuiSelect-select": {
-                          fontSize: "0.88rem",
-                          py: 1.55,
-                          px: 1.5,
-                          textAlign: "start",
-                        },
-                      }}
-                    />
-                  </Card>
-                </Grid>
-                <Grid item xs={12} sx={{ mt: { xs: 0.5, md: 0 } }}>
-                  <Box sx={{ pt: 1 }}>
+                <Grid item xs={12} sx={{ mt: { xs: 0, md: 0 } }}>
+                  <Box sx={{ pt: 0.5 }}>
                     <SectionHeader count={orderlines.length}>المنتجات</SectionHeader>
                   </Box>
                 </Grid>
@@ -614,7 +550,7 @@ function OrderDetails() {
                   };
 
                   return (
-                    <Grid item xs={12} sm={6} md={4} key={order.id}>
+                    <Grid item xs={12} sm={6} md={6} key={order.id}>
                       <Card
                         sx={{
                           ...homixCardSx,
@@ -705,6 +641,83 @@ function OrderDetails() {
                     </Grid>
                   );
                 })}
+                {(orderDetails?.customer || orderDetails?.shippedFromInventory) && (
+                  <Grid item xs={12} md={6}>
+                    <CustomerDetails
+                      customerName={
+                        orderDetails?.customer
+                          ? `${orderDetails.customer.firstName} ${orderDetails.customer.lastName}`
+                          : ""
+                      }
+                      email={orderDetails?.customer?.email}
+                      address={
+                        orderDetails?.customer?.address
+                          ? orderDetails.customer.address
+                          : orderDetails?.customer?.address2
+                      }
+                      phoneNumber={
+                        orderDetails?.customer?.phoneNumber ? orderDetails.customer.phoneNumber : ""
+                      }
+                      shippedFromInventory={orderDetails.shippedFromInventory}
+                    />
+                  </Grid>
+                )}
+
+                <Grid item xs={12}>
+                  <Box sx={{ pt: { xs: 0.5, md: 1 } }}>
+                    <SectionHeader>ملخّص الطلب</SectionHeader>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6} lg={6}>
+                  {orderDetails && (
+                    <BasicsInfoCard
+                      orderDetails={{ ...orderDetails, administrator }}
+                      orderTotalCost={orderTotalCost}
+                      orderTotalPrice={orderTotalPrice}
+                      orderTotalShipping={orderTotalShipping}
+                      orderTotalToBeCollected={orderTotalToBeCollected}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12} md={6} lg={6}>
+                  <Card
+                    sx={{
+                      ...financeCardSx,
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                    }}
+                  >
+                    {orderDetails && (
+                      <OrderInfoCard
+                        orderDetails={{ ...orderDetails, administrator }}
+                        orderTotalCost={orderTotalCost}
+                        orderTotalPrice={orderTotalPrice}
+                        orderTotalShipping={orderTotalShipping}
+                        orderTotalToBeCollected={orderTotalToBeCollected}
+                      />
+                    )}
+                    <SelectComponent
+                      id="order-manufacture-status"
+                      label="حالة التصنيع"
+                      options={manufactureStatusOptions}
+                      value={manufactureStatus}
+                      onChange={changeManufactureStatus}
+                      withSectionBorder
+                      formControlSx={{
+                        "& .MuiInputLabel-root": { fontSize: "0.89rem" },
+                        "& .MuiOutlinedInput-root": { minHeight: 52 },
+                        "& .MuiSelect-select": {
+                          fontSize: "0.88rem",
+                          py: 1.55,
+                          px: 1.5,
+                          textAlign: "start",
+                        },
+                      }}
+                    />
+                  </Card>
+                </Grid>
+
                 <Grid item xs={12}>
                   <Box sx={{ pt: 2 }}>
                     <SectionHeader>تعليق جديد</SectionHeader>

@@ -2,7 +2,7 @@ import { Box, Card, Grid, Skeleton, Stack } from "@mui/material";
 import React from "react";
 
 /**
- * هيكل تحميل صفحة تفاصيل الطلب (Homix) — بمحاذاة أقسام الصفحة
+ * هيكل تحميل صفحة تفاصيل الطلب: رأس → منتجات (6+6) → عميل (6) → ملخص (6+6) → تعليقات
  */
 function SectionLine() {
   return (
@@ -54,7 +54,28 @@ export default function OrderDetailsSkeleton() {
       </Box>
 
       <Grid container spacing={2.5}>
-        <Grid item xs={12}>
+        {/* منتجان بعرض نصف الصف من md */}
+        {[0, 1].map((i) => (
+          <Grid item xs={12} sm={6} md={6} key={`p-${i}`}>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: 2.5,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Skeleton width="100%" height={200} variant="rectangular" sx={{ borderRadius: 0 }} />
+              <Box sx={{ p: 2 }}>
+                <Skeleton width="90%" height={20} />
+                <Skeleton width="50%" height={16} sx={{ mt: 1 }} />
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+
+        {/* بيانات العميل — نصف عرض */}
+        <Grid item xs={12} md={6}>
           <Card
             elevation={0}
             sx={{
@@ -76,8 +97,14 @@ export default function OrderDetailsSkeleton() {
             </Box>
           </Card>
         </Grid>
+
+        <Grid item xs={12}>
+          <Box sx={{ pt: 1 }}>
+            <SectionLine />
+          </Box>
+        </Grid>
         {[0, 1].map((i) => (
-          <Grid item xs={12} md={6} key={i}>
+          <Grid item xs={12} md={6} key={`s-${i}`}>
             <Card
               elevation={0}
               sx={{
@@ -100,25 +127,7 @@ export default function OrderDetailsSkeleton() {
             </Card>
           </Grid>
         ))}
-        <Grid item xs={12}>
-          <SectionLine />
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 2.5,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Skeleton width="100%" height={200} variant="rectangular" sx={{ borderRadius: 0 }} />
-            <Box sx={{ p: 2 }}>
-              <Skeleton width="90%" height={20} />
-              <Skeleton width="50%" height={16} sx={{ mt: 1 }} />
-            </Box>
-          </Card>
-        </Grid>
+
         <Grid item xs={12}>
           <Box sx={{ pt: 1 }}>
             <SectionLine />
