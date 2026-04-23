@@ -34,7 +34,10 @@ import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import HomixDataTable from "shared/components/HomixDataTable/HomixDataTable";
 import HomixFilterIconButton from "shared/components/HomixFilterIconButton/HomixFilterIconButton";
 import OrdersFilterDialog from "layouts/Orders/components/OrdersFilterDialog";
-import { OrdersTableSkeleton } from "layouts/Orders/components/OrdersPageSkeleton";
+import {
+  OrdersMobileListSkeleton,
+  OrdersTableSkeleton,
+} from "layouts/Orders/components/OrdersPageSkeleton";
 import { OrdersMobileList } from "layouts/Orders/components/OrdersMobileList";
 import { DeliveryStatusChip, OrderStatusChip } from "layouts/Orders/components/OrderStatusChips";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
@@ -749,7 +752,14 @@ function Orders() {
         </Stack>
 
         {ordersFetching ? (
-          <OrdersTableSkeleton />
+          <>
+            <Box sx={{ display: { xs: "block", md: "none" } }}>
+              <OrdersMobileListSkeleton isVendor={isVendor} />
+            </Box>
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <OrdersTableSkeleton />
+            </Box>
+          </>
         ) : (
           <>
             <Box sx={{ display: { xs: "block", md: "none" } }}>
