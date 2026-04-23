@@ -388,7 +388,7 @@ function Orders() {
       {
         field: "code",
         headerName: "رقم العملية",
-        minWidth: 120,
+        minWidth: 80,
         sortable: false,
         flex: 0.8,
         renderCell: (p) => (
@@ -467,7 +467,7 @@ function Orders() {
       },
     ];
     if (!isVendor)
-      cols.push({ field: "type", headerName: "النوع", minWidth: 120, flex: 0.6, sortable: false });
+      cols.push({ field: "type", headerName: "النوع", minWidth: 100, flex: 0.5, sortable: false });
     if (!isVendor) {
       cols.push({
         field: "admin",
