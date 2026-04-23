@@ -56,7 +56,7 @@ function HomixDataTable({
         rowHeight={rowHeight}
         columnHeaderHeight={columnHeaderHeight}
         disableColumnMenu
-        disableRowSelectionOnClick
+        disableSelectionOnClick={checkboxSelection}
         checkboxSelection={checkboxSelection}
         selectionModel={checkboxSelection ? selectionModel : undefined}
         onSelectionModelChange={checkboxSelection ? onSelectionModelChange : undefined}

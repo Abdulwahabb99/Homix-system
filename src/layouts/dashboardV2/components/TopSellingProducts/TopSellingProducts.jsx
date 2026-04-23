@@ -133,7 +133,7 @@ const TopSellingProductsTable = ({ rowData }) => {
         <DataGrid
           rows={newRowData}
           columns={columns}
-          disableRowSelectionOnClick
+          disableSelectionOnClick
           hideFooter
           disableColumnMenu
           rowHeight={52}
