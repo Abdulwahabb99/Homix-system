@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
-import MDBox from "components/MDBox";
-import MDTypography from "components/MDTypography";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import SignInSplitLayout from "layouts/authentication/components/AuthSplitLayout";
 import { IconButton, InputAdornment } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -11,10 +11,60 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import { ToastContainer } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { EmailOutlined, LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
 import axiosRequest from "shared/functions/axiosRequest";
 import { setNotifications } from "store/slices/notificationsSlice";
-import { Card, Button, Input } from "components/ui";
+import { Button, Input } from "components/ui";
+
+const signInFieldBaseSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 1,
+    backgroundColor: "#ffffff",
+    transition: (theme) =>
+      theme.transitions.create(["border-color", "box-shadow"], { duration: 200 }),
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: (theme) =>
+      theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)",
+  },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: (theme) =>
+      theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.2)",
+  },
+  "& .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline": {
+    borderColor: "primary.main",
+    borderWidth: 2,
+  },
+  "& .MuiOutlinedInput-root.Mui-error.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: "error.main",
+    borderWidth: 2,
+  },
+};
+
+const signInFieldEmailSx = {
+  ...signInFieldBaseSx,
+  "& .MuiOutlinedInput-input": {
+    textAlign: "left",
+    direction: "ltr",
+  },
+};
+
+const signInFieldPasswordSx = {
+  ...signInFieldBaseSx,
+  "& .MuiOutlinedInput-input": {
+    textAlign: "left",
+  },
+};
+
+const formLabelRowSx = {
+  display: "block",
+  textAlign: "left",
+  mb: 1,
+  fontSize: "0.875rem",
+  fontWeight: 600,
+  color: "text.primary",
+  lineHeight: 1.4,
+};
 
 function Basic() {
   const [email, setEmail] = useState("");
@@ -79,70 +129,148 @@ function Basic() {
     <SignInSplitLayout>
       <ToastContainer />
       {!isLoading ? (
-        <Card variant="outlined" hover>
-          <Box
-            sx={{
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              color: "common.white",
-              px: 3,
-              py: 3,
-              textAlign: "center",
-            }}
-          >
-            <MDTypography
-              variant="h5"
-              fontWeight={600}
-              color="white"
-              sx={{ letterSpacing: "0.02em" }}
+        <Box component="section" sx={{ width: "100%" }}>
+          <Box sx={{ textAlign: "end", maxWidth: 420, width: "100%", mx: "auto", mb: 1 }}>
+            <Typography
+              component="h1"
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                color: (theme) => (theme.palette.mode === "dark" ? "grey.100" : "grey.900"),
+                letterSpacing: "0.01em",
+                lineHeight: 1.25,
+                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+              }}
             >
-              تسجيل الدخول
-            </MDTypography>
+              مرحباً بعودتك
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 1.5,
+                color: (theme) => (theme.palette.mode === "dark" ? "grey.400" : "grey.600"),
+                lineHeight: 1.8,
+                fontSize: "0.9375rem",
+                textAlign: "end",
+                px: { xs: 0.5, sm: 0 },
+              }}
+            >
+              سجّل الدخول إلى حسابك للوصول إلى منصة هومكس الداخلية
+            </Typography>
           </Box>
-          <MDBox pt={3} pb={3} px={3}>
-            <form onSubmit={handleSignInClick}>
-              <MDBox mb={2}>
+
+          <Box
+            component="form"
+            onSubmit={handleSignInClick}
+            noValidate
+            dir="rtl"
+            sx={{ textAlign: "left", maxWidth: 420, width: "100%", mx: "auto", mt: 2 }}
+          >
+            <Stack spacing={3}>
+              <Box>
+                <Typography
+                  component="label"
+                  id="signin-email-label"
+                  htmlFor="signin-email"
+                  variant="body2"
+                  sx={formLabelRowSx}
+                >
+                  البريد الإلكتروني
+                </Typography>
                 <Input
                   value={email}
                   onChange={handleEmailChange}
-                  id="email"
-                  label="البريد الإلكتروني"
+                  id="signin-email"
+                  name="email"
                   type="email"
                   autoFocus
                   autoComplete="email"
+                  size="medium"
+                  placeholder="name@email.com"
+                  color="primary"
+                  inputProps={{ "aria-labelledby": "signin-email-label", dir: "ltr" }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="end">
+                        <EmailOutlined sx={{ color: "text.secondary", fontSize: 22 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={signInFieldEmailSx}
                 />
-              </MDBox>
-              <MDBox mb={2}>
+              </Box>
+
+              <Box>
+                <Typography
+                  component="label"
+                  id="signin-password-label"
+                  htmlFor="signin-password"
+                  variant="body2"
+                  sx={formLabelRowSx}
+                >
+                  كلمة المرور
+                </Typography>
                 <Input
                   value={password}
                   onChange={handlePasswordChange}
-                  id="password"
-                  label="كلمة المرور"
+                  id="signin-password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
+                  size="medium"
+                  placeholder="أدخل كلمة المرور"
+                  color="primary"
+                  inputProps={{ "aria-labelledby": "signin-password-label" }}
                   InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="end">
+                        <LockOutlined sx={{ color: "text.secondary", fontSize: 22 }} />
+                      </InputAdornment>
+                    ),
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
                           onClick={() => setShowPassword((prev) => !prev)}
                           edge="end"
-                          aria-label="إظهار كلمة المرور"
+                          size="small"
+                          aria-label="إظهار أو إخفاء كلمة المرور"
+                          sx={{ color: "text.secondary" }}
                         >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                          {showPassword ? (
+                            <VisibilityOff fontSize="small" />
+                          ) : (
+                            <Visibility fontSize="small" />
+                          )}
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
+                  sx={signInFieldPasswordSx}
                 />
-              </MDBox>
-              <MDBox mt={3} mb={1}>
-                <Button variant="contained" color="primary" fullWidth type="submit" size="large">
-                  تسجيل الدخول
-                </Button>
-              </MDBox>
-            </form>
-          </MDBox>
-        </Card>
+              </Box>
+
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                type="submit"
+                size="large"
+                sx={{
+                  borderRadius: 1,
+                  py: 1.4,
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  mt: 0.5,
+                  boxShadow: "none",
+                  "&:hover": { boxShadow: "none" },
+                }}
+              >
+                تسجيل الدخول
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       ) : (
         <Spinner />
       )}
