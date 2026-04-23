@@ -51,6 +51,23 @@ const financeCardSx = {
   ...homixCardSx,
 };
 
+/** نص وصف المنتج من بيانات البند؛ يُرجع سلسلة فارغة إن لم يوجد وصف (لا يُعرض الصندوق). */
+function getOrderLineProductDescriptionPlainText(line) {
+  const p = line?.product;
+  if (!p) return "";
+  const raw = p.description ?? p.bodyHtml ?? p.body_html;
+  if (raw == null) return "";
+  const s = String(raw);
+  if (!s.trim()) return "";
+  return s
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function SectionHeader({ children, count }) {
   return (
     <Box
@@ -532,6 +549,7 @@ function OrderDetails() {
                   </Box>
                 </Grid>
                 {orderlines.map((order, lineIndex) => {
+                  const lineProductDescription = getOrderLineProductDescriptionPlainText(order);
                   const ordervariant = order?.product?.variants?.find(
                     (variant) => variant.shopifyId === order?.variant_id
                   );
@@ -636,6 +654,38 @@ function OrderDetails() {
                           {order?.product?.type?.name && (
                             <Chip label={order?.product?.type?.name} size="small" sx={lineChipSx} />
                           )}
+                          {lineProductDescription ? (
+                            <Box
+                              sx={{
+                                mt: 1.5,
+                                pt: 1.5,
+                                width: "100%",
+                                textAlign: "start",
+                                borderTop: "1px solid",
+                                borderColor: "divider",
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                display="block"
+                                sx={{ mb: 0.5, fontWeight: 600 }}
+                              >
+                                وصف المنتج
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.primary"
+                                sx={{
+                                  fontSize: "0.86rem",
+                                  lineHeight: 1.55,
+                                  whiteSpace: "pre-wrap",
+                                }}
+                              >
+                                {lineProductDescription}
+                              </Typography>
+                            </Box>
+                          ) : null}
                         </Box>
                       </Card>
                     </Grid>
