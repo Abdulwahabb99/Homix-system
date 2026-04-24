@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -23,8 +23,22 @@ import {
   navbarMobileMenu,
 } from "examples/Navbars/DashboardNavbar/styles";
 import { useMaterialUIController, setTransparentNavbar, setMiniSidenav } from "context";
-import { Badge, ListItemIcon, MenuItem } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import {
+  Badge,
+  Box,
+  Divider,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+} from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import MDTypography from "components/MDTypography";
 import { useDispatch, useSelector } from "react-redux";
 import { setNotifications } from "store/slices/notificationsSlice";
@@ -101,92 +115,197 @@ function DashboardNavbar({ absolute, light, isMini }) {
 
   const renderMenu = () => (
     <Menu
+      id="notification-menu"
       anchorEl={openMenu}
-      anchorReference={null}
-      anchorOrigin={{
-        vertical: "bottom",
-        horizontal: "left",
-      }}
       open={Boolean(openMenu)}
       onClose={handleCloseMenu}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      transformOrigin={{ vertical: "top", horizontal: "right" }}
       PaperProps={{
+        elevation: 0,
         sx: {
-          width: "320px",
+          width: 380,
+          maxWidth: "min(380px, calc(100vw - 24px))",
+          mt: 0.5,
+          borderRadius: 2.5,
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 8px 32px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06)",
+          overflow: "hidden",
           p: 0,
         },
       }}
     >
-      <MDBox
-        sx={{
-          maxHeight: 300,
-          overflowY: "auto",
-        }}
-      >
-        {notifications.length === 0 ? (
-          <MDBox py={2} textAlign="center">
-            <MDTypography variant="body2" color="text.secondary">
-              لا يوجد إشعارات حالياً
-            </MDTypography>
-          </MDBox>
-        ) : (
-          notifications.map((notification) => (
-            <MenuItem
-              key={notification.id}
-              sx={{
-                "&:hover": {
-                  backgroundColor: "rgba(0, 171, 85, 0.1)",
-                },
-              }}
-              onClick={() => {
-                window.location.href = `/orders/${notification.orderId}`;
-                handleCloseMenu();
-              }}
-            >
-              <MDBox component={Link} py={0.5} display="flex" alignItems="center" lineHeight={1}>
-                <MDTypography
-                  variant="button"
-                  fontWeight="regular"
-                  sx={{
-                    ml: 1,
-                    whiteSpace: "normal",
-                    wordBreak: "break-word",
-                    maxWidth: "230px",
-                  }}
-                >
-                  {notification.text}
-                </MDTypography>
-              </MDBox>
-            </MenuItem>
-          ))
-        )}
-      </MDBox>
-
-      {/* Sticky clear button */}
-      <MDBox
-        sx={{
-          position: "sticky",
-          bottom: 0,
-          backgroundColor: "white",
-          borderTop: "1px solid #eee",
-          zIndex: 1,
-        }}
-      >
-        <MenuItem
-          onClick={() => {
-            handleDeleteNotifications();
-          }}
+      <Box sx={{ width: "100%", p: 0, display: "flex", flexDirection: "column" }}>
+        <Box
           sx={{
-            justifyContent: "center",
-            fontWeight: "bold",
-            color: "error.main",
-            "&:hover": {
-              backgroundColor: "rgba(255, 0, 0, 0.08)",
-            },
+            px: 2,
+            py: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
           }}
         >
-          مسح الكل
-        </MenuItem>
-      </MDBox>
+          <MDTypography
+            variant="subtitle2"
+            fontWeight={800}
+            color="text.primary"
+            sx={{ fontSize: "0.95rem" }}
+          >
+            الإشعارات
+          </MDTypography>
+          {unReadedNotifications.length > 0 && (
+            <MDTypography
+              component="span"
+              variant="caption"
+              color="primary"
+              fontWeight={700}
+              sx={{
+                fontSize: "0.7rem",
+                py: 0.25,
+                px: 0.75,
+                borderRadius: 1,
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.14),
+              }}
+            >
+              {unReadedNotifications.length} جديد
+            </MDTypography>
+          )}
+        </Box>
+
+        <Box sx={{ maxHeight: 320, overflowY: "auto" }}>
+          {notifications.length === 0 ? (
+            <Box
+              sx={{
+                py: 4,
+                px: 2,
+                textAlign: "center",
+              }}
+            >
+              <NotificationsNoneOutlinedIcon
+                sx={{ fontSize: 48, color: "text.disabled", opacity: 0.5, mb: 1 }}
+              />
+              <MDTypography
+                variant="body2"
+                color="text.secondary"
+                display="block"
+                sx={{ fontWeight: 600 }}
+              >
+                لا توجد إشعارات
+              </MDTypography>
+              <MDTypography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: "block" }}
+              >
+                نُعلمك عند وصول أي تحديث
+              </MDTypography>
+            </Box>
+          ) : (
+            <List disablePadding>
+              {notifications.map((notification) => {
+                const unread = !notification.readAt;
+                return (
+                  <ListItemButton
+                    key={notification.id}
+                    onClick={() => {
+                      if (notification.orderId) {
+                        navigate(`/orders/${notification.orderId}`);
+                      }
+                      handleCloseMenu();
+                    }}
+                    sx={{
+                      alignItems: "flex-start",
+                      py: 1.5,
+                      px: 2,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      gap: 1.5,
+                      "&:last-of-type": { borderBottom: 0 },
+                      bgcolor: (t) =>
+                        unread
+                          ? alpha(t.palette.primary.main, t.palette.mode === "dark" ? 0.1 : 0.06)
+                          : "transparent",
+                      "&:hover": {
+                        bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 0, alignSelf: "flex-start" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 40,
+                          height: 40,
+                          borderRadius: 1.5,
+                          flexShrink: 0,
+                          bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                          color: "primary.main",
+                        }}
+                      >
+                        <ReceiptLongOutlinedIcon fontSize="small" />
+                      </Box>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={notification.text}
+                      secondary={
+                        notification.createdAt
+                          ? new Date(notification.createdAt).toLocaleString("ar-EG", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
+                          : null
+                      }
+                      primaryTypographyProps={{
+                        variant: "body2",
+                        fontWeight: 600,
+                        color: "text.primary",
+                        sx: { lineHeight: 1.5, whiteSpace: "normal", wordBreak: "break-word" },
+                      }}
+                      secondaryTypographyProps={{
+                        variant: "caption",
+                        color: "text.secondary",
+                        sx: { mt: 0.5, display: "block" },
+                      }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          )}
+        </Box>
+
+        {notifications.length > 0 && (
+          <>
+            <Divider />
+            <ListItemButton
+              onClick={handleDeleteNotifications}
+              disabled={notifications.length === 0}
+              sx={{
+                py: 1.25,
+                justifyContent: "center",
+                gap: 0.75,
+                color: "error.main",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                borderRadius: 0,
+                "&:hover": {
+                  bgcolor: (t) => alpha(t.palette.error.main, 0.08),
+                },
+              }}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+              مسح الكل
+            </ListItemButton>
+          </>
+        )}
+      </Box>
     </Menu>
   );
 
@@ -270,18 +389,50 @@ function DashboardNavbar({ absolute, light, isMini }) {
                   تسجيل الخروج
                 </MenuItem>
               </Menu>
-              <Badge badgeContent={unReadedNotifications.length} color="error">
+              <Badge
+                color="error"
+                overlap="circular"
+                badgeContent={unReadedNotifications.length}
+                invisible={unReadedNotifications.length === 0}
+                sx={{
+                  "& .MuiBadge-badge": {
+                    fontSize: "0.65rem",
+                    fontWeight: 800,
+                    minWidth: 18,
+                    height: 18,
+                    padding: "0 5px",
+                  },
+                }}
+              >
                 <IconButton
                   size="small"
-                  disableRipple
                   color="inherit"
-                  sx={navbarIconButton}
-                  aria-controls="notification-menu"
+                  aria-label="الإشعارات"
+                  aria-controls={openMenu ? "notification-menu" : undefined}
                   aria-haspopup="true"
-                  variant="contained"
+                  aria-expanded={Boolean(openMenu) ? "true" : "false"}
                   onClick={handleOpenMenu}
+                  sx={(t) => ({
+                    ...navbarIconButton(t),
+                    width: 40,
+                    height: 40,
+                    border: "1px solid",
+                    borderColor: alpha(t.palette.divider, darkMode ? 0.4 : 1),
+                    borderRadius: 2,
+                    bgcolor: alpha(t.palette.primary.main, light ? 0.12 : 0.08),
+                    color: t.palette.primary.main,
+                    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
+                    transition: t.transitions.create(
+                      ["background-color", "box-shadow", "border-color"],
+                      { duration: t.transitions.duration.shorter }
+                    ),
+                    "&:hover": {
+                      bgcolor: alpha(t.palette.primary.main, light ? 0.2 : 0.16),
+                      borderColor: alpha(t.palette.primary.main, 0.45),
+                    },
+                  })}
                 >
-                  <Icon sx={iconsStyle}>notifications</Icon>
+                  <NotificationsOutlinedIcon sx={{ fontSize: 22 }} />
                 </IconButton>
               </Badge>
               {renderMenu()}
