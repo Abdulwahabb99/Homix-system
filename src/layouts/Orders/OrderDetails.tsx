@@ -35,7 +35,6 @@ import { manufactureStatusOptions } from "shared/utils/constants";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import PdfDataMobile from "./PdfDataMobile";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
@@ -564,17 +563,12 @@ function OrderDetails() {
                 >
                   {[
                     {
-                      icon: <Inventory2Icon sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }} />,
-                      label: "عدد المنتجات",
-                      value: String(orderlines.length),
-                    },
-                    {
                       icon: (
                         <PaymentsOutlinedIcon
                           sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }}
                         />
                       ),
-                      label: "إجمالي البيع (تقديري)",
+                      label: "سعر البيع",
                       value:
                         orderTotalPrice != null
                           ? `${Number(orderTotalPrice).toLocaleString("ar-EG")} ج.م`
@@ -669,7 +663,7 @@ function OrderDetails() {
               <Grid container spacing={2.5}>
                 <Grid item xs={12} sx={{ mt: { xs: 0, md: 0 } }}>
                   <Box sx={{ pt: 0.5 }}>
-                    <SectionHeader count={orderlines.length}>المنتجات</SectionHeader>
+                    <SectionHeader>المنتج</SectionHeader>
                   </Box>
                 </Grid>
                 {orderlines.map((order, lineIndex) => {
@@ -692,7 +686,12 @@ function OrderDetails() {
                   };
 
                   return (
-                    <Grid item xs={12} sm={6} md={6} key={order.id}>
+                    <Grid
+                      item
+                      xs={12}
+                      key={order.id}
+                      sx={{ maxWidth: { md: 720 }, width: "100%", mx: "auto" }}
+                    >
                       <Card
                         sx={{
                           ...homixCardSx,
