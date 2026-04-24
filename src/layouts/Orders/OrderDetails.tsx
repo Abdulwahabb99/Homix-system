@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
+import { OrderStatusChip, DeliveryStatusChip } from "./components/OrderStatusChips";
 import { SelectComponent } from "components/ui";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
@@ -32,6 +33,10 @@ import axiosRequest from "shared/functions/axiosRequest";
 import BasicsInfoCard from "./components/BasicsInfoCard";
 import { manufactureStatusOptions } from "shared/utils/constants";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import PdfDataMobile from "./PdfDataMobile";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 
@@ -494,6 +499,15 @@ function OrderDetails() {
                         }}
                       />
                     )}
+                    {orderDetails?.status != null && (
+                      <OrderStatusChip status={orderDetails.status} size="small" />
+                    )}
+                    {orderDetails?.deliveryStatus != null && (
+                      <DeliveryStatusChip
+                        deliveryStatus={orderDetails.deliveryStatus}
+                        size="small"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="outlined"
@@ -536,6 +550,116 @@ function OrderDetails() {
                     )}
                   </Stack>
                 </Box>
+                <Box
+                  sx={{
+                    mt: 2.25,
+                    pt: 2.25,
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    flexWrap: "wrap",
+                    gap: 1.5,
+                    borderTop: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {[
+                    {
+                      icon: <Inventory2Icon sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }} />,
+                      label: "عدد المنتجات",
+                      value: String(orderlines.length),
+                    },
+                    {
+                      icon: (
+                        <PaymentsOutlinedIcon
+                          sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }}
+                        />
+                      ),
+                      label: "إجمالي البيع (تقديري)",
+                      value:
+                        orderTotalPrice != null
+                          ? `${Number(orderTotalPrice).toLocaleString("ar-EG")} ج.م`
+                          : "—",
+                    },
+                    {
+                      icon: (
+                        <ChatBubbleOutlineIcon
+                          sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }}
+                        />
+                      ),
+                      label: "تعليقات",
+                      value: String(comments.length),
+                    },
+                    manufactureStatus != null
+                      ? {
+                          icon: (
+                            <SettingsSuggestIcon
+                              sx={{ fontSize: 20, opacity: 0.85, color: PRIMARY }}
+                            />
+                          ),
+                          label: "التصنيع",
+                          value:
+                            manufactureStatusOptions.find((o) => o.value === manufactureStatus)
+                              ?.label ?? "—",
+                        }
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .map((item, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          flex: { sm: "1 1 140px" },
+                          minWidth: { sm: 0, xs: "100%" },
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.25,
+                          p: 1.5,
+                          borderRadius: 2,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          bgcolor: (t) =>
+                            t.palette.mode === "dark"
+                              ? "rgba(255,255,255,0.04)"
+                              : "rgba(6, 49, 70, 0.04)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 40,
+                            height: 40,
+                            borderRadius: 1.5,
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                            flexShrink: 0,
+                          }}
+                        >
+                          {item.icon}
+                        </Box>
+                        <Box minWidth={0} sx={{ flex: 1 }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ fontSize: "0.72rem", fontWeight: 600 }}
+                          >
+                            {item.label}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={800}
+                            color="text.primary"
+                            sx={{ fontSize: "0.9rem", lineHeight: 1.3 }}
+                            noWrap
+                          >
+                            {item.value}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                </Box>
               </Box>
 
               {/*
@@ -575,6 +699,31 @@ function OrderDetails() {
                           display: "flex",
                           flexDirection: "column",
                           height: "100%",
+                          position: "relative",
+                          transition:
+                            "box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease",
+                          borderColor: "divider",
+                          "&:hover": {
+                            boxShadow:
+                              "0 8px 28px rgba(6, 49, 70, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06)",
+                            transform: "translateY(-2px)",
+                            borderColor: (t) => alpha(t.palette.primary.main, 0.25),
+                          },
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 3,
+                            borderTopLeftRadius: 10,
+                            borderTopRightRadius: 10,
+                            background: (t) =>
+                              `linear-gradient(90deg, ${alpha(
+                                t.palette.primary.main,
+                                0.85
+                              )} 0%, ${alpha(t.palette.info.main, 0.5)} 100%)`,
+                          },
                         }}
                       >
                         <Box
@@ -858,6 +1007,39 @@ function OrderDetails() {
                 <SectionHeader>سجل التعليقات</SectionHeader>
               </Box>
 
+              {comments.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 5,
+                    px: 2,
+                    mb: 2,
+                    borderRadius: 2.5,
+                    border: "1px dashed",
+                    borderColor: "divider",
+                    bgcolor: (t) =>
+                      t.palette.mode === "dark"
+                        ? "rgba(255,255,255,0.03)"
+                        : "rgba(6, 49, 70, 0.03)",
+                  }}
+                >
+                  <ChatBubbleOutlineIcon
+                    sx={{ fontSize: 44, color: "text.disabled", opacity: 0.6, mb: 1 }}
+                  />
+                  <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+                    لا يوجد تعليقات بعد
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mt: 0.5 }}
+                  >
+                    أضف أول تعليق أعلاه لمتابعة الطلب مع الفريق
+                  </Typography>
+                </Box>
+              )}
+
               <Stack spacing={2} sx={{ mt: 0 }}>
                 {comments.map((comment, index) => {
                   const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
@@ -874,6 +1056,17 @@ function OrderDetails() {
                       sx={{
                         ...homixCardSx,
                         p: 2.5,
+                        position: "relative",
+                        pl: 2.75,
+                        borderLeft: "3px solid",
+                        borderLeftColor: (t) => alpha(t.palette.primary.main, 0.55),
+                        bgcolor: (t) =>
+                          index % 2 === 0
+                            ? "background.paper"
+                            : alpha(
+                                t.palette.primary.main,
+                                t.palette.mode === "dark" ? 0.04 : 0.02
+                              ),
                       }}
                     >
                       <Box
