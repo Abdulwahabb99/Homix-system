@@ -137,12 +137,14 @@ export default styled(Drawer)(({ theme, ownerState }: any) => {
           border: "none",
           borderInlineEnd: `1px solid ${theme.palette.divider}`,
           transform: "none",
+          overflowX: "hidden",
           ...mobileOverlayPaper,
         }
       : {
           boxShadow: xxl,
           border: "none",
           borderInlineEnd: `1px solid ${theme.palette.divider}`,
+          overflowX: "hidden",
           ...(miniSidenav ? drawerCloseStyles() : drawerOpenStyles()),
           [breakpoints.down("lg")]: {
             position: "fixed",
