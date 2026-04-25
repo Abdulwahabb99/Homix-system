@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 const OrderList = ({ orders }) => {
   const navigate = useNavigate();
   return (
-    <List sx={{ width: "100%", bgcolor: "background.paper" }}>
+    <List sx={{ width: "100%", bgcolor: "transparent", p: 0 }}>
       {orders?.map((order, index) => (
         <Box key={order?.id}>
           <ListItem
@@ -27,22 +27,23 @@ const OrderList = ({ orders }) => {
               px: 2,
               py: 1,
               cursor: "pointer",
+              transition: "background-color 0.15s ease",
               "&:hover": {
-                backgroundColor: "#f6f6f6",
+                backgroundColor: "action.hover",
               },
             }}
             onClick={() => {
               navigate(`/orders/${order?.id}`);
             }}
           >
-            <ListItemIcon sx={{ minWidth: "auto", mr: 2 }}>
+            <ListItemIcon sx={{ minWidth: 40, color: "primary.main" }}>
               <Inventory2OutlinedIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText
               disableTypography
               primary={
                 <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                  <Typography fontWeight={600} fontSize="14px" sx={{ color: "#303030" }}>
+                  <Typography fontWeight={600} fontSize="0.875rem" color="text.primary">
                     {order?.name}
                   </Typography>
                   <Chip
@@ -54,7 +55,7 @@ const OrderList = ({ orders }) => {
                 </Box>
               }
               secondary={
-                <Typography sx={{ color: "#616161" }} fontSize="13px" mt={0.5}>
+                <Typography color="text.secondary" fontSize="0.8125rem" mt={0.5}>
                   {order?.customer?.firstName} {order?.customer?.lastName} •{" "}
                   {moment(order?.orderDate).format("MMM D, h:mm A")} • EGP{" "}
                   {Number(order?.totalPrice).toFixed(0)}
