@@ -91,6 +91,8 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
     value: user.id,
   }));
 
+  const userSelectAC = getUserSelectAutocompleteConfig(48);
+
   return (
     <Dialog
       fullWidth
@@ -273,12 +275,23 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
                 disabled={!newUsers.length}
                 value={getUserSelectValue(newUsers, administrator)}
                 onChange={(_, v) => setAdministrator(v != null ? v.value : "")}
+                noOptionsText={userSelectAC.noOptionsText}
+                openOnFocus={userSelectAC.openOnFocus}
+                ListboxProps={userSelectAC.ListboxProps}
+                componentsProps={userSelectAC.componentsProps}
+                isOptionEqualToValue={userSelectAC.isOptionEqualToValue}
+                getOptionLabel={userSelectAC.getOptionLabel}
+                sx={userSelectAC.sx}
                 renderOption={(props, option) => (
+                  // MUI: يجب تمرير props كاملة لعنصر القائمة (إتاحة/لوحة المفاتيح)
+                  // eslint-disable-next-line react/jsx-props-no-spreading
                   <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
                     {option.label}
                   </li>
                 )}
                 renderInput={(params) => (
+                  // MUI Autocomplete: تمرير params كاملة إلى TextField
+                  // eslint-disable-next-line react/jsx-props-no-spreading
                   <TextField
                     {...params}
                     label="المسؤول"
@@ -287,7 +300,6 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
                     inputProps={{ ...params.inputProps, autoComplete: "off" }}
                   />
                 )}
-                {...getUserSelectAutocompleteConfig(48)}
               />
             </Box>
             <TextField

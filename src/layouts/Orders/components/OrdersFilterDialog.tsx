@@ -181,6 +181,8 @@ function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, 
                 },
               }}
               renderOption={(props, option) => (
+                // MUI: props مطلوبة لعنصر القائمة
+                // eslint-disable-next-line react/jsx-props-no-spreading
                 <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
                   {option.label}
                 </li>
@@ -206,6 +208,8 @@ function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, 
                 </Box>,
               ]}
               renderInput={(params) => (
+                // MUI Autocomplete: params كاملة لـ TextField
+                // eslint-disable-next-line react/jsx-props-no-spreading
                 <TextField
                   {...params}
                   label="المصنعون"
