@@ -53,7 +53,7 @@ const formControlSx = {
 
 const manufacturersAutocompleteSx = {
   ...formControlSx,
-  direction: "rtl",
+  direction: "ltr",
   "& .MuiAutocomplete-inputRoot": {
     ...formControlSx["& .MuiAutocomplete-inputRoot"],
     flexWrap: "nowrap",

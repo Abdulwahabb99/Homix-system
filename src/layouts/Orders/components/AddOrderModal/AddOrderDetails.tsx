@@ -130,6 +130,12 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
           px: 2.5,
           pt: 2.5,
           pb: 2,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          justifyContent: "flex-start",
+          width: "100%",
+          boxSizing: "border-box",
           background: (t) =>
             t.palette.mode === "dark"
               ? alpha(BRAND, 0.12)
@@ -158,7 +164,20 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
         >
           <CloseIcon fontSize="small" />
         </IconButton>
-        <Stack direction="row" alignItems="flex-start" gap={1.75} sx={{ pr: 5, textAlign: "right" }}>
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="flex-start"
+          gap={1.75}
+          sx={{
+            width: "100%",
+            maxWidth: "100%",
+            paddingInlineEnd: 7,
+            textAlign: "start",
+            alignSelf: "flex-start",
+            boxSizing: "border-box",
+          }}
+        >
           <Box
             sx={{
               width: 52,
@@ -175,19 +194,19 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users = [] }) => 
           >
             <ReceiptLongOutlinedIcon sx={{ fontSize: 28 }} />
           </Box>
-          <Box sx={{ minWidth: 0, pt: 0.25 }}>
+          <Box sx={{ minWidth: 0, flex: 1, pt: 0.25, textAlign: "start" }}>
             <Typography
               component="h2"
               fontWeight={800}
               color="primary.main"
-              sx={{ fontSize: "1.2rem", letterSpacing: "-0.02em", lineHeight: 1.3 }}
+              sx={{ fontSize: "1.2rem", letterSpacing: "-0.02em", lineHeight: 1.3, textAlign: "start" }}
             >
               {customer ? "تعديل معلومات الطلب" : "إضافة معلومات الطلب"}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ fontSize: "0.82rem", mt: 0.75, lineHeight: 1.5 }}
+              sx={{ fontSize: "0.82rem", mt: 0.75, lineHeight: 1.5, textAlign: "start" }}
             >
               الحالة، المسؤول، الشحن، والمبالغ — حدد القيم ثم احفظ.
             </Typography>
