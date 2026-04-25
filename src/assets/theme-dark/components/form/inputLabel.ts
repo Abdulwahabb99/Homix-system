@@ -17,18 +17,22 @@ Coded by www.creative-tim.com
 import colors from "assets/theme-dark/base/colors";
 import typography from "assets/theme-dark/base/typography";
 
-const { text, info } = colors;
+const { primary, error: errorColor } = colors;
 const { size } = typography;
 
 const inputLabel = {
   styleOverrides: {
     root: {
       fontSize: size.sm,
-      color: text.main,
+      color: primary.main,
       lineHeight: 0.9,
 
       "&.Mui-focused": {
-        color: info.main,
+        color: primary.main,
+      },
+
+      "&.Mui-error": {
+        color: errorColor.main,
       },
 
       "&.MuiInputLabel-shrink": {
