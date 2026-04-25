@@ -11,7 +11,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import Avatar from "@mui/material/Avatar";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
@@ -25,21 +25,52 @@ import {
   setTransparentSidenav,
   setWhiteSidenav,
 } from "context";
+import { getUserType } from "shared/utils/constants";
+import { alpha } from "@mui/material/styles";
 
-function getLoggedInUserDisplayName() {
+function getLoggedInUser() {
   try {
     const raw = localStorage.getItem("user");
-    if (!raw) return "";
-    const u = JSON.parse(raw) as { firstName?: string; lastName?: string; email?: string };
+    if (!raw) return { displayName: "", userType: "" as string | undefined };
+    const u = JSON.parse(raw) as {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      userType?: string;
+    };
     const name = [u.firstName, u.lastName]
       .map((p) => (p || "").trim())
       .filter(Boolean)
       .join(" ")
       .trim();
-    return name || (u.email || "").trim() || "";
+    return {
+      displayName: name || (u.email || "").trim() || "",
+      userType: u.userType,
+    };
   } catch {
-    return "";
+    return { displayName: "", userType: "" as string | undefined };
   }
+}
+
+/** أحرف أولية للعرض في الـ avatar: كلمتان → حرف من كلٍ، كلمة واحدة → أول حرفين، بريد فقط → من الجزء قبل @ */
+function getDisplayNameInitials(name: string): string {
+  const s = (name || "").trim();
+  if (!s) return "؟";
+  if (s.includes("@")) {
+    const local = (s.split("@")[0] || "").replace(/[._-]+/g, " ").trim();
+    const p = local.split(/\s+/).filter(Boolean);
+    if (p.length >= 2) {
+      return (p[0].charAt(0) + p[1].charAt(0)).toUpperCase();
+    }
+    return (local.slice(0, 2) || "?").toUpperCase();
+  }
+  const words = s.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
+  const w = words[0] || s;
+  if (w.length >= 2) return w.slice(0, 2).toUpperCase();
+  return w.charAt(0).toUpperCase();
 }
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
@@ -59,7 +90,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
   const closeSidenav = () => setMiniSidenav(dispatch, true);
   const toggleSidenavWidth = () => setMiniSidenav(dispatch, !miniSidenav);
-  const userDisplayName = getLoggedInUserDisplayName();
+  const { displayName: userDisplayName, userType: loggedInUserType } = getLoggedInUser();
+  const userTypeLabel = getUserType(String(loggedInUserType || ""));
+  const userTooltipText =
+    [userDisplayName, userTypeLabel].filter(Boolean).join(" — ") || "المستخدم";
   /** عند الـ overlay (أقل من 1200px): خلفية الـ side nav داكنة — نلزم لون المستخدم أبيض ثابت مثل باقي النصوص */
   const userRowUsesSolidWhite = isMobileOverlay;
   /* عند الشاشة الضيقة: mini فقط. لا نعيّن expanded عند التنقل أو عند الشاشة العريضة — اختيار المستخدم يبقى. */
@@ -289,7 +323,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           sx={{ overflow: "hidden", overflowX: "hidden", marginTop: -0.75 }}
         >
           <Tooltip
-            title={userDisplayName || "المستخدم"}
+            title={userTooltipText}
             placement="right"
             disableHoverListener={!miniSidenav}
           >
@@ -304,33 +338,47 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               flexDirection="row"
               alignItems="center"
               justifyContent={miniSidenav ? "center" : "flex-start"}
-              gap={miniSidenav ? 0 : 1}
+              gap={miniSidenav ? 0.75 : 1}
               sx={{ cursor: "default", boxSizing: "border-box" }}
             >
-              <PersonOutlineIcon
-                sx={
-                  userRowUsesSolidWhite
-                    ? {
-                        fontSize: 22,
-                        flexShrink: 0,
-                        opacity: 0.95,
-                        display: "block",
-                        color: (t) => t.palette.common.white,
-                      }
-                    : {
-                        fontSize: 22,
-                        flexShrink: 0,
-                        opacity: 0.9,
-                        display: "block",
-                        color: textColor,
-                      }
-                }
-              />
+              <Avatar
+                alt={userDisplayName || "المستخدم"}
+                sx={(t) => {
+                  /* نفس وضع أيقونة الشخص: نص/حد أبيض على خلفية القائمة الداكنة */
+                  const frostedOnDarkNav = userRowUsesSolidWhite || textColor === "white";
+                  return {
+                    width: miniSidenav ? 36 : 40,
+                    height: miniSidenav ? 36 : 40,
+                    flexShrink: 0,
+                    fontSize: miniSidenav ? "0.75rem" : "0.8125rem",
+                    fontWeight: 700,
+                    ...(frostedOnDarkNav
+                      ? {
+                          bgcolor: alpha(t.palette.common.white, 0.2),
+                          color: t.palette.common.white,
+                          border: `1px solid ${alpha(t.palette.common.white, 0.35)}`,
+                        }
+                      : {
+                          bgcolor: t.palette.primary.main,
+                          color: t.palette.primary.contrastText,
+                        }),
+                  };
+                }}
+              >
+                {getDisplayNameInitials(userDisplayName)}
+              </Avatar>
               {!miniSidenav && (
                 <MDBox
                   minWidth={0}
                   flex={1}
-                  sx={{ overflow: "hidden", display: "flex", alignItems: "center" }}
+                  sx={{
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    justifyContent: "center",
+                    gap: 0.25,
+                  }}
                 >
                   <MDTypography
                     component="p"
@@ -342,13 +390,53 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                     fontWeight={600}
                     width="100%"
                     sx={(t) => ({
-                      fontSize: "0.8125rem",
-                      lineHeight: 1.3,
+                      fontSize: "0.875rem",
+                      lineHeight: 1.35,
                       ...(userRowUsesSolidWhite && { color: t.palette.common.white }),
                     })}
                   >
                     {userDisplayName || "—"}
                   </MDTypography>
+                  {userTypeLabel ? (
+                    <MDTypography
+                      component="p"
+                      variant="caption"
+                      noWrap
+                      display="block"
+                      textAlign="start"
+                      fontWeight={600}
+                      width="100%"
+                      color="inherit"
+                      sx={(t) => {
+                        const base = {
+                          fontSize: "0.8125rem",
+                          lineHeight: 1.35,
+                          letterSpacing: "0.02em",
+                        };
+                        if (userRowUsesSolidWhite) {
+                          return { ...base, color: alpha(t.palette.common.white, 0.92) };
+                        }
+                        if (textColor === "white") {
+                          return { ...base, color: alpha(t.palette.common.white, 0.9) };
+                        }
+                        if (textColor === "dark") {
+                          /* وضع القائمة الفاتحة: تباين واضح بدل text.secondary الباهت */
+                          return {
+                            ...base,
+                            color: t.palette.grey[800],
+                            fontWeight: 600,
+                          };
+                        }
+                        return {
+                          ...base,
+                          color: t.palette.text.primary,
+                          opacity: 0.9,
+                        };
+                      }}
+                    >
+                      {userTypeLabel}
+                    </MDTypography>
+                  ) : null}
                 </MDBox>
               )}
             </MDBox>
