@@ -29,11 +29,13 @@ import AddOrderDetails from "./AddOrderDetails";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { addOrderPageCardSx } from "./addOrderFormStyles";
+import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
 function AddOrderModal() {
   const theme = useTheme();
+  const [isConfirmAddOpen, setIsConfirmAddOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -135,6 +137,19 @@ function AddOrderModal() {
           users={users}
         />
       )}
+      <ConfirmDeleteModal
+        open={isConfirmAddOpen}
+        onClose={() => setIsConfirmAddOpen(false)}
+        handleConfirmDelete={() => {
+          setIsConfirmAddOpen(false);
+          addNewOrder();
+        }}
+        title="تأكيد حفظ الطلب"
+        message="سيتم إنشاء طلب جديد ببيانات العميل والمنتج والشحن. هل تريد المتابعة؟"
+        tone="primary"
+        confirmButtonText="نعم، حفظ الطلب"
+        cancelButtonText="رجوع"
+      />
       <Box
         sx={{
           maxWidth: 1680,
@@ -426,7 +441,7 @@ function AddOrderModal() {
             إلغاء
           </Button>
           <Button
-            onClick={() => addNewOrder()}
+            onClick={() => setIsConfirmAddOpen(true)}
             variant="contained"
             color="primary"
             size="large"

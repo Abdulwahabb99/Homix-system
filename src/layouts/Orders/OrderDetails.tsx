@@ -38,6 +38,7 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import PdfDataMobile from "./PdfDataMobile";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
+import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 
 const PRIMARY = "primary.main";
 
@@ -145,6 +146,7 @@ function OrderDetails() {
   const [orderlines, setOrderlines] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState([]);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState("");
   const [administrator, setAdministrator] = useState("");
@@ -236,7 +238,7 @@ function OrderDetails() {
       .then(() => {
         const updatedComments = comments.filter((comment) => comment.id !== noteId);
         setComments(updatedComments);
-
+        setPendingDeleteNoteId(null);
         NotificationMeassage("success", "تم حذف التعليق");
       })
       .catch(() => {
@@ -366,6 +368,18 @@ function OrderDetails() {
       <DashboardLayout>
         <DashboardNavbar />
         <ToastContainer />
+        <ConfirmDeleteModal
+          open={pendingDeleteNoteId != null}
+          onClose={() => setPendingDeleteNoteId(null)}
+          handleConfirmDelete={() => {
+            if (pendingDeleteNoteId != null) deleteComment(pendingDeleteNoteId);
+          }}
+          title="التعليق"
+          message="سيتم حذف التعليق نهائياً. هل تريد المتابعة؟"
+          tone="danger"
+          confirmButtonText="حذف"
+          cancelButtonText="رجوع"
+        />
         {isEditModalOpenned && slectedOrderLine && (
           <EditOrderProductsModal
             open={isEditModalOpenned}
@@ -1112,7 +1126,7 @@ function OrderDetails() {
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => deleteComment(comment.id)}
+                            onClick={() => setPendingDeleteNoteId(comment.id)}
                             sx={{
                               border: "1px solid",
                               borderColor: (t) => alpha(t.palette.error.main, 0.35),
