@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useLocation, NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -11,7 +11,12 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutIcon from "@mui/icons-material/Logout";
 import Avatar from "@mui/material/Avatar";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
@@ -75,10 +80,13 @@ function getDisplayNameInitials(name: string): string {
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const theme = useTheme();
+  const navigate = useNavigate();
   // يطابق useEffect: شاشة ضيقة أقل من 1200 (قيمة xl في الثيم)
   const isMobileOverlay = useMediaQuery(theme.breakpoints.down("xl"));
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode } = controller;
+  const [settingsAnchor, setSettingsAnchor] = useState(null);
+  const openSettings = Boolean(settingsAnchor);
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
   let textColor = "white";
@@ -96,6 +104,16 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     [userDisplayName, userTypeLabel].filter(Boolean).join(" — ") || "المستخدم";
   /** عند الـ overlay (أقل من 1200px): خلفية الـ side nav داكنة — نلزم لون المستخدم أبيض ثابت مثل باقي النصوص */
   const userRowUsesSolidWhite = isMobileOverlay;
+
+  const handleCloseSettings = () => setSettingsAnchor(null);
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("notifications");
+    handleCloseSettings();
+    navigate("/authentication/sign-in");
+    window.location.reload();
+  };
+
   /* عند الشاشة الضيقة: mini فقط. لا نعيّن expanded عند التنقل أو عند الشاشة العريضة — اختيار المستخدم يبقى. */
   useEffect(() => {
     function applyViewportSidenav() {
@@ -322,112 +340,184 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           minWidth={0}
           sx={{ overflow: "hidden", overflowX: "hidden", marginTop: -0.75 }}
         >
-          <Tooltip
-            title={userTooltipText}
-            placement="right"
-            disableHoverListener={!miniSidenav}
+          <MDBox
+            px={{ xs: 2, lg: miniSidenav ? 0.5 : 2 }}
+            pt={0.25}
+            pb={1.25}
+            width="100%"
+            minWidth={0}
+            maxWidth="100%"
+            display="flex"
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="flex-start"
+            gap={0.75}
+            sx={{ boxSizing: "border-box" }}
           >
-            <MDBox
-              px={{ xs: 2, lg: miniSidenav ? 0.5 : 2 }}
-              pt={0.25}
-              pb={1.25}
-              width="100%"
-              minWidth={0}
-              maxWidth="100%"
-              display="flex"
-              flexDirection="row"
-              alignItems="center"
-              justifyContent={miniSidenav ? "center" : "flex-start"}
-              gap={miniSidenav ? 0.75 : 1}
-              sx={{ cursor: "default", boxSizing: "border-box" }}
+            <Tooltip
+              title={userTooltipText}
+              placement="right"
+              disableHoverListener={!miniSidenav}
             >
-              <Avatar
-                alt={userDisplayName || "المستخدم"}
-                sx={(t) => {
-                  /* نفس وضع أيقونة الشخص: نص/حد أبيض على خلفية القائمة الداكنة */
-                  const frostedOnDarkNav = userRowUsesSolidWhite || textColor === "white";
-                  return {
-                    width: miniSidenav ? 36 : 40,
-                    height: miniSidenav ? 36 : 40,
-                    flexShrink: 0,
-                    fontSize: miniSidenav ? "0.75rem" : "0.8125rem",
-                    fontWeight: 700,
-                    ...(frostedOnDarkNav
-                      ? {
-                          bgcolor: alpha(t.palette.common.white, 0.2),
-                          color: t.palette.common.white,
-                          border: `1px solid ${alpha(t.palette.common.white, 0.35)}`,
-                        }
-                      : {
-                          bgcolor: t.palette.primary.main,
-                          color: t.palette.primary.contrastText,
-                        }),
-                  };
-                }}
+              <MDBox
+                display="flex"
+                flexDirection="row"
+                alignItems="center"
+                gap={miniSidenav ? 0.75 : 1}
+                minWidth={0}
+                flex={1}
+                sx={{ cursor: "default" }}
               >
-                {getDisplayNameInitials(userDisplayName)}
-              </Avatar>
-              {!miniSidenav && (
-                <MDBox
-                  minWidth={0}
-                  flex={1}
-                  sx={{
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    justifyContent: "center",
-                    gap: 0.25,
+                <Avatar
+                  alt={userDisplayName || "المستخدم"}
+                  sx={(t) => {
+                    const frostedOnDarkNav = userRowUsesSolidWhite || textColor === "white";
+                    return {
+                      width: miniSidenav ? 36 : 40,
+                      height: miniSidenav ? 36 : 40,
+                      flexShrink: 0,
+                      fontSize: miniSidenav ? "0.75rem" : "0.8125rem",
+                      fontWeight: 700,
+                      ...(frostedOnDarkNav
+                        ? {
+                            bgcolor: alpha(t.palette.common.white, 0.2),
+                            color: t.palette.common.white,
+                            border: `1px solid ${alpha(t.palette.common.white, 0.35)}`,
+                          }
+                        : {
+                            bgcolor: t.palette.primary.main,
+                            color: t.palette.primary.contrastText,
+                          }),
+                    };
                   }}
                 >
-                  <MDTypography
-                    component="p"
-                    variant="caption"
-                    color={userRowUsesSolidWhite ? "white" : textColor}
-                    noWrap
-                    display="block"
-                    textAlign="start"
-                    width="100%"
-                    sx={(t) => ({
-                      fontSize: "0.95rem",
-                      lineHeight: 1.45,
-                      fontWeight: 800,
-                      ...(userRowUsesSolidWhite && { color: t.palette.common.white }),
-                    })}
+                  {getDisplayNameInitials(userDisplayName)}
+                </Avatar>
+                {!miniSidenav && (
+                  <MDBox
+                    minWidth={0}
+                    flex={1}
+                    sx={{
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                      gap: 0.25,
+                    }}
                   >
-                    {userDisplayName || "—"}
-                  </MDTypography>
-                  {userTypeLabel ? (
                     <MDTypography
                       component="p"
                       variant="caption"
+                      color={userRowUsesSolidWhite ? "white" : textColor}
                       noWrap
                       display="block"
                       textAlign="start"
                       width="100%"
-                      color="inherit"
-                      sx={(t) => {
-                        const base = {
-                          fontSize: "0.875rem",
-                          lineHeight: 1.45,
-                          fontWeight: 600,
-                        };
-                        if (userRowUsesSolidWhite || textColor === "white") {
-                          return { ...base, color: alpha(t.palette.common.white, 0.78) };
-                        }
-                        if (textColor === "dark") {
-                          return { ...base, color: t.palette.primary.main };
-                        }
-                        return { ...base, color: t.palette.text.secondary };
-                      }}
+                      sx={(t) => ({
+                        fontSize: "0.95rem",
+                        lineHeight: 1.45,
+                        fontWeight: 800,
+                        ...(userRowUsesSolidWhite && { color: t.palette.common.white }),
+                      })}
                     >
-                      {userTypeLabel}
+                      {userDisplayName || "—"}
                     </MDTypography>
-                  ) : null}
-                </MDBox>
-              )}
-            </MDBox>
-          </Tooltip>
+                    {userTypeLabel ? (
+                      <MDTypography
+                        component="p"
+                        variant="caption"
+                        noWrap
+                        display="block"
+                        textAlign="start"
+                        width="100%"
+                        color="inherit"
+                        sx={(t) => {
+                          const base = {
+                            fontSize: "0.875rem",
+                            lineHeight: 1.45,
+                            fontWeight: 600,
+                          };
+                          if (userRowUsesSolidWhite || textColor === "white") {
+                            return { ...base, color: alpha(t.palette.common.white, 0.78) };
+                          }
+                          if (textColor === "dark") {
+                            return { ...base, color: t.palette.primary.main };
+                          }
+                          return { ...base, color: t.palette.text.secondary };
+                        }}
+                      >
+                        {userTypeLabel}
+                      </MDTypography>
+                    ) : null}
+                  </MDBox>
+                )}
+              </MDBox>
+            </Tooltip>
+            <IconButton
+              id="sidenav-settings-button"
+              size="small"
+              aria-label="الإعدادات"
+              aria-controls={openSettings ? "sidenav-settings-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={openSettings ? "true" : undefined}
+              onClick={(e) => setSettingsAnchor(e.currentTarget)}
+              sx={(t) => {
+                const frosted = userRowUsesSolidWhite || textColor === "white";
+                return {
+                  flexShrink: 0,
+                  p: 0.5,
+                  color: frosted
+                    ? alpha(t.palette.common.white, 0.9)
+                    : textColor === "dark"
+                      ? t.palette.primary.main
+                      : t.palette.text.secondary,
+                  "&:hover": {
+                    bgcolor: frosted
+                      ? alpha(t.palette.common.white, 0.1)
+                      : alpha(t.palette.primary.main, 0.08),
+                  },
+                };
+              }}
+            >
+              <SettingsOutlinedIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+            <Menu
+              id="sidenav-settings-menu"
+              MenuListProps={{ "aria-labelledby": "sidenav-settings-button" }}
+              anchorEl={settingsAnchor}
+              open={openSettings}
+              onClose={handleCloseSettings}
+              onClick={handleCloseSettings}
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+              PaperProps={{
+                elevation: 3,
+                sx: { minWidth: 200, borderRadius: 1.5 },
+              }}
+            >
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  py: 1.25,
+                  color: "error.main",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  gap: 0.5,
+                  "&:hover": {
+                    color: "error.dark",
+                    backgroundColor: (p) =>
+                      p.palette.mode === "dark" ? "rgba(239, 68, 68, 0.12)" : "rgba(239, 68, 68, 0.08)",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                تسجيل الخروج
+              </MenuItem>
+            </Menu>
+          </MDBox>
         </MDBox>
       </MDBox>
     </SidenavRoot>

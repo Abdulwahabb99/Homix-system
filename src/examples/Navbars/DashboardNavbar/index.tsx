@@ -34,7 +34,6 @@ import {
   ListItemText,
   MenuItem,
 } from "@mui/material";
-import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -50,7 +49,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentNavbar, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(null as any);
-  const [settingsMenuAnchor, setSettingsMenuAnchor] = useState(null);
   const navigate = useNavigate();
   const route = useLocation().pathname.split("/").slice(1);
   const notifications = useSelector((state: any) => state.notifications);
@@ -58,20 +56,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const reduxDispatch = useDispatch();
 
   const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
-
-  const handleOpenSettingsMenu = (event) => {
-    setSettingsMenuAnchor(event.currentTarget);
-  };
-  const handleCloseSettingsMenu = () => {
-    setSettingsMenuAnchor(null);
-  };
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("notifications");
-    handleCloseSettingsMenu();
-    navigate("/authentication/sign-in");
-    window.location.reload();
-  };
 
   const handleOpenMenu = (event) => {
     setOpenMenu(event.currentTarget);
@@ -98,8 +82,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   };
 
   const handleCloseMenu = () => setOpenMenu(null as any);
-
-  const openSettingsMenu = Boolean(settingsMenuAnchor);
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
@@ -333,62 +315,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
                   {miniSidenav ? "menu_open" : "menu"}
                 </Icon>
               </IconButton>
-              <IconButton
-                size="small"
-                disableRipple
-                color="inherit"
-                sx={navbarIconButton}
-                id="settings-menu-button"
-                aria-controls={openSettingsMenu ? "settings-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={openSettingsMenu ? "true" : undefined}
-                onClick={handleOpenSettingsMenu}
-              >
-                <Icon sx={iconsStyle}>settings</Icon>
-              </IconButton>
-              <Menu
-                id="settings-menu"
-                MenuListProps={{ "aria-labelledby": "settings-menu-button" }}
-                anchorEl={settingsMenuAnchor}
-                open={openSettingsMenu}
-                onClose={handleCloseSettingsMenu}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                transformOrigin={{ vertical: "top", horizontal: "right" }}
-                PaperProps={{
-                  elevation: 3,
-                  sx: { minWidth: 200, borderRadius: 1.5 },
-                }}
-              >
-                <MenuItem
-                  onClick={handleLogout}
-                  sx={{
-                    py: 1.25,
-                    color: "error.main",
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
-                    gap: 0.5,
-                    "&:hover": {
-                      color: "error.dark",
-                      backgroundColor: (theme) =>
-                        theme.palette.mode === "dark"
-                          ? "rgba(239, 68, 68, 0.12)"
-                          : "rgba(239, 68, 68, 0.08)",
-                    },
-                    "& .MuiListItemIcon-root": {
-                      minWidth: 36,
-                      color: "inherit",
-                    },
-                    "& .MuiListItemIcon-root svg": {
-                      color: "inherit",
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
-                  </ListItemIcon>
-                  تسجيل الخروج
-                </MenuItem>
-              </Menu>
               <Badge
                 color="error"
                 overlap="circular"
