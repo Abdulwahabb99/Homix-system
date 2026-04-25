@@ -653,6 +653,8 @@ function Orders() {
             borderColor: "divider",
             bgcolor: "background.paper",
             boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 12px rgba(15, 23, 42, 0.04)",
+            overflow: "visible",
+            position: "relative",
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.5} sx={{ width: "100%", mb: 2 }}>
@@ -682,6 +684,9 @@ function Orders() {
               display: "flex",
               width: "100%",
               alignItems: "center",
+              overflow: "visible",
+              position: "relative",
+              zIndex: 1,
               "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
                 width: "100% !important",
               },

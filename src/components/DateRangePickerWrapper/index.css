@@ -1,7 +1,8 @@
 /**
  * Homix date range — aligned with primary #063146, fintech-style UI
+ * المتغيرات على :root حتى تُستورد مع appendToBody (النافذة المنبثقة خارج .homix-drp)
  */
-.homix-drp {
+:root {
   --dp-primary: #063146;
   --dp-primary-soft: rgba(6, 49, 70, 0.1);
   --dp-primary-mid: rgba(6, 49, 70, 0.16);
@@ -130,8 +131,11 @@
   border-radius: var(--dp-radius, 10px) !important;
 }
 
-/* —— Popover —— */
-.homix-drp .DateRangePicker_picker {
+/* —— Popover: داخل الصفحة أو عبر appendToBody (نفس الـ class على العنصر) —— */
+.homix-drp .DateRangePicker_picker,
+.homix-drp.DateRangePicker_picker {
+  /* عزل النافذة عن dir=rtl للحقل/الصف: شبكة المكتبة LTR + firstDayOfWeek=6 (سبت) */
+  direction: ltr !important;
   z-index: 10000000;
   margin-top: 6px;
   border-radius: 14px !important;
@@ -141,6 +145,11 @@
   box-shadow: var(--dp-shadow) !important;
   border: 1px solid var(--dp-border) !important;
   background: #fff !important;
+}
+
+.homix-drp .DateRangePicker_picker .DayPicker,
+.homix-drp.DateRangePicker_picker .DayPicker {
+  direction: ltr !important;
 }
 
 .homix-drp .DayPicker__withBorder {

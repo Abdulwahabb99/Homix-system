@@ -1,7 +1,7 @@
 import moment from "moment";
 import "moment/dist/locale/ar";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { DateRangePicker } from "react-dates";
 import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
@@ -47,6 +47,27 @@ const DateRangePickerWrapper = ({
     setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null);
     setEndDate(initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("en") : null);
   }, [initialStartDate, initialEndDate]);
+
+  /* appendToBody يضع النافذة على document.body — يفلت من overflow:hidden لأسلاف MUI. نضيف homix-drp للعنصر المنبثق حتى تبقى ستايلات التقويم. */
+  useLayoutEffect(() => {
+    const syncHomixClassOnPortaledPicker = () => {
+      document.querySelectorAll(".DateRangePicker_picker").forEach((node) => {
+        const el = node as HTMLElement;
+        const insideWrapper = el.closest(".custom-date-picker");
+        if (focusedInput) {
+          if (!insideWrapper) el.classList.add("homix-drp");
+        } else if (!insideWrapper) {
+          el.classList.remove("homix-drp");
+        }
+      });
+    };
+    if (focusedInput) {
+      const id = requestAnimationFrame(syncHomixClassOnPortaledPicker);
+      return () => cancelAnimationFrame(id);
+    }
+    syncHomixClassOnPortaledPicker();
+    return undefined;
+  }, [focusedInput]);
 
   const presets = [
     { text: "اليوم", start: moment().locale("en"), end: moment().locale("en"), disabled: maxDaysRange < 1 },
@@ -159,6 +180,7 @@ const DateRangePickerWrapper = ({
 
   return (
     <div
+      dir={isDirectionRTL ? "rtl" : "ltr"}
       className={`custom-date-picker homix-drp${isMeduim ? " homix-drp--medium" : ""}`}
     >
       <DateRangePicker
@@ -169,9 +191,11 @@ const DateRangePickerWrapper = ({
         onFocusChange={onFocusChange}
         startDateId="startDate"
         endDateId="endDate"
-        isRTL={isDirectionRTL}
+        /* isRTL=false: مع firstDayOfWeek=6 الـ true يفرض DateRangePicker_picker__rtl + تعارض مع عزل LTR ويكسر أعمدة الأيام */
+        isRTL={false}
         anchorDirection={isDirectionRTL ? "right" : "left"}
         horizontalMargin={16}
+        appendToBody={isDesktopTwoMonths}
         showClearDates
         reopenPickerOnClearDates
         small
@@ -183,6 +207,8 @@ const DateRangePickerWrapper = ({
         onClose={cancel}
         isDayHighlighted={(day) => isSameDay(day, moment().locale("en"))}
         isOutsideRange={isOutsideRange}
+        /* moment: 0=الأحد … 5=الجمعة 6=السبت */
+        firstDayOfWeek={6}
         renderCalendarInfo={renderPresets}
         startDatePlaceholderText="من "
         endDatePlaceholderText="إلى "
