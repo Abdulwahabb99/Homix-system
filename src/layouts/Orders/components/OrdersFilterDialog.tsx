@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import {
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -13,6 +14,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { PAYMENT_STATUS, statusoptions, DELIVERY_STATUS } from "layouts/Orders/utils/constants";
@@ -37,6 +39,25 @@ const formControlSx = {
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
   },
   "& .MuiSelect-select": { py: 1.75, px: 1.5, fontSize: "0.875rem" },
+  "& .MuiAutocomplete-inputRoot": {
+    minHeight: 52,
+    py: 1.25,
+    px: 1.5,
+    flexWrap: "wrap",
+    alignItems: "center",
+    fontSize: "0.875rem",
+  },
+  "& .MuiAutocomplete-input": { minWidth: "6em !important" },
+  "& .MuiAutocomplete-endAdornment": { top: "unset" },
+};
+
+const manufacturersAutocompleteSx = {
+  ...formControlSx,
+  direction: "ltr",
+  "& .MuiAutocomplete-inputRoot": {
+    ...formControlSx["& .MuiAutocomplete-inputRoot"],
+    flexWrap: "nowrap",
+  },
 };
 
 const menuProps = {
@@ -139,38 +160,61 @@ function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, 
           </FormControl>
 
           {!isVendor && (
-            <FormControl fullWidth sx={formControlSx}>
-              <InputLabel id="of-v" shrink>
-                المصنعون
-              </InputLabel>
-              <Select
-                labelId="of-v"
-                notched
-                label="المصنعون"
-                multiple
-                value={draftVendor}
-                onChange={(e) => setDraftVendor(e.target.value)}
-                MenuProps={menuProps}
-                renderValue={(sel) =>
-                  !sel?.length ? (
-                    <Box component="span" sx={{ color: "text.secondary" }}>
-                      — الكل
-                    </Box>
-                  ) : (
-                    sel
-                      .map((v) => vendors.find((x) => String(x.value) === String(v))?.label)
-                      .filter(Boolean)
-                      .join("، ")
-                  )
-                }
-              >
-                {vendors.map((o) => (
-                  <MenuItem key={o.value} value={o.value} sx={{ fontSize: "0.875rem" }}>
-                    {o.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              fullWidth
+              multiple
+              disableCloseOnSelect
+              openOnFocus
+              options={vendors}
+              getOptionLabel={(o) => o?.label ?? ""}
+              isOptionEqualToValue={(a, b) => String(a.value) === String(b.value)}
+              value={vendors.filter((o) => draftVendor.some((d) => String(d) === String(o.value)))}
+              onChange={(_, newValue) => setDraftVendor((newValue || []).map((o) => o.value))}
+              disabled={!vendors?.length}
+              noOptionsText="لا نتائج"
+              ListboxProps={{ style: { maxHeight: 320, overflow: "auto" } }}
+              componentsProps={{
+                popper: { sx: { zIndex: (t) => t.zIndex.modal + 1 } },
+                paper: {
+                  elevation: 8,
+                  sx: { borderRadius: 2, mt: 0.5, maxHeight: 360, overflow: "hidden" },
+                },
+              }}
+              renderOption={(props, option) => (
+                <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
+                  {option.label}
+                </li>
+              )}
+              renderTags={(value) => [
+                <Box
+                  key="mfr-summary"
+                  component="span"
+                  sx={{
+                    fontSize: "0.875rem",
+                    lineHeight: 1.4,
+                    width: "100%",
+                    minWidth: 0,
+                    color: value.length ? "text.primary" : "text.secondary",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "block",
+                    whiteSpace: "nowrap",
+                    textAlign: "start",
+                  }}
+                >
+                  {!value.length ? "— الكل" : value.map((o) => o.label).join("، ")}
+                </Box>,
+              ]}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="المصنعون"
+                  placeholder={draftVendor.length > 0 ? "" : "ابحث عن مصنّع…"}
+                  InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
+                />
+              )}
+              sx={manufacturersAutocompleteSx}
+            />
           )}
 
           {!isVendor && (

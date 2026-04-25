@@ -5,7 +5,18 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-import { FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import {
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from "@mui/material";
+import {
+  getUserSelectAutocompleteConfig,
+  getUserSelectValue,
+} from "layouts/Orders/components/userSelectAutocompleteConfig";
 import { statusoptions } from "layouts/Orders/utils/constants";
 import { PAYMENT_STATUS } from "layouts/Orders/utils/constants";
 import { USER_TYPES_VALUES } from "shared/utils/constants";
@@ -89,26 +100,31 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users }) => {
               })}
             </Select>
           </FormControl>
-          <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="administratorName">المسؤول</InputLabel>
-            <Select
+          <div style={{ margin: "10px 0" }}>
+            <Autocomplete
+              id="administratorAddOrder-autocomplete"
               fullWidth
-              labelId="administrator"
-              id="administrator"
-              value={administrator}
-              label="المسؤول"
-              onChange={(e) => setAdministrator(e.target.value)}
-              sx={{ height: 35 }}
-            >
-              {newUsers.map((option) => {
-                return (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
+              options={newUsers}
+              disabled={!newUsers.length}
+              value={getUserSelectValue(newUsers, administrator)}
+              onChange={(_, v) => setAdministrator(v != null ? v.value : "")}
+              renderOption={(props, option) => (
+                <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
+                  {option.label}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="المسؤول"
+                  InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
+                  placeholder={getUserSelectValue(newUsers, administrator) ? "" : "ابحث عن مسؤول…"}
+                  inputProps={{ ...params.inputProps, autoComplete: "off" }}
+                />
+              )}
+              {...getUserSelectAutocompleteConfig(35)}
+            />
+          </div>
           <TextField
             fullWidth
             label="جدية شراء"

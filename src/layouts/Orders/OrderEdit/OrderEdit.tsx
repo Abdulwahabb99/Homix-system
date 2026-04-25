@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Autocomplete,
   Button,
   Checkbox,
   CircularProgress,
@@ -13,6 +14,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import {
+  getUserSelectAutocompleteConfig,
+  getUserSelectValue,
+} from "layouts/Orders/components/userSelectAutocompleteConfig";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useParams, useNavigate } from "react-router-dom";
@@ -250,25 +255,34 @@ function OrderEdit() {
           </Grid> */}
 
           <Grid item xs={12} md={6} lg={6}>
-            <FormControl fullWidth>
-              <InputLabel id="administratorSelect">المسؤول</InputLabel>
-              <Select
-                fullWidth
-                labelId="administratorSelect"
-                id="administratorSelect-select"
-                value={administrator}
-                label="المسؤول"
-                onChange={(e) => setAdministrator(e.target.value)}
-                sx={{ height: 43 }}
-                disabled={!(users && users.length > 0)}
-              >
-                {users?.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              id="administratorSelect-autocomplete"
+              fullWidth
+              options={users}
+              disabled={!users?.length}
+              value={getUserSelectValue(users, administrator)}
+              onChange={(_, v) => setAdministrator(v != null ? v.value : "")}
+              renderOption={(props, option) => (
+                <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
+                  {option.label}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="المسؤول"
+                  InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
+                  placeholder={
+                    getUserSelectValue(users, administrator) ? "" : "ابحث عن مسؤول…"
+                  }
+                  inputProps={{
+                    ...params.inputProps,
+                    autoComplete: "off",
+                  }}
+                />
+              )}
+              {...getUserSelectAutocompleteConfig(43)}
+            />
           </Grid>
 
           <Grid item xs={12} md={6} lg={6}>
