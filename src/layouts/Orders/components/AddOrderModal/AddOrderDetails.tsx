@@ -19,7 +19,6 @@ import {
 } from "layouts/Orders/components/userSelectAutocompleteConfig";
 import { statusoptions } from "layouts/Orders/utils/constants";
 import { PAYMENT_STATUS } from "layouts/Orders/utils/constants";
-import { USER_TYPES_VALUES } from "shared/utils/constants";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -41,6 +40,20 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm, users }) => {
   const [shippingCost, setShippingCost] = useState(customer?.shippingCost);
   const [toBeCollected, setToBeCollected] = useState(customer?.toBeCollected);
   const [administrator, setAdministrator] = useState(customer?.administrator);
+
+  useEffect(() => {
+    if (!open) return;
+    setOrderStatus(customer?.orderStatus);
+    setCommission(customer?.commission);
+    setManufacturingDate(
+      customer?.manufacturingDate ? formatDate(String(customer.manufacturingDate)) : ""
+    );
+    setPaymentStatus(customer?.paymentStatus);
+    setDownPayment(customer?.downPayment);
+    setShippingCost(customer?.shippingCost);
+    setToBeCollected(customer?.toBeCollected);
+    setAdministrator(customer?.administrator);
+  }, [open, customer]);
 
   const today = new Date();
   const formattedDate =

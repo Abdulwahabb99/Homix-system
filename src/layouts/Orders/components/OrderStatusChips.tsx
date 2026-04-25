@@ -1,19 +1,10 @@
 import React from "react";
 import { Chip, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { deliveryStatusValues } from "layouts/Orders/utils/constants";
-
-/** يطابق الـ API — نفس تسميات صفحة الطلبات */
-const orderStatusValues: Record<number, string> = {
-  1: "معلق",
-  3: "مؤكد",
-  4: "ملغي",
-  2: "قيد التصنيع ",
-  5: "تم التسليم",
-  6: "مسترجع ",
-  7: "مستبدل ",
-  8: "في المخزن ",
-};
+import {
+  deliveryStatusValues,
+  orderStatusValues,
+} from "layouts/Orders/utils/constants";
 
 type ChipPalette = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
 

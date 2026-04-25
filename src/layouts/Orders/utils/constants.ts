@@ -29,11 +29,12 @@ export const customerInitialState = {
   email: "",
 };
 
-export const orderStatusValues = {
+/** يجب أن يطابق `statusoptions` (قيم الـ API) */
+export const orderStatusValues: Record<number, string> = {
   1: "معلق",
-  2: "مؤكد",
-  3: "ملغي",
-  4: "قيد التصنيع ",
+  2: "قيد التصنيع ",
+  3: "مؤكد",
+  4: "ملغي",
   5: "تم التسليم",
   6: "مسترجع ",
   7: "مستبدل ",

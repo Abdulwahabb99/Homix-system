@@ -391,6 +391,7 @@ function AddOrderModal() {
 
               <ProductPayment
                 customer={orderDetails}
+                users={users}
                 openAddModal={() => setIsOrderDetailsModalOpen(true)}
               />
             </Stack>
@@ -429,7 +430,12 @@ function AddOrderModal() {
             variant="contained"
             color="primary"
             size="large"
-            disabled={!selectedProduct || !orderDetails || !state.firstName || !state.lastName}
+            disabled={
+              !selectedProduct ||
+              !orderDetails ||
+              !String(state.firstName ?? "").trim() ||
+              !String(state.lastName ?? "").trim()
+            }
             sx={{ fontWeight: 700, px: 3, boxShadow: "none" }}
           >
             حفظ الطلب

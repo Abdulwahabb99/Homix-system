@@ -21,6 +21,23 @@ export const getUserType = (type) => {
       return "";
   }
 };
+
+type UserListEntry = { id: string | number; firstName?: string; lastName?: string };
+
+/** بعد اختيار المسؤول بالـ id في Autocomplete: عرض الاسم في الملخص. إن لم يُعثر: محاولة getUserType (قيم 1–4) */
+export function getAdministratorLabel(
+  userId: string | number | null | undefined,
+  users: UserListEntry[] | null | undefined
+): string {
+  if (userId == null || userId === "") return "";
+  const idStr = String(userId);
+  const u = users?.find((x) => String(x.id) === idStr);
+  if (u) {
+    const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
+    if (name) return name;
+  }
+  return getUserType(String(userId)) || "";
+}
 export const USER_TYPES_VALUES = [
   { value: USER_TYPES.ADMIN, label: "مدير" },
   { value: USER_TYPES.VENDOR, label: "مورد" },

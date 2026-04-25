@@ -5,7 +5,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import PropTypes from "prop-types";
 import { orderStatusValues } from "layouts/Orders/utils/constants";
 import { paymentStatusValues } from "layouts/Orders/utils/constants";
-import { getUserType } from "shared/utils/constants";
+import { getAdministratorLabel } from "shared/utils/constants";
 import { addOrderPageCardSx } from "./addOrderFormStyles";
 
 function OrderInfoRow({ label, value }) {
@@ -47,7 +47,7 @@ OrderInfoRow.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
-function ProductPayment({ customer, openAddModal, vendorName }) {
+function ProductPayment({ customer, openAddModal, vendorName, users = [] }) {
   const theme = useTheme();
   return (
     <Card
@@ -112,14 +112,20 @@ function ProductPayment({ customer, openAddModal, vendorName }) {
       <CardContent sx={{ p: 2, flex: 1, "&:last-child": { pb: 2 } }}>
         {customer ? (
           <Box>
-            <OrderInfoRow label="حالة الطلب" value={orderStatusValues[customer?.orderStatus]} />
+            <OrderInfoRow
+              label="حالة الطلب"
+              value={orderStatusValues[Number(customer?.orderStatus)]}
+            />
             {vendorName != null && vendorName !== "" && (
               <OrderInfoRow label="البائع" value={vendorName} />
             )}
-            <OrderInfoRow label="المسؤول" value={getUserType(customer?.administrator)} />
+            <OrderInfoRow
+              label="المسؤول"
+              value={getAdministratorLabel(customer?.administrator, users)}
+            />
             <OrderInfoRow
               label="طريقة الدفع"
-              value={paymentStatusValues[customer?.paymentStatus]}
+              value={paymentStatusValues[Number(customer?.paymentStatus)]}
             />
             <OrderInfoRow label="جدية الشراء" value={customer?.downPayment} />
             <OrderInfoRow label="تكلفة الشحن" value={customer?.shippingCost} />
@@ -168,6 +174,7 @@ ProductPayment.propTypes = {
   openAddModal: PropTypes.func.isRequired,
   customer: PropTypes.object,
   vendorName: PropTypes.string,
+  users: PropTypes.array,
 };
 
 export default ProductPayment;
