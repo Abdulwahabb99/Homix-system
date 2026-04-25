@@ -42,10 +42,10 @@ const formControlSx = {
     borderRadius: 2,
     backgroundColor: "background.paper",
     "& .MuiOutlinedInput-notchedOutline": {
-      borderColor: "rgba(6, 49, 70, 0.28)",
+      borderColor: "rgba(99, 102, 241, 0.28)",
     },
     "&:hover .MuiOutlinedInput-notchedOutline": {
-      borderColor: "rgba(6, 49, 70, 0.45)",
+      borderColor: "rgba(99, 102, 241, 0.45)",
     },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
       borderWidth: 2,
@@ -257,7 +257,7 @@ function ProductsFilterDialog({
             backgroundColor: "background.paper",
             "&:hover": {
               borderColor: PRIMARY,
-              backgroundColor: "rgba(6, 49, 70, 0.06)",
+              backgroundColor: "rgba(99, 102, 241, 0.06)",
             },
           }}
         >
@@ -307,12 +307,12 @@ function ProductsFilterTriggerButton({ onClick, activeCount }) {
           borderRadius: 1.5,
           borderWidth: 2,
           /* Default: حدود أخف عن الـ hover */
-          borderColor: "rgba(6, 49, 70, 0.22)",
+          borderColor: "rgba(99, 102, 241, 0.22)",
           color: "primary.main",
-          backgroundColor: "rgba(6, 49, 70, 0.04)",
+          backgroundColor: "rgba(99, 102, 241, 0.04)",
           "&:hover": {
             borderColor: "primary.main",
-            backgroundColor: "rgba(6, 49, 70, 0.1)",
+            backgroundColor: "rgba(99, 102, 241, 0.1)",
           },
         }}
       >

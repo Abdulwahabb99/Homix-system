@@ -29,7 +29,6 @@ import { useMaterialUIController, setLayout } from "context";
 
 function DashboardLayout({ children }) {
   const [controller, dispatch] = useMaterialUIController();
-  const { miniSidenav } = controller;
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -42,8 +41,8 @@ function DashboardLayout({ children }) {
         p: 3,
         position: "relative",
 
-        [breakpoints.up("lg")]: {
-          marginInlineStart: miniSidenav ? pxToRem(104) : pxToRem(284),
+        [breakpoints.up("md")]: {
+          marginInlineStart: pxToRem(220),
           transition: transitions.create(["margin-inline-start", "margin-inline-end"], {
             easing: transitions.easing.easeInOut,
             duration: transitions.duration.standard,

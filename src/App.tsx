@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Sidenav from "examples/Sidenav";
+import GlobalHomixSidenav from "claude/dashboard/components/GlobalHomixSidenav";
 import themeRTL from "assets/theme/theme-rtl";
 import themeDarkRTL from "assets/theme-dark/theme-rtl";
 import rtlPlugin from "stylis-plugin-rtl";
@@ -10,7 +10,6 @@ import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
 import SignIn from "layouts/authentication/sign-in";
 import { useMaterialUIController } from "context";
-import homix from "assets/images/homix.png";
 import NotFound from "layouts/authentication/components/NotFound/NotFound";
 import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
@@ -37,10 +36,20 @@ const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/ShipmentDetails"));
 
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getStoredUser();
   const [controller] = useMaterialUIController();
-  const { layout, sidenavColor, darkMode } = controller;
+  const { layout, darkMode } = controller;
   const [isUserInteracted, setIsUserInteracted] = useState(false);
 
   const { pathname } = useLocation();
@@ -49,6 +58,13 @@ export default function App() {
   const isVendor = user?.userType === "2";
   const isAdmin = user?.userType === "1";
   const isOperations = user?.userType === "3";
+  const homixNavRole = isAdmin
+    ? "admin"
+    : isVendor
+    ? "vendor"
+    : isOperations
+    ? "operations"
+    : "logistics";
 
   const playNotificationSound = () => {
     const audio = new Audio("/Notification.wav");
@@ -171,24 +187,7 @@ export default function App() {
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
         <CssBaseline />
-        {layout === "dashboard" && (
-          <>
-            <Sidenav
-              color={sidenavColor}
-              brand={homix}
-              brandName="HOMIX"
-              routes={
-                isVendor
-                  ? vendorsRoutes
-                  : isAdmin
-                  ? adminRoutes
-                  : isOperations
-                  ? operationRoutes
-                  : logisticsRoutes
-              }
-            />
-          </>
-        )}
+        {layout === "dashboard" && user && <GlobalHomixSidenav navRole={homixNavRole} />}
         <Suspense fallback={<Spinner />}>
           <Routes>
             {getRoutes(

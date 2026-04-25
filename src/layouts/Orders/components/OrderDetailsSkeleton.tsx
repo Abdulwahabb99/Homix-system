@@ -83,7 +83,7 @@ export default function OrderDetailsSkeleton() {
               border: "1px solid",
               borderColor: "divider",
               overflow: "hidden",
-              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
             }}
           >
             <Box sx={{ px: 2, py: 1.25, borderBottom: "1px solid", borderColor: "divider" }}>
@@ -112,7 +112,7 @@ export default function OrderDetailsSkeleton() {
                 border: "1px solid",
                 borderColor: "divider",
                 overflow: "hidden",
-                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
               }}
             >
               <Box sx={{ px: 2, py: 1.25, borderBottom: "1px solid", borderColor: "divider" }}>

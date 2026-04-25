@@ -34,8 +34,8 @@ const formControlSx = {
     minHeight: 52,
     borderRadius: 2,
     backgroundColor: "background.paper",
-    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.28)" },
-    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.45)" },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.28)" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.45)" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
   },
   "& .MuiSelect-select": { py: 1.75, px: 1.5, fontSize: "0.875rem" },
@@ -304,7 +304,7 @@ function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, 
             color: PRIMARY,
             borderColor: PRIMARY,
             borderWidth: 2,
-            "&:hover": { borderColor: PRIMARY, backgroundColor: "rgba(6, 49, 70, 0.06)" },
+            "&:hover": { borderColor: PRIMARY, backgroundColor: "rgba(99, 102, 241, 0.06)" },
           }}
         >
           إعادة التعيين

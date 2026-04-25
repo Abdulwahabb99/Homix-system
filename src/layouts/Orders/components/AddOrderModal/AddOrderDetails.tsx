@@ -27,7 +27,7 @@ import { statusoptions } from "layouts/Orders/utils/constants";
 import { PAYMENT_STATUS } from "layouts/Orders/utils/constants";
 import { addOrderTextFieldSx } from "./addOrderFormStyles";
 
-const BRAND = "#063146";
+const BRAND = "#6366f1";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -42,8 +42,8 @@ const formatDate = (dateString) => {
 const formControlAddOrder = {
   width: "100%",
   "& .MuiInputLabel-root": { fontSize: "0.8125rem" },
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.18)" },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.32)" },
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.18)" },
+  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.32)" },
   "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: "primary.main",
     borderWidth: 2,

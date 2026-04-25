@@ -44,8 +44,8 @@ const getDefaultFormControlStyles = (theme) => ({
     minHeight: 52,
     borderRadius: 2,
     backgroundColor: "background.paper",
-    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.28)" },
-    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(6, 49, 70, 0.45)" },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.28)" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(99, 102, 241, 0.45)" },
     "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderWidth: 2, borderColor: PRIMARY },
   },
   "& .MuiSelect-select": {

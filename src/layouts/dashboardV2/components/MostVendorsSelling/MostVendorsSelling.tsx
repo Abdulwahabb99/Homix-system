@@ -29,7 +29,7 @@ const getColumns = (theme) => {
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              bgcolor: "rgba(6, 49, 70, 0.08)",
+              bgcolor: "rgba(99, 102, 241, 0.08)",
               color: "primary.main",
             }}
           >
@@ -114,7 +114,7 @@ const MostVendorsSelling = ({ rowData }) => {
           borderBottom: "1px solid",
           borderColor: "divider",
           background: (t) =>
-            t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(6, 49, 70, 0.04)",
+            t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(99, 102, 241, 0.04)",
         }}
       >
         <Typography variant="subtitle2" fontWeight={700} color="primary" fontSize="0.9375rem">

@@ -125,7 +125,7 @@ export function OrdersMobileList({
               border: "1px solid",
               borderColor: "divider",
               bgcolor: "background.paper",
-              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 16px rgba(6, 49, 70, 0.05)",
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 16px rgba(99, 102, 241, 0.05)",
               overflow: "visible",
             })}
           >

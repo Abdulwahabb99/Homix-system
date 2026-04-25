@@ -27,7 +27,7 @@ function collapseItem(theme, ownerState) {
 
   let bg;
   if (lightActive) {
-    bg = "rgba(6, 49, 70, 0.1)";
+    bg = "rgba(99, 102, 241, 0.1)";
   } else if (active) {
     bg = linearGradient(gradients[sidenavColor].main, gradients[sidenavColor].state);
   } else {

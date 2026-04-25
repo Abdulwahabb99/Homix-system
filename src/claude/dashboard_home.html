@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOMIX — لوحة التحكم</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sb:#0f1117;
+  --sb2:#161b27;
+  --sb-border:rgba(255,255,255,0.06);
+  --accent:#6366f1;
+  --accent-light:rgba(99,102,241,0.12);
+  --accent-glow:rgba(99,102,241,0.25);
+  --gold:#c9a96e;
+  --gold-light:rgba(201,169,110,0.12);
+  --green:#10b981;
+  --green-light:rgba(16,185,129,0.12);
+  --red:#ef4444;
+  --red-light:rgba(239,68,68,0.12);
+  --amber:#f59e0b;
+  --amber-light:rgba(245,158,11,0.12);
+  --bg:#f4f5f9;
+  --surface:#ffffff;
+  --surface2:#f9fafb;
+  --border:rgba(0,0,0,0.07);
+  --text:#111827;
+  --text2:#6b7280;
+  --text3:#9ca3af;
+  --r:14px;
+  --r-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;direction:rtl;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+/* ══ SIDEBAR ══ */
+.sidebar{width:220px;background:var(--sb);display:flex;flex-direction:column;flex-shrink:0;border-left:0.5px solid var(--sb-border);overflow-y:auto;overflow-x:hidden}
+.sidebar::-webkit-scrollbar{width:0}
+
+.brand{padding:22px 18px 16px;display:flex;align-items:center;gap:11px;border-bottom:0.5px solid var(--sb-border)}
+.brand-mark{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-mark svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+.brand-name{font-size:17px;font-weight:900;color:#fff;letter-spacing:.5px}
+.brand-name span{color:#818cf8}
+.brand-badge{font-size:9px;color:rgba(255,255,255,.3);font-weight:500;margin-top:-2px;letter-spacing:.5px}
+
+.nav-section{padding:16px 10px 6px}
+.nav-section-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);color:rgba(255,255,255,.4);font-size:12.5px;font-weight:500;cursor:pointer;margin-bottom:1px;transition:.15s;position:relative}
+.ni:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.75)}
+.ni.active{background:var(--accent-light);color:#a5b4fc;border:0.5px solid rgba(99,102,241,.2)}
+.ni svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.ni-badge{margin-right:auto;background:var(--accent);color:#fff;font-size:9.5px;border-radius:6px;padding:1px 7px;font-weight:700;min-width:20px;text-align:center}
+.ni-badge.warn{background:var(--amber)}
+.ni-badge.danger{background:var(--red)}
+.active-bar{position:absolute;top:50%;left:0;transform:translateY(-50%);width:3px;height:18px;background:var(--accent);border-radius:0 3px 3px 0}
+
+.sidebar-footer{margin-top:auto;padding:14px 10px;border-top:0.5px solid var(--sb-border)}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r-sm);cursor:pointer;transition:.15s}
+.user-row:hover{background:rgba(255,255,255,.05)}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:rgba(255,255,255,.3);font-weight:400}
+.user-settings{color:rgba(255,255,255,.25);cursor:pointer}
+.user-settings svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ══ MAIN ══ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:0.5px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.tb-greeting{flex:1}
+.tb-greeting h2{font-size:16px;font-weight:700;color:var(--text)}
+.tb-greeting p{font-size:12px;color:var(--text3);font-weight:400}
+.tb-date{font-size:12px;color:var(--text2);background:var(--surface2);border:0.5px solid var(--border);padding:6px 14px;border-radius:20px}
+.icon-btn{width:36px;height:36px;border:0.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);position:relative;transition:.15s}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+.icon-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.notif-dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:7px;right:7px;border:1.5px solid var(--surface)}
+.tb-btn-primary{display:flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:0 18px;height:36px;font-size:12.5px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;transition:.15s}
+.tb-btn-primary:hover{background:#5254e0;box-shadow:0 4px 14px var(--accent-glow)}
+.tb-btn-primary svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5}
+
+/* SCROLL AREA */
+.content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* KPI CARDS */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--surface);border-radius:var(--r);padding:18px 20px;border:0.5px solid var(--border);transition:.2s;cursor:default;position:relative;overflow:hidden}
+.kpi:hover{box-shadow:0 4px 20px rgba(0,0,0,.06);transform:translateY(-1px)}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.kpi-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+.kpi-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.kpi-menu{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:14px}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text);line-height:1;margin-bottom:4px}
+.kpi-label{font-size:12px;color:var(--text2);font-weight:500}
+.kpi-change{display:flex;align-items:center;gap:5px;margin-top:10px;font-size:11.5px;font-weight:600}
+.kpi-change .arrow{font-size:10px}
+.up{color:var(--green)}.down{color:var(--red)}.kpi-change span{color:var(--text3);font-weight:400}
+.kpi-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 var(--r) var(--r)}
+
+/* GRID 2-col */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3-1{display:grid;grid-template-columns:1.8fr 1fr;gap:14px}
+
+/* CARD BASE */
+.card{background:var(--surface);border-radius:var(--r);border:0.5px solid var(--border);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:0.5px solid var(--border)}
+.card-title{font-size:14px;font-weight:700;color:var(--text)}
+.card-sub{font-size:11.5px;color:var(--text3);margin-top:1px;font-weight:400}
+.card-link{font-size:12px;font-weight:600;color:var(--accent);cursor:pointer}
+.card-body{padding:16px 18px}
+
+/* CHART AREA */
+.chart-area{position:relative;height:200px;padding:10px 0 0}
+.chart-svg{width:100%;height:100%}
+
+/* RECENT ORDERS */
+.orders-table{width:100%;border-collapse:collapse}
+.orders-table th{font-size:11px;font-weight:600;color:var(--text3);text-align:right;padding:8px 12px;background:var(--surface2);border-bottom:0.5px solid var(--border)}
+.orders-table td{font-size:12.5px;padding:10px 12px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:middle}
+.orders-table tr:last-child td{border-bottom:none}
+.orders-table tr:hover td{background:var(--surface2)}
+.order-id{color:var(--accent);font-weight:700;font-size:12.5px}
+.client-mini{display:flex;align-items:center;gap:8px;flex-direction:row-reverse}
+.av-mini{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.b-pending{background:var(--amber-light);color:#92400e}.b-pending::before{background:#f59e0b}
+.b-done{background:var(--green-light);color:#065f46}.b-done::before{background:var(--green)}
+.b-cancel{background:var(--red-light);color:#991b1b}.b-cancel::before{background:var(--red)}
+.b-mfg{background:var(--accent-light);color:#3730a3}.b-mfg::before{background:var(--accent)}
+
+/* TOP SELLERS WIDGET */
+.seller-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.seller-row:last-child{border-bottom:none;padding-bottom:0}
+.seller-rank{font-size:13px;font-weight:900;color:var(--text3);width:18px;text-align:center;flex-shrink:0}
+.seller-rank.gold{color:var(--gold)}
+.seller-rank.silver{color:#94a3b8}
+.seller-rank.bronze{color:#cd7f32}
+.seller-av-sm{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0}
+.seller-info{flex:1}
+.seller-nm{font-size:13px;font-weight:700;color:var(--text)}
+.seller-ct{font-size:11px;color:var(--text3);font-weight:400}
+.seller-rev{text-align:left}
+.seller-rev-val{font-size:13px;font-weight:800;color:var(--text)}
+.seller-rev-lbl{font-size:10px;color:var(--text3)}
+
+/* ACTIVITY FEED */
+.activity-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.activity-item:last-child{border-bottom:none;padding-bottom:0}
+.act-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.act-body{flex:1}
+.act-text{font-size:12.5px;color:var(--text);font-weight:500;line-height:1.5}
+.act-text strong{color:var(--accent)}
+.act-time{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:20px;padding:6px 0}
+.donut-svg{width:120px;height:120px;flex-shrink:0}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:10px}
+.dleg{display:flex;align-items:center;gap:8px}
+.dleg-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.dleg-info{flex:1}
+.dleg-name{font-size:12px;font-weight:600;color:var(--text)}
+.dleg-val{font-size:11px;color:var(--text3);font-weight:400}
+.dleg-pct{font-size:12px;font-weight:800;color:var(--text)}
+
+/* MINI STAT ROW */
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.mini-stat{background:var(--surface2);padding:14px;text-align:center}
+.ms-val{font-size:18px;font-weight:800;color:var(--text)}
+.ms-label{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* QUICK ACTIONS */
+.quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.qa{display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--r-sm);border:0.5px solid var(--border);cursor:pointer;transition:.15s;background:var(--surface2)}
+.qa:hover{border-color:var(--accent);background:var(--accent-light)}
+.qa:hover .qa-icon{background:var(--accent);color:#fff}
+.qa-icon{width:34px;height:34px;border-radius:9px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;transition:.15s;flex-shrink:0}
+.qa-text{font-size:12.5px;font-weight:600;color:var(--text)}
+.qa-sub{font-size:10.5px;color:var(--text3);font-weight:400}
+
+/* PROGRESS */
+.progress-item{margin-bottom:14px}
+.progress-item:last-child{margin-bottom:0}
+.prog-head{display:flex;justify-content:space-between;margin-bottom:6px}
+.prog-name{font-size:12.5px;font-weight:600;color:var(--text)}
+.prog-val{font-size:12px;font-weight:700;color:var(--text2)}
+.prog-bar{height:6px;background:var(--surface2);border-radius:10px;overflow:hidden}
+.prog-fill{height:100%;border-radius:10px;transition:width .8s ease}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">HOMI<span>X</span></div>
+      <div class="brand-badge">Marketplace Admin</div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">القائمة الرئيسية</div>
+    <div class="ni active">
+      <div class="active-bar"></div>
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      لوحة التحكم
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      الطلبات
+      <span class="ni-badge warn">72</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      المنتجات
+      <span class="ni-badge">1.2K</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      الإيرادات
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">الإدارة</div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+      الصُنّاع
+      <span class="ni-badge danger">3</span>
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      الموردين
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      المستخدمين
+    </div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      التقارير
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">النظام</div>
+    <div class="ni">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      الإعدادات
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="avatar">AH</div>
+      <div class="user-info">
+        <div class="user-name">أحمد هشام</div>
+        <div class="user-role">Super Admin</div>
+      </div>
+      <div class="user-settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-greeting">
+      <h2>صباح الخير، أحمد 👋</h2>
+      <p>إليك ملخص أداء اليوم</p>
+    </div>
+    <div class="topbar-right">
+      <div class="tb-date">الأربعاء، 23 أبريل 2025</div>
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-dot"></span>
+      </div>
+      <button class="tb-btn-primary">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        طلب جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:var(--accent-light);color:var(--accent)">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="kpi-menu">···</div>
+        </div>
+        <div class="kpi-val">847K</div>
+        <div class="kpi-label">إجمالي المبيعات (ج.م)</div>
+        <div class="kpi-change up"><span class="arrow">↑</span>12.4%<span>من الشهر الماضي</span></div>
+        <div class="kpi-bar" style="background:linear-gradient(90deg,var(--accent),#8b5cf6)"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:var(--green-light);color:var(--green)">
+            <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          </div>
+          <div class="kpi-menu">···</div>
+        </div>
+        <div class="kpi-val">720</div>
+        <div class="kpi-label">إجمالي الطلبات</div>
+        <div class="kpi-change up"><span class="arrow">↑</span>8.1%<span>من الشهر الماضي</span></div>
+        <div class="kpi-bar" style="background:linear-gradient(90deg,var(--green),#34d399)"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:var(--amber-light);color:var(--amber)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="kpi-menu">···</div>
+        </div>
+        <div class="kpi-val">48</div>
+        <div class="kpi-label">طلبات معلقة</div>
+        <div class="kpi-change down"><span class="arrow">↑</span>5 طلبات<span>تحتاج متابعة</span></div>
+        <div class="kpi-bar" style="background:linear-gradient(90deg,var(--amber),#fbbf24)"></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:var(--gold-light);color:var(--gold)">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="kpi-menu">···</div>
+        </div>
+        <div class="kpi-val">85</div>
+        <div class="kpi-label">صُنّاع نشطون</div>
+        <div class="kpi-change up"><span class="arrow">↑</span>3 صُنّاع<span>انضموا هذا الشهر</span></div>
+        <div class="kpi-bar" style="background:linear-gradient(90deg,var(--gold),#fbbf24)"></div>
+      </div>
+    </div>
+
+    <!-- CHART + ACTIVITY -->
+    <div class="grid-3-1">
+
+      <!-- SALES CHART -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">أداء المبيعات</div>
+            <div class="card-sub">المبيعات اليومية — أبريل 2025</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text2)"><span style="width:10px;height:3px;background:var(--accent);border-radius:2px;display:inline-block"></span>المبيعات</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text2)"><span style="width:10px;height:3px;background:var(--green);border-radius:2px;display:inline-block"></span>الطلبات</div>
+            <select style="font-size:12px;font-family:'Cairo',sans-serif;border:0.5px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text2);background:var(--surface);outline:none;cursor:pointer">
+              <option>هذا الشهر</option><option>الشهر الماضي</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:24px;margin-bottom:16px">
+            <div><div style="font-size:22px;font-weight:800;color:var(--text)">847,320 <span style="font-size:13px;font-weight:500;color:var(--text3)">ج.م</span></div><div style="font-size:11px;color:var(--text3)">إجمالي هذا الشهر</div></div>
+            <div style="padding-right:24px;border-right:0.5px solid var(--border)"><div style="font-size:22px;font-weight:800;color:var(--text)">720</div><div style="font-size:11px;color:var(--text3)">طلب</div></div>
+            <div><div style="font-size:22px;font-weight:800;color:var(--green)">↑ 12.4%</div><div style="font-size:11px;color:var(--text3)">نمو شهري</div></div>
+          </div>
+          <div class="chart-area">
+            <svg class="chart-svg" id="chartSvg" viewBox="0 0 600 170" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">آخر الأنشطة</div>
+            <div class="card-sub">تحديثات فورية</div>
+          </div>
+          <div class="card-link">الكل</div>
+        </div>
+        <div class="card-body" style="padding:10px 18px">
+          <div class="activity-item">
+            <div class="act-icon" style="background:var(--green-light)">🛒</div>
+            <div class="act-body">
+              <div class="act-text">طلب جديد <strong>#31668</strong> من Lamiaa Saeid</div>
+              <div class="act-time">منذ 3 دقائق</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:var(--accent-light)">🏭</div>
+            <div class="act-body">
+              <div class="act-text">سيلر جديد <strong>مصنع النور</strong> انضم للمنصة</div>
+              <div class="act-time">منذ 18 دقيقة</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:var(--amber-light)">⚠️</div>
+            <div class="act-body">
+              <div class="act-text">طلب <strong>#31650</strong> تجاوز وقت التصنيع</div>
+              <div class="act-time">منذ 45 دقيقة</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:var(--green-light)">💰</div>
+            <div class="act-body">
+              <div class="act-text">تسوية مالية <strong>ركة للأثاث</strong> — 24,800 ج.م</div>
+              <div class="act-time">منذ ساعتين</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="act-icon" style="background:var(--red-light)">❌</div>
+            <div class="act-body">
+              <div class="act-text">إلغاء طلب <strong>#31642</strong> من العميل</div>
+              <div class="act-time">منذ 3 ساعات</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS + RIGHT COL -->
+    <div class="grid-3-1">
+
+      <!-- RECENT ORDERS -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">أحدث الطلبات</div>
+            <div class="card-sub">72 طلب هذا الشهر</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="card-link" style="font-size:11.5px;background:var(--surface2);border:0.5px solid var(--border);padding:4px 12px;border-radius:8px;color:var(--text2)">فلتر</div>
+            <div class="card-link">عرض الكل ←</div>
+          </div>
+        </div>
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>رقم الطلب</th>
+              <th>العميل</th>
+              <th>المنتج</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="order-id">#31668</span></td>
+              <td><div class="client-mini"><span>Lamiaa Saeid</span><div class="av-mini" style="background:linear-gradient(135deg,#6366f1,#a78bfa)">LS</div></div></td>
+              <td style="color:var(--text2);font-size:12px">غرفة نوم - دريسينج</td>
+              <td style="font-weight:700">12,999 ج.م</td>
+              <td><span class="badge b-pending">معلق</span></td>
+              <td style="color:var(--text3);font-size:11.5px">منذ 3 د</td>
+            </tr>
+            <tr>
+              <td><span class="order-id">#31667</span></td>
+              <td><div class="client-mini"><span>عبير ابوالمجد</span><div class="av-mini" style="background:linear-gradient(135deg,#10b981,#059669)">ع</div></div></td>
+              <td style="color:var(--text2);font-size:12px">صالة - ركة</td>
+              <td style="font-weight:700">16,999 ج.م</td>
+              <td><span class="badge b-mfg">تصنيع</span></td>
+              <td style="color:var(--text3);font-size:11.5px">منذ 1 س</td>
+            </tr>
+            <tr>
+              <td><span class="order-id">#31666</span></td>
+              <td><div class="client-mini"><span>Mohamed Bezan</span><div class="av-mini" style="background:linear-gradient(135deg,#f59e0b,#d97706)">MB</div></div></td>
+              <td style="color:var(--text2);font-size:12px">بين باج - سفرة</td>
+              <td style="font-weight:700">2,299 ج.م</td>
+              <td><span class="badge b-done">مكتمل</span></td>
+              <td style="color:var(--text3);font-size:11.5px">منذ 2 س</td>
+            </tr>
+            <tr>
+              <td><span class="order-id">#31665</span></td>
+              <td><div class="client-mini"><span>Toaa Elgarhy</span><div class="av-mini" style="background:linear-gradient(135deg,#ef4444,#dc2626)">TE</div></div></td>
+              <td style="color:var(--text2);font-size:12px">كنبة L - ركة</td>
+              <td style="font-weight:700">16,999 ج.م</td>
+              <td><span class="badge b-pending">معلق</span></td>
+              <td style="color:var(--text3);font-size:11.5px">منذ 3 س</td>
+            </tr>
+            <tr>
+              <td><span class="order-id">#31664</span></td>
+              <td><div class="client-mini"><span>احمد حسام</span><div class="av-mini" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">أح</div></div></td>
+              <td style="color:var(--text2);font-size:12px">دريسينج هاوس</td>
+              <td style="font-weight:700">9,775 ج.م</td>
+              <td><span class="badge b-cancel">ملغي</span></td>
+              <td style="color:var(--text3);font-size:11.5px">أمس</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RIGHT COL -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <!-- TOP SELLERS -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">أفضل الصُنّاع</div>
+              <div class="card-sub">حسب المبيعات</div>
+            </div>
+            <div class="card-link">الكل</div>
+          </div>
+          <div class="card-body" style="padding:8px 18px">
+            <div class="seller-row">
+              <div class="seller-rank gold">1</div>
+              <div class="seller-av-sm" style="background:linear-gradient(135deg,#8c7355,#5a4530)">ر</div>
+              <div class="seller-info"><div class="seller-nm">ركة للأثاث</div><div class="seller-ct">غرف نوم • صالة</div></div>
+              <div class="seller-rev"><div class="seller-rev-val">284K</div><div class="seller-rev-lbl">ج.م</div></div>
+            </div>
+            <div class="seller-row">
+              <div class="seller-rank silver">2</div>
+              <div class="seller-av-sm" style="background:linear-gradient(135deg,#4a7855,#2d5038)">د</div>
+              <div class="seller-info"><div class="seller-nm">دريسينج هاوس</div><div class="seller-ct">دريسينج</div></div>
+              <div class="seller-rev"><div class="seller-rev-val">196K</div><div class="seller-rev-lbl">ج.م</div></div>
+            </div>
+            <div class="seller-row">
+              <div class="seller-rank bronze">3</div>
+              <div class="seller-av-sm" style="background:linear-gradient(135deg,#a07840,#6b5030)">ب</div>
+              <div class="seller-info"><div class="seller-nm">بين باج</div><div class="seller-ct">سفرة • كراسي</div></div>
+              <div class="seller-rev"><div class="seller-rev-val">143K</div><div class="seller-rev-lbl">ج.م</div></div>
+            </div>
+            <div class="seller-row">
+              <div class="seller-rank" style="color:var(--text3)">4</div>
+              <div class="seller-av-sm" style="background:linear-gradient(135deg,#5a4070,#3a2850)">م</div>
+              <div class="seller-info"><div class="seller-nm">مصنع المودرن</div><div class="seller-ct">صالة • مطبخ</div></div>
+              <div class="seller-rev"><div class="seller-rev-val">98K</div><div class="seller-rev-lbl">ج.م</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">إجراءات سريعة</div>
+          </div>
+          <div class="card-body">
+            <div class="quick-actions">
+              <div class="qa"><div class="qa-icon">📦</div><div><div class="qa-text">إضافة منتج</div><div class="qa-sub">رفع منتج جديد</div></div></div>
+              <div class="qa"><div class="qa-icon">👤</div><div><div class="qa-text">سيلر جديد</div><div class="qa-sub">إضافة صانع</div></div></div>
+              <div class="qa"><div class="qa-icon">📊</div><div><div class="qa-text">تصدير تقرير</div><div class="qa-sub">Excel / PDF</div></div></div>
+              <div class="qa"><div class="qa-icon">💳</div><div><div class="qa-text">تسوية مالية</div><div class="qa-sub">صرف الصُنّاع</div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="grid-2">
+
+      <!-- CATEGORY BREAKDOWN -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">توزيع المبيعات</div>
+            <div class="card-sub">حسب الفئة — هذا الشهر</div>
+          </div>
+          <div class="card-link">تفاصيل ←</div>
+        </div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <svg class="donut-svg" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#f4f5f9" stroke-width="18"/>
+              <!-- Segments: total circumference ~301.6 -->
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#6366f1" stroke-width="18" stroke-dasharray="120 181.6" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="18" stroke-dasharray="75 226.6" stroke-dashoffset="-120" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#f59e0b" stroke-width="18" stroke-dasharray="55 246.6" stroke-dashoffset="-195" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#c9a96e" stroke-width="18" stroke-dasharray="51.6 250" stroke-dashoffset="-250" transform="rotate(-90 60 60)"/>
+              <text x="60" y="56" text-anchor="middle" font-family="Cairo,sans-serif" font-size="15" font-weight="800" fill="#111827">847K</text>
+              <text x="60" y="70" text-anchor="middle" font-family="Cairo,sans-serif" font-size="8" fill="#9ca3af">إجمالي</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="dleg"><div class="dleg-dot" style="background:#6366f1"></div><div class="dleg-info"><div class="dleg-name">غرف النوم</div><div class="dleg-val">320K ج.م</div></div><div class="dleg-pct">40%</div></div>
+              <div class="dleg"><div class="dleg-dot" style="background:#10b981"></div><div class="dleg-info"><div class="dleg-name">الصالة</div><div class="dleg-val">200K ج.م</div></div><div class="dleg-pct">25%</div></div>
+              <div class="dleg"><div class="dleg-dot" style="background:#f59e0b"></div><div class="dleg-info"><div class="dleg-name">السفرة</div><div class="dleg-val">147K ج.م</div></div><div class="dleg-pct">18%</div></div>
+              <div class="dleg"><div class="dleg-dot" style="background:#c9a96e"></div><div class="dleg-info"><div class="dleg-name">أخرى</div><div class="dleg-val">180K ج.م</div></div><div class="dleg-pct">17%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARGETS -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">تقدم الأهداف</div>
+            <div class="card-sub">أهداف أبريل 2025</div>
+          </div>
+          <div style="font-size:11.5px;color:var(--text3)">8 أيام متبقية</div>
+        </div>
+        <div class="card-body">
+          <div class="mini-stats" style="margin-bottom:18px;border-radius:var(--r-sm);overflow:hidden">
+            <div class="mini-stat"><div class="ms-val" style="color:var(--accent)">84%</div><div class="ms-label">المبيعات</div></div>
+            <div class="mini-stat"><div class="ms-val" style="color:var(--green)">72%</div><div class="ms-label">الطلبات</div></div>
+            <div class="mini-stat"><div class="ms-val" style="color:var(--amber)">91%</div><div class="ms-label">الرضا</div></div>
+          </div>
+          <div class="progress-item">
+            <div class="prog-head"><span class="prog-name">هدف المبيعات — 1M ج.م</span><span class="prog-val">847K / 1M</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:84%;background:linear-gradient(90deg,var(--accent),#8b5cf6)"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="prog-head"><span class="prog-name">عدد الطلبات — 1000 طلب</span><span class="prog-val">720 / 1000</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:72%;background:linear-gradient(90deg,var(--green),#34d399)"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="prog-head"><span class="prog-name">صُنّاع جدد — 10 صانع</span><span class="prog-val">3 / 10</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:30%;background:linear-gradient(90deg,var(--amber),#fbbf24)"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="prog-head"><span class="prog-name">رضا العملاء — 4.8</span><span class="prog-val">4.4 / 4.8</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:91%;background:linear-gradient(90deg,var(--gold),#fbbf24)"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Draw chart
+const svg = document.getElementById('chartSvg');
+const W=600,H=170,pad=20;
+const days=[1,4,7,10,13,16,19,22,25,28];
+const vals=[28,42,35,60,48,72,55,80,68,90];
+const vals2=[12,18,14,22,19,28,22,32,27,36];
+
+function toX(i){return pad+(i/(days.length-1))*(W-pad*2)}
+function toY(v,max){return H-pad-(v/max)*(H-pad*2)}
+
+const max=100;
+
+// Grid lines
+for(let i=0;i<=4;i++){
+  const y=pad+i*((H-pad*2)/4);
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',pad);line.setAttribute('x2',W-pad);
+  line.setAttribute('y1',y);line.setAttribute('y2',y);
+  line.setAttribute('stroke','#f0f0f0');line.setAttribute('stroke-width','1');
+  svg.appendChild(line);
+}
+
+// Area fill
+const areaPath='M'+days.map((_,i)=>toX(i)+','+toY(vals[i],max)).join('L')+'L'+toX(days.length-1)+','+H+' L'+pad+','+H+' Z';
+const area=document.createElementNS('http://www.w3.org/2000/svg','path');
+area.setAttribute('d',areaPath);
+area.setAttribute('fill','url(#areaGrad)');
+svg.insertAdjacentHTML('afterbegin',`<defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></linearGradient></defs>`);
+svg.appendChild(area);
+
+// Line 1
+const p1='M'+days.map((_,i)=>toX(i)+','+toY(vals[i],max)).join('L');
+const l1=document.createElementNS('http://www.w3.org/2000/svg','path');
+l1.setAttribute('d',p1);l1.setAttribute('fill','none');
+l1.setAttribute('stroke','#6366f1');l1.setAttribute('stroke-width','2.5');
+l1.setAttribute('stroke-linecap','round');l1.setAttribute('stroke-linejoin','round');
+svg.appendChild(l1);
+
+// Line 2
+const p2='M'+days.map((_,i)=>toX(i)+','+toY(vals2[i],max)).join('L');
+const l2=document.createElementNS('http://www.w3.org/2000/svg','path');
+l2.setAttribute('d',p2);l2.setAttribute('fill','none');
+l2.setAttribute('stroke','#10b981');l2.setAttribute('stroke-width','2');
+l2.setAttribute('stroke-linecap','round');l2.setAttribute('stroke-linejoin','round');
+l2.setAttribute('stroke-dasharray','5 4');
+svg.appendChild(l2);
+
+// Dots
+days.forEach((_,i)=>{
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',toX(i));c.setAttribute('cy',toY(vals[i],max));
+  c.setAttribute('r','4');c.setAttribute('fill','#fff');
+  c.setAttribute('stroke','#6366f1');c.setAttribute('stroke-width','2.5');
+  svg.appendChild(c);
+});
+
+// Labels
+days.forEach((d,i)=>{
+  const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x',toX(i));t.setAttribute('y',H-2);
+  t.setAttribute('text-anchor','middle');t.setAttribute('font-size','9');
+  t.setAttribute('fill','#9ca3af');t.setAttribute('font-family','Cairo,sans-serif');
+  t.textContent=d+'أبريل';
+  svg.appendChild(t);
+});
+</script>
+</body>
+</html>

@@ -155,7 +155,7 @@ function Products() {
       borderRadius: 1.5,
       fontSize: "0.8125rem",
       "&:hover .MuiOutlinedInput-notchedOutline": {
-        borderColor: "rgba(6, 49, 70, 0.35)",
+        borderColor: "rgba(99, 102, 241, 0.35)",
       },
       "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
         borderColor: "primary.main",

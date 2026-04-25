@@ -301,7 +301,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                 flexShrink: 0,
                 minWidth: 0,
                 p: miniSidenav ? 0.35 : 0.5,
-                "&:hover": { color: "primary.main", bgcolor: "rgba(6, 49, 70, 0.06)" },
+                "&:hover": { color: "primary.main", bgcolor: "rgba(99, 102, 241, 0.06)" },
               }}
             >
               {miniSidenav ? <MenuOpenIcon fontSize="small" /> : <MenuIcon fontSize="small" />}

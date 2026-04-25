@@ -1,12 +1,12 @@
 /**
- * Homix dark theme — aligned with primary #063146
+ * Homix dark theme — indigo primary (matches light Homix)
  */
 
 const colors = {
   background: {
-    default: "#0f1419",
-    sidenav: "#0a1929",
-    card: "#152432",
+    default: "#0f1117",
+    sidenav: "#0f1117",
+    card: "#161b27",
   },
 
   text: {
@@ -30,8 +30,8 @@ const colors = {
   },
 
   primary: {
-    main: "#3d9cbd",
-    focus: "#5eb0cc",
+    main: "#818cf8",
+    focus: "#a5b4fc",
   },
 
   secondary: {
@@ -83,8 +83,8 @@ const colors = {
 
   gradients: {
     primary: {
-      main: "#0b6b90",
-      state: "#063146",
+      main: "#a5b4fc",
+      state: "#6366f1",
     },
     secondary: {
       main: "#64748b",
@@ -133,16 +133,16 @@ const colors = {
 
   badgeColors: {
     primary: {
-      background: "rgba(6, 49, 70, 0.4)",
-      text: "#7dd3fc",
+      background: "rgba(129, 140, 248, 0.2)",
+      text: "#c7d2fe",
     },
     secondary: {
       background: "rgba(148, 163, 184, 0.2)",
       text: "#e2e8f0",
     },
     info: {
-      background: "rgba(56, 189, 248, 0.2)",
-      text: "#bae6fd",
+      background: "rgba(129, 140, 248, 0.2)",
+      text: "#c7d2fe",
     },
     success: {
       background: "rgba(52, 211, 153, 0.2)",
@@ -161,13 +161,13 @@ const colors = {
       text: "rgba(255, 255, 255, 0.6)",
     },
     dark: {
-      background: "rgba(6, 49, 70, 0.5)",
+      background: "rgba(99, 102, 241, 0.25)",
       text: "#e2e8f0",
     },
   },
 
   coloredShadows: {
-    primary: "#063146",
+    primary: "#6366f1",
     secondary: "#1e293b",
     info: "#0ea5e9",
     success: "#10b981",

@@ -28,7 +28,7 @@ export type ConfirmDeleteModalProps = {
   cancelButtonText?: string;
 };
 
-const BRAND = "#063146";
+const BRAND = "#6366f1";
 
 /**
  * تأكيد — تصميم بطاقة حديث: أيقونة دائرية، ظل لطيف، خلفية ضبابية

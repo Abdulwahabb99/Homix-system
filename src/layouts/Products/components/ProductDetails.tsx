@@ -175,18 +175,18 @@ function ProductDetails() {
                         cursor: "pointer",
                         textAlign: "start",
                         border: "1px dashed",
-                        borderColor: "rgba(6, 49, 70, 0.28)",
+                        borderColor: "rgba(99, 102, 241, 0.28)",
                         bgcolor: (t) =>
                           t.palette.mode === "dark"
-                            ? "rgba(6, 49, 70, 0.12)"
-                            : "rgba(6, 49, 70, 0.04)",
+                            ? "rgba(99, 102, 241, 0.12)"
+                            : "rgba(99, 102, 241, 0.04)",
                         transition: "background-color 0.2s, border-color 0.2s",
                         "&:hover": {
                           borderColor: "primary.light",
                           bgcolor: (t) =>
                             t.palette.mode === "dark"
-                              ? "rgba(6, 49, 70, 0.18)"
-                              : "rgba(6, 49, 70, 0.07)",
+                              ? "rgba(99, 102, 241, 0.18)"
+                              : "rgba(99, 102, 241, 0.07)",
                         },
                         "&:focus-visible": {
                           outline: "2px solid",
@@ -316,10 +316,10 @@ function ProductDetails() {
                               sx={{
                                 fontWeight: 500,
                                 borderRadius: 2,
-                                bgcolor: "rgba(6, 49, 70, 0.08)",
+                                bgcolor: "rgba(99, 102, 241, 0.08)",
                                 color: "primary.main",
                                 border: "1px solid",
-                                borderColor: "rgba(6, 49, 70, 0.2)",
+                                borderColor: "rgba(99, 102, 241, 0.2)",
                               }}
                             />
                           ))}

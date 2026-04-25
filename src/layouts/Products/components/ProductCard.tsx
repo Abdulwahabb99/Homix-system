@@ -42,7 +42,7 @@ const ProductCard = ({ product }) => {
           boxShadow: (t) =>
             t.palette.mode === "dark"
               ? "0 6px 20px rgba(0,0,0,0.3)"
-              : "0 8px 24px rgba(6, 49, 70, 0.12)",
+              : "0 8px 24px rgba(99, 102, 241, 0.12)",
           borderColor: "primary.light",
         },
         "&:focus-visible": {
@@ -165,10 +165,10 @@ const ProductCard = ({ product }) => {
                 fontSize: "0.65rem",
                 fontWeight: 600,
                 borderRadius: 1.5,
-                bgcolor: "rgba(6, 49, 70, 0.07)",
+                bgcolor: "rgba(99, 102, 241, 0.07)",
                 color: "primary.main",
                 border: "1px solid",
-                borderColor: "rgba(6, 49, 70, 0.15)",
+                borderColor: "rgba(99, 102, 241, 0.15)",
                 "& .MuiChip-label": { px: 1, overflow: "hidden", textOverflow: "ellipsis" },
               }}
             />

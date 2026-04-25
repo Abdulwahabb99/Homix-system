@@ -170,8 +170,8 @@ function AddOrderModal() {
             background: (t) =>
               t.palette.mode === "dark"
                 ? "rgba(255,255,255,0.03)"
-                : "linear-gradient(135deg, rgba(6, 49, 70, 0.06) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,1) 100%)",
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+                : "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,1) 100%)",
+            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
           }}
         >
           <Stack

@@ -21,7 +21,7 @@ function BasicsInfoCard({ orderDetails }) {
         border: "1px solid",
         borderColor: "divider",
         bgcolor: "background.paper",
-        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",

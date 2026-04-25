@@ -1,30 +1,30 @@
 /**
- * Homix design tokens — primary brand #063146, fintech-style palette.
+ * Homix design tokens — indigo primary (#6366f1), aligned with MUI theme.
  * Use with MUI `theme` where possible; use these for one-off `sx` values.
  */
 export const tokens = {
   brand: {
-    primary: "#063146",
-    primaryHover: "#0a4a66",
-    primaryActive: "#042433",
-    primaryMuted: "rgba(6, 49, 70, 0.08)",
+    primary: "#6366f1",
+    primaryHover: "#4f46e5",
+    primaryActive: "#4338ca",
+    primaryMuted: "rgba(99, 102, 241, 0.12)",
   },
   surface: {
-    app: "#f4f6f8",
+    app: "#f4f5f9",
     card: "#ffffff",
     cardMuted: "#f8fafc",
     border: "#e2e8f0",
     borderStrong: "#cbd5e1",
   },
   text: {
-    primary: "#0f172a",
+    primary: "#111827",
     secondary: "#64748b",
     onPrimary: "#ffffff",
     disabled: "#94a3b8",
   },
   accent: {
     secondary: "#475569",
-    info: "#0ea5e9",
+    info: "#6366f1",
     success: "#10b981",
     warning: "#f59e0b",
     error: "#ef4444",

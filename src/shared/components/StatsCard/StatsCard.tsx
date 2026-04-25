@@ -20,14 +20,14 @@ const StatsCard = ({ title, icon, value }) => {
         boxShadow: (t) =>
           t.palette.mode === "dark"
             ? "0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 3px rgba(0,0,0,0.2)"
-            : "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+            : "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
         transition: "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease",
         "&:hover": {
-          borderColor: "rgba(6, 49, 70, 0.18)",
+          borderColor: "rgba(99, 102, 241, 0.18)",
           boxShadow: (t) =>
             t.palette.mode === "dark"
               ? "0 1px 0 rgba(255,255,255,0.05) inset, 0 8px 28px rgba(0,0,0,0.25)"
-              : "0 4px 16px rgba(6, 49, 70, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06)",
+              : "0 4px 16px rgba(99, 102, 241, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06)",
           transform: "translateY(-1px)",
         },
       }}
@@ -56,11 +56,11 @@ const StatsCard = ({ title, icon, value }) => {
             color: "primary.main",
             background:
               theme.palette.mode === "dark"
-                ? "linear-gradient(145deg, rgba(6, 49, 70, 0.35) 0%, rgba(6, 49, 70, 0.15) 100%)"
-                : "linear-gradient(145deg, rgba(6, 49, 70, 0.12) 0%, rgba(6, 49, 70, 0.05) 100%)",
+                ? "linear-gradient(145deg, rgba(99, 102, 241, 0.35) 0%, rgba(99, 102, 241, 0.15) 100%)"
+                : "linear-gradient(145deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.05) 100%)",
             border: "1px solid",
-            borderColor: "rgba(6, 49, 70, 0.12)",
-            boxShadow: "0 1px 2px rgba(6, 49, 70, 0.06) inset",
+            borderColor: "rgba(99, 102, 241, 0.12)",
+            boxShadow: "0 1px 2px rgba(99, 102, 241, 0.06) inset",
             "& svg": {
               display: "block",
               width: 28,

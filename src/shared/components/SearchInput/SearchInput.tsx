@@ -36,7 +36,7 @@ const SearchInput = ({ onClick }) => {
         transition: "border-color 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
           borderColor: "primary.main",
-          boxShadow: "0 0 0 1px rgba(6, 49, 70, 0.1)",
+          boxShadow: "0 0 0 1px rgba(99, 102, 241, 0.1)",
         },
         "&:focus-visible": {
           outline: "2px solid",
@@ -55,7 +55,7 @@ const SearchInput = ({ onClick }) => {
           flexShrink: 0,
           alignSelf: "stretch",
           background: (t) =>
-            t.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(6, 49, 70, 0.07)",
+            t.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(99, 102, 241, 0.07)",
           borderInlineEnd: "1px solid",
           borderColor: "divider",
         }}

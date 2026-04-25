@@ -48,7 +48,7 @@ const homixCardSx = {
   border: "1px solid",
   borderColor: "divider",
   bgcolor: "background.paper",
-  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
   overflow: "hidden",
 };
 
@@ -443,8 +443,8 @@ function OrderDetails() {
                   background: (t) =>
                     t.palette.mode === "dark"
                       ? "rgba(255,255,255,0.03)"
-                      : "linear-gradient(135deg, rgba(6, 49, 70, 0.06) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,1) 100%)",
-                  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(6, 49, 70, 0.06)",
+                      : "linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(255,255,255,0.95) 48%, rgba(255,255,255,1) 100%)",
+                  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 20px rgba(99, 102, 241, 0.06)",
                 }}
               >
                 <Box
@@ -658,7 +658,7 @@ function OrderDetails() {
                           bgcolor: (t) =>
                             t.palette.mode === "dark"
                               ? "rgba(255,255,255,0.04)"
-                              : "rgba(6, 49, 70, 0.04)",
+                              : "rgba(99, 102, 241, 0.04)",
                           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
                         }}
                       >
@@ -724,7 +724,7 @@ function OrderDetails() {
                     py: 0.5,
                     bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
                     border: "1px solid",
-                    borderColor: "rgba(6, 49, 70, 0.22)",
+                    borderColor: "rgba(99, 102, 241, 0.22)",
                     color: "text.primary",
                     "& .MuiChip-label": { whiteSpace: "normal" },
                   };
@@ -748,7 +748,7 @@ function OrderDetails() {
                           borderColor: "divider",
                           "&:hover": {
                             boxShadow:
-                              "0 8px 28px rgba(6, 49, 70, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06)",
+                              "0 8px 28px rgba(99, 102, 241, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06)",
                             transform: "translateY(-2px)",
                             borderColor: (t) => alpha(t.palette.primary.main, 0.25),
                           },
@@ -1063,7 +1063,7 @@ function OrderDetails() {
                     bgcolor: (t) =>
                       t.palette.mode === "dark"
                         ? "rgba(255,255,255,0.03)"
-                        : "rgba(6, 49, 70, 0.03)",
+                        : "rgba(99, 102, 241, 0.03)",
                   }}
                 >
                   <ChatBubbleOutlineIcon

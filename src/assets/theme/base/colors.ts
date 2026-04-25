@@ -1,15 +1,15 @@
 /**
- * Homix fintech palette — primary #063146
+ * Homix — unified palette (dashboard indigo + neutrals)
  */
 
 const colors = {
   background: {
-    default: "#f4f6f8",
+    default: "#f4f5f9",
   },
 
   text: {
-    main: "#64748b",
-    focus: "#475569",
+    main: "#6b7280",
+    focus: "#111827",
   },
 
   transparent: {
@@ -28,20 +28,20 @@ const colors = {
   },
 
   primary: {
-    main: "#063146",
-    focus: "#0a4a66",
-    light: "rgba(6, 49, 70, 0.08)",
-    dark: "#042433",
+    main: "#6366f1",
+    focus: "#4f46e5",
+    light: "rgba(99, 102, 241, 0.12)",
+    dark: "#4338ca",
   },
 
   secondary: {
-    main: "#475569",
-    focus: "#334155",
+    main: "#64748b",
+    focus: "#475569",
   },
 
   info: {
-    main: "#0ea5e9",
-    focus: "#0284c7",
+    main: "#6366f1",
+    focus: "#4f46e5",
   },
 
   success: {
@@ -82,10 +82,9 @@ const colors = {
   },
 
   gradients: {
-    /* تدرج عنصر السايدبار النشط: أعلى يميل للتركواز قليلاً ليبان أوضح على خلفية بيضاء */
     primary: {
-      main: "#0b6b90",
-      state: "#063146",
+      main: "#818cf8",
+      state: "#6366f1",
     },
 
     secondary: {
@@ -94,8 +93,8 @@ const colors = {
     },
 
     info: {
-      main: "#38bdf8",
-      state: "#0ea5e9",
+      main: "#a5b4fc",
+      state: "#6366f1",
     },
 
     success: {
@@ -119,8 +118,8 @@ const colors = {
     },
 
     dark: {
-      main: "#0e3d52",
-      state: "#063146",
+      main: "#4f46e5",
+      state: "#3730a3",
     },
   },
 
@@ -141,16 +140,16 @@ const colors = {
 
   badgeColors: {
     primary: {
-      background: "rgba(6, 49, 70, 0.12)",
-      text: "#063146",
+      background: "rgba(99, 102, 241, 0.12)",
+      text: "#4338ca",
     },
     secondary: {
       background: "#e2e8f0",
       text: "#475569",
     },
     info: {
-      background: "rgba(14, 165, 233, 0.15)",
-      text: "#0369a1",
+      background: "rgba(99, 102, 241, 0.15)",
+      text: "#4338ca",
     },
     success: {
       background: "rgba(16, 185, 129, 0.15)",
@@ -175,9 +174,9 @@ const colors = {
   },
 
   coloredShadows: {
-    primary: "#063146",
+    primary: "#6366f1",
     secondary: "#1e293b",
-    info: "#0ea5e9",
+    info: "#6366f1",
     success: "#10b981",
     warning: "#f59e0b",
     error: "#ef4444",
@@ -185,7 +184,7 @@ const colors = {
     dark: "#0f172a",
   },
 
-  inputBorderColor: "#cbd5e1",
+  inputBorderColor: "#e2e8f0",
 
   tabs: {
     indicator: { boxShadow: "#e2e8f0" },

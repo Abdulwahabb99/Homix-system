@@ -1,17 +1,17 @@
 /**
- * Homix date range — aligned with primary #063146, fintech-style UI
+ * Homix date range — primary #6366f1
  * المتغيرات على :root حتى تُستورد مع appendToBody (النافذة المنبثقة خارج .homix-drp)
  */
 :root {
-  --dp-primary: #063146;
-  --dp-primary-soft: rgba(6, 49, 70, 0.1);
-  --dp-primary-mid: rgba(6, 49, 70, 0.16);
-  --dp-primary-strong: rgba(6, 49, 70, 0.24);
-  --dp-range-preview-bg: rgba(6, 49, 70, 0.1);
-  --dp-range-preview-bg-hover: rgba(6, 49, 70, 0.15);
-  --dp-range-preview-border: rgba(6, 49, 70, 0.16);
-  --dp-range-preview-text: #063146;
-  --dp-border: rgba(6, 49, 70, 0.14);
+  --dp-primary: #6366f1;
+  --dp-primary-soft: rgba(99, 102, 241, 0.1);
+  --dp-primary-mid: rgba(99, 102, 241, 0.16);
+  --dp-primary-strong: rgba(99, 102, 241, 0.24);
+  --dp-range-preview-bg: rgba(99, 102, 241, 0.1);
+  --dp-range-preview-bg-hover: rgba(99, 102, 241, 0.15);
+  --dp-range-preview-border: rgba(99, 102, 241, 0.16);
+  --dp-range-preview-text: #4338ca;
+  --dp-border: rgba(99, 102, 241, 0.2);
   --dp-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
   --dp-radius: 10px;
   --dp-input-h: 40px;
@@ -45,7 +45,7 @@
 }
 
 .homix-drp .DateRangePickerInput:hover {
-  border-color: rgba(6, 49, 70, 0.22) !important;
+  border-color: rgba(99, 102, 241, 0.22) !important;
 }
 
 .homix-drp .DateRangePickerInput.DateRangePickerInput__focused,
@@ -195,7 +195,7 @@
 
 .homix-drp .CalendarDay__hovered_span:hover {
   background: var(--dp-range-preview-bg-hover) !important;
-  border-color: rgba(6, 49, 70, 0.22) !important;
+  border-color: rgba(99, 102, 241, 0.22) !important;
   color: var(--dp-range-preview-text) !important;
 }
 
