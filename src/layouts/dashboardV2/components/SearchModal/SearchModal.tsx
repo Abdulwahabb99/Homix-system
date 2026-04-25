@@ -279,9 +279,16 @@ function SearchModal({ open, onClose }) {
           <Button
             onClick={onClose}
             variant="outlined"
-            color="inherit"
             size="medium"
-            sx={{ borderColor: "divider" }}
+            sx={(t) => ({
+              color: t.palette.text.primary,
+              borderColor: alpha(t.palette.text.primary, t.palette.mode === "dark" ? 0.35 : 0.22),
+              bgcolor: t.palette.background.paper,
+              "&:hover": {
+                borderColor: t.palette.text.secondary,
+                bgcolor: t.palette.action.hover,
+              },
+            })}
           >
             إغلاق
           </Button>
