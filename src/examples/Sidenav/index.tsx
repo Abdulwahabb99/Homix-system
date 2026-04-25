@@ -60,6 +60,8 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const closeSidenav = () => setMiniSidenav(dispatch, true);
   const toggleSidenavWidth = () => setMiniSidenav(dispatch, !miniSidenav);
   const userDisplayName = getLoggedInUserDisplayName();
+  /** عند الـ overlay (أقل من 1200px): خلفية الـ side nav داكنة — نلزم لون المستخدم أبيض ثابت مثل باقي النصوص */
+  const userRowUsesSolidWhite = isMobileOverlay;
   /* عند الشاشة الضيقة: mini فقط. لا نعيّن expanded عند التنقل أو عند الشاشة العريضة — اختيار المستخدم يبقى. */
   useEffect(() => {
     function applyViewportSidenav() {
@@ -306,13 +308,23 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               sx={{ cursor: "default", boxSizing: "border-box" }}
             >
               <PersonOutlineIcon
-                sx={{
-                  fontSize: 22,
-                  flexShrink: 0,
-                  opacity: 0.9,
-                  color: textColor,
-                  display: "block",
-                }}
+                sx={
+                  userRowUsesSolidWhite
+                    ? {
+                        fontSize: 22,
+                        flexShrink: 0,
+                        opacity: 0.95,
+                        display: "block",
+                        color: (t) => t.palette.common.white,
+                      }
+                    : {
+                        fontSize: 22,
+                        flexShrink: 0,
+                        opacity: 0.9,
+                        display: "block",
+                        color: textColor,
+                      }
+                }
               />
               {!miniSidenav && (
                 <MDBox
@@ -323,13 +335,17 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                   <MDTypography
                     component="p"
                     variant="caption"
-                    color={textColor}
+                    color={userRowUsesSolidWhite ? "white" : textColor}
                     noWrap
                     display="block"
                     textAlign="start"
                     fontWeight={600}
                     width="100%"
-                    sx={{ fontSize: "0.8125rem", lineHeight: 1.3 }}
+                    sx={(t) => ({
+                      fontSize: "0.8125rem",
+                      lineHeight: 1.3,
+                      ...(userRowUsesSolidWhite && { color: t.palette.common.white }),
+                    })}
                   >
                     {userDisplayName || "—"}
                   </MDTypography>
