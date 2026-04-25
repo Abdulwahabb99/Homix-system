@@ -1,9 +1,11 @@
 import moment from "moment";
 import "moment/dist/locale/ar";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import React, { useEffect, useState } from "react";
 import { DateRangePicker } from "react-dates";
 import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import styles from "./index.module.css";
 import PropTypes from "prop-types";
 import "./index.css";
@@ -16,7 +18,6 @@ const DateRangePickerWrapper = ({
   isDirectionRTL = true,
   allowFutureDays = false,
   isMeduim = false,
-  // مرسلة من الشاشات للتوافق مع السلوك السابق — غير مربوطة بالمكوّن الحالي
   allowPastDays: _allowPastDays = true,
   useDefaultPresets: _useDefaultPresets = true,
 }: {
@@ -40,13 +41,7 @@ const DateRangePickerWrapper = ({
   const [prevStartDate, setPrevStartDate] = useState(startDate);
   const [prevEndDate, setPrevEndDate] = useState(endDate);
 
-  // useEffect(() => {
-  //   moment.defineLocale("ar-sa-mine", {
-  //     parentLocale: "ar",
-  //     preparse: (string) => string,
-  //     postformat: (string) => string,
-  //   });
-  // }, [isDirectionRTL]);
+  const isDesktopTwoMonths = useMediaQuery("(min-width: 769px)", { defaultMatches: true });
 
   useEffect(() => {
     setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null);
@@ -54,12 +49,7 @@ const DateRangePickerWrapper = ({
   }, [initialStartDate, initialEndDate]);
 
   const presets = [
-    {
-      text: "اليوم",
-      start: moment().locale("en"),
-      end: moment().locale("en"),
-      disabled: maxDaysRange < 1,
-    },
+    { text: "اليوم", start: moment().locale("en"), end: moment().locale("en"), disabled: maxDaysRange < 1 },
     {
       text: "أمس",
       start: moment().locale("en").subtract(1, "day"),
@@ -125,23 +115,22 @@ const DateRangePickerWrapper = ({
     if (!allowFutureDays) {
       return day.isAfter(moment().locale("en"), "day");
     }
-
     return false;
   };
 
   const renderPresets = () => (
     <div className={styles.PresetDateRangePicker_panel}>
-      <div className="d-flex flex-wrap">
+      <div className={styles.presetChips}>
         {presets.map(({ text, start, end, disabled }) => {
           const selected = isSameDay(start, startDate) && isSameDay(end, endDate);
           return !disabled ? (
             <button
               key={text}
+              type="button"
               className={`
                 ${styles.PresetDateRangePicker_button}
                 ${selected ? styles.PresetDateRangePicker_button__selected : ""}
               `}
-              type="button"
               onClick={() => onDatesChange({ startDate: start, endDate: end })}
             >
               {text}
@@ -149,14 +138,16 @@ const DateRangePickerWrapper = ({
           ) : null;
         })}
       </div>
-      <div className="text-left">
+      <div className={styles.presetActions}>
         <button
+          type="button"
           className={`${styles.PresetDateRangePicker_button} ${styles.confirmButton}`}
           onClick={confirm}
         >
           تأكيد
         </button>
         <button
+          type="button"
           className={`${styles.PresetDateRangePicker_button} ${styles.cancelButton}`}
           onClick={cancel}
         >
@@ -167,7 +158,9 @@ const DateRangePickerWrapper = ({
   );
 
   return (
-    <div className="custom-date-picker">
+    <div
+      className={`custom-date-picker homix-drp${isMeduim ? " homix-drp--medium" : ""}`}
+    >
       <DateRangePicker
         startDate={startDate}
         endDate={endDate}
@@ -177,11 +170,13 @@ const DateRangePickerWrapper = ({
         startDateId="startDate"
         endDateId="endDate"
         isRTL={isDirectionRTL}
+        anchorDirection={isDirectionRTL ? "right" : "left"}
+        horizontalMargin={16}
         showClearDates
         reopenPickerOnClearDates
         small
         hideKeyboardShortcutsPanel
-        numberOfMonths={window.innerWidth <= 768 ? 1 : 2}
+        numberOfMonths={isDesktopTwoMonths ? 2 : 1}
         readOnly
         customCloseIcon={<span>&times;</span>}
         keepOpenOnDateSelect
@@ -192,19 +187,24 @@ const DateRangePickerWrapper = ({
         startDatePlaceholderText="من "
         endDatePlaceholderText="إلى "
         initialVisibleMonth={() =>
-          window.innerWidth > 768
+          isDesktopTwoMonths
             ? moment().locale("en").subtract(1, "month")
             : moment().locale("en")
         }
         inputIconPosition="after"
-        customInputIcon={null}
+        customInputIcon={
+          <span className="homix-drp-input-calendar-icon" aria-hidden>
+            <CalendarTodayOutlinedIcon sx={{ fontSize: 20, color: "inherit" }} />
+          </span>
+        }
         block
       />
     </div>
   );
 };
+
 DateRangePickerWrapper.propTypes = {
-  startDate: PropTypes.string.isRequired, // assuming DD-MM-YYYY string
+  startDate: PropTypes.string.isRequired,
   endDate: PropTypes.string.isRequired,
   handleDatesChange: PropTypes.func.isRequired,
   maxDaysRange: PropTypes.number,

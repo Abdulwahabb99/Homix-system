@@ -1,52 +1,262 @@
-.DateRangePickerInput__withBorder {
-  border-radius: 8px !important;
-}
-.DateRangePicker_picker {
-  z-index: 10000000;
+/**
+ * Homix date range — aligned with primary #063146, fintech-style UI
+ */
+.homix-drp {
+  --dp-primary: #063146;
+  --dp-primary-soft: rgba(6, 49, 70, 0.1);
+  --dp-primary-mid: rgba(6, 49, 70, 0.16);
+  --dp-primary-strong: rgba(6, 49, 70, 0.24);
+  --dp-range-preview-bg: rgba(6, 49, 70, 0.1);
+  --dp-range-preview-bg-hover: rgba(6, 49, 70, 0.15);
+  --dp-range-preview-border: rgba(6, 49, 70, 0.16);
+  --dp-range-preview-text: #063146;
+  --dp-border: rgba(6, 49, 70, 0.14);
+  --dp-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  --dp-radius: 10px;
+  --dp-input-h: 40px;
 }
 
-/* Compact toolbar row — same visual height as SearchInput (40px) */
-.custom-date-picker {
+.homix-drp--medium {
+  --dp-input-h: 42px;
+}
+
+.custom-date-picker.homix-drp {
   width: 100%;
 }
 
-/* لا تستخدم padding موحّد يطمس DateRangePickerInput__showClearDates (مساحة زر المسح).
-   في RTL: ال× على يمين الحاوية؛ padding-right كافٍ + padding-left يسمح بإظهار التاريخ (من) بوضوح */
-.custom-date-picker .DateRangePickerInput {
+/* —— Trigger: input row —— */
+.homix-drp .DateRangePickerInput {
   box-sizing: border-box;
-  min-height: 40px;
-  max-height: 40px;
-  height: 40px;
+  min-height: var(--dp-input-h);
+  max-height: var(--dp-input-h);
+  height: var(--dp-input-h);
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  /* يمين: مساحة لزر المسح (كان يضيع مع padding: 0 8px) */
   padding-right: 40px !important;
-  /* يسار/شمال: دفع محتوى الحقل (من) بعيداً قليلاً عن الحافة */
   padding-left: 10px !important;
   display: flex;
   align-items: center;
-  background-color: inherit;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  border-radius: 8px !important;
+  background-color: #fff !important;
+  border: 1px solid var(--dp-border) !important;
+  border-radius: var(--dp-radius) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.custom-date-picker .DateRangePickerInput .DateInput,
-.custom-date-picker .DateRangePickerInput .DateInput_1,
-.custom-date-picker .DateRangePickerInput .DateInput_2 {
+.homix-drp .DateRangePickerInput:hover {
+  border-color: rgba(6, 49, 70, 0.22) !important;
+}
+
+.homix-drp .DateRangePickerInput.DateRangePickerInput__focused,
+.homix-drp .DateRangePickerInput:focus-within {
+  border-color: var(--dp-primary) !important;
+  box-shadow: 0 0 0 3px var(--dp-primary-soft);
+}
+
+.homix-drp .DateRangePickerInput .DateInput,
+.homix-drp .DateRangePickerInput .DateInput_1,
+.homix-drp .DateRangePickerInput .DateInput_2 {
   background-color: transparent;
   flex: 1;
   min-width: 0;
 }
 
-.custom-date-picker .DateRangePickerInput .DateInput_input,
-.custom-date-picker .DateRangePickerInput .DateInput_input_1,
-.custom-date-picker .DateRangePickerInput .DateInput_input_2 {
+.homix-drp .DateRangePickerInput .DateInput_input,
+.homix-drp .DateRangePickerInput .DateInput_input_1,
+.homix-drp .DateRangePickerInput .DateInput_input_2 {
   background-color: transparent !important;
   font-size: 0.8125rem !important;
-  line-height: 1.2 !important;
-  padding: 4px 6px !important;
+  line-height: 1.25 !important;
+  padding: 4px 8px !important;
   min-height: 0 !important;
   height: auto !important;
-  font-weight: 500;
-  color: inherit;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  border-bottom: none !important;
+  border-radius: 6px !important;
+}
+
+.homix-drp .DateRangePickerInput .DateInput_input__focused {
+  background: var(--dp-primary-soft) !important;
+  box-shadow: none !important;
+}
+
+.homix-drp .DateRangePickerInput_arrow_svg {
+  fill: #94a3b8 !important;
+  height: 18px !important;
+  width: 18px !important;
+  opacity: 0.9;
+}
+
+.homix-drp .DateRangePickerInput_calendarIcon {
+  padding: 4px 6px 4px 2px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  color: var(--dp-primary);
+}
+
+.homix-drp .homix-drp-input-calendar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dp-primary);
+  opacity: 0.9;
+}
+
+.homix-drp .homix-drp-input-calendar-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.homix-drp .DateRangePickerInput_clearDates {
+  padding: 6px !important;
+  border-radius: 8px !important;
+  transition: background 0.15s ease;
+}
+
+.homix-drp .DateRangePickerInput_clearDates:hover,
+.homix-drp .DateRangePickerInput_clearDates:focus {
+  background: var(--dp-primary-soft) !important;
+}
+
+.homix-drp .DateRangePickerInput_clearDates_svg,
+.homix-drp .DateRangePickerInput_clearDates_svg__small {
+  fill: #64748b !important;
+}
+
+.DateRangePickerInput__withBorder {
+  border-radius: var(--dp-radius, 10px) !important;
+}
+
+/* —— Popover —— */
+.homix-drp .DateRangePicker_picker {
+  z-index: 10000000;
+  margin-top: 6px;
+  border-radius: 14px !important;
+  overflow: visible !important;
+  width: max-content !important;
+  max-width: min(100vw - 16px, 1200px) !important;
+  box-shadow: var(--dp-shadow) !important;
+  border: 1px solid var(--dp-border) !important;
+  background: #fff !important;
+}
+
+.homix-drp .DayPicker__withBorder {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.homix-drp .DayPicker__horizontal {
+  background: #fff !important;
+}
+
+/* عنوان الشهر: ألوان Homix فقط — بدون padding مخصص (سلوك react-dates الافتراضي لعناوين الأيام) */
+.homix-drp .CalendarMonth_caption {
+  color: #0f172a !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+
+.homix-drp .CalendarDay__default {
+  border: 1px solid #e8ecf0 !important;
+  color: #334155 !important;
+  background: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+}
+
+.homix-drp .CalendarDay__default:hover {
+  background: var(--dp-primary-soft) !important;
+  border-color: transparent !important;
+  color: var(--dp-primary) !important;
+}
+
+.homix-drp .CalendarDay__hovered_span,
+.homix-drp .CalendarDay__hovered_span:active {
+  background: var(--dp-range-preview-bg) !important;
+  border: 1px solid var(--dp-range-preview-border) !important;
+  color: var(--dp-range-preview-text) !important;
+  font-weight: 500 !important;
+}
+
+.homix-drp .CalendarDay__hovered_span:hover {
+  background: var(--dp-range-preview-bg-hover) !important;
+  border-color: rgba(6, 49, 70, 0.22) !important;
+  color: var(--dp-range-preview-text) !important;
+}
+
+.homix-drp .CalendarDay__hovered_span.CalendarDay__highlighted_calendar {
+  background: var(--dp-range-preview-bg-hover) !important;
+  border: 1px solid var(--dp-range-preview-border) !important;
+  color: var(--dp-range-preview-text) !important;
+}
+
+.homix-drp .CalendarDay__selected,
+.homix-drp .CalendarDay__selected:hover,
+.homix-drp .CalendarDay__selected:active,
+.homix-drp .CalendarDay__selected_span,
+.homix-drp .CalendarDay__selected_span:hover,
+.homix-drp .CalendarDay__selected_span:active {
+  background: var(--dp-primary) !important;
+  border: 1px solid var(--dp-primary) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.homix-drp .CalendarDay__selected.CalendarDay__highlighted_calendar,
+.homix-drp .CalendarDay__selected_span.CalendarDay__highlighted_calendar {
+  background: var(--dp-primary) !important;
+  border: 1px solid var(--dp-primary) !important;
+  color: #fff !important;
+}
+
+.homix-drp .CalendarDay__highlighted_calendar {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #0e7490 !important;
+}
+
+.homix-drp .CalendarDay__highlighted_calendar:hover {
+  background: rgba(14, 165, 233, 0.25) !important;
+}
+
+.homix-drp .CalendarDay__outside {
+  color: #cbd5e1 !important;
+  background: #fafbfc !important;
+}
+
+.homix-drp .CalendarDay__blocked_out_of_range,
+.homix-drp .CalendarDay__blocked_out_of_range:hover {
+  color: #cbd5e1 !important;
+  background: #f8fafc !important;
+}
+
+.homix-drp .DayPickerNavigation_button__default {
+  border: 1px solid var(--dp-border) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.homix-drp .DayPickerNavigation_button__default:hover,
+.homix-drp .DayPickerNavigation_button__default:focus {
+  border-color: var(--dp-primary) !important;
+  background: var(--dp-primary-soft) !important;
+}
+
+.homix-drp .DayPickerNavigation_svg__horizontal {
+  fill: var(--dp-primary) !important;
+}
+
+.homix-drp .DateInput_fangShape {
+  fill: #fff !important;
+}
+
+.homix-drp .DateInput_fangStroke {
+  stroke: var(--dp-border) !important;
 }
