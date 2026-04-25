@@ -28,7 +28,6 @@ import { SelectComponent } from "components/ui";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
 import OrderInfoCard from "./components/OrderInfoCard";
-import { useReactToPrint } from "react-to-print";
 import axiosRequest from "shared/functions/axiosRequest";
 import BasicsInfoCard from "./components/BasicsInfoCard";
 import { manufactureStatusOptions } from "shared/utils/constants";
@@ -37,6 +36,7 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import PdfDataMobile from "./PdfDataMobile";
+import { downloadOrderInvoicePdf } from "./utils/invoicePdf";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 
@@ -152,15 +152,32 @@ function OrderDetails() {
   const [administrator, setAdministrator] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isFileUploadingloading, setIsFileUploadingloading] = useState(false);
+  const [invoicePdfLoading, setInvoicePdfLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
-  const componentRef = useRef();
+  const componentRef = useRef<HTMLDivElement | null>(null);
   const isVendor = user.userType === "2";
 
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-  });
+  const handleDownloadInvoice = async () => {
+    if (!componentRef.current) {
+      NotificationMeassage("error", "تعذر تجهيز الفاتورة");
+      return;
+    }
+    setInvoicePdfLoading(true);
+    try {
+      const namePart =
+        [orderDetails?.name, orderDetails?.code].filter(Boolean).join(" ") ||
+        String(orderDetails?.id ?? id ?? "order");
+      await downloadOrderInvoicePdf(componentRef.current, `فاتورة-${namePart}`);
+      NotificationMeassage("success", "تم تحميل الفاتورة");
+    } catch (e) {
+      console.error(e);
+      NotificationMeassage("error", "تعذر تصدير الفاتورة");
+    } finally {
+      setInvoicePdfLoading(false);
+    }
+  };
 
   const changeManufactureStatus = (status) => {
     if (status == null) return;
@@ -360,9 +377,21 @@ function OrderDetails() {
   return (
     <>
       {orderDetails?.id && (
-        <div style={{ display: "none" }}>
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            width: 800,
+            maxWidth: "100vw",
+            zIndex: -1,
+            pointerEvents: "none",
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
           <PdfDataMobile ref={componentRef} orderDetails={orderDetails} />
-          {/* <PdfData ref={componentRef} orderDetails={orderDetails} /> */}
         </div>
       )}
       <DashboardLayout>
@@ -526,7 +555,8 @@ function OrderDetails() {
                       variant="outlined"
                       color="primary"
                       startIcon={<PictureAsPdf fontSize="small" />}
-                      onClick={handlePrint}
+                      onClick={handleDownloadInvoice}
+                      disabled={invoicePdfLoading}
                       size="small"
                       sx={{
                         fontWeight: 600,
@@ -542,7 +572,7 @@ function OrderDetails() {
                         },
                       }}
                     >
-                      الفاتورة
+                      {invoicePdfLoading ? "جارٍ التحميل…" : "الفاتورة"}
                     </Button>
                     {!isVendor && (
                       <Button

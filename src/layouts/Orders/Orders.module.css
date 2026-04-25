@@ -72,3 +72,471 @@
   margin: 0 auto;
   width: 80%;
 }
+
+/* ——— فاتورة PDF: تصميم حديث (يفصل الشكل دون لمس تنسيق الحروف العربية) ——— */
+.pdfInvoiceRoot {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(165deg, #e8edf3 0%, #f4f6f8 50%, #eef1f5 100%);
+  font-family: "Noto Sans Arabic", Tahoma, "Segoe UI", system-ui, sans-serif;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+
+.pdfSheet {
+  --inv: #063146;
+  --inv2: #0a4a6b;
+  --line: #e2e8f0;
+  --soft: #f8fafc;
+  --muted: #64748b;
+  box-sizing: border-box;
+  width: 190mm;
+  max-width: 100%;
+  max-height: 275mm;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 4px 14px 14px 4px;
+  box-shadow: 0 4px 28px rgba(6, 49, 70, 0.1), 0 0 0 1px rgba(6, 49, 70, 0.06);
+  border-inline-end: 5px solid var(--inv);
+  display: flex;
+  flex-direction: column;
+  page-break-inside: avoid;
+  letter-spacing: 0;
+  word-spacing: normal;
+  --fs-title: 1.35rem;
+  --fs-body: 0.84rem;
+  --fs-tbl: 0.78rem;
+}
+
+.pdfSheetInner {
+  padding: 20px 22px 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pdfSheetCompact {
+  --fs-title: 1.12rem;
+  --fs-body: 0.75rem;
+  --fs-tbl: 0.7rem;
+}
+
+.pdfSheetCompact .pdfSheetInner {
+  padding: 14px 16px 8px;
+}
+
+.pdfSheetTight {
+  --fs-title: 1.05rem;
+  --fs-body: 0.7rem;
+  --fs-tbl: 0.64rem;
+  max-height: 280mm;
+}
+
+.pdfSheetTight .pdfSheetInner {
+  padding: 12px 14px 6px;
+}
+
+/* رأس: شارة + بطاقة شعار */
+.pdfHeaderV2 {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #cbd5e1;
+  direction: rtl;
+}
+
+.pdfLogoBlock {
+  flex: 0 0 auto;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  max-width: 130px;
+}
+
+.pdfLogoImg {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.pdfHeaderBlock {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+}
+
+.pdfDocBadge {
+  display: inline-block;
+  margin: 0 0 6px;
+  padding: 3px 10px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--inv2);
+  background: rgba(6, 49, 70, 0.08);
+  border-radius: 6px;
+}
+
+.pdfTitleV2 {
+  margin: 0 0 10px;
+  font-size: var(--fs-title);
+  font-weight: 800;
+  color: var(--inv);
+  line-height: 1.2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.4em;
+}
+
+.pdfTitleV2en {
+  font-size: 0.45em;
+  font-weight: 600;
+  color: var(--muted);
+  direction: ltr;
+  unicode-bidi: embed;
+  font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.pdfMetaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start; /* بداية السطر في RTL = يمين */
+  direction: rtl;
+}
+
+.pdfMetaChip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+  padding: 6px 10px;
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.pdfMetaChipLabel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.pdfMetaChipVal {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  word-break: break-word;
+  text-align: right;
+  max-width: 220px;
+}
+
+/* بطاقات العميل */
+.pdfPartyGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  direction: rtl;
+}
+
+.pdfPartyCard {
+  flex: 1 1 50%;
+  min-width: 0;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--soft) 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.pdfPartyCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--inv) 0%, #0b7a9a 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.pdfPartyKicker {
+  margin: 4px 0 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--inv2);
+}
+
+.pdfPartyNameV2 {
+  margin: 0 0 6px;
+  font-size: var(--fs-body);
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.pdfPartyDesc {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #475569;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.pdfSectionKicker {
+  margin: 0 0 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--inv2);
+  direction: rtl;
+  text-align: right;
+}
+
+/* جدول */
+.pdfTableFrame {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.pdfTableV2 {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--fs-tbl);
+}
+
+.pdfTableV2 thead {
+  background: var(--inv);
+  color: #fff;
+}
+
+.pdfTableV2 th {
+  padding: 9px 8px;
+  font-weight: 800;
+  text-align: right;
+  font-size: 0.72em;
+  letter-spacing: 0;
+  border: none;
+  direction: rtl;
+}
+
+.colItem {
+  width: 46%;
+  min-width: 0;
+}
+
+.colQty,
+.colPrice,
+.colLine {
+  width: 18%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pdfTableV2 td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f6;
+  vertical-align: middle;
+  direction: rtl;
+  letter-spacing: 0;
+  font-size: 1em;
+}
+
+.pdfTableV2 tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.colQty,
+.colPrice,
+.colLine {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.itemLine {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  direction: rtl;
+  text-align: right;
+}
+
+.itemThumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.itemText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pdfProductTitle {
+  display: block;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #0f172a;
+  font-size: 1em;
+}
+
+.skuV2 {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68em;
+  color: var(--muted);
+  direction: rtl;
+  letter-spacing: 0;
+}
+
+.skuLtr {
+  direction: ltr;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.skuV2::before {
+  content: "رمز: ";
+  font-size: 0.95em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.lineStrong {
+  font-weight: 800;
+  color: var(--inv2);
+}
+
+/* ملخص */
+.pdfTotalsRow {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  direction: rtl;
+}
+
+.pdfTotalsPanel {
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 14px 14px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  border-top: 4px solid var(--inv);
+  box-shadow: 0 2px 8px rgba(6, 49, 70, 0.06);
+}
+
+.pdfTotalLine {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  color: #334155;
+  border-bottom: 1px dotted #cbd5e1;
+  direction: rtl;
+}
+
+.pdfTotalLine:last-of-type,
+.pdfTotalDue {
+  border-bottom: none;
+}
+
+.pdfTotalGrand {
+  margin-top: 2px;
+  padding-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--inv);
+  background: rgba(6, 49, 70, 0.06);
+  margin-left: -14px;
+  margin-right: -14px;
+  padding-left: 14px;
+  padding-right: 14px;
+  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+}
+
+.pdfTotalDue {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--inv2);
+  padding-top: 8px;
+}
+
+/* تذييل */
+.pdfFooterV2 {
+  text-align: center;
+  padding: 12px 16px 16px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  border-top: 1px solid var(--line);
+  background: #fafbfc;
+  line-height: 1.4;
+  direction: rtl;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pdfFooterBrand {
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* وضع كثيف: إخفاء صور المنتجات */
+.pdfSheetTight .itemThumb {
+  display: none;
+}
+
+.pdfSheetTight .itemLine {
+  gap: 0;
+}
+
+/* عربي / أرقام */
+.pdfArabic {
+  direction: rtl;
+  text-align: right;
+}
+
+.pdfLtr {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+  text-align: left;
+  font-family: Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}

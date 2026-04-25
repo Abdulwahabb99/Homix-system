@@ -1,291 +1,258 @@
 /* eslint-disable react/prop-types */
-import React from "react";
-import { Grid } from "@mui/material";
+import React, { useMemo } from "react";
 import logo from "../../assets/images/1 (1).png";
 import styles from "./Orders.module.css";
 
-const PdfDataMobile = React.forwardRef<HTMLDivElement, { orderDetails: any }>(
-  ({ orderDetails }, ref) => {
-    function formatDateStringToArabic(dateString) {
-      const dateParts = dateString.split("-");
-      const year = parseInt(dateParts[0], 10);
-      const month = parseInt(dateParts[1], 10) - 1;
-      const day = parseInt(dateParts[2], 10);
-      const date = new Date(year, month, day);
-      const options = { day: "2-digit", month: "2-digit", year: "numeric" } as const;
-      const formatter = new Intl.DateTimeFormat("en-EG", options);
+function formatDateArabic(createdAt: string | null | undefined): string {
+  if (createdAt == null || createdAt === "") return "—";
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("ar-EG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
+}
 
-      return formatter.format(date);
-    }
-    const orderDate = formatDateStringToArabic(orderDetails.createdAt);
-    const priceWithShippingAndDiscount =
-      Number(orderDetails.totalPrice) +
-      Number(orderDetails.shippingFees) -
-      Number(orderDetails.totalDiscounts);
+function LtrNumber({
+  value,
+  suffix = "ج.م",
+  className = "",
+}: {
+  value: string | number | null | undefined;
+  suffix?: string;
+  className?: string;
+}) {
+  const n = Number(value);
+  const text = Number.isNaN(n) ? "—" : n.toLocaleString("ar-EG", { maximumFractionDigits: 2 });
+  return (
+    <span className={`${styles.pdfLtr} ${className}`.trim()}>
+      {text} {suffix}
+    </span>
+  );
+}
 
-    return (
-      <div ref={ref} style={{ direction: "ltr" }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={12}>
-            <Grid
-              container
-              spacing={2}
-              sx={{ borderBottom: "solid #000 1px", justifyContent: "space-between" }}
-            >
-              <Grid
-                item
-                xs={5}
-                md={4}
-                lg={4}
-                sx={{ display: "flex", justifyContent: "space-between" }}
-              >
-                <div className={styles.pdfLogoContainer}>
-                  <img src={logo} alt="homix" style={{ width: "100%" }} />
+const PdfDataMobile = React.forwardRef<HTMLDivElement, { orderDetails: any }>(({ orderDetails }, ref) => {
+  const orderDate = formatDateArabic(orderDetails?.createdAt);
+  const lines = orderDetails?.orderLines ?? [];
+  const n = lines.length;
+
+  const sheetMod = useMemo(() => {
+    if (n > 14) return styles.pdfSheetTight;
+    if (n > 6) return styles.pdfSheetCompact;
+    return "";
+  }, [n]);
+
+  const customer = orderDetails?.customer;
+
+  return (
+    <div className={styles.pdfInvoiceRoot}>
+      <div
+        ref={ref}
+        data-pdf-sheet
+        className={[styles.pdfSheet, sheetMod].filter(Boolean).join(" ")}
+        dir="rtl"
+        lang="ar"
+      >
+        <div className={styles.pdfSheetInner}>
+          <header className={styles.pdfHeaderV2}>
+            <div className={styles.pdfLogoBlock}>
+              <img src={logo} alt="Homix" className={styles.pdfLogoImg} width={120} height={40} />
+            </div>
+            <div className={styles.pdfHeaderBlock}>
+              <div className={styles.pdfDocBadge}>مستند مالي</div>
+              <h1 className={styles.pdfTitleV2}>
+                <span>فاتورة</span>
+                <span className={styles.pdfTitleV2en} dir="ltr" lang="en">
+                  Invoice
+                </span>
+              </h1>
+              <div className={styles.pdfMetaChips} role="list">
+                <div className={styles.pdfMetaChip} role="listitem">
+                  <span className={styles.pdfMetaChipLabel}>رقم المستند</span>
+                  <span className={styles.pdfMetaChipVal}>
+                    <span className={styles.pdfLtr} dir="ltr">
+                      {orderDetails?.name ?? "—"}
+                    </span>
+                  </span>
                 </div>
-              </Grid>
-              <Grid item xs={5} md={8} lg={8}>
-                <div className={styles.invoice}>
-                  <p style={{ fontSize: "1.7rem", fontWeight: "700" }}>Invoice</p>
-                  <div style={{ fontSize: "1rem", fontWeight: "600" }}>
-                    <span style={{ color: "#003045" }}>issue Date : </span>
-                    <span style={{ fontSize: "1rem" }}>{orderDate}</span>
+                {orderDetails?.code ? (
+                  <div className={styles.pdfMetaChip} role="listitem">
+                    <span className={styles.pdfMetaChipLabel}>الكود</span>
+                    <span className={styles.pdfMetaChipVal}>
+                      <span className={styles.pdfLtr} dir="ltr">
+                        {orderDetails.code}
+                      </span>
+                    </span>
                   </div>
-                  <div style={{ fontSize: "1rem", fontWeight: "600" }}>
-                    <span style={{ color: "#003045" }}>Invoice# : </span>
-                    <span>{orderDetails.name}</span>
-                  </div>
+                ) : null}
+                <div className={styles.pdfMetaChip} role="listitem">
+                  <span className={styles.pdfMetaChipLabel}>تاريخ الإصدار</span>
+                  <span className={styles.pdfMetaChipVal}>{orderDate}</span>
                 </div>
-              </Grid>
-            </Grid>
-          </Grid>
-          {/* 111 */}
+              </div>
+            </div>
+          </header>
 
-          <Grid item xs={12} md={12}>
-            <Grid container spacing={2} sx={{ width: "90%", margin: "0 auto" }}>
-              <Grid item xs={6} md={4} lg={4}>
-                <div className={styles.billingDetails}>
-                  <p style={{ fontSize: "1.5rem", fontWeight: "700", color: "#003045" }}>
-                    Billing Details
-                  </p>
-                  <p style={{ fontSize: "1.5rem", fontWeight: "700" }}>
-                    {orderDetails?.customer?.firstName || ""}{" "}
-                    {orderDetails?.customer?.lastName || ""}
-                  </p>
-                  <p style={{ fontSize: "1.1rem", fontWeight: "400" }}>
-                    {orderDetails?.customer?.address}
-                  </p>
-                </div>
-              </Grid>
-              <Grid item xs={6} md={4} lg={4}>
-                <div className={styles.billingDetails}>
-                  <p style={{ fontSize: "1.5rem", fontWeight: "700", color: "#003045" }}>
-                    Shipping Details
-                  </p>
-                  <p style={{ fontSize: "1.5rem", fontWeight: "700" }}>
-                    {orderDetails?.customer?.firstName || ""}{" "}
-                    {orderDetails?.customer?.lastName || ""}
-                  </p>
-                  <p style={{ fontSize: "1.1rem", fontWeight: "400" }}>
-                    {orderDetails?.customer?.address}
-                  </p>
-                  <p style={{ fontSize: "1.1rem", fontWeight: "400" }}>
-                    {orderDetails?.customer?.phoneNumber}
-                  </p>
-                </div>
-              </Grid>
-              {/* <Grid item xs={12} md={4} lg={4}>
-              <div className={styles.billingPrice}>
-                <h2>{priceWithShippingAndDiscount.toFixed(1)} LE</h2>
-                <span style={{ fontSize: "1.5rem", fontWeight: "700", color: "#003045" }}>
-                  TOTAL
+          <div className={styles.pdfPartyGrid}>
+            <div className={styles.pdfPartyCard}>
+              <p className={styles.pdfPartyKicker}>العميل</p>
+              <p className={styles.pdfPartyNameV2}>
+                {customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : "—"}
+              </p>
+              {customer?.address ? <p className={styles.pdfPartyDesc}>{customer.address}</p> : null}
+              {customer?.email ? (
+                <p className={styles.pdfPartyDesc} dir="ltr" style={{ textAlign: "right" }}>
+                  {customer.email}
+                </p>
+              ) : null}
+            </div>
+            <div className={styles.pdfPartyCard}>
+              <p className={styles.pdfPartyKicker}>التوصيل والتواصل</p>
+              <p className={styles.pdfPartyNameV2}>
+                {customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : "—"}
+              </p>
+              {customer?.phoneNumber ? (
+                <p className={styles.pdfPartyDesc}>
+                  <span className={styles.pdfLtr} dir="ltr">
+                    {customer.phoneNumber}
+                  </span>
+                </p>
+              ) : null}
+              {customer?.address ? (
+                <p className={styles.pdfPartyDesc} style={{ marginTop: 2 }}>
+                  {customer.address}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <p className={styles.pdfSectionKicker}>بنود الطلب</p>
+          <div className={styles.pdfTableFrame}>
+            <table className={styles.pdfTableV2}>
+              <thead>
+                <tr>
+                  <th className={styles.colItem} scope="col">
+                    الصنف
+                  </th>
+                  <th className={styles.colQty} scope="col">
+                    الكمية
+                  </th>
+                  <th className={styles.colPrice} scope="col">
+                    سعر الوحدة
+                  </th>
+                  <th className={styles.colLine} scope="col">
+                    الإجمالي
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((item) => {
+                  const unit = Number(item.price);
+                  const qty = Number(item.quantity);
+                  const lineSub = Number.isFinite(unit) && Number.isFinite(qty) ? unit * qty : NaN;
+                  return (
+                    <tr key={item.id}>
+                      <td className={styles.colItem}>
+                        <div className={styles.itemLine}>
+                          {item?.product?.image ? (
+                            <img
+                              className={styles.itemThumb}
+                              src={item.product.image}
+                              alt=""
+                              width={52}
+                              height={52}
+                            />
+                          ) : null}
+                          <div className={styles.itemText}>
+                            <span className={styles.pdfProductTitle}>{item.title}</span>
+                            {item.sku ? (
+                              <span className={styles.skuV2} dir="rtl">
+                                <span className={styles.skuLtr} dir="ltr" lang="en">
+                                  {item.sku}
+                                </span>
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+                      <td className={styles.colQty}>
+                        <span className={styles.pdfLtr} dir="ltr">
+                          {item.quantity}
+                        </span>
+                      </td>
+                      <td className={styles.colPrice}>
+                        <LtrNumber value={item.price} />
+                      </td>
+                      <td className={styles.colLine}>
+                        <LtrNumber className={styles.lineStrong} value={lineSub} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.pdfTotalsRow}>
+            <div className={styles.pdfTotalsPanel}>
+              <div className={styles.pdfTotalLine}>
+                <span>المجموع الجزئي</span>
+                <span>
+                  <LtrNumber value={orderDetails.subTotalPrice} />
                 </span>
               </div>
-            </Grid> */}
-            </Grid>
-          </Grid>
-          {/* 222 */}
-
-          <Grid item xs={12} md={12}>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", background: "#024b6b", alignItems: "center" }}
-            >
-              <Grid item xs={5} md={4} lg={4} className={styles.DescriptionContainer}>
-                <p style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>Description</p>
-              </Grid>
-              <Grid item xs={1} md={1} lg={1} className={styles.DescriptionContainer}>
-                <p style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>Qty</p>
-              </Grid>
-              <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                <p style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>Unit Price</p>
-              </Grid>
-              <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                <p style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>Subtotal</p>
-              </Grid>
-              <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                <p style={{ fontSize: "1rem", fontWeight: "700", color: "#fff" }}>Total</p>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item xs={12} md={12} sx={{ borderBottom: "solid 1px #000" }}>
-            {orderDetails.orderLines.map((item) => {
-              return (
-                <>
-                  <Grid
-                    container
-                    spacing={2}
-                    sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-                    key={item.id}
-                  >
-                    <Grid item xs={5} md={4} lg={4} className={styles.DescriptionContainer}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={3} md={4} lg={4}>
-                          <img src={item.product.image} alt="product" width="100%" />
-                        </Grid>
-                        <Grid item xs={8} md={8} lg={8}>
-                          <p style={{ fontSize: "15px", fontWeight: "600" }}>{item.title}</p>
-                          <div>
-                            <span style={{ fontSize: "12px", fontWeight: "600" }}>sku : </span>
-                            <span style={{ fontSize: "11px", fontWeight: "400" }}>{item.sku}</span>
-                          </div>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                    <Grid item xs={1} md={1} lg={1} className={styles.DescriptionContainer}>
-                      <p style={{ fontSize: "1rem", fontWeight: "700" }}>{item.quantity}</p>
-                    </Grid>
-                    <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                      <p style={{ fontSize: "1rem", fontWeight: "700" }}> {item.price} LE</p>
-                    </Grid>
-                    <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                      <p style={{ fontSize: "1rem", fontWeight: "700" }}> {item.price} LE</p>
-                    </Grid>
-                    <Grid item xs={2} md={2} lg={2} className={styles.DescriptionContainer}>
-                      <p style={{ fontSize: "1rem", fontWeight: "700" }}> {item.price} LE</p>
-                    </Grid>
-                  </Grid>
-                </>
-              );
-            })}
-          </Grid>
-          <Grid item xs={12} md={12}>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontWeight: "600" }}>
-                Subtotal
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {orderDetails.subTotalPrice} LE
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontWeight: "600" }}>
-                Shipping
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {orderDetails.shippingFees} LE
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontWeight: "600" }}>
-                Discount
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {orderDetails.totalDiscounts} LE
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontWeight: "600", color: "#024b6b" }}>
-                Total
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {Number(orderDetails.totalPrice).toFixed(1)} LE
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontWeight: "600", color: "#024b6b" }}>
-                Paid by customer
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {orderDetails.downPayment} LE
-              </Grid>
-            </Grid>
-            <Grid
-              container
-              spacing={2}
-              sx={{ width: "90%", margin: "0 auto", alignItems: "center" }}
-            >
-              <Grid item md={5}></Grid>
-              <Grid item md={3} sx={{ fontSize: "16px", fontWeight: "600", color: "#024b6b" }}>
-                Outstanding (Customer owes)
-              </Grid>
-              <Grid item md={1}>
-                :
-              </Grid>
-              <Grid item md={2}>
-                {(Number(orderDetails.totalPrice) - Number(orderDetails.downPayment)).toFixed(1)} LE
-              </Grid>
-            </Grid>
-          </Grid>
-          <div
-            style={{
-              width: "90%",
-              margin: "3rem auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "1.7rem",
-              fontWeight: "700",
-              borderTop: "solid 2px #000",
-              borderBottom: "solid 2px #000",
-            }}
-          >
-            <p>Thank you for choosing Homix</p>
+              <div className={styles.pdfTotalLine}>
+                <span>الشحن</span>
+                <span>
+                  <LtrNumber value={orderDetails.shippingFees} />
+                </span>
+              </div>
+              <div className={styles.pdfTotalLine}>
+                <span>الخصم</span>
+                <span>
+                  <LtrNumber value={orderDetails.totalDiscounts} />
+                </span>
+              </div>
+              <div className={`${styles.pdfTotalLine} ${styles.pdfTotalGrand}`.trim()}>
+                <span>الإجمالي</span>
+                <span>
+                  <LtrNumber value={orderDetails.totalPrice} />
+                </span>
+              </div>
+              <div className={styles.pdfTotalLine}>
+                <span>المدفوع</span>
+                <span>
+                  <LtrNumber value={orderDetails.downPayment} />
+                </span>
+              </div>
+              <div className={`${styles.pdfTotalLine} ${styles.pdfTotalDue}`.trim()}>
+                <span>المتبقّي</span>
+                <span>
+                  {orderDetails?.totalPrice != null && orderDetails?.downPayment != null ? (
+                    <LtrNumber
+                      value={(
+                        Number(orderDetails.totalPrice) - Number(orderDetails.downPayment)
+                      ).toFixed(1)}
+                    />
+                  ) : (
+                    "—"
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
-        </Grid>
+        </div>
+
+        <footer className={styles.pdfFooterV2}>
+          <span>شكراً لثقتك</span>
+          <span className={styles.pdfFooterBrand} dir="ltr" lang="en">
+            — Homix
+          </span>
+        </footer>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 
 export default PdfDataMobile;
