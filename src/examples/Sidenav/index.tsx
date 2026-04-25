@@ -387,11 +387,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                     noWrap
                     display="block"
                     textAlign="start"
-                    fontWeight={600}
                     width="100%"
                     sx={(t) => ({
-                      fontSize: "0.875rem",
-                      lineHeight: 1.35,
+                      fontSize: "0.95rem",
+                      lineHeight: 1.45,
+                      fontWeight: 800,
                       ...(userRowUsesSolidWhite && { color: t.palette.common.white }),
                     })}
                   >
@@ -404,34 +404,21 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
                       noWrap
                       display="block"
                       textAlign="start"
-                      fontWeight={600}
                       width="100%"
                       color="inherit"
                       sx={(t) => {
                         const base = {
-                          fontSize: "0.8125rem",
-                          lineHeight: 1.35,
-                          letterSpacing: "0.02em",
+                          fontSize: "0.875rem",
+                          lineHeight: 1.45,
+                          fontWeight: 600,
                         };
-                        if (userRowUsesSolidWhite) {
-                          return { ...base, color: alpha(t.palette.common.white, 0.92) };
-                        }
-                        if (textColor === "white") {
-                          return { ...base, color: alpha(t.palette.common.white, 0.9) };
+                        if (userRowUsesSolidWhite || textColor === "white") {
+                          return { ...base, color: alpha(t.palette.common.white, 0.78) };
                         }
                         if (textColor === "dark") {
-                          /* وضع القائمة الفاتحة: تباين واضح بدل text.secondary الباهت */
-                          return {
-                            ...base,
-                            color: t.palette.grey[800],
-                            fontWeight: 600,
-                          };
+                          return { ...base, color: t.palette.primary.main };
                         }
-                        return {
-                          ...base,
-                          color: t.palette.text.primary,
-                          opacity: 0.9,
-                        };
+                        return { ...base, color: t.palette.text.secondary };
                       }}
                     >
                       {userTypeLabel}
