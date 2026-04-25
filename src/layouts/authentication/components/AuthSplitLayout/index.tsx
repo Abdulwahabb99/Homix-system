@@ -1,17 +1,16 @@
 import PropTypes from "prop-types";
-import { Box, IconButton, Stack, Typography, useTheme } from "@mui/material";
-import LanguageIcon from "@mui/icons-material/Language";
+import { Box, Stack, Typography, useTheme } from "@mui/material";
 import SignInHeroLottie from "components/SignInHeroLottie";
 import PageLayout from "examples/LayoutContainers/PageLayout";
 
 /**
  * Split auth layout (reference structure): half form column + half hero.
- * — Top: brand (start) + language affordance (end)
+ * — Top: brand
  * — Middle: children centered, max width ~420px
  * — Bottom: foot note
  * — Other half: Lottie, centered; hidden on small screens
  */
-function SignInSplitLayout({ children, onLanguageClick }) {
+function SignInSplitLayout({ children }) {
   const theme = useTheme();
   const isRTL = theme.direction === "rtl";
 
@@ -49,10 +48,10 @@ function SignInSplitLayout({ children, onLanguageClick }) {
             component="header"
             direction="row"
             alignItems="center"
-            justifyContent="space-between"
+            justifyContent="flex-start"
             sx={{ width: "100%", flexShrink: 0, minHeight: 48 }}
           >
-            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+            <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
               <Box
                 component="img"
                 src="/favicon.png"
@@ -73,16 +72,6 @@ function SignInSplitLayout({ children, onLanguageClick }) {
                 Homix
               </Typography>
             </Stack>
-            <IconButton
-              type="button"
-              size="small"
-              color="default"
-              aria-label="تبديل اللغة"
-              onClick={onLanguageClick}
-              sx={{ color: "text.secondary" }}
-            >
-              <LanguageIcon fontSize="small" />
-            </IconButton>
           </Stack>
 
           <Box
@@ -168,11 +157,6 @@ function SignInSplitLayout({ children, onLanguageClick }) {
 
 SignInSplitLayout.propTypes = {
   children: PropTypes.node.isRequired,
-  onLanguageClick: PropTypes.func,
-};
-
-SignInSplitLayout.defaultProps = {
-  onLanguageClick: undefined,
 };
 
 export default SignInSplitLayout;
