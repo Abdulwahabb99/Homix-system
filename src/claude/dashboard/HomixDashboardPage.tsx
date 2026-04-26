@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import "claude/dashboard/homixDashboard.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import HomixTopbar from "claude/dashboard/components/HomixTopbar";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import KpiSection from "claude/dashboard/components/KpiSection";
 import SalesChartCard from "claude/dashboard/components/SalesChartCard";
 import ActivityFeedCard from "claude/dashboard/components/ActivityFeedCard";
@@ -23,39 +23,37 @@ export default function HomixDashboardPage() {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <div className="homixDashPage">
-        <div className="h-main">
-          <HomixTopbar />
-          <div className="h-content">
-            <KpiSection />
-            <div className="h-grid-3-1">
-              <SalesChartCard />
-              <ActivityFeedCard />
+        <div className="h-content">
+          <KpiSection />
+          <div className="h-grid-3-1">
+            <SalesChartCard />
+            <ActivityFeedCard />
+          </div>
+          <div className="h-grid-3-1">
+            <RecentOrdersTable />
+            <div className="h-right-col">
+              <TopSellersCard />
+              <QuickActionsCard isVendor={isVendor} />
             </div>
-            <div className="h-grid-3-1">
-              <RecentOrdersTable />
-              <div className="h-right-col">
-                <TopSellersCard />
-                <QuickActionsCard isVendor={isVendor} />
+          </div>
+          <div className="h-grid-2">
+            <div className="h-card">
+              <div className="h-card-head">
+                <div>
+                  <div className="h-card-title">توزيع المبيعات</div>
+                  <div className="h-card-sub">حسب الفئة — هذا الشهر</div>
+                </div>
+                <button type="button" className="h-card-link">
+                  تفاصيل ←
+                </button>
+              </div>
+              <div className="h-card-body">
+                <CategoryDonutChart />
               </div>
             </div>
-            <div className="h-grid-2">
-              <div className="h-card">
-                <div className="h-card-head">
-                  <div>
-                    <div className="h-card-title">توزيع المبيعات</div>
-                    <div className="h-card-sub">حسب الفئة — هذا الشهر</div>
-                  </div>
-                  <button type="button" className="h-card-link">
-                    تفاصيل ←
-                  </button>
-                </div>
-                <div className="h-card-body">
-                  <CategoryDonutChart />
-                </div>
-              </div>
-              <TargetsProgressCard />
-            </div>
+            <TargetsProgressCard />
           </div>
         </div>
       </div>

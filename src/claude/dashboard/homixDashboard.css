@@ -1,15 +1,50 @@
 /* HOMIX custom dashboard — converted from dashboard_home.html */
 
-/* صفحة /home: المحتوى فقط (السايدبار عالمي من App) */
+/* صفحة /home: نفس توكنات .homixDashRoot وإلا var(--surface) وغيره لا تُحل ولا يظهر شكل الكارد */
 .homixDashPage {
+  --sb: #0f1117;
+  --sb2: #161b27;
+  --sb-border: rgba(255, 255, 255, 0.06);
+  --accent: #6366f1;
+  --accent-light: rgba(99, 102, 241, 0.12);
+  --accent-glow: rgba(99, 102, 241, 0.25);
+  --gold: #c9a96e;
+  --gold-light: rgba(201, 169, 110, 0.12);
+  --green: #10b981;
+  --green-light: rgba(16, 185, 129, 0.12);
+  --red: #ef4444;
+  --red-light: rgba(239, 68, 68, 0.12);
+  --amber: #f59e0b;
+  --amber-light: rgba(245, 158, 11, 0.12);
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --surface2: #f9fafb;
+  --border: rgba(0, 0, 0, 0.07);
+  --text: #111827;
+  --text2: #6b7280;
+  --text3: #9ca3af;
+  --r: 14px;
+  --r-sm: 10px;
+
   font-family: "Cairo", "Noto Sans Arabic", system-ui, sans-serif;
   direction: rtl;
-  color: #111827;
+  color: var(--text);
+  background: var(--bg);
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  /* استبدال .h-main: منطقة التمرير داخل .h-content */
+  overflow: hidden;
+}
+
+.homixDashPage *,
+.homixDashPage *::before,
+.homixDashPage *::after {
+  box-sizing: border-box;
 }
 
 .homixDashRoot {
@@ -407,6 +442,7 @@
 
 .h-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px 28px;
   display: flex;
