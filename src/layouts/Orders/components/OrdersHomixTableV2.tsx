@@ -1,16 +1,5 @@
 import React, { useCallback } from "react";
-import {
-  Box,
-  Button,
-  Checkbox,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TablePagination,
-  TableRow,
-} from "@mui/material";
+import { Box, Button, Checkbox, Stack, TablePagination } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -26,9 +15,11 @@ import {
   DeliveryByBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
 
-/* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────
    Helpers
-───────────────────────────────────────────── */
+───────────────────────────────────────── */
+const FONT = "'Cairo', sans-serif";
+
 function initials(name: string) {
   return (name ?? "")
     .split(" ")
@@ -37,7 +28,7 @@ function initials(name: string) {
     .join("");
 }
 
-const AVATAR_COLORS = [
+const AV_COLORS = [
   "linear-gradient(135deg,#6366f1,#a78bfa)",
   "linear-gradient(135deg,#10b981,#059669)",
   "linear-gradient(135deg,#f59e0b,#d97706)",
@@ -45,36 +36,34 @@ const AVATAR_COLORS = [
   "linear-gradient(135deg,#8b5cf6,#6366f1)",
   "linear-gradient(135deg,#14b8a6,#0f766e)",
 ];
-function avatarColor(s: string) {
+function avColor(s: string) {
   let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[h];
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AV_COLORS.length;
+  return AV_COLORS[h];
 }
 
-const IN_MFG_STATUS = 2;
-
-/* ─────────────────────────────────────────────
-   Column definitions
-   widths ONLY live here — not on any <th>/<td>
-───────────────────────────────────────────── */
+/* ─────────────────────────────────────────
+   Column definitions — SINGLE source of truth
+   widths used in colgroup + nothing else
+───────────────────────────────────────── */
 const CHECKBOX_W = 44;
 
 const BASE_COLS = [
-  { key: "code",          label: "رقم العملية",     w: 110 },
-  { key: "orderNumber",   label: "رقم الطلب",       w: 95  },
-  { key: "productCode",   label: "كود المنتج",      w: 105 },
-  { key: "customerName",  label: "اسم العميل",      w: 170 },
-  { key: "status",        label: "حالة الطلب",      w: 120 },
-  { key: "factory",       label: "اسم المصنع",      w: 155 },
-  { key: "compCost",      label: "سعر التكلفة",     w: 100 },
-  { key: "totalPrice",    label: "سعر البيع",       w: 100 },
-  { key: "paymentStatus", label: "حالة الدفع",      w: 130 },
-  { key: "delivery",      label: "التوصيل بواسطة",  w: 115 },
-  { key: "priority",      label: "الأولوية",        w: 100 },
-  { key: "mfgStatus",     label: "حالة التصنيع",    w: 140 },
-  { key: "createdAt",     label: "تاريخ الطلب",     w: 90  },
-  { key: "poDate",        label: "تاريخ التصنيع",   w: 95  },
-  { key: "days",          label: "عداد الأيام",     w: 100 },
+  { key: "code",          label: "رقم العملية",    w: 110 },
+  { key: "orderNumber",   label: "رقم الطلب",      w: 95  },
+  { key: "productCode",   label: "كود المنتج",     w: 105 },
+  { key: "customerName",  label: "اسم العميل",     w: 170 },
+  { key: "status",        label: "حالة الطلب",     w: 120 },
+  { key: "factory",       label: "اسم المصنع",     w: 155 },
+  { key: "compCost",      label: "سعر التكلفة",    w: 110 },
+  { key: "totalPrice",    label: "سعر البيع",      w: 110 },
+  { key: "paymentStatus", label: "حالة الدفع",     w: 130 },
+  { key: "delivery",      label: "التوصيل بواسطة", w: 115 },
+  { key: "priority",      label: "الأولوية",       w: 95  },
+  { key: "mfgStatus",     label: "حالة التصنيع",   w: 140 },
+  { key: "createdAt",     label: "تاريخ الطلب",    w: 90  },
+  { key: "poDate",        label: "تاريخ التصنيع",  w: 100 },
+  { key: "days",          label: "عداد الأيام",    w: 100 },
 ] as const;
 
 const ADMIN_COLS = [
@@ -84,99 +73,104 @@ const ADMIN_COLS = [
 
 const ACTIONS_COL = { key: "actions", label: "", w: 90 } as const;
 
-/* ─────────────────────────────────────────────
-   Shared cell styles
-   No width here — widths come from colgroup only
-───────────────────────────────────────────── */
-const FONT = "'Cairo', sans-serif";
-
-/** th style — sticky header */
+/* ─────────────────────────────────────────
+   Base cell styles (inline — no className magic)
+───────────────────────────────────────── */
 const TH: React.CSSProperties = {
   fontFamily: FONT,
-  fontSize: "10.5px",
+  fontSize:   "10.5px",
   fontWeight: 700,
-  color: HX.tx3,
-  letterSpacing: ".3px",
-  textAlign: "right",
-  padding: "9px 11px",
-  borderBottom: `0.5px solid ${HX.border}`,
-  whiteSpace: "nowrap",
+  color:      HX.tx3,
   background: HX.surface2,
-  overflow: "hidden",
-};
-
-/** td style */
-const TD: React.CSSProperties = {
-  fontFamily: FONT,
-  fontSize: "12px",
-  color: HX.tx,
-  textAlign: "right",
-  padding: "9px 11px",
+  textAlign:  "right",
+  padding:    "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
-  whiteSpace: "nowrap",
-  verticalAlign: "middle",
-  overflow: "hidden",
+  borderRight:  "none",
+  borderLeft:   "none",
+  whiteSpace:   "nowrap",
+  letterSpacing: ".3px",
+  overflow:   "hidden",
+  /* sticky comes from <thead> — NOT from individual cells */
 };
 
-/* ─────────────────────────────────────────────
-   Mini-components
-───────────────────────────────────────────── */
+const TD: React.CSSProperties = {
+  fontFamily:   FONT,
+  fontSize:     "12px",
+  color:        HX.tx,
+  textAlign:    "right",
+  padding:      "9px 11px",
+  borderBottom: `0.5px solid ${HX.border}`,
+  borderRight:  "none",
+  borderLeft:   "none",
+  whiteSpace:   "nowrap",
+  verticalAlign:"middle",
+  overflow:     "hidden",
+};
+
+/* ─────────────────────────────────────────
+   Sub-components
+───────────────────────────────────────── */
 function AvatarCircle({ name, size = 26 }: { name: string; size?: number }) {
   return (
-    <Box sx={{
+    <span style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
       width: size, height: size, borderRadius: "50%",
-      background: avatarColor(name || "?"),
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: `${Math.floor(size * 0.34)}px`, fontWeight: 800,
-      color: "#fff", flexShrink: 0,
+      background: avColor(name || "?"),
+      fontSize: Math.floor(size * 0.34), fontWeight: 800,
+      color: "#fff", flexShrink: 0, fontFamily: FONT,
     }}>
       {initials(name || "?")}
-    </Box>
+    </span>
   );
 }
 
 function FactoryCell({ name }: { name: string }) {
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
-      <Box sx={{
-        width: 22, height: 22, borderRadius: "6px",
-        background: avatarColor(name || "?"),
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "8px", fontWeight: 800, color: "#fff", flexShrink: 0,
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+      <span style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+        background: avColor(name || "?"),
+        fontSize: 8, fontWeight: 800, color: "#fff",
       }}>
         {initials(name || "?")}
-      </Box>
-      <Box component="span" sx={{
-        fontSize: "12px", fontFamily: FONT, fontWeight: 600, color: HX.tx,
-        overflow: "hidden", textOverflow: "ellipsis",
-      }}>
+      </span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: HX.tx, fontFamily: FONT }}>
         {name || "—"}
-      </Box>
-    </Box>
+      </span>
+    </span>
   );
 }
 
-function ActionBtn({ onClick, bg, hoverBg, color, hoverColor, icon }: {
+function ActionBtn({ onClick, bg, hoverBg, color, children }: {
   onClick: () => void;
-  bg: string; hoverBg: string; color: string; hoverColor: string;
-  icon: React.ReactNode;
+  bg: string; hoverBg: string; color: string;
+  children: React.ReactNode;
 }) {
+  const [hover, setHover] = React.useState(false);
   return (
-    <Box component="button" onClick={onClick} sx={{
-      width: 26, height: 26, borderRadius: "7px", border: "none",
-      cursor: "pointer", display: "inline-flex", alignItems: "center",
-      justifyContent: "center", bgcolor: bg, color, transition: ".15s",
-      "& svg": { fontSize: "11px !important" },
-      "&:hover": { bgcolor: hoverBg, color: hoverColor },
-    }}>
-      {icon}
-    </Box>
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 26, height: 26, borderRadius: 7, border: "none",
+        cursor: "pointer", display: "inline-flex",
+        alignItems: "center", justifyContent: "center",
+        background: hover ? hoverBg : bg,
+        color: hover ? "#fff" : color,
+        transition: "background .15s, color .15s",
+        padding: 0,
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────
    Types
-───────────────────────────────────────────── */
+───────────────────────────────────────── */
 interface Order {
   orderId: string | number;
   code?: string;
@@ -194,7 +188,7 @@ interface Order {
   vendorId?: string | number;
   createdAt?: string;
 }
-interface User { id: string | number; firstName?: string; lastName?: string }
+interface User   { id: string | number; firstName?: string; lastName?: string }
 interface Vendor { label: string; value: string | number }
 
 interface OrdersHomixTableV2Props {
@@ -217,9 +211,9 @@ interface OrdersHomixTableV2Props {
   isFetching?: boolean;
 }
 
-/* ─────────────────────────────────────────────
-   Component
-───────────────────────────────────────────── */
+/* ─────────────────────────────────────────
+   Main component
+───────────────────────────────────────── */
 export default function OrdersHomixTableV2({
   orders, isVendor, users, vendors,
   selectionModel, onSelectionModelChange,
@@ -238,8 +232,8 @@ export default function OrdersHomixTableV2({
     if (isAllSelected) {
       onSelectionModelChange(selectionModel.filter((id) => !orders.some((o) => o.orderId === id)));
     } else {
-      const newIds = orders.map((o) => o.orderId).filter((id) => !selectionModel.includes(id));
-      onSelectionModelChange([...selectionModel, ...newIds]);
+      const add = orders.map((o) => o.orderId).filter((id) => !selectionModel.includes(id));
+      onSelectionModelChange([...selectionModel, ...add]);
     }
   }, [isAllSelected, orders, selectionModel, onSelectionModelChange]);
 
@@ -251,11 +245,9 @@ export default function OrdersHomixTableV2({
     );
   }, [selectionModel, onSelectionModelChange]);
 
-  /* Build column list based on role */
-  const extraCols = isVendor ? [] : [...ADMIN_COLS];
-  const allCols   = [...BASE_COLS, ...extraCols, ACTIONS_COL];
-
-  /* Total table width from colgroup — used for <Table> minWidth */
+  const extraCols  = isVendor ? [] : [...ADMIN_COLS];
+  const allCols    = [...BASE_COLS, ...extraCols, ACTIONS_COL];
+  const colCount   = allCols.length + (isVendor ? 0 : 1); // +1 for checkbox
   const tableWidth = CHECKBOX_W + allCols.reduce((s, c) => s + c.w, 0);
 
   return (
@@ -268,14 +260,14 @@ export default function OrdersHomixTableV2({
         flexWrap: "wrap", gap: 1, flexShrink: 0,
       }}>
         <Box>
-          <Box component="span" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: HX.tx, fontFamily: FONT }}>
             قائمة الطلبات
-          </Box>
-          <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, mr: "8px", fontFamily: FONT }}>
+          </span>
+          <span style={{ fontSize: 11, color: HX.tx3, marginRight: 8, fontFamily: FONT }}>
             {isFetching
               ? " — جارٍ التحميل..."
               : ` — ${totalCount.toLocaleString("ar-EG")} طلب`}
-          </Box>
+          </span>
         </Box>
 
         {!isVendor && selectionModel.length > 0 && (
@@ -283,7 +275,7 @@ export default function OrdersHomixTableV2({
             <Button size="small" variant="outlined" color="primary" onClick={onBulkEdit}
               sx={(t) => ({
                 fontFamily: FONT, fontWeight: 600, fontSize: "12px",
-                borderColor: t.palette.primary.main, color: t.palette.primary.main,
+                borderColor: t.palette.primary.main,
                 bgcolor: alpha(t.palette.primary.main, 0.08),
                 "&:hover": { bgcolor: alpha(t.palette.primary.main, 0.14) },
               })}>
@@ -292,7 +284,7 @@ export default function OrdersHomixTableV2({
             <Button size="small" color="error" variant="outlined" onClick={onBulkDelete}
               sx={(t) => ({
                 fontFamily: FONT, fontWeight: 600, fontSize: "12px",
-                borderColor: t.palette.error.main, color: t.palette.error.main,
+                borderColor: t.palette.error.main,
                 bgcolor: alpha(t.palette.error.main, 0.08),
                 "&:hover": { bgcolor: alpha(t.palette.error.main, 0.14) },
               })}>
@@ -302,51 +294,41 @@ export default function OrdersHomixTableV2({
         )}
       </Box>
 
-      {/* ─────────────────────────────────────────────
-          Single scroll container — handles BOTH
-          horizontal AND vertical scroll.
-          thead position:sticky works relative to
-          this container, so headers stick on top
-          while staying perfectly aligned with columns
-          during horizontal scroll.
-        ───────────────────────────────────────────── */}
-      <Box sx={{
-        overflow: "auto",          /* both axes */
-        maxHeight: 560,            /* vertical scroll kicks in after this */
+      {/* ─────────────────────────────────────────
+          Scroll wrapper — BOTH axes in ONE container.
+          This is the key: thead sticky works relative
+          to THIS container, so columns ALWAYS stay
+          aligned while scrolling in any direction.
+        ───────────────────────────────────────── */}
+      <div style={{
+        overflow: "auto",
+        maxHeight: 560,
         flex: 1,
-        /* thin custom scrollbar */
-        "&::-webkit-scrollbar": { width: 4, height: 4 },
-        "&::-webkit-scrollbar-thumb": { bgcolor: HX.border, borderRadius: 4 },
+        /* thin scrollbars */
+        scrollbarWidth: "thin",
+        scrollbarColor: `${HX.border} transparent`,
       }}>
-        <Table sx={{
-          minWidth: tableWidth,    /* forces horizontal scroll when needed */
-          tableLayout: "fixed",   /* column widths set by colgroup — guaranteed alignment */
-          borderCollapse: "collapse",
-          fontFamily: FONT,
+
+        {/* ── Pure HTML <table> — no MUI wrappers that override colgroup ── */}
+        <table style={{
+          tableLayout:     "fixed",    /* colgroup dictates every column width */
+          borderCollapse:  "collapse",
+          minWidth:        tableWidth,
+          width:           "100%",
+          fontFamily:      FONT,
         }}>
 
-          {/* ── colgroup — the ONE source of truth for column widths ── */}
+          {/* colgroup — only place widths are declared */}
           <colgroup>
             {!isVendor && <col style={{ width: CHECKBOX_W }} />}
             {allCols.map((c) => <col key={c.key} style={{ width: c.w }} />)}
           </colgroup>
 
-          {/* ── THEAD — sticky within the scroll container ── */}
-          <TableHead
-            component="thead"
-            sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 3,          /* above td cells */
-            }}
-          >
-            <TableRow component="tr">
+          {/* ── THEAD — sticky as a unit ── */}
+          <thead style={{ position: "sticky", top: 0, zIndex: 3 }}>
+            <tr>
               {!isVendor && (
-                <TableCell
-                  component="th"
-                  padding="checkbox"
-                  style={{ ...TH, textAlign: "center" }}
-                >
+                <th style={{ ...TH, textAlign: "center" }}>
                   <Checkbox
                     size="small"
                     checked={isAllSelected}
@@ -354,32 +336,23 @@ export default function OrdersHomixTableV2({
                     onChange={toggleAll}
                     sx={{ p: 0 }}
                   />
-                </TableCell>
+                </th>
               )}
               {allCols.map((c) => (
-                <TableCell
-                  component="th"
-                  key={c.key}
-                  style={TH}
-                >
-                  {c.label}
-                </TableCell>
+                <th key={c.key} style={TH}>{c.label}</th>
               ))}
-            </TableRow>
-          </TableHead>
+            </tr>
+          </thead>
 
           {/* ── TBODY ── */}
-          <TableBody component="tbody">
+          <tbody>
             {orders.length === 0 && (
-              <TableRow component="tr">
-                <TableCell
-                  component="td"
-                  colSpan={allCols.length + (isVendor ? 0 : 1)}
-                  style={{ ...TD, textAlign: "center", padding: "40px 0", color: HX.tx3 }}
-                >
+              <tr>
+                <td colSpan={colCount}
+                  style={{ ...TD, textAlign: "center", padding: "40px 0", color: HX.tx3 }}>
                   {isFetching ? "جارٍ التحميل..." : "لا توجد طلبات مطابقة"}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
 
             {orders.map((order) => {
@@ -400,182 +373,145 @@ export default function OrdersHomixTableV2({
               const daysLabel  = order.PoDate ? calculateDaysFromPoDate(order.PoDate) : null;
               const productCode = order.items?.[0]?.code ?? "—";
 
+              const rowBg = isSelected ? "#f5f3ff" : undefined;
+
               return (
-                <TableRow
-                  component="tr"
-                  key={order.orderId}
-                  selected={isSelected}
-                  sx={{
-                    "&:last-child td, &:last-child th": { borderBottom: "none" },
-                    "&:hover td, &:hover th": { bgcolor: "#fafbff" },
-                  }}
+                <tr key={order.orderId}
+                  onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = "#fafbff"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = rowBg ?? ""; }}
+                  style={{ background: rowBg }}
                 >
                   {/* checkbox */}
                   {!isVendor && (
-                    <TableCell component="td" padding="checkbox" style={{ ...TD, textAlign: "center" }}>
+                    <td style={{ ...TD, textAlign: "center" }}>
                       <Checkbox size="small" checked={isSelected}
                         onChange={() => toggleRow(order.orderId)} sx={{ p: 0 }} />
-                    </TableCell>
+                    </td>
                   )}
 
                   {/* رقم العملية */}
-                  <TableCell component="td" style={TD}>
-                    <Box component="span" onClick={() => onView(order.orderId)} sx={{
-                      color: HX.accent, fontWeight: 800, cursor: "pointer",
-                      "&:hover": { textDecoration: "underline" },
-                    }}>
+                  <td style={TD}>
+                    <span onClick={() => onView(order.orderId)}
+                      style={{ color: HX.accent, fontWeight: 800, cursor: "pointer" }}>
                       {order.code || "—"}
-                    </Box>
-                  </TableCell>
+                    </span>
+                  </td>
 
                   {/* رقم الطلب */}
-                  <TableCell component="td" style={TD}>
-                    <Box component="span" onClick={() => onView(order.orderId)} sx={{
-                      color: HX.tx2, fontWeight: 600, cursor: "pointer",
-                      "&:hover": { textDecoration: "underline" },
-                    }}>
+                  <td style={TD}>
+                    <span onClick={() => onView(order.orderId)}
+                      style={{ color: HX.tx2, fontWeight: 600, cursor: "pointer" }}>
                       {order.orderNumber ? `#${order.orderNumber}` : "—"}
-                    </Box>
-                  </TableCell>
+                    </span>
+                  </td>
 
                   {/* كود المنتج */}
-                  <TableCell component="td" style={TD}>
-                    <Box component="span" sx={{
-                      fontFamily: "monospace", fontSize: "11px",
-                      bgcolor: HX.surface2, px: "7px", py: "2px",
-                      borderRadius: "5px", color: HX.tx2,
+                  <td style={TD}>
+                    <span style={{
+                      fontFamily: "monospace", fontSize: 11,
+                      background: HX.surface2, padding: "2px 7px",
+                      borderRadius: 5, color: HX.tx2,
                     }}>
                       {productCode}
-                    </Box>
-                  </TableCell>
+                    </span>
+                  </td>
 
                   {/* اسم العميل */}
-                  <TableCell component="td" style={TD}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <td style={TD}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
                       {order.customerName && <AvatarCircle name={order.customerName} />}
-                      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", fontFamily: FONT }}>
-                        {order.customerName || "—"}
-                      </Box>
-                    </Box>
-                  </TableCell>
+                      <span style={{ fontFamily: FONT }}>{order.customerName || "—"}</span>
+                    </span>
+                  </td>
 
                   {/* حالة الطلب */}
-                  <TableCell component="td" style={TD}>
-                    <OrderStatusBadge status={order.status} />
-                  </TableCell>
+                  <td style={TD}><OrderStatusBadge status={order.status} /></td>
 
                   {/* اسم المصنع */}
-                  <TableCell component="td" style={TD}>
-                    <FactoryCell name={vendorName} />
-                  </TableCell>
+                  <td style={TD}><FactoryCell name={vendorName} /></td>
 
                   {/* سعر التكلفة */}
-                  <TableCell component="td" style={{ ...TD, color: HX.tx2 }}>
+                  <td style={{ ...TD, color: HX.tx2 }}>
                     {Number(compCost).toLocaleString("ar-EG")}
-                    <Box component="span" sx={{ fontSize: "10px", mr: "2px" }}>ج.م</Box>
-                  </TableCell>
+                    <span style={{ fontSize: 10, marginRight: 2 }}>ج.م</span>
+                  </td>
 
                   {/* سعر البيع */}
-                  <TableCell component="td" style={{ ...TD, fontWeight: 700 }}>
+                  <td style={{ ...TD, fontWeight: 700 }}>
                     {order.totalPrice != null
                       ? Number(order.totalPrice).toLocaleString("ar-EG") : "—"}
-                    <Box component="span" sx={{ fontSize: "10px", mr: "2px" }}>ج.م</Box>
-                  </TableCell>
+                    <span style={{ fontSize: 10, marginRight: 2 }}>ج.م</span>
+                  </td>
 
                   {/* حالة الدفع */}
-                  <TableCell component="td" style={TD}>
-                    <PaymentBadge status={order.paymentStatus} />
-                  </TableCell>
+                  <td style={TD}><PaymentBadge status={order.paymentStatus} /></td>
 
                   {/* التوصيل بواسطة */}
-                  <TableCell component="td" style={TD}>
-                    <DeliveryByBadge fromInventory={order.shippedFromInventory} />
-                  </TableCell>
+                  <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
 
                   {/* الأولوية — no API field */}
-                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
-                    —
-                  </TableCell>
+                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>—</td>
 
                   {/* حالة التصنيع */}
-                  <TableCell component="td" style={TD}>
-                    <DeliveryStatusBadge status={order.deliveryStatus} />
-                  </TableCell>
+                  <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>
 
                   {/* تاريخ الطلب */}
-                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
-                    {createdFmt}
-                  </TableCell>
+                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>{createdFmt}</td>
 
                   {/* تاريخ التصنيع */}
-                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
-                    {poDateFmt}
-                  </TableCell>
+                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>{poDateFmt}</td>
 
                   {/* عداد الأيام */}
-                  <TableCell component="td" style={TD}>
-                    <DaysCounterBadge days={daysLabel} active={order.status === IN_MFG_STATUS} />
-                  </TableCell>
+                  <td style={TD}>
+                    <DaysCounterBadge days={daysLabel} active={order.status === 2} />
+                  </td>
 
-                  {/* المسئول — admin only */}
+                  {/* المسئول */}
                   {!isVendor && (
-                    <TableCell component="td" style={TD}>
+                    <td style={TD}>
                       {user ? (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                           <AvatarCircle name={userName} size={22} />
-                          <Box component="span" sx={{
-                            fontSize: "12px", fontFamily: FONT,
-                            overflow: "hidden", textOverflow: "ellipsis",
-                          }}>
-                            {userName}
-                          </Box>
-                        </Box>
+                          <span style={{ fontSize: 12, fontFamily: FONT }}>{userName}</span>
+                        </span>
                       ) : (
-                        <Box component="span" style={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>
+                        <span style={{ color: HX.tx3, fontSize: "11.5px" }}>—</span>
                       )}
-                    </TableCell>
+                    </td>
                   )}
 
-                  {/* النوع — admin only */}
+                  {/* النوع */}
                   {!isVendor && (
-                    <TableCell component="td" style={{ ...TD, color: HX.tx2 }}>
-                      {order.type || "—"}
-                    </TableCell>
+                    <td style={{ ...TD, color: HX.tx2 }}>{order.type || "—"}</td>
                   )}
 
                   {/* Actions */}
-                  <TableCell component="td" style={{ ...TD, textAlign: "center" }}>
-                    <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
-                      <ActionBtn
-                        onClick={() => onView(order.orderId)}
-                        bg={HX.accentLight} hoverBg={HX.accent}
-                        color={HX.accent} hoverColor="#fff"
-                        icon={<VisibilityIcon fontSize="inherit" />}
-                      />
+                  <td style={{ ...TD, textAlign: "center" }}>
+                    <span style={{ display: "inline-flex", gap: 3, justifyContent: "center" }}>
+                      <ActionBtn onClick={() => onView(order.orderId)}
+                        bg={HX.accentLight} hoverBg={HX.accent} color={HX.accent}>
+                        <VisibilityIcon style={{ fontSize: 11 }} />
+                      </ActionBtn>
                       {!isVendor && (
-                        <ActionBtn
-                          onClick={() => onEdit(order)}
-                          bg={HX.blueLight} hoverBg={HX.blue}
-                          color={HX.blue} hoverColor="#fff"
-                          icon={<EditIcon fontSize="inherit" />}
-                        />
+                        <ActionBtn onClick={() => onEdit(order)}
+                          bg={HX.blueLight} hoverBg={HX.blue} color={HX.blue}>
+                          <EditIcon style={{ fontSize: 11 }} />
+                        </ActionBtn>
                       )}
                       {!isVendor && (
-                        <ActionBtn
-                          onClick={() => onDelete(order)}
-                          bg={HX.redLight} hoverBg={HX.red}
-                          color={HX.red} hoverColor="#fff"
-                          icon={<DeleteIcon fontSize="inherit" />}
-                        />
+                        <ActionBtn onClick={() => onDelete(order)}
+                          bg={HX.redLight} hoverBg={HX.red} color={HX.red}>
+                          <DeleteIcon style={{ fontSize: 11 }} />
+                        </ActionBtn>
                       )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
+                    </span>
+                  </td>
+                </tr>
               );
             })}
-          </TableBody>
-        </Table>
-      </Box>
+          </tbody>
+        </table>
+      </div>
 
       {/* ── Pagination ── */}
       <Box sx={{ borderTop: `0.5px solid ${HX.border}`, flexShrink: 0 }}>
@@ -583,12 +519,11 @@ export default function OrdersHomixTableV2({
           component="div"
           count={totalCount}
           page={page}
-          onPageChange={(_, newPage) => onPageChange(newPage)}
+          onPageChange={(_, p) => onPageChange(p)}
           rowsPerPage={pageSize}
           rowsPerPageOptions={[pageSize]}
           labelDisplayedRows={({ from, to, count }) =>
-            `عرض ${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`} طلب`
-          }
+            `عرض ${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`} طلب`}
           sx={{
             fontFamily: FONT,
             "& .MuiTablePagination-toolbar":       { px: "14px", minHeight: 44, fontFamily: FONT },

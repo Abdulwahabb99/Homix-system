@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Grid, Skeleton, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import { Box, Grid, Skeleton } from "@mui/material";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 
 /* ─────────────────────────────────────────────
@@ -153,47 +153,50 @@ export function OrdersHomixFiltersPanelSkeleton() {
 
 /* ─────────────────────────────────────────────
    Table Skeleton — header + N skeleton rows
+   Uses pure <table> just like OrdersHomixTableV2
 ───────────────────────────────────────────── */
-const TH_SK = {
-  bgcolor: HX.surface2,
-  p: "9px 11px",
+const TH_SK: React.CSSProperties = {
+  background:   HX.surface2,
+  padding:      "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
-  whiteSpace: "nowrap" as const,
-  fontFamily: "'Cairo',sans-serif",
-} as const;
+  whiteSpace:   "nowrap",
+  fontFamily:   "'Cairo',sans-serif",
+  textAlign:    "right",
+};
 
-const TD_SK = {
-  p: "9px 11px",
+const TD_SK: React.CSSProperties = {
+  padding:      "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
-  fontFamily: "'Cairo',sans-serif",
-} as const;
+  fontFamily:   "'Cairo',sans-serif",
+};
+
+const CHECKBOX_W_SK = 44;
 
 const COLS = [
-  { label: "رقم العملية",   w: 100 },
-  { label: "رقم الطلب",    w: 90  },
-  { label: "كود المنتج",   w: 100 },
-  { label: "اسم العميل",   w: 160 },
+  { label: "رقم العملية",   w: 110 },
+  { label: "رقم الطلب",    w: 95  },
+  { label: "كود المنتج",   w: 105 },
+  { label: "اسم العميل",   w: 170 },
   { label: "حالة الطلب",   w: 120 },
-  { label: "اسم المصنع",   w: 150 },
-  { label: "سعر التكلفة",  w: 100 },
-  { label: "سعر البيع",    w: 100 },
+  { label: "اسم المصنع",   w: 155 },
+  { label: "سعر التكلفة",  w: 110 },
+  { label: "سعر البيع",    w: 110 },
   { label: "حالة الدفع",   w: 130 },
-  { label: "التوصيل",      w: 110 },
-  { label: "الأولوية",     w: 100 },
+  { label: "التوصيل",      w: 115 },
+  { label: "الأولوية",     w: 95  },
   { label: "حالة التصنيع", w: 140 },
   { label: "تاريخ الطلب",  w: 90  },
-  { label: "تاريخ التصنيع",w: 95  },
-  { label: "عداد الأيام",  w: 95  },
-  { label: "المسئول",      w: 130 },
+  { label: "تاريخ التصنيع",w: 100 },
+  { label: "عداد الأيام",  w: 100 },
+  { label: "المسئول",      w: 140 },
   { label: "النوع",        w: 90  },
   { label: "",             w: 90  },
 ];
 
-/** Widths of skeleton cells — varied for natural feel */
-const WIDTHS = [55, 45, 60, 100, 72, 90, 50, 55, 80, 55, 40, 90, 55, 55, 50, 80, 45, 60];
+const SK_WIDTHS = [55, 45, 60, 100, 72, 90, 50, 55, 80, 55, 40, 90, 55, 55, 50, 80, 45, 60];
 
 export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
-  const totalW = 44 + COLS.reduce((s, c) => s + c.w, 0);
+  const totalW = CHECKBOX_W_SK + COLS.reduce((s, c) => s + c.w, 0);
 
   return (
     <Box sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
@@ -203,74 +206,74 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
         <Skeleton variant="text" width={60} height={16} sx={pulse} />
       </Box>
 
-      {/* Table — same single-container approach as real table */}
-      <Box sx={{ overflow: "auto", maxHeight: 560, "&::-webkit-scrollbar": { width: 4, height: 4 }, "&::-webkit-scrollbar-thumb": { bgcolor: HX.border, borderRadius: 4 } }}>
-        <Table sx={{ minWidth: totalW, tableLayout: "fixed", borderCollapse: "collapse", fontFamily: "'Cairo',sans-serif" }}>
+      {/* Same single-container, pure-HTML approach as the real table */}
+      <div style={{
+        overflow: "auto", maxHeight: 560, flex: 1,
+        scrollbarWidth: "thin", scrollbarColor: `${HX.border} transparent`,
+      }}>
+        <table style={{
+          tableLayout: "fixed", borderCollapse: "collapse",
+          minWidth: totalW, width: "100%",
+          fontFamily: "'Cairo',sans-serif",
+        }}>
           <colgroup>
-            <col style={{ width: 44 }} />
+            <col style={{ width: CHECKBOX_W_SK }} />
             {COLS.map((c, i) => <col key={i} style={{ width: c.w }} />)}
           </colgroup>
 
-          <TableHead component="thead" sx={{ position: "sticky", top: 0, zIndex: 3 }}>
-            <TableRow>
-              {/* checkbox col */}
-              <TableCell sx={{ ...TH_SK, width: 44, textAlign: "center" }}>
+          <thead style={{ position: "sticky", top: 0, zIndex: 3 }}>
+            <tr>
+              <th style={{ ...TH_SK, textAlign: "center", width: CHECKBOX_W_SK }}>
                 <Skeleton variant="rounded" width={14} height={14} sx={{ mx: "auto", ...pulse }} />
-              </TableCell>
+              </th>
               {COLS.map((c, i) => (
-                <TableCell key={i} sx={{ ...TH_SK, width: c.w, textAlign: "right" }}>
+                <th key={i} style={TH_SK}>
                   <Skeleton variant="text" width={c.label.length * 7 || 20} height={14} sx={pulse} />
-                </TableCell>
+                </th>
               ))}
-            </TableRow>
-          </TableHead>
+            </tr>
+          </thead>
 
-          <TableBody>
+          <tbody>
             {Array.from({ length: rows }).map((_, ri) => (
-              <TableRow key={ri} sx={{ "&:last-child td": { borderBottom: "none" } }}>
-                {/* checkbox */}
-                <TableCell sx={{ ...TD_SK, width: 44, textAlign: "center" }}>
+              <tr key={ri}>
+                <td style={{ ...TD_SK, textAlign: "center" }}>
                   <Skeleton variant="rounded" width={14} height={14} sx={{ mx: "auto", ...pulse }} />
-                </TableCell>
+                </td>
                 {COLS.map((c, ci) => (
-                  <TableCell key={ci} sx={{ ...TD_SK, width: c.w }}>
-                    {/* avatar + text for customer column */}
+                  <td key={ci} style={TD_SK}>
                     {ci === 3 ? (
                       <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
                         <Skeleton variant="circular" width={26} height={26} sx={pulse} />
-                        <Skeleton variant="text" width={WIDTHS[ci]} height={14} sx={pulse} />
+                        <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
                       </Box>
                     ) : ci === 5 ? (
-                      /* factory cell — small square + text */
                       <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
                         <Skeleton variant="rounded" width={22} height={22} sx={{ borderRadius: "6px", ...pulse }} />
-                        <Skeleton variant="text" width={WIDTHS[ci]} height={14} sx={pulse} />
+                        <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
                       </Box>
                     ) : ci === 4 || ci === 8 || ci === 11 ? (
-                      /* badge columns */
-                      <Skeleton variant="rounded" width={WIDTHS[ci] + 20} height={22} sx={{ borderRadius: "20px", ...pulse }} />
+                      <Skeleton variant="rounded" width={SK_WIDTHS[ci] + 20} height={22} sx={{ borderRadius: "20px", ...pulse }} />
                     ) : ci === 17 ? (
-                      /* actions */
                       <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
                         {[0, 1, 2].map((j) => (
                           <Skeleton key={j} variant="rounded" width={26} height={26} sx={{ borderRadius: "7px", ...pulse }} />
                         ))}
                       </Box>
                     ) : (
-                      <Skeleton variant="text" width={WIDTHS[ci]} height={14} sx={pulse} />
+                      <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
                     )}
-                  </TableCell>
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </Box>
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination stub */}
       <Box sx={{
-        borderTop: `0.5px solid ${HX.border}`,
-        p: "10px 14px",
+        borderTop: `0.5px solid ${HX.border}`, p: "10px 14px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <Skeleton variant="text" width={160} height={16} sx={pulse} />
