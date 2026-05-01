@@ -117,23 +117,25 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
             <Box sx={{ "& *": { fontFamily: "'Cairo',sans-serif" } }}>{title}</Box>
           )}
 
-          {!crumbs &&
-            subtitle != null &&
-            (typeof subtitle === "string" ? (
-              <Typography
-                sx={{
-                  fontSize: "12.5px",
-                  fontWeight: 600,
-                  color: HX.tx2,
-                  mt: "2px",
-                  fontFamily: "'Cairo',sans-serif",
-                }}
-              >
-                {subtitle}
-              </Typography>
-            ) : (
-              <Box sx={{ mt: "2px", fontFamily: "'Cairo',sans-serif" }}>{subtitle}</Box>
-            ))}
+          {!crumbs && subtitle != null && (
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              {typeof subtitle === "string" ? (
+                <Typography
+                  sx={{
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    color: HX.tx2,
+                    mt: "2px",
+                    fontFamily: "'Cairo',sans-serif",
+                  }}
+                >
+                  {subtitle}
+                </Typography>
+              ) : (
+                <Box sx={{ mt: "2px", fontFamily: "'Cairo',sans-serif" }}>{subtitle}</Box>
+              )}
+            </Box>
+          )}
         </Box>
 
         {hasActions && (
