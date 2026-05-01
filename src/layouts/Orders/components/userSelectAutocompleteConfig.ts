@@ -23,6 +23,9 @@ export function getUserSelectAutocompleteConfig(minInputHeight: number) {
     sx: {
       direction: "rtl" as const,
       width: "100%",
+      "& .MuiAutocomplete-option": {
+        fontSize: "0.875rem",
+      },
       "& .MuiAutocomplete-inputRoot": {
         minHeight: minInputHeight,
         fontSize: "0.875rem",

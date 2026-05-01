@@ -54,6 +54,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
     });
   }, []);
 
+  const administratorAutocompleteProps = getUserSelectAutocompleteConfig(35);
+
   return (
     <Dialog fullWidth open={open} onClose={onClose}>
       <DialogTitle>تعديل طلب {data.orderData.name}</DialogTitle>
@@ -127,21 +129,22 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               disabled={!users.length}
               value={getUserSelectValue(users, administrator)}
               onChange={(_, v) => setAdministrator(v != null ? v.value : null)}
-              renderOption={(props, option) => (
-                <li {...props} key={String(option.value)} style={{ fontSize: "0.875rem" }}>
-                  {option.label}
-                </li>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="المسؤول"
-                  InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
-                  placeholder={getUserSelectValue(users, administrator) ? "" : "ابحث عن مسؤول…"}
-                  inputProps={{ ...params.inputProps, autoComplete: "off" }}
-                />
-              )}
-              {...getUserSelectAutocompleteConfig(35)}
+              renderInput={(params) =>
+                React.createElement(TextField, {
+                  ...params,
+                  label: "المسؤول",
+                  InputLabelProps: { ...params.InputLabelProps, shrink: true },
+                  placeholder: getUserSelectValue(users, administrator) ? "" : "ابحث عن مسؤول…",
+                  inputProps: { ...params.inputProps, autoComplete: "off" },
+                })
+              }
+              noOptionsText={administratorAutocompleteProps.noOptionsText}
+              openOnFocus={administratorAutocompleteProps.openOnFocus}
+              ListboxProps={administratorAutocompleteProps.ListboxProps}
+              componentsProps={administratorAutocompleteProps.componentsProps}
+              isOptionEqualToValue={administratorAutocompleteProps.isOptionEqualToValue}
+              getOptionLabel={administratorAutocompleteProps.getOptionLabel}
+              sx={administratorAutocompleteProps.sx}
             />
           </div>
           <TextField
