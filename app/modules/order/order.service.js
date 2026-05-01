@@ -45,7 +45,9 @@ class OrderService {
   }
   static async saveImportedOrders(ordersFromShopify, isShipment = false, user) {
     let orders = [];
-
+    ordersFromShopify = ordersFromShopify.filter(
+      (order) => order.order_number === 10078,
+    );
     const orderNames = ordersFromShopify.map((order) => order.name);
     const existingOrders = await Order.findAll({
       where: {
@@ -56,10 +58,10 @@ class OrderService {
       attributes: ["name"],
     });
     const existingOrdersSet = new Set(
-      existingOrders.map((order) => order.name)
+      existingOrders.map((order) => order.name),
     );
     ordersFromShopify = ordersFromShopify.filter(
-      (order) => !existingOrdersSet.has(order.name)
+      (order) => !existingOrdersSet.has(order.name),
     );
     if (!ordersFromShopify || ordersFromShopify.length === 0) {
       return {
@@ -75,7 +77,7 @@ class OrderService {
             const discount_allocations = line.discount_allocations || [];
             const lineDiscount = discount_allocations.reduce(
               (acc, item) => acc + Number(item.amount),
-              0
+              0,
             );
             const discount = lineDiscount / line.quantity;
             //split line into multiple lines with quantity 1
@@ -91,7 +93,7 @@ class OrderService {
             const discount_allocations = line.discount_allocations || [];
             const lineDiscount = discount_allocations.reduce(
               (acc, item) => acc + Number(item.amount),
-              0
+              0,
             );
             const discount = lineDiscount;
             line.discount = discount;
@@ -106,7 +108,7 @@ class OrderService {
         const discount_allocations = line.discount_allocations || [];
         const lineDiscount = discount_allocations.reduce(
           (acc, item) => acc + Number(item.amount),
-          0
+          0,
         );
         if (line.quantity > 1) {
           const discount = lineDiscount / line.quantity;
@@ -190,7 +192,7 @@ class OrderService {
           : productsMap["custom"];
         if (!product) {
           throw new Error(
-            `Product with id ${line.product_id} not found in products map`
+            `Product with id ${line.product_id} not found in products map`,
           );
         }
         const vendor = vendorsMap[product.vendorId];
@@ -206,7 +208,7 @@ class OrderService {
           const variant = product.variants
             ? product.variants.find(
                 (variant) =>
-                  variant.shopifyId.toString() === line.variant_id.toString()
+                  variant.shopifyId.toString() === line.variant_id.toString(),
               )
             : null;
           const cost = variant ? Number(variant.cost) || 0 : 0;
@@ -314,7 +316,7 @@ class OrderService {
     const orderLines = [];
     for (const { order_id, line_items } of lines) {
       const order = savedOrders.find(
-        (order) => order.code === String(order_id)
+        (order) => order.code === String(order_id),
       );
       for (const line of line_items) {
         orderLines.push({
@@ -390,15 +392,15 @@ class OrderService {
             .cast(sequelize.Sequelize.STRING),
           {
             [Op.like]: Number(financialStatus),
-          }
-        )
+          },
+        ),
       );
     }
     if (paymentStatus) {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.paymentStatus"), {
           [Op.eq]: Number(paymentStatus),
-        })
+        }),
       );
     }
     if (deliveryStatus) {
@@ -433,7 +435,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("Order.expectedDeliveryDate"), {
             [Op.and]: [{ [Op.ne]: null }, { [Op.or]: operations }],
-          })
+          }),
         );
       }
     }
@@ -454,12 +456,12 @@ class OrderService {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.orderDate"), {
           [Op.gte]: startStartDate,
-        })
+        }),
       );
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.orderDate"), {
           [Op.lte]: endOfEndDate,
-        })
+        }),
       );
     }
     if (vendorName) {
@@ -467,12 +469,12 @@ class OrderService {
         sequelize.where(
           sequelize.fn(
             "lower",
-            sequelize.col("orderLines.product.vendor.name")
+            sequelize.col("orderLines.product.vendor.name"),
           ),
           {
             [Op.like]: `%${vendorName.toLowerCase()}%`,
-          }
-        )
+          },
+        ),
       );
     }
     if (vendorId) {
@@ -481,7 +483,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
             [Op.in]: vendorId.map((id) => Number(id)),
-          })
+          }),
         );
       }
     }
@@ -500,14 +502,14 @@ class OrderService {
         const requestedStatuses = status.split(",").map((s) => Number(s));
         if (requestedStatuses.length) {
           statuses = requestedStatuses.filter((s) =>
-            allowedVendorStatuses.includes(s)
+            allowedVendorStatuses.includes(s),
           );
         }
       }
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.status"), {
           [Op.in]: statuses,
-        })
+        }),
       );
     } else if (status) {
       status = status.split(",");
@@ -515,7 +517,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("Order.status"), {
             [Op.in]: status.map((s) => Number(s)),
-          })
+          }),
         );
       }
     }
@@ -532,16 +534,21 @@ class OrderService {
         for (const condition of whereClause[Op.and]) {
           // Only include conditions that don't reference joined tables
           const condStr = JSON.stringify(condition);
-          if (!condStr.includes('orderLines') && !condStr.includes('product') && !condStr.includes('vendor')) {
+          if (
+            !condStr.includes("orderLines") &&
+            !condStr.includes("product") &&
+            !condStr.includes("vendor")
+          ) {
             simpleConditions.push(condition);
           }
         }
       }
 
       // Build WHERE clause for count
-      const countWhere = simpleConditions.length > 0
-        ? { [Op.and]: simpleConditions }
-        : whereClause;
+      const countWhere =
+        simpleConditions.length > 0
+          ? { [Op.and]: simpleConditions }
+          : whereClause;
 
       // Fast count without joins
       count = await Order.count({
@@ -561,7 +568,14 @@ class OrderService {
             model: Product,
             as: "product",
             required: true,
-            attributes: ["id", "title", "image", "vendorId", "typeId", "variants"],
+            attributes: [
+              "id",
+              "title",
+              "image",
+              "vendorId",
+              "typeId",
+              "variants",
+            ],
             include: [
               {
                 model: Vendor,
@@ -603,11 +617,18 @@ class OrderService {
         model: Customer,
         as: "customer",
         required: false,
-        attributes: ["id", "firstName", "lastName", "phoneNumber", "email", "address"],
+        attributes: [
+          "id",
+          "firstName",
+          "lastName",
+          "phoneNumber",
+          "email",
+          "address",
+        ],
       },
     ];
 
-    const queryMethod = useOptimizedCount ? 'findAll' : 'findAndCountAll';
+    const queryMethod = useOptimizedCount ? "findAll" : "findAndCountAll";
     const orders = await Order[queryMethod]({
       include: includes,
       where: whereClause,
@@ -621,21 +642,19 @@ class OrderService {
     });
 
     // Format response consistently
-    const result = useOptimizedCount
-      ? { rows: orders, count: count }
-      : orders; // orders is from findAndCountAll if vendor filters present
+    const result = useOptimizedCount ? { rows: orders, count: count } : orders; // orders is from findAndCountAll if vendor filters present
 
     for (const order of result.rows) {
       if (order.expectedDeliveryDate) {
         if (
           moment(order.expectedDeliveryDate).isBefore(
-            moment().startOf("day").toDate()
+            moment().startOf("day").toDate(),
           )
         ) {
           order.deliveryStatus = DELIVERY_STATUS.LATE;
         } else if (
           moment(order.expectedDeliveryDate).isBefore(
-            moment().startOf("day").add(2, "days").toDate()
+            moment().startOf("day").add(2, "days").toDate(),
           )
         ) {
           order.deliveryStatus = DELIVERY_STATUS.ALMOST_LAST;
@@ -666,7 +685,7 @@ class OrderService {
       endDate,
       vendorUser,
       paymentStatus,
-    }
+    },
   ) {
     let whereClause = {
       [Op.and]: [],
@@ -696,15 +715,15 @@ class OrderService {
             .cast(sequelize.Sequelize.STRING),
           {
             [Op.like]: Number(financialStatus),
-          }
-        )
+          },
+        ),
       );
     }
     if (paymentStatus) {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.paymentStatus"), {
           [Op.eq]: Number(paymentStatus),
-        })
+        }),
       );
     }
     if (deliveryStatus) {
@@ -739,7 +758,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("Order.expectedDeliveryDate"), {
             [Op.and]: [{ [Op.ne]: null }, { [Op.or]: operations }],
-          })
+          }),
         );
       }
     }
@@ -760,12 +779,12 @@ class OrderService {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.orderDate"), {
           [Op.gte]: startStartDate,
-        })
+        }),
       );
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.orderDate"), {
           [Op.lte]: endOfEndDate,
-        })
+        }),
       );
     }
     if (vendorName) {
@@ -773,12 +792,12 @@ class OrderService {
         sequelize.where(
           sequelize.fn(
             "lower",
-            sequelize.col("orderLines.product.vendor.name")
+            sequelize.col("orderLines.product.vendor.name"),
           ),
           {
             [Op.like]: `%${vendorName.toLowerCase()}%`,
-          }
-        )
+          },
+        ),
       );
     }
     if (vendorId) {
@@ -787,7 +806,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
             [Op.in]: vendorId.map((id) => Number(id)),
-          })
+          }),
         );
       }
     }
@@ -796,12 +815,12 @@ class OrderService {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.status"), {
           [Op.gte]: ORDER_STATUS.IN_PROGRESS,
-        })
+        }),
       );
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("Order.status"), {
           [Op.ne]: ORDER_STATUS.CANCELED,
-        })
+        }),
       );
     } else if (status) {
       status = status.split(",");
@@ -809,7 +828,7 @@ class OrderService {
         whereClause[Op.and].push(
           sequelize.where(sequelize.col("Order.status"), {
             [Op.in]: status.map((s) => Number(s)),
-          })
+          }),
         );
       }
     }
@@ -817,7 +836,7 @@ class OrderService {
 
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
 
@@ -971,7 +990,7 @@ class OrderService {
       for (const order of chunk) {
         for (const line of order.orderLines) {
           const variant = line.product.variants.find(
-            (variant) => String(variant.shopifyId) === String(line.variant_id)
+            (variant) => String(variant.shopifyId) === String(line.variant_id),
           );
           worksheet.addRow({
             code: order.code,
@@ -1033,7 +1052,7 @@ class OrderService {
       whereClause[Op.and].push(
         sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
           [Op.eq]: vendorId,
-        })
+        }),
       );
     }
     const orders = await Order.findAll({
@@ -1072,7 +1091,7 @@ class OrderService {
       whereClause2[Op.and].push(
         sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
           [Op.eq]: vendorId,
-        })
+        }),
       );
     }
 
@@ -1379,7 +1398,7 @@ class OrderService {
             },
             type: "orderUpdate",
           },
-          true
+          true,
         );
       }
     }
@@ -1402,7 +1421,7 @@ class OrderService {
           },
           false,
           false,
-          true
+          true,
         );
       }
     }
@@ -1482,7 +1501,7 @@ class OrderService {
           orderData[key] === null ||
           orderData[key] === "Invalid date" ||
           orderData[key] === "") &&
-        delete orderData[key]
+        delete orderData[key],
     );
     if (orderData.status) {
       if (orderData.status == ORDER_STATUS.IN_PROGRESS) {
@@ -1505,7 +1524,7 @@ class OrderService {
             field: key,
             from: order[orderData[key]],
             to: orderData[key],
-          })
+          }),
         );
         if (Number(order.status) !== Number(orderData.status)) {
           await OrderService.sendNotification(
@@ -1521,7 +1540,7 @@ class OrderService {
               },
               type: "orderUpdate",
             },
-            true
+            true,
           );
         }
       }
@@ -1648,7 +1667,7 @@ class OrderService {
         type: "note",
       },
       false,
-      true
+      true,
     );
 
     return {
@@ -1694,7 +1713,7 @@ class OrderService {
     data,
     isUpdateStatus = false,
     addNote = false,
-    isUpdateManufactureStatus = false
+    isUpdateManufactureStatus = false,
   ) {
     const orderLines = await OrderLine.findAll({
       where: {

@@ -119,7 +119,7 @@ const startServer = async () => {
       }
       res.header(
         "Cache-Control",
-        "private, no-cache, no-store, must-revalidate"
+        "private, no-cache, no-store, must-revalidate",
       );
       res.header("Expires", "-1");
       res.header("Pragma", "no-cache");
@@ -139,10 +139,10 @@ const startServer = async () => {
 
     app.use("/", mainRouter);
     // Handle 404 errors
-    app.all("*", (req, res, next) => {  
+    app.all("*", (req, res, next) => {
       next(new NotFoundError(`Can't find ${req.originalUrl} on this server!`));
     });
-
+    saveMissingOrders();
     // Global error handling middleware
     app.use(globalErrorHandler);
     cron.schedule(
@@ -160,7 +160,7 @@ const startServer = async () => {
       {
         scheduled: true,
         timezone: "Africa/Cairo",
-      }
+      },
     );
 
     // Listen on the HTTP server instead of the Express app
@@ -202,7 +202,9 @@ const startServer = async () => {
             const user = await User.findByPk(userId);
             if (user) {
               // Remove the socket ID from the user's list
-              user.socketIds = (user.socketIds || []).filter(id => id !== socket.id);
+              user.socketIds = (user.socketIds || []).filter(
+                (id) => id !== socket.id,
+              );
               await user.save();
             } else {
             }

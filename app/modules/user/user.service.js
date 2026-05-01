@@ -204,7 +204,7 @@ class UserService {
       );
       promises.push(
         User.create({
-          email: `${vendorName}@${process.env.SHOPIFY_STORE}.com`,
+          email: `${vendorName}1@${process.env.SHOPIFY_STORE}.com`,
           password,
           firstName: vendor.name,
           userType: USER_TYPES.VENDOR,

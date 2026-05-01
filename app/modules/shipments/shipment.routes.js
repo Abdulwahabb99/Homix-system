@@ -125,24 +125,23 @@ ShipmentRouter.put(
 
 
 /**
- *
  * @swagger
  * /shipments/{shipmentId}:
- *  delete:
- *   security:
- *    - bearerAuth: []
- *  tags:
- *   - Shipments
- * summary: Delete shipment
- * parameters:
- * - in: path
- *  name: shipmentId
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Shipment deleted successfully
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Shipments
+ *     summary: Delete shipment
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Shipment deleted successfully
  */
 ShipmentRouter.delete(
   "/:shipmentId",

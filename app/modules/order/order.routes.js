@@ -185,24 +185,23 @@ OrderRouter.delete(
   OrderController.bulkDelete
 );
 /**
- *
  * @swagger
  * /orders/{orderId}:
- *  delete:
- *   security:
- *    - bearerAuth: []
- *  tags:
- *   - Orders
- * summary: Delete order
- * parameters:
- * - in: path
- *  name: orderId
- * required: true
- * schema:
- * type: string
- * responses:
- * 200:
- * description: Order deleted successfully
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Orders
+ *     summary: Delete order
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order deleted successfully
  */
 
 OrderRouter.delete(

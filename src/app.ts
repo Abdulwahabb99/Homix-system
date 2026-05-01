@@ -1,0 +1,55 @@
+import bodyParser from "body-parser";
+import cors from "cors";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
+
+import { createMainRouter } from "./modules/app-router";
+import { errorMiddleware, notFoundHandler, requestContextMiddleware } from "./shared/http";
+import { httpLogger } from "./shared/logger/http-logger";
+
+const JSON_ERROR_CODE = 400;
+const JSON_LIMIT = "1mb";
+const URL_ENCODED_LIMIT = "16mb";
+const UPLOADS_ROUTE = "/uploads";
+
+const applyCacheHeaders = (_request: Request, response: Response, next: NextFunction): void => {
+  response.header("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  response.header("Expires", "-1");
+  response.header("Pragma", "no-cache");
+  next();
+};
+
+const handleJsonSyntaxError = (
+  error: Error,
+  _request: Request,
+  response: Response,
+  next: NextFunction,
+): void => {
+  if (error instanceof SyntaxError) {
+    response.status(JSON_ERROR_CODE).json({
+      message: "Enter a valid JSON object.",
+      status: false,
+    });
+    return;
+  }
+
+  next(error);
+};
+
+export const createApp = (): Express => {
+  const app = express();
+
+  app.disable("etag");
+  app.use(requestContextMiddleware);
+  app.use(httpLogger);
+  app.use(bodyParser.json({ limit: JSON_LIMIT }));
+  app.use(bodyParser.urlencoded({ extended: true, limit: URL_ENCODED_LIMIT }));
+  app.use(cors());
+  app.use(UPLOADS_ROUTE, express.static("uploads"));
+  app.use(applyCacheHeaders);
+  app.use(createMainRouter());
+  app.use(notFoundHandler);
+  app.use(handleJsonSyntaxError);
+  app.use(errorMiddleware);
+
+  return app;
+};
