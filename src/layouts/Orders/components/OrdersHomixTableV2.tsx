@@ -6,15 +6,15 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import moment from "moment";
 import "moment-timezone";
-import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
+import { HX, cardSx } from "../ordersHomixTheme";
 import {
   OrderStatusBadge,
   DeliveryStatusBadge,
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
-} from "layouts/Orders/components/OrdersHomixBadges";
-import OrdersHomixMobileList from "layouts/Orders/components/OrdersHomixMobileList";
+} from "./OrdersHomixBadges";
+import OrdersHomixMobileList from "./OrdersHomixMobileList";
 
 /* ─────────────────────────────────────────
    Helpers
