@@ -3,7 +3,6 @@ import AgGrid from "components/AgGrid/AgGrid";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import EditIcon from "@mui/icons-material/Edit";
@@ -129,7 +128,6 @@ function Users() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       {isDeleteModalOpenned && selectedUserId && (
         <ConfirmDeleteModal

@@ -1,7 +1,6 @@
 import React, { useEffect, useReducer } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Spinner from "components/Spinner/Spinner";
 import { ToastContainer } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
@@ -461,7 +460,6 @@ export default function Shipments() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       {state.isSearchModalOpen && (
         <SearchDialog

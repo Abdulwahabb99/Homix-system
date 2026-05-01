@@ -2,7 +2,6 @@
 import { Box, Grid, Stack, Typography } from "@mui/material";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useDateRange } from "hooks/useDateRange";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -66,7 +65,6 @@ function dashboardV2() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       {isSearchModalOpen && (
         <SearchModal
           open={isSearchModalOpen}

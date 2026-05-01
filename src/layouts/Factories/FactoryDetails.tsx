@@ -1,6 +1,5 @@
 import { Card, CardMedia, Grid, IconButton } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
@@ -70,7 +69,6 @@ function FactoryDetails() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
         <IconButton sx={{ color: "#344767" }} onClick={() => navigate("/factories")}>

@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import "claude/dashboard/homixDashboard.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import KpiSection from "claude/dashboard/components/KpiSection";
 import SalesChartCard from "claude/dashboard/components/SalesChartCard";
 import ActivityFeedCard from "claude/dashboard/components/ActivityFeedCard";
@@ -22,8 +21,10 @@ export default function HomixDashboardPage() {
   }, []);
 
   return (
-    <DashboardLayout>
-      <DashboardNavbar />
+    <DashboardLayout
+      pageTitle="لوحة التحكم"
+      pageSubtitle="نظرة شاملة على المبيعات والطلبات والنشاط اليومي"
+    >
       <div className="homixDashPage">
         <div className="h-content">
           <KpiSection />

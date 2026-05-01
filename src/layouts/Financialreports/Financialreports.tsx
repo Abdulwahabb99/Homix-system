@@ -1,5 +1,4 @@
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -120,9 +119,7 @@ function Financialreports() {
   }, []);
 
   return (
-    <div style={{ margin: "20px 0" }}>
-      <DashboardLayout>
-        <DashboardNavbar />
+    <DashboardLayout>
         <ToastContainer />
         <Grid container spacing={2}>
           <Grid item xs={6} md={3} lg={3}>
@@ -244,8 +241,7 @@ function Financialreports() {
         ) : (
           <Spinner />
         )}
-      </DashboardLayout>
-    </div>
+    </DashboardLayout>
   );
 }
 

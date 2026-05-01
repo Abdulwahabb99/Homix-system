@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Stack } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -341,8 +340,16 @@ function Orders() {
   const gridPage0 = page - 1;
 
   return (
-    <DashboardLayout>
-      <DashboardNavbar />
+    <DashboardLayout
+      header={
+        <OrdersHomixListingHeader
+          isVendor={isVendor}
+          isExportLoading={isExportLoading}
+          onExport={handleExport}
+          onAddOrder={() => navigate("/orders/add")}
+        />
+      }
+    >
       <ToastContainer />
 
       {/* ── Modals (unchanged) ── */}
@@ -382,16 +389,6 @@ function Orders() {
 
       {/* ── Page layout ── */}
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0, bgcolor: HX.bg, overflow: "hidden" }}>
-
-        {/* Header */}
-        <OrdersHomixListingHeader
-          isVendor={isVendor}
-          isExportLoading={isExportLoading}
-          onExport={handleExport}
-          onAddOrder={() => navigate("/orders/add")}
-        />
-
-        {/* Scrollable content */}
         <Box sx={{
           flex: 1, overflowY: "auto",
           p: "14px 22px",

@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { Box, Grid, Pagination, Stack, TextField, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import ProductCard from "./components/ProductCard";
 import {
@@ -166,7 +165,6 @@ function Products() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <Box
         sx={{
           px: { xs: 2, sm: 3 },

@@ -1,5 +1,4 @@
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -70,7 +69,6 @@ function Dashboard() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       {isLoading && <Spinner />}
       {financialreportData && <ReportComponent financialreportData={financialreportData} />}{" "}

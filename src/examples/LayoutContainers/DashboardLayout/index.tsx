@@ -1,39 +1,51 @@
 /**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
+ * Homix unified dashboard shell.
+ * الواجهات تمرّر فقط المحتوى؛ الشريط العلوي (breadcrumb / عنوان) افتراضي هنا — أو عبر props.
+ */
 
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-import { useEffect } from "react";
-
-// react-router-dom components
-import { useLocation } from "react-router-dom";
-
-// prop-types is a library for typechecking of props.
-import PropTypes from "prop-types";
-
-// Material Dashboard 2 React components
+import React, { useEffect } from "react";
 import MDBox from "components/MDBox";
-
-// Material Dashboard 2 React context
+import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
+import { useLocation } from "react-router-dom";
 import { useMaterialUIController, setLayout } from "context";
 
-function DashboardLayout({ children }) {
-  const [controller, dispatch] = useMaterialUIController();
+export interface DashboardLayoutProps {
+  children: React.ReactNode;
+  /**
+   * شريط مخصّص (مثل قائمة الطلبات بأزرارها).
+   * `undefined`: يُستخدم الافتراضي (breadcrumb من المسار).
+   * `null`: بدون شريط علوي.
+   */
+  header?: React.ReactNode | null;
+  /** اختصار لبناء `HomixPageHeader` بدل تمرير `header` يدوياً */
+  pageTitle?: React.ReactNode;
+  pageSubtitle?: React.ReactNode;
+  pageActions?: React.ReactNode;
+}
+
+export default function DashboardLayout({
+  children,
+  header,
+  pageTitle,
+  pageSubtitle,
+  pageActions,
+}: DashboardLayoutProps) {
+  const [, dispatch] = useMaterialUIController();
   const { pathname } = useLocation();
 
   useEffect(() => {
     setLayout(dispatch, "dashboard");
-  }, [pathname]);
+  }, [pathname, dispatch]);
+
+  const resolvedHeader = (() => {
+    if (header === null) return null;
+    if (header !== undefined) return header;
+    const hasShortcuts = pageTitle != null || pageSubtitle != null || pageActions != null;
+    if (hasShortcuts) {
+      return <HomixPageHeader title={pageTitle} subtitle={pageSubtitle} actions={pageActions} />;
+    }
+    return <HomixPageHeader />;
+  })();
 
   return (
     <MDBox
@@ -50,14 +62,8 @@ function DashboardLayout({ children }) {
         },
       })}
     >
+      {resolvedHeader}
       {children}
     </MDBox>
   );
 }
-
-// Typechecking props for the DashboardLayout
-DashboardLayout.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-export default DashboardLayout;

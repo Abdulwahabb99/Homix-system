@@ -1,6 +1,5 @@
 import MDBox from "components/MDBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styles from "../Shipments.module.css";
@@ -244,7 +243,6 @@ function ShipmentDetails() {
   return (
     <>
       <DashboardLayout>
-        <DashboardNavbar />
         <ToastContainer />
 
         {!isLoading ? (

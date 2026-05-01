@@ -7,7 +7,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import MDTypography from "components/MDTypography";
 import styles from "./AddOrderModal.module.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { ToastContainer } from "react-toastify";
 import MDBox from "components/MDBox";
 import ProductPayment from "./ProductPayment";
@@ -104,7 +103,6 @@ function AddOrderModal() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       <div className={styles.orderDetailsHeader}>
         <div style={{ display: "flex", alignItems: "center" }}>

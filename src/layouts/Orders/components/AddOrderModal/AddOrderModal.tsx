@@ -17,7 +17,6 @@ import AddShoppingCartOutlinedIcon from "@mui/icons-material/AddShoppingCartOutl
 import CloseIcon from "@mui/icons-material/Close";
 import MDTypography from "components/MDTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { ToastContainer } from "react-toastify";
 import MDBox from "components/MDBox";
 import ProductPayment from "./ProductPayment";
@@ -118,7 +117,6 @@ function AddOrderModal() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       {isProductModalOpen && (
         <AddProductModal

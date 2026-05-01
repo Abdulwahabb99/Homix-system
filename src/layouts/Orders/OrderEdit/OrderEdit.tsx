@@ -19,7 +19,6 @@ import {
   getUserSelectValue,
 } from "layouts/Orders/components/userSelectAutocompleteConfig";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
@@ -135,7 +134,6 @@ function OrderEdit() {
   }, []);
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <ToastContainer />
       <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
         <IconButton sx={{ color: "#344767" }} onClick={() => navigate(`/orders/${id}`)}>

@@ -19,7 +19,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 function ProductDetails() {
@@ -65,7 +64,6 @@ function ProductDetails() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
       <Box
         sx={{
           maxWidth: 1200,

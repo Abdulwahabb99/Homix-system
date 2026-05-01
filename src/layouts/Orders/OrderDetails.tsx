@@ -1,7 +1,6 @@
 import axios from "axios";
 import PropTypes from "prop-types";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -395,7 +394,6 @@ function OrderDetails() {
         </div>
       )}
       <DashboardLayout>
-        <DashboardNavbar />
         <ToastContainer />
         <ConfirmDeleteModal
           open={pendingDeleteNoteId != null}
