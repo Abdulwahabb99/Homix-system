@@ -259,35 +259,98 @@ export default function OrdersHomixTableV2({
         p: "11px 14px", borderBottom: `0.5px solid ${HX.border}`,
         flexWrap: "wrap", gap: 1, flexShrink: 0,
       }}>
-        <Box>
-          <span style={{ fontSize: 13, fontWeight: 700, color: HX.tx, fontFamily: FONT }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "baseline",
+            flexWrap: "wrap",
+            gap: "6px",
+            fontFamily: FONT,
+          }}
+        >
+          <Box component="span" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx }}>
             قائمة الطلبات
-          </span>
-          <span style={{ fontSize: 11, color: HX.tx3, marginRight: 8, fontFamily: FONT }}>
-            {isFetching
-              ? " — جارٍ التحميل..."
-              : ` — ${totalCount.toLocaleString("ar-EG")} طلب`}
-          </span>
+          </Box>
+          {isFetching ? (
+            <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.tx2 }}>
+              — جارٍ التحميل...
+            </Box>
+          ) : (
+            <>
+              <Box component="span" sx={{ fontSize: "12px", fontWeight: 500, color: HX.tx3 }}>
+                —
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  fontSize: "13.5px",
+                  fontWeight: 750,
+                  color: HX.tx,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {`${totalCount.toLocaleString("ar-EG")} طلب`}
+              </Box>
+            </>
+          )}
         </Box>
 
         {!isVendor && selectionModel.length > 0 && (
-          <Stack direction="row" spacing={1}>
-            <Button size="small" variant="outlined" color="primary" onClick={onBulkEdit}
+          <Stack direction="row" spacing={1.25} flexWrap="wrap" sx={{ alignItems: "center" }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={onBulkEdit}
               sx={(t) => ({
-                fontFamily: FONT, fontWeight: 600, fontSize: "12px",
+                fontFamily: FONT,
+                fontWeight: 700,
+                fontSize: "13px",
+                textTransform: "none",
+                minHeight: 36,
+                px: 2,
+                py: 0.75,
+                borderWidth: 1.5,
+                borderStyle: "solid",
                 borderColor: t.palette.primary.main,
-                bgcolor: alpha(t.palette.primary.main, 0.08),
-                "&:hover": { bgcolor: alpha(t.palette.primary.main, 0.14) },
-              })}>
+                color: t.palette.primary.dark,
+                bgcolor: alpha(t.palette.primary.main, 0.14),
+                boxShadow: `0 1px 0 ${alpha(t.palette.primary.main, 0.12)}, 0 2px 8px rgba(15,23,42,0.06)`,
+                "&:hover": {
+                  bgcolor: alpha(t.palette.primary.main, 0.22),
+                  borderWidth: 1.5,
+                  borderColor: t.palette.primary.dark,
+                  boxShadow: `0 2px 10px ${alpha(t.palette.primary.main, 0.28)}`,
+                },
+              })}
+            >
               تعديل المحدد ({selectionModel.length})
             </Button>
-            <Button size="small" color="error" variant="outlined" onClick={onBulkDelete}
+            <Button
+              color="error"
+              variant="outlined"
+              onClick={onBulkDelete}
               sx={(t) => ({
-                fontFamily: FONT, fontWeight: 600, fontSize: "12px",
+                fontFamily: FONT,
+                fontWeight: 700,
+                fontSize: "13px",
+                textTransform: "none",
+                minHeight: 36,
+                px: 2,
+                py: 0.75,
+                borderWidth: 1.5,
+                borderStyle: "solid",
                 borderColor: t.palette.error.main,
-                bgcolor: alpha(t.palette.error.main, 0.08),
-                "&:hover": { bgcolor: alpha(t.palette.error.main, 0.14) },
-              })}>
+                color: t.palette.error.dark,
+                bgcolor: alpha(t.palette.error.main, 0.12),
+                boxShadow: `0 1px 0 ${alpha(t.palette.error.main, 0.1)}, 0 2px 8px rgba(15,23,42,0.06)`,
+                "&:hover": {
+                  bgcolor: alpha(t.palette.error.main, 0.2),
+                  borderWidth: 1.5,
+                  borderColor: t.palette.error.dark,
+                  boxShadow: `0 2px 10px ${alpha(t.palette.error.main, 0.3)}`,
+                },
+              })}
+            >
               حذف المحدد
             </Button>
           </Stack>

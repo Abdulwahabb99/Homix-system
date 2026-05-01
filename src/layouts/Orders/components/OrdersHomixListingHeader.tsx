@@ -25,20 +25,38 @@ export default function OrdersHomixListingHeader({
         alignItems: "center",
         justifyContent: "space-between",
         px: "22px",
-        height: 54,
+        py: "10px",
+        minHeight: 58,
         bgcolor: HX.surface,
-        borderBottom: `0.5px solid ${HX.border}`,
+        borderBottom: `1px solid ${HX.border2}`,
+        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
         flexShrink: 0,
+        position: "relative",
+        zIndex: 1,
       }}
     >
       {/* Title */}
       <Box>
         <Typography
-          sx={{ fontSize: "15px", fontWeight: 700, color: HX.tx, lineHeight: 1.2 }}
+          sx={{
+            fontSize: "17px",
+            fontWeight: 800,
+            color: HX.tx,
+            letterSpacing: "-0.01em",
+            lineHeight: 1.25,
+          }}
         >
           الطلبات
         </Typography>
-        <Typography sx={{ fontSize: "11px", color: HX.tx3, lineHeight: 1 }}>
+        <Typography
+          sx={{
+            fontSize: "12.5px",
+            fontWeight: 600,
+            color: HX.tx2,
+            lineHeight: 1.3,
+            mt: "2px",
+          }}
+        >
           إدارة ومتابعة جميع الطلبات
         </Typography>
       </Box>
