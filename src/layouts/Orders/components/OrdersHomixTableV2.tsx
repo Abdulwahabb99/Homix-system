@@ -14,6 +14,7 @@ import {
   DaysCounterBadge,
   DeliveryByBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
+import OrdersHomixMobileList from "layouts/Orders/components/OrdersHomixMobileList";
 
 /* ─────────────────────────────────────────
    Helpers
@@ -363,14 +364,42 @@ export default function OrdersHomixTableV2({
           to THIS container, so columns ALWAYS stay
           aligned while scrolling in any direction.
         ───────────────────────────────────────── */}
-      <div style={{
-        overflow: "auto",
-        maxHeight: 560,
-        flex: 1,
-        /* thin scrollbars */
-        scrollbarWidth: "thin",
-        scrollbarColor: `${HX.border} transparent`,
-      }}>
+      <Box
+        sx={{
+          display: { xs: "block", md: "none" },
+          overflow: "auto",
+          maxHeight: 560,
+          flex: 1,
+          scrollbarWidth: "thin",
+          scrollbarColor: `${HX.border} transparent`,
+        }}
+      >
+        <OrdersHomixMobileList
+          orders={orders}
+          isVendor={isVendor}
+          users={users}
+          vendors={vendors}
+          selectionModel={selectionModel}
+          onSelectionModelChange={onSelectionModelChange}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onView={onView}
+          calculateDaysFromPoDate={calculateDaysFromPoDate}
+          isFetching={isFetching}
+        />
+      </Box>
+
+      <Box
+        component="div"
+        sx={{
+          display: { xs: "none", md: "block" },
+          overflow: "auto",
+          maxHeight: 560,
+          flex: 1,
+          scrollbarWidth: "thin",
+          scrollbarColor: `${HX.border} transparent`,
+        }}
+      >
 
         {/* ── Pure HTML <table> — no MUI wrappers that override colgroup ── */}
         <table style={{
@@ -574,7 +603,7 @@ export default function OrdersHomixTableV2({
             })}
           </tbody>
         </table>
-      </div>
+      </Box>
 
       {/* ── Pagination ── */}
       <Box sx={{ borderTop: `0.5px solid ${HX.border}`, flexShrink: 0 }}>
