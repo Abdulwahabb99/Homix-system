@@ -1,39 +1,56 @@
 import React from "react";
 import { Box, Grid, Skeleton } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 
 /* ─────────────────────────────────────────────
-   Shared
+   Shared — muted blocks + wave (no broken ::after)
 ───────────────────────────────────────────── */
-const pulse = {
-  "&::after": {
-    background:
-      "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)",
-  },
-} as const;
+const skBg = alpha("#64748b", 0.1);
+
+/** Use with skeleton `animation="wave"` */
+const skSx = { bgcolor: skBg, transform: "none" } as const;
+
+const skSxAccent = { bgcolor: alpha(HX.accent, 0.16), transform: "none" } as const;
 
 /* ─────────────────────────────────────────────
-   KPI Row Skeleton — 6 cards
+   KPI Row Skeleton — 6 cards (layout ↔ real KpiCard)
 ───────────────────────────────────────────── */
 function KpiCardSkeleton() {
   return (
-    <Box sx={{
-      bgcolor: HX.surface,
-      borderRadius: HX.r,
-      p: "12px 14px",
-      border: `0.5px solid ${HX.border}`,
-      height: 96,
-    }}>
-      {/* icon */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: "10px" }}>
-        <Skeleton variant="rounded" width={30} height={30} sx={{ borderRadius: "8px", ...pulse }} />
+    <Box
+      sx={{
+        bgcolor: HX.surface,
+        borderRadius: HX.r,
+        p: "12px 14px",
+        border: `0.5px solid ${HX.border}`,
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+      }}
+    >
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: "8px" }}>
+        <Skeleton
+          variant="rounded"
+          animation="wave"
+          width={30}
+          height={30}
+          sx={{ borderRadius: "8px", ...skSxAccent }}
+        />
       </Box>
-      {/* value */}
-      <Skeleton variant="text" width={52} height={28} sx={{ mb: "4px", ...pulse }} />
-      {/* label */}
-      <Skeleton variant="text" width={80} height={16} sx={{ ...pulse }} />
-      {/* change */}
-      <Skeleton variant="text" width={100} height={14} sx={{ mt: "4px", ...pulse }} />
+      <Skeleton
+        variant="rounded"
+        animation="wave"
+        width="55%"
+        height={22}
+        sx={{ mb: "6px", borderRadius: "6px", ...skSx }}
+      />
+      <Skeleton variant="rounded" animation="wave" width="72%" height={12} sx={{ borderRadius: "4px", ...skSx }} />
+      <Skeleton
+        variant="rounded"
+        animation="wave"
+        width="88%"
+        height={11}
+        sx={{ mt: "7px", borderRadius: "4px", ...skSx }}
+      />
     </Box>
   );
 }
@@ -55,18 +72,47 @@ export function OrdersHomixKpiRowSkeleton() {
 ───────────────────────────────────────────── */
 export function OrdersHomixSearchCardSkeleton() {
   return (
-    <Box sx={{ ...cardSx, p: "14px 18px" }}>
-      {/* header */}
+    <Box
+      sx={{
+        ...cardSx,
+        p: "14px 18px",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+      }}
+    >
       <Box sx={{ display: "flex", alignItems: "center", gap: "10px", mb: "12px" }}>
-        <Skeleton variant="circular" width={14} height={14} sx={pulse} />
-        <Skeleton variant="text" width={50} height={20} sx={pulse} />
+        <Skeleton
+          variant="rounded"
+          animation="wave"
+          width={14}
+          height={14}
+          sx={{ borderRadius: "4px", flexShrink: 0, ...skSxAccent }}
+        />
+        <Skeleton
+          variant="rounded"
+          animation="wave"
+          width={76}
+          height={17}
+          sx={{ borderRadius: "6px", ...skSx }}
+        />
       </Box>
-      {/* 4 fields */}
       <Grid container spacing="10px">
         {Array.from({ length: 4 }).map((_, i) => (
           <Grid item xs={12} sm={6} md={3} key={i}>
-            <Skeleton variant="text" width={70} height={16} sx={{ mb: "4px", ...pulse }} />
-            <Skeleton variant="rounded" height={34} sx={{ borderRadius: "8px", ...pulse }} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <Skeleton
+                variant="rounded"
+                animation="wave"
+                width={`${42 + (i % 3) * 9}%`}
+                height={11}
+                sx={{ borderRadius: "4px", maxWidth: 120, ...skSx }}
+              />
+              <Skeleton
+                variant="rounded"
+                animation="wave"
+                height={34}
+                sx={{ width: "100%", borderRadius: "8px", ...skSx }}
+              />
+            </Box>
           </Grid>
         ))}
       </Grid>
@@ -78,74 +124,112 @@ export function OrdersHomixSearchCardSkeleton() {
    Filters Panel Skeleton — collapsed look
 ───────────────────────────────────────────── */
 export function OrdersHomixFiltersPanelSkeleton() {
+  const labelBar = (w: number) => (
+    <Skeleton
+      variant="rounded"
+      animation="wave"
+      width={w}
+      height={13}
+      sx={{ borderRadius: "4px", ...skSx }}
+    />
+  );
+
+  const FieldOutline = () => (
+    <Skeleton variant="rounded" animation="wave" height={34} sx={{ borderRadius: "8px", width: "100%", ...skSx }} />
+  );
+
   return (
-    <Box sx={{ ...cardSx }}>
-      {/* header row */}
-      <Box sx={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        p: "12px 18px",
-      }}>
+    <Box sx={{ ...cardSx, boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          p: "12px 18px",
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Skeleton variant="rounded" width={14} height={14} sx={{ ...pulse }} />
-          <Skeleton variant="text" width={60} height={20} sx={pulse} />
+          <Skeleton
+            variant="rounded"
+            animation="wave"
+            width={14}
+            height={14}
+            sx={{ borderRadius: "4px", ...skSxAccent }}
+          />
+          <Skeleton variant="rounded" animation="wave" width={68} height={18} sx={{ borderRadius: "6px", ...skSx }} />
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Skeleton variant="text" width={130} height={16} sx={pulse} />
-          <Skeleton variant="circular" width={22} height={22} sx={pulse} />
+          <Skeleton variant="rounded" animation="wave" width={130} height={15} sx={{ borderRadius: "4px", ...skSx }} />
+          <Skeleton variant="rounded" animation="wave" width={22} height={22} sx={{ borderRadius: "50%", ...skSx }} />
         </Box>
       </Box>
 
-      {/* ROW 1 — 5 selects */}
       <Box sx={{ p: "14px 18px", borderTop: `0.5px solid ${HX.border}`, borderBottom: `0.5px solid ${HX.border}` }}>
-        <Skeleton variant="text" width={60} height={14} sx={{ mb: "10px", ...pulse }} />
+        <Box sx={{ mb: "10px" }}>{labelBar(72)}</Box>
         <Grid container spacing="10px">
           {Array.from({ length: 5 }).map((_, i) => (
             <Grid item xs={12} sm={6} md={12 / 5} key={i}>
-              <Skeleton variant="text" width={70} height={14} sx={{ mb: "4px", ...pulse }} />
-              <Skeleton variant="rounded" height={34} sx={{ borderRadius: "8px", ...pulse }} />
+              <Box sx={{ display: "flex", flexDirection: "column", gap: "5px", mb: 0 }}>
+                {labelBar(64 + (i % 2) * 12)}
+                <FieldOutline />
+              </Box>
             </Grid>
           ))}
         </Grid>
       </Box>
 
-      {/* ROW 2 — المسئول + dates + priority */}
       <Box sx={{ p: "14px 18px", borderBottom: `0.5px solid ${HX.border}` }}>
-        <Skeleton variant="text" width={100} height={14} sx={{ mb: "12px", ...pulse }} />
+        <Box sx={{ mb: "12px" }}>{labelBar(96)}</Box>
         <Grid container spacing="10px">
-          {/* المسئول */}
           <Grid item xs={12} sm={6} md={2}>
-            <Skeleton variant="text" width={60} height={14} sx={{ mb: "4px", ...pulse }} />
-            <Skeleton variant="rounded" height={34} sx={{ borderRadius: "8px", ...pulse }} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              {labelBar(58)}
+              <FieldOutline />
+            </Box>
           </Grid>
-          {/* من تاريخ */}
           <Grid item xs={12} sm={6} md={2}>
-            <Skeleton variant="text" width={60} height={14} sx={{ mb: "4px", ...pulse }} />
-            <Skeleton variant="rounded" height={34} sx={{ borderRadius: "8px", ...pulse }} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              {labelBar(58)}
+              <FieldOutline />
+            </Box>
           </Grid>
-          {/* إلى تاريخ */}
           <Grid item xs={12} sm={6} md={2}>
-            <Skeleton variant="text" width={60} height={14} sx={{ mb: "4px", ...pulse }} />
-            <Skeleton variant="rounded" height={34} sx={{ borderRadius: "8px", ...pulse }} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              {labelBar(58)}
+              <FieldOutline />
+            </Box>
           </Grid>
-          {/* priority pills */}
           <Grid item xs={12} sm={12} md={6}>
-            <Skeleton variant="text" width={50} height={14} sx={{ mb: "4px", ...pulse }} />
-            <Box sx={{ display: "flex", gap: "7px" }}>
-              {["مستعجل جداً", "مستعجل", "بالمدة المحددة"].map((lbl, i) => (
-                <Skeleton key={i} variant="rounded" width={90 + i * 14} height={34} sx={{ borderRadius: "8px", ...pulse }} />
-              ))}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              {labelBar(52)}
+              <Box sx={{ display: "flex", gap: "7px", flexWrap: "wrap" }}>
+                {Array.from({ length: 3 }).map((__, i) => (
+                  <Skeleton
+                    key={i}
+                    variant="rounded"
+                    animation="wave"
+                    width={90 + i * 14}
+                    height={34}
+                    sx={{ borderRadius: "8px", ...skSx }}
+                  />
+                ))}
+              </Box>
             </Box>
           </Grid>
         </Grid>
       </Box>
 
-      {/* Footer */}
-      <Box sx={{
-        p: "11px 18px", bgcolor: HX.surface2,
-        display: "flex", justifyContent: "flex-end", gap: "8px",
-      }}>
-        <Skeleton variant="rounded" width={90} height={34} sx={{ borderRadius: "8px", ...pulse }} />
-        <Skeleton variant="rounded" width={120} height={34} sx={{ borderRadius: "8px", ...pulse }} />
+      <Box
+        sx={{
+          p: "11px 18px",
+          bgcolor: HX.surface2,
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "8px",
+        }}
+      >
+        <Skeleton variant="rounded" animation="wave" width={90} height={34} sx={{ borderRadius: "8px", ...skSx }} />
+        <Skeleton variant="rounded" animation="wave" width={120} height={34} sx={{ borderRadius: "8px", ...skSx }} />
       </Box>
     </Box>
   );
@@ -199,11 +283,11 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
   const totalW = CHECKBOX_W_SK + COLS.reduce((s, c) => s + c.w, 0);
 
   return (
-    <Box sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
+    <Box sx={{ ...cardSx, display: "flex", flexDirection: "column", boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)" }}>
       {/* Card header */}
       <Box sx={{ p: "11px 14px", borderBottom: `0.5px solid ${HX.border}`, display: "flex", alignItems: "center", gap: "10px" }}>
-        <Skeleton variant="text" width={100} height={20} sx={pulse} />
-        <Skeleton variant="text" width={60} height={16} sx={pulse} />
+        <Skeleton variant="rounded" animation="wave" width={100} height={18} sx={{ borderRadius: "6px", ...skSx }} />
+        <Skeleton variant="rounded" animation="wave" width={72} height={14} sx={{ borderRadius: "4px", ...skSx }} />
       </Box>
 
       {/* Same single-container, pure-HTML approach as the real table */}
@@ -224,11 +308,17 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
           <thead style={{ position: "sticky", top: 0, zIndex: 3 }}>
             <tr>
               <th style={{ ...TH_SK, textAlign: "center", width: CHECKBOX_W_SK }}>
-                <Skeleton variant="rounded" width={14} height={14} sx={{ mx: "auto", ...pulse }} />
+                <Skeleton variant="rounded" animation="wave" width={14} height={14} sx={{ mx: "auto", ...skSx }} />
               </th>
               {COLS.map((c, i) => (
                 <th key={i} style={TH_SK}>
-                  <Skeleton variant="text" width={c.label.length * 7 || 20} height={14} sx={pulse} />
+                  <Skeleton
+                    variant="rounded"
+                    animation="wave"
+                    width={Math.min(12 + c.label.length * 8, 120)}
+                    height={13}
+                    sx={{ borderRadius: "4px", ...skSx }}
+                  />
                 </th>
               ))}
             </tr>
@@ -238,30 +328,30 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
             {Array.from({ length: rows }).map((_, ri) => (
               <tr key={ri}>
                 <td style={{ ...TD_SK, textAlign: "center" }}>
-                  <Skeleton variant="rounded" width={14} height={14} sx={{ mx: "auto", ...pulse }} />
+                  <Skeleton variant="rounded" animation="wave" width={14} height={14} sx={{ mx: "auto", ...skSx }} />
                 </td>
                 {COLS.map((c, ci) => (
                   <td key={ci} style={TD_SK}>
                     {ci === 3 ? (
                       <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                        <Skeleton variant="circular" width={26} height={26} sx={pulse} />
-                        <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
+                        <Skeleton variant="circular" animation="wave" width={26} height={26} sx={skSx} />
+                        <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci]} height={13} sx={{ borderRadius: "4px", ...skSx }} />
                       </Box>
                     ) : ci === 5 ? (
                       <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                        <Skeleton variant="rounded" width={22} height={22} sx={{ borderRadius: "6px", ...pulse }} />
-                        <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
+                        <Skeleton variant="rounded" animation="wave" width={22} height={22} sx={{ borderRadius: "6px", ...skSx }} />
+                        <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci]} height={13} sx={{ borderRadius: "4px", ...skSx }} />
                       </Box>
                     ) : ci === 4 || ci === 8 || ci === 11 ? (
-                      <Skeleton variant="rounded" width={SK_WIDTHS[ci] + 20} height={22} sx={{ borderRadius: "20px", ...pulse }} />
+                      <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci] + 20} height={22} sx={{ borderRadius: "20px", ...skSx }} />
                     ) : ci === 17 ? (
                       <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
                         {[0, 1, 2].map((j) => (
-                          <Skeleton key={j} variant="rounded" width={26} height={26} sx={{ borderRadius: "7px", ...pulse }} />
+                          <Skeleton key={j} variant="rounded" animation="wave" width={26} height={26} sx={{ borderRadius: "7px", ...skSx }} />
                         ))}
                       </Box>
                     ) : (
-                      <Skeleton variant="text" width={SK_WIDTHS[ci]} height={14} sx={pulse} />
+                      <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci]} height={13} sx={{ borderRadius: "4px", ...skSx }} />
                     )}
                   </td>
                 ))}
@@ -276,10 +366,10 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
         borderTop: `0.5px solid ${HX.border}`, p: "10px 14px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <Skeleton variant="text" width={160} height={16} sx={pulse} />
+        <Skeleton variant="rounded" animation="wave" width={160} height={15} sx={{ borderRadius: "4px", ...skSx }} />
         <Box sx={{ display: "flex", gap: "4px" }}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="rounded" width={28} height={28} sx={{ borderRadius: "7px", ...pulse }} />
+            <Skeleton key={i} variant="rounded" animation="wave" width={28} height={28} sx={{ borderRadius: "7px", ...skSx }} />
           ))}
         </Box>
       </Box>
