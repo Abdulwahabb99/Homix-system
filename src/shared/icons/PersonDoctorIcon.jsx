@@ -1,14 +1,13 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const PersonDoctorIcon = ({ width = 48, height = 49, ...props }) => (
+const PersonDoctorIcon = ({ width = 48, height = 49 }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={width}
     height={height}
     viewBox="0 0 48 49"
     fill="none"
-    {...props}
   >
     <mask
       id="mask0"
