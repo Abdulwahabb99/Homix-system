@@ -26,12 +26,14 @@ import {
   DeliveryByBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
 
-/* ─── Helpers ─── */
+/* ─────────────────────────────────────────────
+   Helpers
+───────────────────────────────────────────── */
 function initials(name: string) {
   return (name ?? "")
     .split(" ")
     .slice(0, 2)
-    .map((w: string) => w[0]?.toUpperCase() ?? "")
+    .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 }
 
@@ -51,40 +53,75 @@ function avatarColor(s: string) {
 
 const IN_MFG_STATUS = 2;
 
-/* ─── Column definitions — widths must match between TH and TD ─── */
-interface ColDef {
-  key: string;
-  label: string;
-  width: number;
-  align?: "right" | "center" | "left";
-}
-
-const BASE_COLS: ColDef[] = [
-  { key: "code",         label: "رقم العملية",      width: 100 },
-  { key: "orderNumber",  label: "رقم الطلب",        width: 90  },
-  { key: "productCode",  label: "كود المنتج",       width: 100 },
-  { key: "customerName", label: "اسم العميل",       width: 160 },
-  { key: "status",       label: "حالة الطلب",       width: 120 },
-  { key: "factory",      label: "اسم المصنع",       width: 150 },
-  { key: "compCost",     label: "سعر التكلفة",      width: 100 },
-  { key: "totalPrice",   label: "سعر البيع",        width: 100 },
-  { key: "paymentStatus",label: "حالة الدفع",       width: 130 },
-  { key: "delivery",     label: "التوصيل بواسطة",  width: 110 },
-  { key: "priority",     label: "الأولوية",         width: 100 },
-  { key: "deliveryStatus",label:"حالة التصنيع",     width: 140 },
-  { key: "createdAt",    label: "تاريخ الطلب",      width: 90  },
-  { key: "poDate",       label: "تاريخ التصنيع",    width: 95  },
-  { key: "days",         label: "عداد الأيام",      width: 95  },
-];
-const ADMIN_COLS: ColDef[] = [
-  { key: "admin",  label: "المسئول", width: 130 },
-  { key: "type",   label: "النوع",   width: 90  },
-];
-const ACTIONS_COL: ColDef = { key: "actions", label: "", width: 90, align: "center" };
+/* ─────────────────────────────────────────────
+   Column definitions
+   widths ONLY live here — not on any <th>/<td>
+───────────────────────────────────────────── */
 const CHECKBOX_W = 44;
 
-/* ─── Mini-components ─── */
-function Avatar26({ name, size = 26 }: { name: string; size?: number }) {
+const BASE_COLS = [
+  { key: "code",          label: "رقم العملية",     w: 110 },
+  { key: "orderNumber",   label: "رقم الطلب",       w: 95  },
+  { key: "productCode",   label: "كود المنتج",      w: 105 },
+  { key: "customerName",  label: "اسم العميل",      w: 170 },
+  { key: "status",        label: "حالة الطلب",      w: 120 },
+  { key: "factory",       label: "اسم المصنع",      w: 155 },
+  { key: "compCost",      label: "سعر التكلفة",     w: 100 },
+  { key: "totalPrice",    label: "سعر البيع",       w: 100 },
+  { key: "paymentStatus", label: "حالة الدفع",      w: 130 },
+  { key: "delivery",      label: "التوصيل بواسطة",  w: 115 },
+  { key: "priority",      label: "الأولوية",        w: 100 },
+  { key: "mfgStatus",     label: "حالة التصنيع",    w: 140 },
+  { key: "createdAt",     label: "تاريخ الطلب",     w: 90  },
+  { key: "poDate",        label: "تاريخ التصنيع",   w: 95  },
+  { key: "days",          label: "عداد الأيام",     w: 100 },
+] as const;
+
+const ADMIN_COLS = [
+  { key: "admin", label: "المسئول", w: 140 },
+  { key: "type",  label: "النوع",   w: 90  },
+] as const;
+
+const ACTIONS_COL = { key: "actions", label: "", w: 90 } as const;
+
+/* ─────────────────────────────────────────────
+   Shared cell styles
+   No width here — widths come from colgroup only
+───────────────────────────────────────────── */
+const FONT = "'Cairo', sans-serif";
+
+/** th style — sticky header */
+const TH: React.CSSProperties = {
+  fontFamily: FONT,
+  fontSize: "10.5px",
+  fontWeight: 700,
+  color: HX.tx3,
+  letterSpacing: ".3px",
+  textAlign: "right",
+  padding: "9px 11px",
+  borderBottom: `0.5px solid ${HX.border}`,
+  whiteSpace: "nowrap",
+  background: HX.surface2,
+  overflow: "hidden",
+};
+
+/** td style */
+const TD: React.CSSProperties = {
+  fontFamily: FONT,
+  fontSize: "12px",
+  color: HX.tx,
+  textAlign: "right",
+  padding: "9px 11px",
+  borderBottom: `0.5px solid ${HX.border}`,
+  whiteSpace: "nowrap",
+  verticalAlign: "middle",
+  overflow: "hidden",
+};
+
+/* ─────────────────────────────────────────────
+   Mini-components
+───────────────────────────────────────────── */
+function AvatarCircle({ name, size = 26 }: { name: string; size?: number }) {
   return (
     <Box sx={{
       width: size, height: size, borderRadius: "50%",
@@ -109,38 +146,37 @@ function FactoryCell({ name }: { name: string }) {
       }}>
         {initials(name || "?")}
       </Box>
-      <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.tx, overflow: "hidden", textOverflow: "ellipsis" }}>
+      <Box component="span" sx={{
+        fontSize: "12px", fontFamily: FONT, fontWeight: 600, color: HX.tx,
+        overflow: "hidden", textOverflow: "ellipsis",
+      }}>
         {name || "—"}
       </Box>
     </Box>
   );
 }
 
-function ActionBtn({
-  onClick, bg, hoverBg, color, hoverColor, icon,
-}: {
+function ActionBtn({ onClick, bg, hoverBg, color, hoverColor, icon }: {
   onClick: () => void;
   bg: string; hoverBg: string; color: string; hoverColor: string;
   icon: React.ReactNode;
 }) {
   return (
-    <Box
-      component="button"
-      onClick={onClick}
-      sx={{
-        width: 26, height: 26, borderRadius: "7px", border: "none", cursor: "pointer",
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        bgcolor: bg, color, transition: ".15s",
-        "& svg": { fontSize: "11px !important" },
-        "&:hover": { bgcolor: hoverBg, color: hoverColor },
-      }}
-    >
+    <Box component="button" onClick={onClick} sx={{
+      width: 26, height: 26, borderRadius: "7px", border: "none",
+      cursor: "pointer", display: "inline-flex", alignItems: "center",
+      justifyContent: "center", bgcolor: bg, color, transition: ".15s",
+      "& svg": { fontSize: "11px !important" },
+      "&:hover": { bgcolor: hoverBg, color: hoverColor },
+    }}>
       {icon}
     </Box>
   );
 }
 
-/* ─── Types ─── */
+/* ─────────────────────────────────────────────
+   Types
+───────────────────────────────────────────── */
 interface Order {
   orderId: string | number;
   code?: string;
@@ -158,7 +194,6 @@ interface Order {
   vendorId?: string | number;
   createdAt?: string;
 }
-
 interface User { id: string | number; firstName?: string; lastName?: string }
 interface Vendor { label: string; value: string | number }
 
@@ -182,38 +217,9 @@ interface OrdersHomixTableV2Props {
   isFetching?: boolean;
 }
 
-/* ─── Shared cell sx — SAME font-family/size for TH and TD ─── */
-const CELL_BASE = {
-  fontFamily: "'Cairo', sans-serif",
-  borderBottom: `0.5px solid ${HX.border}`,
-  whiteSpace: "nowrap" as const,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  py: "9px",
-  px: "11px",
-  textAlign: "right" as const,
-};
-
-const TH = {
-  ...CELL_BASE,
-  bgcolor: HX.surface2,
-  fontSize: "10.5px",
-  fontWeight: 700,
-  color: HX.tx3,
-  letterSpacing: ".3px",
-  position: "sticky" as const,
-  top: 0,
-  zIndex: 2,
-};
-
-const TD = {
-  ...CELL_BASE,
-  fontSize: "12px",
-  color: HX.tx,
-  verticalAlign: "middle" as const,
-};
-
-/* ─── Component ─── */
+/* ─────────────────────────────────────────────
+   Component
+───────────────────────────────────────────── */
 export default function OrdersHomixTableV2({
   orders, isVendor, users, vendors,
   selectionModel, onSelectionModelChange,
@@ -223,8 +229,10 @@ export default function OrdersHomixTableV2({
 }: OrdersHomixTableV2Props) {
   const totalCount = totalPages * pageSize;
 
-  const isAllSelected = orders.length > 0 && orders.every((o) => selectionModel.includes(o.orderId));
-  const isIndeterminate = orders.some((o) => selectionModel.includes(o.orderId)) && !isAllSelected;
+  const isAllSelected =
+    orders.length > 0 && orders.every((o) => selectionModel.includes(o.orderId));
+  const isIndeterminate =
+    orders.some((o) => selectionModel.includes(o.orderId)) && !isAllSelected;
 
   const toggleAll = useCallback(() => {
     if (isAllSelected) {
@@ -236,46 +244,45 @@ export default function OrdersHomixTableV2({
   }, [isAllSelected, orders, selectionModel, onSelectionModelChange]);
 
   const toggleRow = useCallback((id: string | number) => {
-    if (selectionModel.includes(id)) {
-      onSelectionModelChange(selectionModel.filter((x) => x !== id));
-    } else {
-      onSelectionModelChange([...selectionModel, id]);
-    }
+    onSelectionModelChange(
+      selectionModel.includes(id)
+        ? selectionModel.filter((x) => x !== id)
+        : [...selectionModel, id]
+    );
   }, [selectionModel, onSelectionModelChange]);
 
-  /* build final column list (depends on isVendor) */
-  const cols: ColDef[] = [
-    ...BASE_COLS,
-    ...(isVendor ? [] : ADMIN_COLS),
-    ACTIONS_COL,
-  ];
+  /* Build column list based on role */
+  const extraCols = isVendor ? [] : [...ADMIN_COLS];
+  const allCols   = [...BASE_COLS, ...extraCols, ACTIONS_COL];
 
-  /* total table width for colgroup */
-  const tableWidth = CHECKBOX_W + cols.reduce((s, c) => s + c.width, 0);
+  /* Total table width from colgroup — used for <Table> minWidth */
+  const tableWidth = CHECKBOX_W + allCols.reduce((s, c) => s + c.w, 0);
 
   return (
     <Box sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
 
-      {/* ── Table card header ── */}
+      {/* ── Card header ── */}
       <Box sx={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        p: "11px 14px", borderBottom: `0.5px solid ${HX.border}`, flexWrap: "wrap", gap: 1,
+        p: "11px 14px", borderBottom: `0.5px solid ${HX.border}`,
+        flexWrap: "wrap", gap: 1, flexShrink: 0,
       }}>
         <Box>
-          <Box component="span" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: "'Cairo',sans-serif" }}>
+          <Box component="span" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT }}>
             قائمة الطلبات
           </Box>
-          <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, mr: "8px", fontFamily: "'Cairo',sans-serif" }}>
-            {isFetching ? " — جارٍ التحميل..." : ` — ${totalCount.toLocaleString("ar-EG")} طلب`}
+          <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, mr: "8px", fontFamily: FONT }}>
+            {isFetching
+              ? " — جارٍ التحميل..."
+              : ` — ${totalCount.toLocaleString("ar-EG")} طلب`}
           </Box>
         </Box>
 
-        {/* Bulk actions — visible only when rows are selected */}
         {!isVendor && selectionModel.length > 0 && (
           <Stack direction="row" spacing={1}>
             <Button size="small" variant="outlined" color="primary" onClick={onBulkEdit}
               sx={(t) => ({
-                fontFamily: "'Cairo',sans-serif", fontWeight: 600, fontSize: "12px",
+                fontFamily: FONT, fontWeight: 600, fontSize: "12px",
                 borderColor: t.palette.primary.main, color: t.palette.primary.main,
                 bgcolor: alpha(t.palette.primary.main, 0.08),
                 "&:hover": { bgcolor: alpha(t.palette.primary.main, 0.14) },
@@ -284,7 +291,7 @@ export default function OrdersHomixTableV2({
             </Button>
             <Button size="small" color="error" variant="outlined" onClick={onBulkDelete}
               sx={(t) => ({
-                fontFamily: "'Cairo',sans-serif", fontWeight: 600, fontSize: "12px",
+                fontFamily: FONT, fontWeight: 600, fontSize: "12px",
                 borderColor: t.palette.error.main, color: t.palette.error.main,
                 bgcolor: alpha(t.palette.error.main, 0.08),
                 "&:hover": { bgcolor: alpha(t.palette.error.main, 0.14) },
@@ -295,30 +302,51 @@ export default function OrdersHomixTableV2({
         )}
       </Box>
 
-      {/* ── Scrollable table ── */}
-      <Box sx={{ overflowX: "auto", flex: 1 }}>
-        <Table
-          sx={{
-            width: tableWidth,
-            minWidth: tableWidth,
-            tableLayout: "fixed",
-            borderCollapse: "collapse",
-            fontFamily: "'Cairo', sans-serif",
-          }}
-        >
-          {/* colgroup — the ONLY place widths are defined */}
+      {/* ─────────────────────────────────────────────
+          Single scroll container — handles BOTH
+          horizontal AND vertical scroll.
+          thead position:sticky works relative to
+          this container, so headers stick on top
+          while staying perfectly aligned with columns
+          during horizontal scroll.
+        ───────────────────────────────────────────── */}
+      <Box sx={{
+        overflow: "auto",          /* both axes */
+        maxHeight: 560,            /* vertical scroll kicks in after this */
+        flex: 1,
+        /* thin custom scrollbar */
+        "&::-webkit-scrollbar": { width: 4, height: 4 },
+        "&::-webkit-scrollbar-thumb": { bgcolor: HX.border, borderRadius: 4 },
+      }}>
+        <Table sx={{
+          minWidth: tableWidth,    /* forces horizontal scroll when needed */
+          tableLayout: "fixed",   /* column widths set by colgroup — guaranteed alignment */
+          borderCollapse: "collapse",
+          fontFamily: FONT,
+        }}>
+
+          {/* ── colgroup — the ONE source of truth for column widths ── */}
           <colgroup>
             {!isVendor && <col style={{ width: CHECKBOX_W }} />}
-            {cols.map((c) => (
-              <col key={c.key} style={{ width: c.width }} />
-            ))}
+            {allCols.map((c) => <col key={c.key} style={{ width: c.w }} />)}
           </colgroup>
 
-          {/* ── THEAD ── */}
-          <TableHead>
-            <TableRow>
+          {/* ── THEAD — sticky within the scroll container ── */}
+          <TableHead
+            component="thead"
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 3,          /* above td cells */
+            }}
+          >
+            <TableRow component="tr">
               {!isVendor && (
-                <TableCell padding="checkbox" sx={{ ...TH, width: CHECKBOX_W, textAlign: "center" }}>
+                <TableCell
+                  component="th"
+                  padding="checkbox"
+                  style={{ ...TH, textAlign: "center" }}
+                >
                   <Checkbox
                     size="small"
                     checked={isAllSelected}
@@ -328,8 +356,12 @@ export default function OrdersHomixTableV2({
                   />
                 </TableCell>
               )}
-              {cols.map((c) => (
-                <TableCell key={c.key} sx={{ ...TH, width: c.width, textAlign: c.align ?? "right" }}>
+              {allCols.map((c) => (
+                <TableCell
+                  component="th"
+                  key={c.key}
+                  style={TH}
+                >
                   {c.label}
                 </TableCell>
               ))}
@@ -337,12 +369,13 @@ export default function OrdersHomixTableV2({
           </TableHead>
 
           {/* ── TBODY ── */}
-          <TableBody>
+          <TableBody component="tbody">
             {orders.length === 0 && (
-              <TableRow>
+              <TableRow component="tr">
                 <TableCell
-                  colSpan={cols.length + (isVendor ? 0 : 1)}
-                  sx={{ textAlign: "center", py: 6, color: HX.tx3, fontSize: "13px", fontFamily: "'Cairo',sans-serif" }}
+                  component="td"
+                  colSpan={allCols.length + (isVendor ? 0 : 1)}
+                  style={{ ...TD, textAlign: "center", padding: "40px 0", color: HX.tx3 }}
                 >
                   {isFetching ? "جارٍ التحميل..." : "لا توجد طلبات مطابقة"}
                 </TableCell>
@@ -353,38 +386,40 @@ export default function OrdersHomixTableV2({
               const isSelected = selectionModel.includes(order.orderId);
 
               const compCost = (order.items ?? []).reduce(
-                (sum, item) => sum + Number(item.unitCost ?? 0) * Number(item.quantity ?? 1),
-                0
+                (s, it) => s + Number(it.unitCost ?? 0) * Number(it.quantity ?? 1), 0
               );
-              const vendorName = vendors.find((v) => String(v.value) === String(order.vendorId))?.label ?? "—";
+              const vendorName =
+                vendors.find((v) => String(v.value) === String(order.vendorId))?.label ?? "—";
               const user = users.find((u) => String(u.id) === String(order.userId));
-              const userName = user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "";
-              const poDateFmt = order.PoDate
+              const userName = user
+                ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "";
+              const poDateFmt  = order.PoDate
                 ? moment.utc(order.PoDate).tz("Africa/Cairo").format("YY/MM/DD") : "—";
               const createdFmt = order.createdAt
                 ? moment.utc(order.createdAt).tz("Africa/Cairo").format("YY/MM/DD") : "—";
-              const daysLabel = order.PoDate ? calculateDaysFromPoDate(order.PoDate) : null;
+              const daysLabel  = order.PoDate ? calculateDaysFromPoDate(order.PoDate) : null;
               const productCode = order.items?.[0]?.code ?? "—";
 
               return (
                 <TableRow
+                  component="tr"
                   key={order.orderId}
                   selected={isSelected}
                   sx={{
-                    "&:last-child td": { borderBottom: "none" },
-                    "&:hover td": { bgcolor: "#fafbff" },
+                    "&:last-child td, &:last-child th": { borderBottom: "none" },
+                    "&:hover td, &:hover th": { bgcolor: "#fafbff" },
                   }}
                 >
-                  {/* Checkbox */}
+                  {/* checkbox */}
                   {!isVendor && (
-                    <TableCell padding="checkbox" sx={{ ...TD, width: CHECKBOX_W, textAlign: "center" }}>
+                    <TableCell component="td" padding="checkbox" style={{ ...TD, textAlign: "center" }}>
                       <Checkbox size="small" checked={isSelected}
                         onChange={() => toggleRow(order.orderId)} sx={{ p: 0 }} />
                     </TableCell>
                   )}
 
                   {/* رقم العملية */}
-                  <TableCell sx={{ ...TD, width: 100 }}>
+                  <TableCell component="td" style={TD}>
                     <Box component="span" onClick={() => onView(order.orderId)} sx={{
                       color: HX.accent, fontWeight: 800, cursor: "pointer",
                       "&:hover": { textDecoration: "underline" },
@@ -394,7 +429,7 @@ export default function OrdersHomixTableV2({
                   </TableCell>
 
                   {/* رقم الطلب */}
-                  <TableCell sx={{ ...TD, width: 90 }}>
+                  <TableCell component="td" style={TD}>
                     <Box component="span" onClick={() => onView(order.orderId)} sx={{
                       color: HX.tx2, fontWeight: 600, cursor: "pointer",
                       "&:hover": { textDecoration: "underline" },
@@ -404,7 +439,7 @@ export default function OrdersHomixTableV2({
                   </TableCell>
 
                   {/* كود المنتج */}
-                  <TableCell sx={{ ...TD, width: 100 }}>
+                  <TableCell component="td" style={TD}>
                     <Box component="span" sx={{
                       fontFamily: "monospace", fontSize: "11px",
                       bgcolor: HX.surface2, px: "7px", py: "2px",
@@ -415,97 +450,101 @@ export default function OrdersHomixTableV2({
                   </TableCell>
 
                   {/* اسم العميل */}
-                  <TableCell sx={{ ...TD, width: 160 }}>
+                  <TableCell component="td" style={TD}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                      {order.customerName && <Avatar26 name={order.customerName} />}
-                      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {order.customerName && <AvatarCircle name={order.customerName} />}
+                      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", fontFamily: FONT }}>
                         {order.customerName || "—"}
                       </Box>
                     </Box>
                   </TableCell>
 
                   {/* حالة الطلب */}
-                  <TableCell sx={{ ...TD, width: 120 }}>
+                  <TableCell component="td" style={TD}>
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
 
                   {/* اسم المصنع */}
-                  <TableCell sx={{ ...TD, width: 150 }}>
+                  <TableCell component="td" style={TD}>
                     <FactoryCell name={vendorName} />
                   </TableCell>
 
                   {/* سعر التكلفة */}
-                  <TableCell sx={{ ...TD, width: 100, color: HX.tx2 }}>
+                  <TableCell component="td" style={{ ...TD, color: HX.tx2 }}>
                     {Number(compCost).toLocaleString("ar-EG")}
                     <Box component="span" sx={{ fontSize: "10px", mr: "2px" }}>ج.م</Box>
                   </TableCell>
 
                   {/* سعر البيع */}
-                  <TableCell sx={{ ...TD, width: 100, fontWeight: 700 }}>
-                    {order.totalPrice != null ? Number(order.totalPrice).toLocaleString("ar-EG") : "—"}
+                  <TableCell component="td" style={{ ...TD, fontWeight: 700 }}>
+                    {order.totalPrice != null
+                      ? Number(order.totalPrice).toLocaleString("ar-EG") : "—"}
                     <Box component="span" sx={{ fontSize: "10px", mr: "2px" }}>ج.م</Box>
                   </TableCell>
 
                   {/* حالة الدفع */}
-                  <TableCell sx={{ ...TD, width: 130 }}>
+                  <TableCell component="td" style={TD}>
                     <PaymentBadge status={order.paymentStatus} />
                   </TableCell>
 
                   {/* التوصيل بواسطة */}
-                  <TableCell sx={{ ...TD, width: 110 }}>
+                  <TableCell component="td" style={TD}>
                     <DeliveryByBadge fromInventory={order.shippedFromInventory} />
                   </TableCell>
 
-                  {/* الأولوية — no API field yet */}
-                  <TableCell sx={{ ...TD, width: 100 }}>
-                    <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>
+                  {/* الأولوية — no API field */}
+                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
+                    —
                   </TableCell>
 
                   {/* حالة التصنيع */}
-                  <TableCell sx={{ ...TD, width: 140 }}>
+                  <TableCell component="td" style={TD}>
                     <DeliveryStatusBadge status={order.deliveryStatus} />
                   </TableCell>
 
                   {/* تاريخ الطلب */}
-                  <TableCell sx={{ ...TD, width: 90, color: HX.tx3, fontSize: "11.5px" }}>
+                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
                     {createdFmt}
                   </TableCell>
 
                   {/* تاريخ التصنيع */}
-                  <TableCell sx={{ ...TD, width: 95, color: HX.tx3, fontSize: "11.5px" }}>
+                  <TableCell component="td" style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
                     {poDateFmt}
                   </TableCell>
 
                   {/* عداد الأيام */}
-                  <TableCell sx={{ ...TD, width: 95 }}>
+                  <TableCell component="td" style={TD}>
                     <DaysCounterBadge days={daysLabel} active={order.status === IN_MFG_STATUS} />
                   </TableCell>
 
                   {/* المسئول — admin only */}
                   {!isVendor && (
-                    <TableCell sx={{ ...TD, width: 130 }}>
+                    <TableCell component="td" style={TD}>
                       {user ? (
                         <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <Avatar26 name={userName} size={22} />
-                          <Box component="span" sx={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <AvatarCircle name={userName} size={22} />
+                          <Box component="span" sx={{
+                            fontSize: "12px", fontFamily: FONT,
+                            overflow: "hidden", textOverflow: "ellipsis",
+                          }}>
                             {userName}
                           </Box>
                         </Box>
                       ) : (
-                        <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>
+                        <Box component="span" style={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>
                       )}
                     </TableCell>
                   )}
 
                   {/* النوع — admin only */}
                   {!isVendor && (
-                    <TableCell sx={{ ...TD, width: 90, color: HX.tx2 }}>
+                    <TableCell component="td" style={{ ...TD, color: HX.tx2 }}>
                       {order.type || "—"}
                     </TableCell>
                   )}
 
                   {/* Actions */}
-                  <TableCell sx={{ ...TD, width: 90, textAlign: "center" }}>
+                  <TableCell component="td" style={{ ...TD, textAlign: "center" }}>
                     <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
                       <ActionBtn
                         onClick={() => onView(order.orderId)}
@@ -539,7 +578,7 @@ export default function OrdersHomixTableV2({
       </Box>
 
       {/* ── Pagination ── */}
-      <Box sx={{ borderTop: `0.5px solid ${HX.border}` }}>
+      <Box sx={{ borderTop: `0.5px solid ${HX.border}`, flexShrink: 0 }}>
         <TablePagination
           component="div"
           count={totalCount}
@@ -551,9 +590,9 @@ export default function OrdersHomixTableV2({
             `عرض ${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`} طلب`
           }
           sx={{
-            fontFamily: "'Cairo',sans-serif",
-            "& .MuiTablePagination-toolbar": { px: "14px", minHeight: 44, fontFamily: "'Cairo',sans-serif" },
-            "& .MuiTablePagination-displayedRows": { fontSize: "11.5px", color: HX.tx2, fontFamily: "'Cairo',sans-serif" },
+            fontFamily: FONT,
+            "& .MuiTablePagination-toolbar":       { px: "14px", minHeight: 44, fontFamily: FONT },
+            "& .MuiTablePagination-displayedRows": { fontSize: "11.5px", color: HX.tx2, fontFamily: FONT },
             "& .MuiTablePagination-actions button": {
               border: `0.5px solid ${HX.border}`, borderRadius: "7px",
               width: 28, height: 28, color: HX.tx2,

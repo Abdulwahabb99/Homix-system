@@ -203,15 +203,15 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
         <Skeleton variant="text" width={60} height={16} sx={pulse} />
       </Box>
 
-      {/* Table */}
-      <Box sx={{ overflowX: "auto" }}>
-        <Table sx={{ width: totalW, minWidth: totalW, tableLayout: "fixed", borderCollapse: "collapse", fontFamily: "'Cairo',sans-serif" }}>
+      {/* Table — same single-container approach as real table */}
+      <Box sx={{ overflow: "auto", maxHeight: 560, "&::-webkit-scrollbar": { width: 4, height: 4 }, "&::-webkit-scrollbar-thumb": { bgcolor: HX.border, borderRadius: 4 } }}>
+        <Table sx={{ minWidth: totalW, tableLayout: "fixed", borderCollapse: "collapse", fontFamily: "'Cairo',sans-serif" }}>
           <colgroup>
             <col style={{ width: 44 }} />
             {COLS.map((c, i) => <col key={i} style={{ width: c.w }} />)}
           </colgroup>
 
-          <TableHead>
+          <TableHead component="thead" sx={{ position: "sticky", top: 0, zIndex: 3 }}>
             <TableRow>
               {/* checkbox col */}
               <TableCell sx={{ ...TH_SK, width: 44, textAlign: "center" }}>
