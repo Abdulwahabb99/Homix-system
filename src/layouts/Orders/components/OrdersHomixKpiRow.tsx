@@ -164,7 +164,7 @@ export default function OrdersHomixKpiRow({ totalOrders }: OrdersHomixKpiRowProp
   return (
     <Grid container spacing="10px">
       {cards.map((card, i) => (
-        <Grid item xs={6} sm={4} md={2} key={i}>
+        <Grid item xs={6} sm={4} md={4} lg={4} xl={2} key={i}>
           <KpiCard {...card} />
         </Grid>
       ))}

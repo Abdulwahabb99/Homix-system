@@ -59,7 +59,7 @@ export function OrdersHomixKpiRowSkeleton() {
   return (
     <Grid container spacing="10px">
       {Array.from({ length: 6 }).map((_, i) => (
-        <Grid item xs={6} sm={4} md={2} key={i}>
+        <Grid item xs={6} sm={4} md={4} lg={4} xl={2} key={i}>
           <KpiCardSkeleton />
         </Grid>
       ))}

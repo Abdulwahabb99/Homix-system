@@ -20,7 +20,7 @@ export interface HomixPageHeaderProps {
  */
 export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter }: HomixPageHeaderProps) {
   const theme = useTheme();
-  const isLgUp = useMediaQuery(theme.breakpoints.up("lg"));
+  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const { pathname } = useLocation();
   const route = pathname.split("/").slice(1).filter(Boolean);
 
@@ -29,7 +29,7 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
 
   const crumbs = title === undefined || title === null;
   const hasActions = actions != null && actions !== false;
-  const clusterReservePx = isLgUp ? 58 : 100;
+  const clusterReservePx = isXlUp ? 58 : 100;
 
   return (
     <Box
@@ -45,7 +45,7 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
         pb: "10px",
         pt: "10px",
         minHeight: 58,
-        paddingInlineStart: { xs: 2, lg: "22px" },
+        paddingInlineStart: { xs: 2, xl: "22px" },
         paddingInlineEnd: `${clusterReservePx + 14}px`,
         bgcolor: HX.surface,
         borderBottom: `1px solid ${HX.border2}`,
@@ -58,7 +58,7 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
       <Box
         sx={{
           position: "absolute",
-          insetInlineEnd: { xs: 8, lg: 10 },
+          insetInlineEnd: { xs: 8, xl: 10 },
           top: "50%",
           transform: "translateY(-50%)",
           zIndex: 2,
@@ -73,7 +73,7 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
           aria-label="فتح القائمة"
           onClick={() => setMiniSidenav(dispatch, !miniSidenav)}
           sx={{
-            display: { xs: "inline-flex", lg: "none" },
+            display: { xs: "inline-flex", xl: "none" },
             width: 40,
             height: 40,
             border: "0.5px solid rgba(0,0,0,0.1)",

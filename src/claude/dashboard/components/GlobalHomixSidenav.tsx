@@ -12,34 +12,34 @@ const SIDEBAR_PX = 220;
 type Props = { navRole: HomixNavRole };
 
 /**
- * شريط Homix العام: ثابت من lg (سطح مكتب واسع)، درج يُفتح بالأيقونة على الموبايل والتابلت وiPad.
+ * شريط Homix العام: ثابت من xl (≥1536px تقريبًا)، درج على كل ما دون ذلك (موبايل، تابلت، iPad Pro).
  * في RTL: الشريط على يمين الشاشة (بداية السطر) — نستخدم insetInlineStart وليس insetInlineEnd.
  */
 export default function GlobalHomixSidenav({ navRole }: Props) {
   const theme = useTheme();
-  const isLgUp = useMediaQuery(theme.breakpoints.up("lg"));
+  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav } = controller;
 
   const closeDrawer = () => setMiniSidenav(dispatch, true);
-  const onNavigate = isLgUp ? undefined : closeDrawer;
+  const onNavigate = isXlUp ? undefined : closeDrawer;
 
   const panel = <HomixSidenavPanel role={navRole} onNavigate={onNavigate} />;
 
-  /** تحت lg: الدرج مغلق افتراضيًا حتى يفتحه المستخدم من أيقونة القائمة */
+  /** تحت xl: الدرج مغلق افتراضيًا حتى يفتحه المستخدم من أيقونة القائمة */
   useEffect(() => {
-    const lg = theme.breakpoints.values.lg;
+    const xl = theme.breakpoints.values.xl;
     const apply = () => {
-      if (window.innerWidth < lg) {
+      if (window.innerWidth < xl) {
         setMiniSidenav(dispatch, true);
       }
     };
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
-  }, [dispatch, theme.breakpoints.values.lg]);
+  }, [dispatch, theme.breakpoints.values.xl]);
 
-  if (isLgUp) {
+  if (isXlUp) {
     return (
       <Box
         component="aside"

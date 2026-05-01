@@ -53,7 +53,7 @@ export default function DashboardLayout({
         p: 3,
         position: "relative",
 
-        [breakpoints.up("lg")]: {
+        [breakpoints.up("xl")]: {
           marginInlineStart: pxToRem(220),
           transition: transitions.create(["margin-inline-start", "margin-inline-end"], {
             easing: transitions.easing.easeInOut,
