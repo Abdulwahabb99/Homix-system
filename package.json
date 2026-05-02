@@ -2,10 +2,10 @@
   "name": "homix",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
     "monitor": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
