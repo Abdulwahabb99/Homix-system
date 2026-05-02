@@ -247,6 +247,11 @@ export class DashboardRepository {
   public async getLeaderboard(
     input: DashboardMetricsInput,
   ): Promise<DashboardLeaderboardEntry[]> {
+    const aggregateEntries = await this.dashboardAggregateService.getLeaderboard(input);
+    if (aggregateEntries) {
+      return aggregateEntries;
+    }
+
     const lines = await this.getScopedOrderLines(input);
     const salesByEntry = new Map<string, Omit<DashboardLeaderboardEntry, "rank">>();
 
@@ -278,6 +283,16 @@ export class DashboardRepository {
   public async getSalesDistribution(
     input: DashboardMetricsInput,
   ): Promise<DashboardSalesDistributionItem[]> {
+    const aggregateDistribution = await this.dashboardAggregateService.getSalesDistribution(input);
+    if (aggregateDistribution) {
+      const groupedSales = new Map<string, number>();
+      for (const item of aggregateDistribution) {
+        groupedSales.set(item.label, item.value);
+      }
+
+      return toDistributionItems(groupedSales, ["#6366F1", "#10B981", "#F59E0B", "#C4A15A", "#94A3B8"]);
+    }
+
     const lines = await this.getScopedOrderLines(input);
     const groupedSales = new Map<string, number>();
 
