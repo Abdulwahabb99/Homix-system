@@ -46,6 +46,6 @@ export function useDashboardLatestOrders(startDate: string, endDate: string) {
     queryKey: latestOrdersKeys.byRange(startDate, endDate),
     queryFn:  () => fetchLatestOrders(startDate, endDate),
     enabled:  Boolean(startDate && endDate),
-    staleTime: 1000 * 60,
+    staleTime: 30_000,
   });
 }

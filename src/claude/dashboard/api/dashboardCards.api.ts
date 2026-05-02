@@ -47,6 +47,6 @@ export function useDashboardCards(startDate: string, endDate: string) {
     queryKey: dashboardKeys.cards(startDate, endDate),
     queryFn:  () => fetchDashboardCards(startDate, endDate),
     enabled:  Boolean(startDate && endDate),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 30_000,
   });
 }

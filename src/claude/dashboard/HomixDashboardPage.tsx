@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "claude/dashboard/homixDashboard.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import KpiSection from "claude/dashboard/components/KpiSection";
@@ -15,6 +15,7 @@ import CategoryDonutChart from "claude/dashboard/components/CategoryDonutChart";
 import TargetsProgressCard from "claude/dashboard/components/TargetsProgressCard";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { useDashboardCards } from "claude/dashboard/api/dashboardCards.api";
+import { useDashboardSalesDistribution } from "claude/dashboard/api/dashboardSalesDistribution.api";
 
 /* ── helpers ── */
 function getGreeting() {
@@ -61,7 +62,8 @@ const DATE_FIELD_SX = {
 /* ─────────────────────────────────────────── */
 
 export default function HomixDashboardPage() {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { isVendor, firstName } = useMemo(() => {
     try {
@@ -75,20 +77,25 @@ export default function HomixDashboardPage() {
   const greeting = useMemo(getGreeting, []);
   const todayAr  = useMemo(getArabicDate, []);
 
-  /* ── date range state — default: first day of current month → today ── */
-  const today     = useMemo(() => toIsoDate(new Date()), []);
-  const firstOfMonth = useMemo(() => {
-    const d = new Date();
-    d.setDate(1);
-    return toIsoDate(d);
-  }, []);
+  const today = useMemo(() => toIsoDate(new Date()), []);
 
-  const [startDate, setStartDate] = useState(today);
-  const [endDate,   setEndDate]   = useState(today);
+  /* ── dates driven by URL params — fallback to today ── */
+  const startDate = searchParams.get("startDate") || today;
+  const endDate   = searchParams.get("endDate")   || today;
+
+  function setStartDate(val: string) {
+    setSearchParams((prev) => { prev.set("startDate", val); return prev; }, { replace: true });
+  }
+  function setEndDate(val: string) {
+    setSearchParams((prev) => { prev.set("endDate", val); return prev; }, { replace: true });
+  }
 
   /* ── API ── */
   const { data: cardsData, isLoading: cardsLoading, isError: cardsError, error } =
     useDashboardCards(startDate, endDate);
+
+  const { data: distData, isLoading: distLoading, isError: distError } =
+    useDashboardSalesDistribution(startDate, endDate);
 
   useEffect(() => {
     console.log("[Dashboard Cards]", { cardsData, cardsLoading, cardsError, error });
@@ -163,7 +170,7 @@ export default function HomixDashboardPage() {
               <Button
                 size="small"
                 variant="text"
-                onClick={() => { setStartDate(today); setEndDate(today); }}
+                onClick={() => setSearchParams({ startDate: today, endDate: today }, { replace: true })}
                 sx={{
                   fontFamily: "'Cairo',sans-serif", fontSize: "11.5px",
                   fontWeight: 600, borderRadius: "7px", height: 28, px: "10px",
@@ -223,7 +230,11 @@ export default function HomixDashboardPage() {
                 <button type="button" className="h-card-link">تفاصيل ←</button>
               </div>
               <div className="h-card-body">
-                <CategoryDonutChart />
+                <CategoryDonutChart
+                  items={distData?.data?.items}
+                  isLoading={distLoading}
+                  isError={distError}
+                />
               </div>
             </div>
             <TargetsProgressCard />

@@ -43,6 +43,6 @@ export function useDashboardActivities(startDate: string, endDate: string) {
     queryKey: activitiesKeys.byRange(startDate, endDate),
     queryFn:  () => fetchDashboardActivities(startDate, endDate),
     enabled:  Boolean(startDate && endDate),
-    staleTime: 1000 * 60,
+    staleTime: 30_000,
   });
 }

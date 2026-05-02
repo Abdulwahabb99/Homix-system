@@ -80,6 +80,6 @@ export function useDashboardPerformance(startDate: string, endDate: string) {
     queryKey: performanceKeys.byRange(startDate, endDate),
     queryFn:  () => fetchDashboardPerformance(startDate, endDate),
     enabled:  Boolean(startDate && endDate),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 30_000,
   });
 }

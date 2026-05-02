@@ -43,6 +43,6 @@ export function useDashboardLeaderboard(startDate: string, endDate: string) {
     queryKey: leaderboardKeys.byRange(startDate, endDate),
     queryFn:  () => fetchLeaderboard(startDate, endDate),
     enabled:  Boolean(startDate && endDate),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 30_000,
   });
 }
