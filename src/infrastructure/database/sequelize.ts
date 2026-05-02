@@ -22,4 +22,20 @@ export const sequelize = new Sequelize(env.DB_NAME, env.DB_USER, env.DB_PASSWORD
 export const connectToDatabase = async (): Promise<void> => {
   await sequelize.authenticate();
   logger.info("Database connected successfully");
+
+  if (!env.DB_SYNC) {
+    return;
+  }
+
+  await sequelize.sync({
+    alter: env.DB_SYNC_ALTER,
+    force: env.DB_SYNC_FORCE,
+  });
+  logger.info(
+    {
+      alter: env.DB_SYNC_ALTER,
+      force: env.DB_SYNC_FORCE,
+    },
+    "Database schema synchronized",
+  );
 };
