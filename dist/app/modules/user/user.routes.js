@@ -1,11 +1,14 @@
 "use strict";
-const express = require("express");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+const express_1 = __importDefault(require("express"));
 const AuthController = require("./AuthController");
 const UserController = require("./user.controller");
 const verifyToken = require("../../middlewares/protectApi");
 const isAdmin = require("../../middlewares/isAdmin");
 const isNotVendor = require("../../middlewares/isNotVendor");
-const UserRouter = express.Router();
+const UserRouter = express_1.default.Router();
 /**
  * @swagger
  * /users:
@@ -14,10 +17,10 @@ const UserRouter = express.Router();
  *       - bearerAuth: []
  *     tags:
  *       - Users
- *     summary: Get all users
+ *     summary: Get all admin users
  *     responses:
  *       200:
- *         description: List of users
+ *         description: Users list
  */
 UserRouter.get("/", verifyToken, isNotVendor, UserController.getAllUsers);
 /**
@@ -55,17 +58,6 @@ UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               firstName:
- *                 type: string
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -78,20 +70,9 @@ UserRouter.put("/:id", verifyToken, isAdmin, UserController.editUser);
  *     tags:
  *       - Users
  *     summary: Login user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login result
  */
 UserRouter.post("/login", AuthController.login);
 /**
@@ -102,22 +83,7 @@ UserRouter.post("/login", AuthController.login);
  *       - bearerAuth: []
  *     tags:
  *       - Users
- *     summary: Create new user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               firstName:
- *                 type: string
- *               userType:
- *                 type: string
+ *     summary: Create user
  *     responses:
  *       200:
  *         description: User created successfully

@@ -25,7 +25,65 @@ const dashboardCardParamSchema = zod_1.z.object({
     ]),
 });
 exports.dashboardRouter = express_1.default.Router();
+/**
+ * @swagger
+ * /dashboard/cards:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Dashboard
+ *     summary: Get dashboard cards for a date range
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Dashboard cards payload
+ */
 exports.dashboardRouter.get("/cards", verifyToken, (0, http_1.validateRequest)({ query: dashboard_schemas_1.dashboardDateRangeSchema }), (0, http_1.asyncHandler)(dashboardController.getCards));
+/**
+ * @swagger
+ * /dashboard/cards/{cardKey}:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Dashboard
+ *     summary: Get a single dashboard card for a date range
+ *     parameters:
+ *       - in: path
+ *         name: cardKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [activeMakers, activeProducts, pendingOrders, totalOrders, totalSales]
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Single dashboard card payload
+ */
 exports.dashboardRouter.get("/cards/:cardKey", verifyToken, (0, http_1.validateRequest)({
     params: dashboardCardParamSchema,
     query: dashboard_schemas_1.dashboardDateRangeSchema,

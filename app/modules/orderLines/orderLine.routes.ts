@@ -1,13 +1,12 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-const express_1 = __importDefault(require("express"));
-const verifyToken = require("../../middlewares/protectApi");
-const OrderLineController = require("./orderLine.controller");
-const IsNotLogistic = require("../../middlewares/isNotLogistic");
-const isAdmin = require("../../middlewares/isAdmin");
-const OrderLineRouter = express_1.default.Router();
+import express from "express";
+
+const verifyToken = require("../../middlewares/protectApi") as typeof import("../../middlewares/protectApi");
+const OrderLineController = require("./orderLine.controller") as typeof import("./orderLine.controller");
+const IsNotLogistic = require("../../middlewares/isNotLogistic") as typeof import("../../middlewares/isNotLogistic");
+const isAdmin = require("../../middlewares/isAdmin") as typeof import("../../middlewares/isAdmin");
+
+const OrderLineRouter = express.Router();
+
 /**
  * @swagger
  * /orderLines/{orderLineId}:
@@ -70,5 +69,5 @@ OrderLineRouter.post("/:orderLineId/notes", verifyToken, IsNotLogistic, OrderLin
  *         description: Note deleted successfully
  */
 OrderLineRouter.delete("/:orderLineId/notes/:noteId", verifyToken, isAdmin, OrderLineController.deleteNote);
-module.exports = OrderLineRouter;
-//# sourceMappingURL=orderLine.routes.js.map
+
+export = OrderLineRouter;

@@ -25,6 +25,32 @@ const dashboardCardParamSchema = z.object({
 
 export const dashboardRouter = express.Router();
 
+/**
+ * @swagger
+ * /dashboard/cards:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Dashboard
+ *     summary: Get dashboard cards for a date range
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Dashboard cards payload
+ */
 dashboardRouter.get(
   "/cards",
   verifyToken,
@@ -32,6 +58,38 @@ dashboardRouter.get(
   asyncHandler(dashboardController.getCards),
 );
 
+/**
+ * @swagger
+ * /dashboard/cards/{cardKey}:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Dashboard
+ *     summary: Get a single dashboard card for a date range
+ *     parameters:
+ *       - in: path
+ *         name: cardKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [activeMakers, activeProducts, pendingOrders, totalOrders, totalSales]
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Single dashboard card payload
+ */
 dashboardRouter.get(
   "/cards/:cardKey",
   verifyToken,

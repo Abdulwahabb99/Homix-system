@@ -9,7 +9,8 @@ class AuthController {
             return res.status(user.statusCode).json(user);
         }
         catch (error) {
-            return next(new AppError(error.message, 500));
+            const message = error instanceof Error ? error.message : "Login failed";
+            return next(new AppError(message, 500));
         }
     }
     static async addUser(req, res, next) {
@@ -18,10 +19,11 @@ class AuthController {
             if (user.status === false) {
                 return res.status(user.statusCode).json(user);
             }
-            res.status(user.statusCode).send(user);
+            return res.status(user.statusCode).send(user);
         }
         catch (error) {
-            return next(new AppError(error.message, 500));
+            const message = error instanceof Error ? error.message : "Add user failed";
+            return next(new AppError(message, 500));
         }
     }
 }

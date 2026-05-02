@@ -1,40 +1,48 @@
 "use strict";
 const UserService = require("./user.service");
+const getId = (req) => {
+    const id = req.params.id;
+    return Array.isArray(id) ? id[0] ?? "" : id ?? "";
+};
 class UserController {
-    static async getAllUsers(req, res) {
+    static async getAllUsers(_req, res) {
         try {
             const users = await UserService.getAdminUsers();
-            res.status(200).json(users);
+            return res.status(200).json(users);
         }
         catch (error) {
-            res.status(500).json({ message: error.message });
+            const message = error instanceof Error ? error.message : "Failed to fetch users";
+            return res.status(500).json({ message });
         }
     }
     static async getUser(req, res) {
         try {
-            const user = await UserService.getUser(req.params.id);
-            res.status(200).json(user);
+            const user = await UserService.getUser(getId(req));
+            return res.status(200).json(user);
         }
         catch (error) {
-            res.status(500).json({ message: error.message });
+            const message = error instanceof Error ? error.message : "Failed to fetch user";
+            return res.status(500).json({ message });
         }
     }
     static async editUser(req, res) {
         try {
-            const user = await UserService.editUser(req.params.id, req.body);
-            res.status(200).json(user);
+            const user = await UserService.editUser(getId(req), req.body);
+            return res.status(200).json(user);
         }
         catch (error) {
-            res.status(500).json({ message: error.message });
+            const message = error instanceof Error ? error.message : "Failed to edit user";
+            return res.status(500).json({ message });
         }
     }
     static async deleteUser(req, res) {
         try {
-            const user = await UserService.deleteUser(req.params.id);
-            res.status(200).json(user);
+            const user = await UserService.deleteUser(getId(req));
+            return res.status(200).json(user);
         }
         catch (error) {
-            res.status(500).json({ message: error.message });
+            const message = error instanceof Error ? error.message : "Failed to delete user";
+            return res.status(500).json({ message });
         }
     }
 }

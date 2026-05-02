@@ -24,7 +24,11 @@ const categoriesRouter = require("../../app/modules/product/categories.routes");
 const shipmentRouter = require("../../app/modules/shipments/shipment.routes");
 const isNotLogistic = require("../../app/middlewares/isNotLogistic");
 const swaggerOptions = {
-    apis: ["./app/modules/*/*.routes.js"],
+    apis: [
+        "./app/modules/*/*.routes.js",
+        "./app/modules/*/*.routes.ts",
+        "./src/modules/**/*.routes.ts",
+    ],
     definition: {
         components: {
             securitySchemes: {
