@@ -4,6 +4,30 @@ import { z } from "zod";
 dotenv.config();
 
 const dialectSchema = z.enum(["postgres", "mysql", "mariadb", "sqlite", "mssql"]);
+const booleanFromEnv = z
+  .union([z.boolean(), z.string()])
+  .transform((value, context) => {
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (["true", "1", "yes", "on"].includes(normalizedValue)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "off", ""].includes(normalizedValue)) {
+      return false;
+    }
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Expected boolean-like env value",
+    });
+
+    return z.NEVER;
+  });
 
 const envSchema = z.object({
   APP_URL: z.string().url(),
@@ -11,9 +35,9 @@ const envSchema = z.object({
   DB_HOST: z.string().min(1),
   DB_NAME: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
-  DB_SYNC: z.coerce.boolean().default(false),
-  DB_SYNC_ALTER: z.coerce.boolean().default(false),
-  DB_SYNC_FORCE: z.coerce.boolean().default(false),
+  DB_SYNC: booleanFromEnv.default(false),
+  DB_SYNC_ALTER: booleanFromEnv.default(false),
+  DB_SYNC_FORCE: booleanFromEnv.default(false),
   DB_USER: z.string().min(1),
   DEFAULT_ADMIN_PASSWORD: z.string().min(1),
   DEFAULT_PASSWORD: z.string().min(1),
