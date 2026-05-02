@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 
 import { ORDER_STATUS } from "../../config/constants";
+import { DashboardAggregateService } from "./dashboard-aggregate.service";
 import { toStatusLabel, withRanks } from "./dashboard.helpers";
 import type {
   DashboardActivityItem,
@@ -146,9 +147,22 @@ const toDistributionItems = (
 };
 
 export class DashboardRepository {
-  public async getSnapshot(input: DashboardMetricsInput): Promise<DashboardMetricSnapshot> {
-    const range = toRange(input);
+  private readonly dashboardAggregateService = new DashboardAggregateService({
+    getDeliveredOrdersCountFromOrders: (input) => this.getDeliveredOrdersCountFromOrders(input),
+    getSnapshotFromOrders: (input) => this.getSnapshotFromOrders(input),
+  });
 
+  public async getSnapshot(input: DashboardMetricsInput): Promise<DashboardMetricSnapshot> {
+    const aggregateSnapshot = await this.dashboardAggregateService.getSnapshot(input);
+    if (aggregateSnapshot) {
+      return aggregateSnapshot;
+    }
+
+    return this.getSnapshotFromOrders(input);
+  }
+
+  public async getSnapshotFromOrders(input: DashboardMetricsInput): Promise<DashboardMetricSnapshot> {
+    const range = toRange(input);
     if (input.role === "vendor" && input.vendorId) {
       return this.getVendorSnapshot(input.vendorId, range);
     }
@@ -159,6 +173,11 @@ export class DashboardRepository {
   public async getPerformanceSeries(
     input: DashboardMetricsInput,
   ): Promise<DashboardPerformancePoint[]> {
+    const aggregateSeries = await this.dashboardAggregateService.getPerformanceSeries(input);
+    if (aggregateSeries) {
+      return aggregateSeries;
+    }
+
     const orders = await this.getScopedOrders(input);
     const grouped = new Map<string, { orders: number; sales: number }>();
 
@@ -271,6 +290,15 @@ export class DashboardRepository {
   }
 
   public async getDeliveredOrdersCount(input: DashboardMetricsInput): Promise<number> {
+    const aggregateCount = await this.dashboardAggregateService.getDeliveredOrdersCount(input);
+    if (aggregateCount !== null) {
+      return aggregateCount;
+    }
+
+    return this.getDeliveredOrdersCountFromOrders(input);
+  }
+
+  public async getDeliveredOrdersCountFromOrders(input: DashboardMetricsInput): Promise<number> {
     const range = toRange(input);
     if (input.role === "vendor" && input.vendorId) {
       return orderLineModel.count({

@@ -76,6 +76,12 @@ jest.mock("../../../app/modules/user/user.model", () => ({
   count: jest.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1),
 }));
 
+jest.mock("./dashboard-daily-metric.model", () => ({
+  findAll: jest.fn().mockResolvedValue([]),
+  sync: jest.fn(),
+  upsert: jest.fn(),
+}));
+
 import { errorMiddleware } from "../../shared/http";
 import { dashboardRouter } from "./dashboard.routes";
 

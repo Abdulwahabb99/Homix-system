@@ -55,12 +55,207 @@ const swaggerOptions = {
           type: "object",
           properties: {
             data: {
-              items: { $ref: "#/components/schemas/DashboardCard" },
-              type: "array",
+              properties: {
+                cards: {
+                  items: { $ref: "#/components/schemas/DashboardCard" },
+                  type: "array",
+                },
+                endDate: { example: "2026-05-31", type: "string" },
+                role: { enum: ["admin", "vendor"], type: "string" },
+                startDate: { example: "2026-05-01", type: "string" },
+              },
+              type: "object",
             },
             status: { example: true, type: "boolean" },
           },
           required: ["status", "data"],
+        },
+        DashboardPerformancePoint: {
+          type: "object",
+          properties: {
+            date: { example: "2026-05-01", type: "string" },
+            orders: { example: 42, type: "integer" },
+            sales: { example: 51200, type: "number" },
+          },
+          required: ["date", "orders", "sales"],
+        },
+        DashboardPerformanceEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                endDate: { example: "2026-05-31", type: "string" },
+                role: { enum: ["admin", "vendor"], type: "string" },
+                series: {
+                  items: { $ref: "#/components/schemas/DashboardPerformancePoint" },
+                  type: "array",
+                },
+                startDate: { example: "2026-05-01", type: "string" },
+                summary: { $ref: "#/components/schemas/DashboardCard" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardActivityItem: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-05-02T00:45:00.000Z", format: "date-time", type: "string" },
+            entityId: { example: 31668, type: "integer" },
+            entityType: { example: "order", type: "string" },
+            id: { example: 91, type: "integer" },
+            text: { example: "تم اضافة طلب جديد رقم 31668", type: "string" },
+          },
+        },
+        DashboardLatestOrderItem: {
+          type: "object",
+          properties: {
+            amount: { example: 12999, type: "number" },
+            customerName: { example: "Lamiaa Saeid", type: "string" },
+            id: { example: 31668, type: "integer" },
+            orderDate: { example: "2026-05-02T00:45:00.000Z", format: "date-time", type: "string" },
+            orderNumber: { example: "31668", type: "string" },
+            productName: { example: "غرفة نوم - دريسينج", type: "string" },
+            status: { example: 1, nullable: true, type: "integer" },
+            statusLabel: { example: "معلق", type: "string" },
+          },
+        },
+        DashboardLeaderboardItem: {
+          type: "object",
+          properties: {
+            id: { example: 4, nullable: true, type: "integer" },
+            name: { example: "ركنة للأثاث", type: "string" },
+            rank: { example: 1, type: "integer" },
+            secondaryLabel: { example: "صانع", type: "string" },
+            totalSales: { example: 284000, type: "number" },
+          },
+        },
+        DashboardSalesDistributionItem: {
+          type: "object",
+          properties: {
+            color: { example: "#6366F1", type: "string" },
+            label: { example: "غرفة النوم", type: "string" },
+            percentage: { example: 40, type: "number" },
+            value: { example: 320000, type: "number" },
+          },
+        },
+        DashboardQuickActionItem: {
+          type: "object",
+          properties: {
+            description: { example: "رفع منتج جديد", type: "string" },
+            icon: { example: "package", type: "string" },
+            key: { example: "add-product", type: "string" },
+            label: { example: "إضافة منتج", type: "string" },
+            route: { example: "/products/new", type: "string" },
+          },
+        },
+        DashboardGoalProgressItem: {
+          type: "object",
+          properties: {
+            color: { example: "#6366F1", type: "string" },
+            currentValue: { example: 847000, type: "number" },
+            key: { example: "salesTarget", type: "string" },
+            label: { example: "هدف المبيعات", type: "string" },
+            progressPercentage: { example: 84.7, type: "number" },
+            targetValue: { example: 1000000, type: "number" },
+          },
+        },
+        DashboardActivitiesEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardActivityItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardLatestOrdersEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardLatestOrderItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardLeaderboardEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardLeaderboardItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardSalesDistributionEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardSalesDistributionItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardQuickActionsEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardQuickActionItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        DashboardGoalsProgressEnvelope: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/DashboardGoalProgressItem" },
+                  type: "array",
+                },
+                role: { enum: ["admin", "vendor"], type: "string" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
         },
         EmptyObject: {
           additionalProperties: false,
