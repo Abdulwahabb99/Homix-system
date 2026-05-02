@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, TextField, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useNavigate } from "react-router-dom";
@@ -37,28 +37,25 @@ function toIsoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-/* ── date input style (matches Orders filters panel) ── */
-const DATE_INPUT_SX: React.CSSProperties = {
-  height: 34,
-  width: "100%",
-  fontFamily: "'Cairo',sans-serif",
-  fontSize: "12.5px",
-  padding: "0 12px",
-  border: `0.5px solid ${HX.border2}`,
-  borderRadius: "8px",
-  background: HX.surface,
-  color: HX.tx,
-  outline: "none",
-  cursor: "pointer",
-};
-
-const LABEL_SX = {
-  fontSize: "11px",
-  fontWeight: 600,
-  color: HX.tx2,
-  fontFamily: "'Cairo',sans-serif",
-  display: "block",
-  mb: "4px",
+/* ── shared sx for MUI date TextField ── */
+const DATE_FIELD_SX = {
+  "& .MuiInputBase-root": {
+    height: 36,
+    borderRadius: "8px",
+    fontFamily: "'Cairo',sans-serif",
+    fontSize: "12.5px",
+    bgcolor: HX.surface,
+  },
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
+  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
+  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: HX.accent,
+    boxShadow: `0 0 0 3px ${HX.accentLight}`,
+  },
+  "& .MuiInputLabel-root": {
+    fontFamily: "'Cairo',sans-serif",
+    fontSize: "12px",
+  },
 } as const;
 
 /* ─────────────────────────────────────────── */
@@ -180,34 +177,27 @@ export default function HomixDashboardPage() {
 
             {/* inputs row */}
             <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 160px" }}>
-                <Typography component="label" sx={LABEL_SX}>من تاريخ</Typography>
-                <Box
-                  component="input"
-                  type="date"
-                  value={startDate}
-                  max={endDate}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setStartDate(e.target.value)
-                  }
-                  style={DATE_INPUT_SX}
-                />
-              </Box>
+              <TextField
+                type="date"
+                label="من تاريخ"
+                size="small"
+                value={startDate}
+                inputProps={{ max: endDate }}
+                onChange={(e) => setStartDate(e.target.value)}
+                sx={{ flex: "1 1 160px", ...DATE_FIELD_SX }}
+                InputLabelProps={{ shrink: true }}
+              />
 
-              <Box sx={{ flex: "1 1 160px" }}>
-                <Typography component="label" sx={LABEL_SX}>إلى تاريخ</Typography>
-                <Box
-                  component="input"
-                  type="date"
-                  value={endDate}
-                  min={startDate}
-                  max={today}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setEndDate(e.target.value)
-                  }
-                  style={DATE_INPUT_SX}
-                />
-              </Box>
+              <TextField
+                type="date"
+                label="إلى تاريخ"
+                size="small"
+                value={endDate}
+                inputProps={{ min: startDate, max: today }}
+                onChange={(e) => setEndDate(e.target.value)}
+                sx={{ flex: "1 1 160px", ...DATE_FIELD_SX }}
+                InputLabelProps={{ shrink: true }}
+              />
             </Box>
           </Box>
 
