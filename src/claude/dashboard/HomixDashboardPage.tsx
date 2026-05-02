@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useNavigate } from "react-router-dom";
 import "claude/dashboard/homixDashboard.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -12,8 +13,10 @@ import TopSellersCard from "claude/dashboard/components/TopSellersCard";
 import QuickActionsCard from "claude/dashboard/components/QuickActionsCard";
 import CategoryDonutChart from "claude/dashboard/components/CategoryDonutChart";
 import TargetsProgressCard from "claude/dashboard/components/TargetsProgressCard";
-import { HX } from "layouts/Orders/ordersHomixTheme";
+import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
+import { useDashboardCards } from "claude/dashboard/api/dashboardCards.api";
 
+/* ── helpers ── */
 function getGreeting() {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return "صباح الخير";
@@ -30,35 +33,77 @@ function getArabicDate() {
   }).format(new Date());
 }
 
+function toIsoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+/* ── date input style (matches Orders filters panel) ── */
+const DATE_INPUT_SX: React.CSSProperties = {
+  height: 34,
+  width: "100%",
+  fontFamily: "'Cairo',sans-serif",
+  fontSize: "12.5px",
+  padding: "0 12px",
+  border: `0.5px solid ${HX.border2}`,
+  borderRadius: "8px",
+  background: HX.surface,
+  color: HX.tx,
+  outline: "none",
+  cursor: "pointer",
+};
+
+const LABEL_SX = {
+  fontSize: "11px",
+  fontWeight: 600,
+  color: HX.tx2,
+  fontFamily: "'Cairo',sans-serif",
+  display: "block",
+  mb: "4px",
+} as const;
+
+/* ─────────────────────────────────────────── */
+
 export default function HomixDashboardPage() {
   const navigate = useNavigate();
 
   const { isVendor, firstName } = useMemo(() => {
     try {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
-      return {
-        isVendor: u?.userType === "2",
-        firstName: u?.firstName ?? "",
-      };
+      return { isVendor: u?.userType === "2", firstName: u?.firstName ?? "" };
     } catch {
       return { isVendor: false, firstName: "" };
     }
   }, []);
 
   const greeting = useMemo(getGreeting, []);
-  const todayAr = useMemo(getArabicDate, []);
+  const todayAr  = useMemo(getArabicDate, []);
 
+  /* ── date range state — default: first day of current month → today ── */
+  const today     = useMemo(() => toIsoDate(new Date()), []);
+  const firstOfMonth = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    return toIsoDate(d);
+  }, []);
+
+  const [startDate, setStartDate] = useState(today);
+  const [endDate,   setEndDate]   = useState(today);
+
+  /* ── API ── */
+  const { data: cardsData, isLoading: cardsLoading, isError: cardsError, error } =
+    useDashboardCards(startDate, endDate);
+
+  useEffect(() => {
+    console.log("[Dashboard Cards]", { cardsData, cardsLoading, cardsError, error });
+  }, [cardsData, cardsLoading, cardsError, error]);
+
+  /* ── header ── */
   const pageTitle = (
     <Box>
-      <Typography
-        sx={{
-          fontSize: "16px",
-          fontWeight: 800,
-          color: HX.tx,
-          fontFamily: "'Cairo',sans-serif",
-          lineHeight: 1.3,
-        }}
-      >
+      <Typography sx={{
+        fontSize: "16px", fontWeight: 800, color: HX.tx,
+        fontFamily: "'Cairo',sans-serif", lineHeight: 1.3,
+      }}>
         {greeting}، {firstName}
       </Typography>
     </Box>
@@ -66,15 +111,11 @@ export default function HomixDashboardPage() {
 
   const pageActions = (
     <>
-      <Typography
-        sx={{
-          fontSize: "12.5px",
-          fontWeight: 600,
-          color: HX.tx2,
-          fontFamily: "'Cairo',sans-serif",
-          display: { xs: "none", sm: "block" },
-        }}
-      >
+      <Typography sx={{
+        fontSize: "12.5px", fontWeight: 600, color: HX.tx2,
+        fontFamily: "'Cairo',sans-serif",
+        display: { xs: "none", sm: "block" },
+      }}>
         {todayAr}
       </Typography>
 
@@ -85,15 +126,10 @@ export default function HomixDashboardPage() {
           startIcon={<AddIcon sx={{ fontSize: "15px !important" }} />}
           onClick={() => navigate("/orders/add")}
           sx={{
-            fontFamily: "'Cairo',sans-serif",
-            fontWeight: 700,
-            fontSize: "12.5px",
-            borderRadius: "9px",
-            px: "14px",
-            py: "7px",
-            textTransform: "none",
-            boxShadow: "none",
-            "&:hover": { boxShadow: "none" },
+            fontFamily: "'Cairo',sans-serif", fontWeight: 700,
+            fontSize: "12.5px", borderRadius: "9px",
+            px: "14px", py: "7px", textTransform: "none",
+            boxShadow: "none", "&:hover": { boxShadow: "none" },
           }}
         >
           طلب جديد
@@ -110,7 +146,72 @@ export default function HomixDashboardPage() {
     >
       <div className="homixDashPage">
         <div className="h-content">
-          <KpiSection />
+
+          {/* ── Date range bar ── */}
+          <Box sx={{ ...cardSx, p: "14px 16px", mb: "4px" }}>
+            {/* header row */}
+            <Box sx={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              mb: "12px",
+            }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <CalendarTodayIcon sx={{ fontSize: 15, color: HX.accent }} />
+                <Typography sx={{
+                  fontSize: "13px", fontWeight: 700,
+                  color: HX.tx, fontFamily: "'Cairo',sans-serif",
+                }}>
+                  الفترة الزمنية
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => { setStartDate(today); setEndDate(today); }}
+                sx={{
+                  fontFamily: "'Cairo',sans-serif", fontSize: "11.5px",
+                  fontWeight: 600, borderRadius: "7px", height: 28, px: "10px",
+                  color: HX.tx3,
+                  "&:hover": { color: HX.accent, bgcolor: HX.accentLight },
+                }}
+              >
+                إعادة تعيين
+              </Button>
+            </Box>
+
+            {/* inputs row */}
+            <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <Box sx={{ flex: "1 1 160px" }}>
+                <Typography component="label" sx={LABEL_SX}>من تاريخ</Typography>
+                <Box
+                  component="input"
+                  type="date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setStartDate(e.target.value)
+                  }
+                  style={DATE_INPUT_SX}
+                />
+              </Box>
+
+              <Box sx={{ flex: "1 1 160px" }}>
+                <Typography component="label" sx={LABEL_SX}>إلى تاريخ</Typography>
+                <Box
+                  component="input"
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  max={today}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEndDate(e.target.value)
+                  }
+                  style={DATE_INPUT_SX}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          <KpiSection cards={cardsData?.data?.cards} isLoading={cardsLoading} />
           <div className="h-grid-3-1">
             <SalesChartCard />
             <ActivityFeedCard />
@@ -129,9 +230,7 @@ export default function HomixDashboardPage() {
                   <div className="h-card-title">توزيع المبيعات</div>
                   <div className="h-card-sub">حسب الفئة — هذا الشهر</div>
                 </div>
-                <button type="button" className="h-card-link">
-                  تفاصيل ←
-                </button>
+                <button type="button" className="h-card-link">تفاصيل ←</button>
               </div>
               <div className="h-card-body">
                 <CategoryDonutChart />
