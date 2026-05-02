@@ -227,7 +227,6 @@ export default function HomixDashboardPage() {
                   <div className="h-card-title">توزيع المبيعات</div>
                   <div className="h-card-sub">حسب الفئة — هذا الشهر</div>
                 </div>
-                <button type="button" className="h-card-link">تفاصيل ←</button>
               </div>
               <div className="h-card-body">
                 <CategoryDonutChart
@@ -237,7 +236,7 @@ export default function HomixDashboardPage() {
                 />
               </div>
             </div>
-            <TargetsProgressCard />
+            {/* <TargetsProgressCard /> */}
           </div>
         </div>
       </div>

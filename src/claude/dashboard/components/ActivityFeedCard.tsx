@@ -61,7 +61,6 @@ export default function ActivityFeedCard({ startDate, endDate }: ActivityFeedCar
           <div className="h-card-title">آخر الأنشطة</div>
           <div className="h-card-sub">تحديثات فورية</div>
         </div>
-        <button type="button" className="h-card-link">الكل</button>
       </div>
 
       <div className="h-card-body h-activity-body">
