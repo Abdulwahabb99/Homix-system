@@ -107,8 +107,9 @@ export default function RecentOrdersTable({ startDate, endDate }: RecentOrdersTa
         </div>
       </div>
 
+      <div className="h-orders-table-wrap">
       <table className="h-orders-table">
-        <thead>
+        <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
           <tr>
             <th>رقم الطلب</th>
             <th>العميل</th>
@@ -161,6 +162,7 @@ export default function RecentOrdersTable({ startDate, endDate }: RecentOrdersTa
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

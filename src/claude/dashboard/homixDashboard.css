@@ -622,8 +622,25 @@
 }
 .h-card-body {
   padding: 16px 18px;
+  min-height: 120px;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.h-card-body::-webkit-scrollbar {
+  width: 4px;
+}
+.h-card-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
+.h-card-body:has(.h-chart-area),
+.h-card-body:has(.h-sales-head-stats) {
+  max-height: none;
+  overflow-y: visible;
+}
 .h-chart-area {
   position: relative;
   height: 200px;
@@ -632,6 +649,20 @@
   padding: 10px 0 0;
 }
 
+.h-orders-table-wrap {
+  min-height: 120px;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.h-orders-table-wrap::-webkit-scrollbar {
+  width: 4px;
+}
+.h-orders-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
 .h-orders-table {
   width: 100%;
   border-collapse: collapse;
@@ -1066,6 +1097,18 @@
 }
 .h-activity-body {
   padding: 10px 18px;
+  min-height: 120px;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.h-activity-body::-webkit-scrollbar {
+  width: 4px;
+}
+.h-activity-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .h-donut-center {
