@@ -207,7 +207,7 @@ export default function HomixDashboardPage() {
             <ActivityFeedCard startDate={startDate} endDate={endDate} />
           </div>
           <div className="h-grid-3-1">
-            <RecentOrdersTable />
+            <RecentOrdersTable startDate={startDate} endDate={endDate} />
             <div className="h-right-col">
               <TopSellersCard />
               <QuickActionsCard isVendor={isVendor} />
