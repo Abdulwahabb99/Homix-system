@@ -1,4 +1,4 @@
-const { connectToDb } = require("../../config/db.config");
+const { connectToDb } = require("../../src/infrastructure/database");
 const shopifyClient = require("../../config/shopify");
 const { saveImportedProducts } = require("../modules/product/product.service");
 

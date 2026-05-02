@@ -1,0 +1,13 @@
+"use strict";
+const { USER_TYPES } = require("../../config/constants");
+const isAdmin = (req, res, next) => {
+    if (req.user.userType === USER_TYPES.ADMIN) {
+        return next();
+    }
+    return res.json({
+        status: false,
+        message: "Unauthorized",
+    });
+};
+module.exports = isAdmin;
+//# sourceMappingURL=isAdmin.js.map

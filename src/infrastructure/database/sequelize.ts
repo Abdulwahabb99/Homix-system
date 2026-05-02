@@ -1,20 +1,32 @@
-import type { Sequelize as SequelizeType } from "sequelize";
+import { Sequelize } from "sequelize";
 
 import { env } from "../../config/env";
 import { logger } from "../../shared/logger/logger";
 
-type LegacyDatabaseModule = {
-  Sequelize: typeof import("sequelize");
-  connectToDb: () => Promise<void>;
-  sequelize: SequelizeType;
+const sslDialectOptions = env.NODE_ENV !== "test"
+  ? {
+      ssl: {
+        rejectUnauthorized: false,
+        require: true,
+      },
+    }
+  : undefined;
+
+export { Sequelize };
+
+export const sequelize = new Sequelize(env.DB_NAME, env.DB_USER, env.DB_PASSWORD, {
+  dialect: env.DB_DIALECT,
+  dialectOptions: sslDialectOptions,
+  host: env.DB_HOST,
+  logging: false,
+});
+
+export const connectToDb = async (): Promise<void> => {
+  await sequelize.authenticate();
 };
 
-const legacyDatabaseModule = require("../../../config/db.config") as LegacyDatabaseModule;
-
-export const sequelize = legacyDatabaseModule.sequelize;
-
 export const connectToDatabase = async (): Promise<void> => {
-  await legacyDatabaseModule.connectToDb();
+  await connectToDb();
   logger.info("Database connected successfully");
 
   if (!env.DB_SYNC) {
