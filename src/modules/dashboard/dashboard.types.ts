@@ -41,3 +41,73 @@ export interface DashboardCardsPayload {
   role: DashboardRole;
   startDate: string;
 }
+
+export interface DashboardPerformancePoint {
+  date: string;
+  orders: number;
+  sales: number;
+}
+
+export interface DashboardPerformancePayload {
+  endDate: string;
+  role: DashboardRole;
+  series: DashboardPerformancePoint[];
+  startDate: string;
+  summary: DashboardCardResponse;
+}
+
+export interface DashboardActivityItem {
+  createdAt: string;
+  entityId: number;
+  entityType: string;
+  id: number;
+  text: string;
+}
+
+export interface DashboardLatestOrderItem {
+  amount: number;
+  customerName: string;
+  id: number;
+  orderDate: string;
+  orderNumber: string;
+  productName: string;
+  status: number | null;
+  statusLabel: string;
+}
+
+export interface DashboardLeaderboardEntry {
+  id: number | null;
+  name: string;
+  rank: number;
+  secondaryLabel: string;
+  totalSales: number;
+}
+
+export interface DashboardSalesDistributionItem {
+  color: string;
+  label: string;
+  percentage: number;
+  value: number;
+}
+
+export interface DashboardQuickActionItem {
+  description: string;
+  icon: string;
+  key: string;
+  label: string;
+  route: string;
+}
+
+export interface DashboardGoalProgressItem {
+  color: string;
+  currentValue: number;
+  key: string;
+  label: string;
+  progressPercentage: number;
+  targetValue: number;
+}
+
+export interface DashboardListPayload<TItem> {
+  items: TItem[];
+  role: DashboardRole;
+}

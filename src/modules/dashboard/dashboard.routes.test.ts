@@ -9,24 +9,68 @@ jest.mock("../../../app/middlewares/protectApi", () => {
 });
 
 jest.mock("../../../app/modules/order/order.model", () => ({
-  count: jest
-    .fn()
-    .mockResolvedValueOnce(12)
-    .mockResolvedValueOnce(4)
-    .mockResolvedValueOnce(10)
-    .mockResolvedValueOnce(3),
-  findOne: jest
-    .fn()
-    .mockResolvedValueOnce({ totalSales: "1200" })
-    .mockResolvedValueOnce({ totalSales: "1000" }),
+  count: jest.fn().mockResolvedValue(12),
+  findAll: jest.fn().mockResolvedValue([
+    {
+      customer: { firstName: "Lamiaa", lastName: "Saeid" },
+      id: 1,
+      orderDate: "2026-05-01T00:00:00.000Z",
+      orderLines: [
+        {
+          discount: "0",
+          price: "1200",
+          product: {
+            id: 11,
+            title: "غرفة نوم - دريسينج",
+            vendor: { id: 5, name: "ركنة للأثاث" },
+            vendorId: 5,
+          },
+          quantity: 1,
+        },
+      ],
+      orderNumber: "31668",
+      status: 1,
+      totalPrice: "1200",
+    },
+  ]),
+  findOne: jest.fn(),
 }));
 
 jest.mock("../../../app/modules/orderLines/orderline.model", () => ({
-  count: jest.fn(),
+  count: jest.fn().mockResolvedValue(3),
+  findAll: jest.fn().mockResolvedValue([
+    {
+      discount: "0",
+      price: "1200",
+      product: {
+        id: 11,
+        title: "غرفة نوم - دريسينج",
+        vendor: { id: 5, name: "ركنة للأثاث" },
+        vendorId: 5,
+      },
+      quantity: 1,
+    },
+  ]),
   findOne: jest.fn(),
 }));
 
 jest.mock("../../../app/modules/product/product.model", () => ({}));
+
+jest.mock("../../../app/modules/customer/customer.model", () => ({}));
+
+jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
+
+jest.mock("../../../app/modules/notification/notification.model", () => ({
+  findAll: jest.fn().mockResolvedValue([
+    {
+      createdAt: "2026-05-01T00:00:00.000Z",
+      entityId: 1,
+      entityType: "order",
+      id: 99,
+      text: "تم اضافة طلب جديد رقم 31668",
+    },
+  ]),
+}));
 
 jest.mock("../../../app/modules/user/user.model", () => ({
   count: jest.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1),
@@ -49,5 +93,45 @@ describe("dashboardRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.cards).toHaveLength(4);
+  });
+
+  it("returns performance widget data", async () => {
+    const response = await request(app).get("/dashboard/performance").query({
+      endDate: "2026-05-02",
+      startDate: "2026-05-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.series).toHaveLength(1);
+  });
+
+  it("returns latest activities", async () => {
+    const response = await request(app).get("/dashboard/activities").query({
+      endDate: "2026-05-02",
+      startDate: "2026-05-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items[0].entityType).toBe("order");
+  });
+
+  it("returns latest orders", async () => {
+    const response = await request(app).get("/dashboard/latest-orders").query({
+      endDate: "2026-05-02",
+      startDate: "2026-05-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items[0].orderNumber).toBe("31668");
+  });
+
+  it("returns quick actions", async () => {
+    const response = await request(app).get("/dashboard/quick-actions").query({
+      endDate: "2026-05-02",
+      startDate: "2026-05-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items.length).toBeGreaterThan(0);
   });
 });

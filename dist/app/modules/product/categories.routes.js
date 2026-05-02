@@ -1,8 +1,11 @@
 "use strict";
-const express = require("express");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+const express_1 = __importDefault(require("express"));
 const verifyToken = require("../../middlewares/protectApi");
 const productsController = require("./product.controller");
-const CategoriesRouter = express.Router();
+const CategoriesRouter = express_1.default.Router();
 /**
  * @swagger
  * /categories:
@@ -12,23 +15,6 @@ const CategoriesRouter = express.Router();
  *     tags:
  *       - Categories
  *     summary: Get all categories
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: size
- *         schema:
- *           type: integer
- *       - in: query
- *         name: searchQuery
- *         schema:
- *           type: string
- *       - in: query
- *         name: vendorId
- *         schema:
- *           type: string
  *     responses:
  *       200:
  *         description: List of categories

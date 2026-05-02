@@ -1,90 +1,34 @@
 import type { Result } from "../../shared/result";
 import { success } from "../../shared/result";
-import { USER_TYPES } from "../../config/constants";
 import type {
-  DashboardCardKey,
-  DashboardCardResponse,
+  DashboardActivityItem,
   DashboardCardsPayload,
+  DashboardCardResponse,
+  DashboardCardKey,
+  DashboardGoalProgressItem,
+  DashboardLatestOrderItem,
+  DashboardLeaderboardEntry,
+  DashboardListPayload,
   DashboardMetricSnapshot,
   DashboardMetricsInput,
+  DashboardPerformancePayload,
+  DashboardQuickActionItem,
   DashboardRole,
+  DashboardSalesDistributionItem,
   DateRangeInput,
 } from "./dashboard.types";
+import { GOAL_CONFIGS, OTHER_DISTRIBUTION_ITEM, QUICK_ACTIONS } from "./dashboard.constants";
+import {
+  buildCard,
+  collapseDistribution,
+  getPreviousRange,
+  getRole,
+  mergeGoalConfig,
+} from "./dashboard.helpers";
 import { DashboardRepository } from "./dashboard.repo";
-
-const CARD_LABELS: Record<DashboardCardKey, string> = {
-  activeMakers: "صُنّاع نشطون",
-  activeProducts: "منتجات نشطة",
-  pendingOrders: "طلبات معلقة",
-  totalOrders: "إجمالي الطلبات",
-  totalSales: "إجمالي المبيعات (ج.م)",
-};
-
-const PREVIOUS_PERIOD_LABEL = "مقارنة بالفترة السابقة";
-const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
-const PERCENTAGE_PRECISION = 10;
 
 type AuthenticatedDashboardUser = {
   userType?: string;
-};
-
-const getRole = (user: AuthenticatedDashboardUser, vendorId?: number | null): DashboardRole => {
-  if (vendorId || user.userType === USER_TYPES.VENDOR) {
-    return "vendor";
-  }
-
-  return "admin";
-};
-
-const roundPercentage = (value: number): number => {
-  return Math.round(value * PERCENTAGE_PRECISION) / PERCENTAGE_PRECISION;
-};
-
-const getTrend = (currentValue: number, previousValue: number): "down" | "flat" | "up" => {
-  if (currentValue > previousValue) {
-    return "up";
-  }
-
-  if (currentValue < previousValue) {
-    return "down";
-  }
-
-  return "flat";
-};
-
-const getChangePercentage = (currentValue: number, previousValue: number): number => {
-  if (previousValue === 0) {
-    return currentValue === 0 ? 0 : 100;
-  }
-
-  return roundPercentage(((currentValue - previousValue) / previousValue) * 100);
-};
-
-const buildCard = (
-  key: DashboardCardKey,
-  currentValue: number,
-  previousValue: number,
-): DashboardCardResponse => ({
-  changePercentage: getChangePercentage(currentValue, previousValue),
-  comparisonLabel: PREVIOUS_PERIOD_LABEL,
-  currentValue,
-  key,
-  label: CARD_LABELS[key],
-  previousValue,
-  trend: getTrend(currentValue, previousValue),
-});
-
-const getPreviousRange = ({ endDate, startDate }: DateRangeInput): DateRangeInput => {
-  const currentStartDate = new Date(startDate);
-  const currentEndDate = new Date(endDate);
-  const rangeDuration = currentEndDate.getTime() - currentStartDate.getTime();
-  const previousEndDate = new Date(currentStartDate.getTime() - DAY_IN_MILLISECONDS);
-  const previousStartDate = new Date(previousEndDate.getTime() - rangeDuration);
-
-  return {
-    endDate: previousEndDate.toISOString(),
-    startDate: previousStartDate.toISOString(),
-  };
 };
 
 export class DashboardService {
@@ -125,6 +69,118 @@ export class DashboardService {
     const card = cardsResult.data.cards.find((item) => item.key === key);
 
     return success(card!);
+  }
+
+  public async getPerformance(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardPerformancePayload>> {
+    const role = getRole(user, vendorId);
+    const currentInput = this.buildMetricsInput(range, role, vendorId);
+    const previousInput = this.buildMetricsInput(getPreviousRange(range), role, vendorId);
+    const [summaryResult, series] = await Promise.all([
+      this.getSingleCard("totalSales", range, user, vendorId),
+      this.dashboardRepository.getPerformanceSeries(currentInput),
+    ]);
+
+    if (!summaryResult.ok) {
+      return summaryResult;
+    }
+
+    return success({
+      endDate: range.endDate,
+      role,
+      series,
+      startDate: range.startDate,
+      summary: summaryResult.data,
+    });
+  }
+
+  public async getActivities(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser & { id?: number },
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardActivityItem>>> {
+    const role = getRole(user, vendorId);
+    const items = await this.dashboardRepository.getActivities(
+      this.buildMetricsInput(range, role, vendorId),
+      user.id ?? 0,
+    );
+
+    return success({ items, role });
+  }
+
+  public async getLatestOrders(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardLatestOrderItem>>> {
+    const role = getRole(user, vendorId);
+    const items = await this.dashboardRepository.getLatestOrders(
+      this.buildMetricsInput(range, role, vendorId),
+    );
+
+    return success({ items, role });
+  }
+
+  public async getLeaderboard(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardLeaderboardEntry>>> {
+    const role = getRole(user, vendorId);
+    const items = await this.dashboardRepository.getLeaderboard(
+      this.buildMetricsInput(range, role, vendorId),
+    );
+
+    return success({ items, role });
+  }
+
+  public async getQuickActions(
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardQuickActionItem>>> {
+    const role = getRole(user, vendorId);
+    return success({ items: QUICK_ACTIONS[role], role });
+  }
+
+  public async getSalesDistribution(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardSalesDistributionItem>>> {
+    const role = getRole(user, vendorId);
+    const items = await this.dashboardRepository.getSalesDistribution(
+      this.buildMetricsInput(range, role, vendorId),
+    );
+
+    return success({
+      items: collapseDistribution(items, OTHER_DISTRIBUTION_ITEM),
+      role,
+    });
+  }
+
+  public async getGoalsProgress(
+    range: DateRangeInput,
+    user: AuthenticatedDashboardUser,
+    vendorId?: number | null,
+  ): Promise<Result<DashboardListPayload<DashboardGoalProgressItem>>> {
+    const role = getRole(user, vendorId);
+    const metricsInput = this.buildMetricsInput(range, role, vendorId);
+    const [snapshot, deliveredOrders] = await Promise.all([
+      this.dashboardRepository.getSnapshot(metricsInput),
+      this.dashboardRepository.getDeliveredOrdersCount(metricsInput),
+    ]);
+
+    const values = role === "admin"
+      ? [snapshot.totalSales, snapshot.totalOrders, snapshot.activeMakers, deliveredOrders]
+      : [snapshot.totalSales, snapshot.totalOrders, snapshot.activeProducts, deliveredOrders];
+
+    return success({
+      items: GOAL_CONFIGS[role].map((goal, index) => mergeGoalConfig(goal, values[index] ?? 0)),
+      role,
+    });
   }
 
   private buildCardsForRole(

@@ -37,4 +37,69 @@ export class DashboardController {
       status: true,
     });
   };
+
+  public getPerformance = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getPerformance(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getActivities = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getActivities(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getLatestOrders = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getLatestOrders(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getLeaderboard = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getLeaderboard(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getQuickActions = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getQuickActions(request.user ?? {}, request.vendorId);
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getSalesDistribution = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getSalesDistribution(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getGoalsProgress = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.dashboardService.getGoalsProgress(
+      request.query as { endDate: string; startDate: string },
+      request.user ?? {},
+      request.vendorId,
+    );
+
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
 }

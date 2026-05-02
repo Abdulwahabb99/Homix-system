@@ -1,17 +1,32 @@
 import { Op } from "sequelize";
 
 import { ORDER_STATUS } from "../../config/constants";
-import type { DashboardMetricSnapshot, DashboardMetricsInput } from "./dashboard.types";
+import { toStatusLabel, withRanks } from "./dashboard.helpers";
+import type {
+  DashboardActivityItem,
+  DashboardLatestOrderItem,
+  DashboardLeaderboardEntry,
+  DashboardMetricSnapshot,
+  DashboardMetricsInput,
+  DashboardPerformancePoint,
+  DashboardSalesDistributionItem,
+} from "./dashboard.types";
 
-type CountModel = {
-  count: (options?: Record<string, unknown>) => Promise<number>;
-  findOne: <TRow>(options: Record<string, unknown>) => Promise<TRow | null>;
+type PlainRecord = Record<string, unknown>;
+type Plainable = PlainRecord | { toJSON: () => PlainRecord };
+
+type LegacyModel = {
+  count: (options?: PlainRecord) => Promise<number>;
+  findAll: <TRow = PlainRecord>(options?: PlainRecord) => Promise<TRow[]>;
+  findOne: <TRow = PlainRecord>(options?: PlainRecord) => Promise<TRow | null>;
 };
 
-const orderModel = require("../../../app/modules/order/order.model") as CountModel;
-const orderLineModel = require("../../../app/modules/orderLines/orderline.model") as CountModel;
+const orderModel = require("../../../app/modules/order/order.model") as LegacyModel;
+const orderLineModel = require("../../../app/modules/orderLines/orderline.model") as LegacyModel;
 const productModel = require("../../../app/modules/product/product.model");
-const { Sequelize } = require("sequelize") as { Sequelize: typeof import("sequelize").Sequelize };
+const customerModel = require("../../../app/modules/customer/customer.model");
+const vendorModel = require("../../../app/modules/vendor/vendor.model");
+const notificationModel = require("../../../app/modules/notification/notification.model") as LegacyModel;
 
 const OPEN_ORDER_STATUSES = [
   ORDER_STATUS.PENDING,
@@ -19,41 +34,64 @@ const OPEN_ORDER_STATUSES = [
   ORDER_STATUS.CONFIRMED,
 ] as const;
 
+const DELIVERED_ORDER_STATUS = ORDER_STATUS.DELIVERED;
 const ZERO_VALUE = 0;
+const DEFAULT_LIMIT = 10;
 
-interface RangeBounds {
+type RangeBounds = {
   endDate: Date;
   startDate: Date;
-}
+};
 
-const buildDateRange = ({ endDate, startDate }: RangeBounds) => ({
+type NormalizedOrderLine = {
+  lineAmount: number;
+  productId: number | null;
+  productTitle: string;
+  vendorId: number | null;
+  vendorName: string;
+};
+
+type NormalizedOrder = {
+  customerName: string;
+  id: number;
+  lines: NormalizedOrderLine[];
+  orderDate: string;
+  orderNumber: string;
+  status: number | null;
+  totalPrice: number;
+};
+
+const buildDateRange = ({ endDate, startDate }: RangeBounds): PlainRecord => ({
   [Op.between]: [startDate, endDate],
 });
 
-const buildVendorOrderInclude = (
-  vendorId: number,
-  range: RangeBounds,
-): Record<string, unknown>[] => [
-  {
-    as: "product",
-    attributes: [],
-    model: productModel,
-    required: true,
-    where: {
-      vendorId,
+const vendorProductInclude = (vendorId: number): PlainRecord => ({
+  as: "product",
+  attributes: ["id", "title", "vendorId"],
+  include: [
+    {
+      as: "vendor",
+      attributes: ["id", "name"],
+      model: vendorModel,
+      required: false,
     },
+  ],
+  model: productModel,
+  required: true,
+  where: {
+    vendorId,
   },
-  {
-    attributes: [],
-    model: orderModel,
-    required: true,
-    where: {
-      orderDate: buildDateRange(range),
-    },
-  },
-];
+});
 
-const parseMetricValue = (value: unknown): number => {
+const toPlain = (row: Plainable): PlainRecord => {
+  if ("toJSON" in row && typeof row.toJSON === "function") {
+    return row.toJSON() as PlainRecord;
+  }
+
+  return row;
+};
+
+const parseNumber = (value: unknown): number => {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : ZERO_VALUE;
   }
@@ -66,20 +104,50 @@ const parseMetricValue = (value: unknown): number => {
   return ZERO_VALUE;
 };
 
-const getSumValue = (row: Record<string, unknown> | null, key: string): number => {
-  if (!row) {
-    return ZERO_VALUE;
+const toRange = ({ endDate, startDate }: DashboardMetricsInput): RangeBounds => ({
+  endDate: new Date(endDate),
+  startDate: new Date(startDate),
+});
+
+const getString = (value: unknown, fallback = ""): string => {
+  return typeof value === "string" ? value : fallback;
+};
+
+const getCustomerName = (customer: PlainRecord | undefined): string => {
+  if (!customer) {
+    return "عميل";
   }
 
-  return parseMetricValue(row[key]);
+  const firstName = getString(customer.firstName);
+  const lastName = getString(customer.lastName);
+  return `${firstName} ${lastName}`.trim() || "عميل";
+};
+
+const getOrderLineAmount = (line: PlainRecord): number => {
+  const price = parseNumber(line.price);
+  const quantity = parseNumber(line.quantity);
+  const discount = parseNumber(line.discount);
+  return price * quantity - discount;
+};
+
+const toDistributionItems = (
+  source: Map<string, number>,
+  colors: string[],
+): DashboardSalesDistributionItem[] => {
+  const total = [...source.values()].reduce((sum, value) => sum + value, 0);
+  return [...source.entries()]
+    .map(([label, value], index) => ({
+      color: colors[index % colors.length] ?? "#94A3B8",
+      label,
+      percentage: total === 0 ? 0 : Math.round((value / total) * 1000) / 10,
+      value,
+    }))
+    .sort((left, right) => right.value - left.value);
 };
 
 export class DashboardRepository {
   public async getSnapshot(input: DashboardMetricsInput): Promise<DashboardMetricSnapshot> {
-    const range = {
-      endDate: new Date(input.endDate),
-      startDate: new Date(input.startDate),
-    };
+    const range = toRange(input);
 
     if (input.role === "vendor" && input.vendorId) {
       return this.getVendorSnapshot(input.vendorId, range);
@@ -88,9 +156,157 @@ export class DashboardRepository {
     return this.getAdminSnapshot(range);
   }
 
+  public async getPerformanceSeries(
+    input: DashboardMetricsInput,
+  ): Promise<DashboardPerformancePoint[]> {
+    const orders = await this.getScopedOrders(input);
+    const grouped = new Map<string, { orders: number; sales: number }>();
+
+    for (const order of orders) {
+      const bucket = order.orderDate.slice(0, 10);
+      const entry = grouped.get(bucket) ?? { orders: 0, sales: 0 };
+      entry.orders += 1;
+      entry.sales += input.role === "vendor"
+        ? order.lines.reduce((sum, line) => sum + line.lineAmount, 0)
+        : order.totalPrice;
+      grouped.set(bucket, entry);
+    }
+
+    return [...grouped.entries()]
+      .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
+      .map(([date, values]) => ({
+        date,
+        orders: values.orders,
+        sales: Math.round(values.sales * 100) / 100,
+      }));
+  }
+
+  public async getActivities(
+    input: DashboardMetricsInput,
+    userId: number,
+  ): Promise<DashboardActivityItem[]> {
+    const notifications = await notificationModel.findAll<Plainable>({
+      limit: DEFAULT_LIMIT,
+      order: [["createdAt", "DESC"]],
+      where: {
+        createdAt: buildDateRange(toRange(input)),
+        userId,
+      },
+    });
+
+    return notifications.map((notification) => {
+      const plainNotification = toPlain(notification);
+      return {
+        createdAt: new Date(getString(plainNotification.createdAt)).toISOString(),
+        entityId: Number(plainNotification.entityId ?? 0),
+        entityType: getString(plainNotification.entityType),
+        id: Number(plainNotification.id ?? 0),
+        text: getString(plainNotification.text),
+      };
+    });
+  }
+
+  public async getLatestOrders(input: DashboardMetricsInput): Promise<DashboardLatestOrderItem[]> {
+    const orders = await this.getScopedOrders(input, DEFAULT_LIMIT);
+
+    return orders.map((order) => ({
+      amount: Math.round(
+        (input.role === "vendor"
+          ? order.lines.reduce((sum, line) => sum + line.lineAmount, 0)
+          : order.totalPrice) * 100,
+      ) / 100,
+      customerName: order.customerName,
+      id: order.id,
+      orderDate: order.orderDate,
+      orderNumber: order.orderNumber,
+      productName: order.lines[0]?.productTitle ?? "منتج",
+      status: order.status,
+      statusLabel: toStatusLabel(order.status),
+    }));
+  }
+
+  public async getLeaderboard(
+    input: DashboardMetricsInput,
+  ): Promise<DashboardLeaderboardEntry[]> {
+    const lines = await this.getScopedOrderLines(input);
+    const salesByEntry = new Map<string, Omit<DashboardLeaderboardEntry, "rank">>();
+
+    for (const line of lines) {
+      const key = input.role === "vendor"
+        ? `product:${line.productId ?? 0}`
+        : `vendor:${line.vendorId ?? 0}`;
+      const current = salesByEntry.get(key) ?? {
+        id: input.role === "vendor" ? line.productId : line.vendorId,
+        name: input.role === "vendor" ? line.productTitle : line.vendorName,
+        secondaryLabel: input.role === "vendor" ? "حسب المبيعات" : "صانع",
+        totalSales: 0,
+      };
+      current.totalSales += line.lineAmount;
+      salesByEntry.set(key, current);
+    }
+
+    const entries = [...salesByEntry.values()]
+      .sort((left, right) => right.totalSales - left.totalSales)
+      .slice(0, 10)
+      .map((entry) => ({
+        ...entry,
+        totalSales: Math.round(entry.totalSales * 100) / 100,
+      }));
+
+    return withRanks(entries);
+  }
+
+  public async getSalesDistribution(
+    input: DashboardMetricsInput,
+  ): Promise<DashboardSalesDistributionItem[]> {
+    const lines = await this.getScopedOrderLines(input);
+    const groupedSales = new Map<string, number>();
+
+    for (const line of lines) {
+      const label = input.role === "vendor" ? line.productTitle : line.vendorName;
+      groupedSales.set(label, (groupedSales.get(label) ?? 0) + line.lineAmount);
+    }
+
+    return toDistributionItems(groupedSales, ["#6366F1", "#10B981", "#F59E0B", "#C4A15A", "#94A3B8"]);
+  }
+
+  public async getDeliveredOrdersCount(input: DashboardMetricsInput): Promise<number> {
+    const range = toRange(input);
+    if (input.role === "vendor" && input.vendorId) {
+      return orderLineModel.count({
+        col: "orderId",
+        distinct: true,
+        include: [
+          vendorProductInclude(input.vendorId),
+          {
+            attributes: [],
+            model: orderModel,
+            required: true,
+            where: {
+              orderDate: buildDateRange(range),
+              status: DELIVERED_ORDER_STATUS,
+            },
+          },
+        ],
+      });
+    }
+
+    return orderModel.count({
+      where: {
+        orderDate: buildDateRange(range),
+        status: DELIVERED_ORDER_STATUS,
+      },
+    });
+  }
+
   private async getAdminSnapshot(range: RangeBounds): Promise<DashboardMetricSnapshot> {
-    const [salesRow, totalOrders, pendingOrders, activeMakers] = await Promise.all([
-      this.getAdminSales(range),
+    const [salesOrders, totalOrders, pendingOrders, activeMakers] = await Promise.all([
+      orderModel.findAll<Plainable>({
+        attributes: ["totalPrice"],
+        where: {
+          orderDate: buildDateRange(range),
+        },
+      }),
       orderModel.count({
         where: {
           orderDate: buildDateRange(range),
@@ -112,39 +328,16 @@ export class DashboardRepository {
       activeProducts: ZERO_VALUE,
       pendingOrders,
       totalOrders,
-      totalSales: salesRow,
+      totalSales: salesOrders.reduce((sum, order) => sum + parseNumber(toPlain(order).totalPrice), 0),
     };
   }
 
-  private async getAdminSales(range: RangeBounds): Promise<number> {
-    const row = await orderModel.findOne<Record<string, unknown>>({
-      attributes: [
-        [
-          Sequelize.fn("COALESCE", Sequelize.fn("SUM", Sequelize.col("totalPrice")), ZERO_VALUE),
-          "totalSales",
-        ],
-      ],
-      raw: true,
-      where: {
-        orderDate: buildDateRange(range),
-      },
-    });
-
-    return getSumValue(row, "totalSales");
-  }
-
   private async getActiveMakers(range: RangeBounds): Promise<number> {
-    const row = await orderLineModel.findOne<Record<string, unknown>>({
-      attributes: [
-        [
-          Sequelize.fn("COUNT", Sequelize.literal('DISTINCT "product"."vendorId"')),
-          "activeMakers",
-        ],
-      ],
+    const lines = await orderLineModel.findAll<Plainable>({
       include: [
         {
           as: "product",
-          attributes: [],
+          attributes: ["vendorId"],
           model: productModel,
           required: true,
           where: {
@@ -154,7 +347,7 @@ export class DashboardRepository {
           },
         },
         {
-          attributes: [],
+          attributes: ["id"],
           model: orderModel,
           required: true,
           where: {
@@ -162,79 +355,177 @@ export class DashboardRepository {
           },
         },
       ],
-      raw: true,
     });
 
-    return getSumValue(row, "activeMakers");
+    const vendorIds = new Set<number>();
+    for (const line of lines) {
+      const product = toPlain(line).product as PlainRecord | undefined;
+      const vendorId = Number(product?.vendorId ?? 0);
+      if (vendorId > 0) {
+        vendorIds.add(vendorId);
+      }
+    }
+
+    return vendorIds.size;
   }
 
   private async getVendorSnapshot(
     vendorId: number,
     range: RangeBounds,
   ): Promise<DashboardMetricSnapshot> {
-    const vendorInclude = buildVendorOrderInclude(vendorId, range);
-    const [salesRow, totalOrders, pendingOrders, activeProducts] = await Promise.all([
-      this.getVendorSales(vendorInclude),
-      orderLineModel.count({
-        col: "orderId",
-        distinct: true,
-        include: vendorInclude,
-      }),
-      orderLineModel.count({
-        col: "orderId",
-        distinct: true,
-        include: [
-          vendorInclude[0],
-          {
-            attributes: [],
-            model: orderModel,
-            required: true,
-            where: {
-              orderDate: buildDateRange(range),
-              status: {
-                [Op.in]: OPEN_ORDER_STATUSES,
-              },
-            },
-          },
-        ],
-      }),
-      orderLineModel.count({
-        col: "productId",
-        distinct: true,
-        include: vendorInclude,
-      }),
-    ]);
+    const orders = await this.getScopedOrders({
+      endDate: range.endDate.toISOString(),
+      role: "vendor",
+      startDate: range.startDate.toISOString(),
+      vendorId,
+    });
+
+    const orderIds = new Set<number>();
+    const productIds = new Set<number>();
+    let pendingOrders = 0;
+    let totalSales = 0;
+
+    for (const order of orders) {
+      orderIds.add(order.id);
+      totalSales += order.lines.reduce((sum, line) => sum + line.lineAmount, 0);
+      if (order.status !== null && OPEN_ORDER_STATUSES.includes(order.status as (typeof OPEN_ORDER_STATUSES)[number])) {
+        pendingOrders += 1;
+      }
+      order.lines.forEach((line) => {
+        if (line.productId !== null) {
+          productIds.add(line.productId);
+        }
+      });
+    }
 
     return {
       activeMakers: ZERO_VALUE,
-      activeProducts,
+      activeProducts: productIds.size,
       pendingOrders,
-      totalOrders,
-      totalSales: salesRow,
+      totalOrders: orderIds.size,
+      totalSales: Math.round(totalSales * 100) / 100,
     };
   }
 
-  private async getVendorSales(include: Record<string, unknown>[]): Promise<number> {
-    const row = await orderLineModel.findOne<Record<string, unknown>>({
-      attributes: [
-        [
-          Sequelize.fn(
-            "COALESCE",
-            Sequelize.fn(
-              "SUM",
-              Sequelize.literal(
-                'CAST("OrderLine"."price" AS DECIMAL) * CAST("OrderLine"."quantity" AS DECIMAL) - CAST(COALESCE("OrderLine"."discount", 0) AS DECIMAL)',
-              ),
-            ),
-            ZERO_VALUE,
-          ),
-          "totalSales",
+  private async getScopedOrders(
+    input: DashboardMetricsInput,
+    limit?: number,
+  ): Promise<NormalizedOrder[]> {
+    const range = toRange(input);
+    const include = [
+      {
+        as: "customer",
+        attributes: ["firstName", "lastName"],
+        model: customerModel,
+        required: false,
+      },
+      {
+        as: "orderLines",
+        attributes: ["discount", "price", "productId", "quantity"],
+        include: [
+          input.role === "vendor" && input.vendorId
+            ? vendorProductInclude(input.vendorId)
+            : {
+                as: "product",
+                attributes: ["id", "title", "vendorId"],
+                include: [
+                  {
+                    as: "vendor",
+                    attributes: ["id", "name"],
+                    model: vendorModel,
+                    required: false,
+                  },
+                ],
+                model: productModel,
+                required: false,
+              },
         ],
-      ],
+        model: orderLineModel,
+        required: input.role === "vendor",
+      },
+    ];
+
+    const orders = await orderModel.findAll<Plainable>({
       include,
-      raw: true,
+      limit,
+      order: [["orderDate", "DESC"]],
+      where: {
+        orderDate: buildDateRange(range),
+      },
     });
 
-    return getSumValue(row, "totalSales");
+    return orders.map((order) => {
+      const plainOrder = toPlain(order);
+      const orderLines = Array.isArray(plainOrder.orderLines)
+        ? (plainOrder.orderLines as PlainRecord[])
+        : [];
+      return {
+        customerName: getCustomerName(plainOrder.customer as PlainRecord | undefined),
+        id: Number(plainOrder.id ?? 0),
+        lines: orderLines.map((line) => {
+          const product = line.product as PlainRecord | undefined;
+          const vendor = product?.vendor as PlainRecord | undefined;
+          return {
+            lineAmount: getOrderLineAmount(line),
+            productId: product ? Number(product.id ?? 0) : null,
+            productTitle: getString(product?.title, "منتج"),
+            vendorId: vendor ? Number(vendor.id ?? 0) : null,
+            vendorName: getString(vendor?.name, "غير محدد"),
+          };
+        }),
+        orderDate: new Date(getString(plainOrder.orderDate)).toISOString(),
+        orderNumber: getString(plainOrder.orderNumber, getString(plainOrder.name)),
+        status: plainOrder.status === null || plainOrder.status === undefined ? null : Number(plainOrder.status),
+        totalPrice: parseNumber(plainOrder.totalPrice),
+      };
+    });
+  }
+
+  private async getScopedOrderLines(input: DashboardMetricsInput): Promise<NormalizedOrderLine[]> {
+    const range = toRange(input);
+    const include = [
+      input.role === "vendor" && input.vendorId
+        ? vendorProductInclude(input.vendorId)
+        : {
+            as: "product",
+            attributes: ["id", "title", "vendorId"],
+            include: [
+              {
+                as: "vendor",
+                attributes: ["id", "name"],
+                model: vendorModel,
+                required: false,
+              },
+            ],
+            model: productModel,
+            required: true,
+          },
+      {
+        attributes: ["id"],
+        model: orderModel,
+        required: true,
+        where: {
+          orderDate: buildDateRange(range),
+        },
+      },
+    ];
+
+    const lines = await orderLineModel.findAll<Plainable>({
+      attributes: ["discount", "price", "productId", "quantity"],
+      include,
+    });
+
+    return lines.map((line) => {
+      const plainLine = toPlain(line);
+      const product = plainLine.product as PlainRecord | undefined;
+      const vendor = product?.vendor as PlainRecord | undefined;
+      return {
+        lineAmount: getOrderLineAmount(plainLine),
+        productId: product ? Number(product.id ?? 0) : null,
+        productTitle: getString(product?.title, "منتج"),
+        vendorId: vendor ? Number(vendor.id ?? 0) : null,
+        vendorName: getString(vendor?.name, "غير محدد"),
+      };
+    });
   }
 }

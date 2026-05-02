@@ -1,8 +1,11 @@
 "use strict";
-const express = require("express");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+const express_1 = __importDefault(require("express"));
 const productsController = require("./product.controller");
 const verifyToken = require("../../middlewares/protectApi");
-const ProductsRouter = express.Router();
+const ProductsRouter = express_1.default.Router();
 /**
  * @swagger
  * /products:
@@ -10,33 +13,25 @@ const ProductsRouter = express.Router();
  *     tags:
  *       - Products
  *     summary: Create a new product
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               vendor:
- *                 type: string
- *               variants:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     title:
- *                       type: string
- *                     price:
- *                       type: number
- *                     sku:
- *                       type: string
  *     responses:
  *       200:
  *         description: Product created successfully
  */
 ProductsRouter.post("/", productsController.createProduct);
+/**
+ * @swagger
+ * /products/types:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Products
+ *     summary: Get all product types
+ *     responses:
+ *       200:
+ *         description: Product types list
+ */
+ProductsRouter.get("/types", verifyToken, productsController.getProductsTypes);
 /**
  * @swagger
  * /products:
@@ -46,28 +41,10 @@ ProductsRouter.post("/", productsController.createProduct);
  *     tags:
  *       - Products
  *     summary: Get all products
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: size
- *         schema:
- *           type: integer
- *       - in: query
- *         name: searchQuery
- *         schema:
- *           type: string
- *       - in: query
- *         name: vendorId
- *         schema:
- *           type: string
  *     responses:
  *       200:
  *         description: List of products
  */
-ProductsRouter.get("/types", verifyToken, productsController.getProductsTypes);
 ProductsRouter.get("/", verifyToken, productsController.getProducts);
 /**
  * @swagger
@@ -78,12 +55,6 @@ ProductsRouter.get("/", verifyToken, productsController.getProducts);
  *     tags:
  *       - Products
  *     summary: Get product by ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
  *     responses:
  *       200:
  *         description: Product details

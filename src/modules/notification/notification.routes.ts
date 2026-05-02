@@ -14,12 +14,77 @@ const notificationController = new NotificationController(notificationService);
 
 export const notificationRouter = express.Router();
 
+/**
+ * @swagger
+ * /notifications:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Notifications
+ *     summary: Get current user's notifications
+ *     description: Returns the authenticated user's notification feed ordered by the latest activity.
+ *     responses:
+ *       200:
+ *         description: Notification list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationListResponse'
+ *             examples:
+ *               default:
+ *                 value:
+ *                   data:
+ *                     - id: 17
+ *                       message: طلب جديد رقم 31668
+ *                       type: order
+ *                       isRead: false
+ *                       createdAt: 2026-05-02T00:45:00.000Z
+ *                   status: true
+ *       401:
+ *         description: Missing or invalid bearer token
+ */
 notificationRouter.get(
   "/",
   verifyToken,
   asyncHandler(notificationController.getNotifications),
 );
 
+/**
+ * @swagger
+ * /notifications:
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Notifications
+ *     summary: Clear current user's notifications
+ *     description: Deletes all notifications for the authenticated user.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmptyObject'
+ *           examples:
+ *             empty:
+ *               value: {}
+ *     responses:
+ *       200:
+ *         description: Notifications removed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericMessageResponse'
+ *             examples:
+ *               cleared:
+ *                 value:
+ *                   message: Notifications cleared successfully
+ *                   status: true
+ *                   statusCode: 200
+ *       401:
+ *         description: Missing or invalid bearer token
+ */
 notificationRouter.delete(
   "/",
   verifyToken,
@@ -27,6 +92,41 @@ notificationRouter.delete(
   asyncHandler(notificationController.clearNotifications),
 );
 
+/**
+ * @swagger
+ * /notifications:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Notifications
+ *     summary: Mark all notifications as read
+ *     description: Marks the authenticated user's notification feed as read.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmptyObject'
+ *           examples:
+ *             empty:
+ *               value: {}
+ *     responses:
+ *       200:
+ *         description: Notifications marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericMessageResponse'
+ *             examples:
+ *               updated:
+ *                 value:
+ *                   message: Notifications marked as read successfully
+ *                   status: true
+ *                   statusCode: 200
+ *       401:
+ *         description: Missing or invalid bearer token
+ */
 notificationRouter.put(
   "/",
   verifyToken,

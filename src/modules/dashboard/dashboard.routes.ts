@@ -34,6 +34,7 @@ export const dashboardRouter = express.Router();
  *     tags:
  *       - Dashboard
  *     summary: Get dashboard cards for a date range
+ *     description: Returns the dashboard summary cards for the selected period. Vendor users are automatically scoped to their own vendor data.
  *     parameters:
  *       - in: query
  *         name: startDate
@@ -50,6 +51,34 @@ export const dashboardRouter = express.Router();
  *     responses:
  *       200:
  *         description: Dashboard cards payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardCardsEnvelope'
+ *             examples:
+ *               adminView:
+ *                 summary: Admin dashboard cards
+ *                 value:
+ *                   status: true
+ *                   data:
+ *                     - key: totalSales
+ *                       currentValue: 847320
+ *                       previousValue: 754000
+ *                       changePercentage: 12.4
+ *                       trend: up
+ *                     - key: totalOrders
+ *                       currentValue: 720
+ *                       previousValue: 665
+ *                       changePercentage: 8.1
+ *                       trend: up
+ *       400:
+ *         description: Invalid date range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
  */
 dashboardRouter.get(
   "/cards",
@@ -67,6 +96,7 @@ dashboardRouter.get(
  *     tags:
  *       - Dashboard
  *     summary: Get a single dashboard card for a date range
+ *     description: Returns a single dashboard KPI card for the selected period.
  *     parameters:
  *       - in: path
  *         name: cardKey
@@ -89,6 +119,24 @@ dashboardRouter.get(
  *     responses:
  *       200:
  *         description: Single dashboard card payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardCardEnvelope'
+ *             examples:
+ *               totalSales:
+ *                 value:
+ *                   status: true
+ *                   data:
+ *                     key: totalSales
+ *                     currentValue: 847320
+ *                     previousValue: 754000
+ *                     changePercentage: 12.4
+ *                     trend: up
+ *       400:
+ *         description: Invalid date range or unsupported card key
+ *       401:
+ *         description: Missing or invalid bearer token
  */
 dashboardRouter.get(
   "/cards/:cardKey",
@@ -98,4 +146,53 @@ dashboardRouter.get(
     query: dashboardDateRangeSchema,
   }),
   asyncHandler(dashboardController.getSingleCard),
+);
+
+dashboardRouter.get(
+  "/performance",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getPerformance),
+);
+
+dashboardRouter.get(
+  "/activities",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getActivities),
+);
+
+dashboardRouter.get(
+  "/latest-orders",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getLatestOrders),
+);
+
+dashboardRouter.get(
+  "/leaderboard",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getLeaderboard),
+);
+
+dashboardRouter.get(
+  "/quick-actions",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getQuickActions),
+);
+
+dashboardRouter.get(
+  "/sales-distribution",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getSalesDistribution),
+);
+
+dashboardRouter.get(
+  "/goals-progress",
+  verifyToken,
+  validateRequest({ query: dashboardDateRangeSchema }),
+  asyncHandler(dashboardController.getGoalsProgress),
 );

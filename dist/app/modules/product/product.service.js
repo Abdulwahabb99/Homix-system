@@ -1,35 +1,35 @@
 "use strict";
-const { where } = require("sequelize");
-const shopifyClient = require("../../../config/shopify");
+const sequelize_1 = require("sequelize");
+const env_1 = require("../../../src/config/env");
+const { sequelize } = require("../../../src/infrastructure/database");
 const VendorsService = require("../vendor/vendor.service");
 const Product = require("./product.model");
 const ShopifyHelper = require("../helpers/shopifyHelper");
 const Vendor = require("../vendor/vendor.model");
-const { Op } = require("sequelize");
-const { sequelize } = require("../../../src/infrastructure/database");
-const { saveProductsCategories } = require("../category/categoty.service");
 const ProductCategory = require("../category/productCategory.model");
 const Category = require("../category/category.model");
 const ProductType = require("./productType.model");
+const DEFAULT_PAGE = 1;
+const DEFAULT_SIZE = 50;
+const DEFAULT_PRODUCT_IMAGE = `${env_1.env.APP_URL}/uploads/default-product.png`;
+const toNumberArray = (values) => {
+    return values.map((value) => Number(value)).filter(Boolean);
+};
 class ProductsService {
     static async getExistingTypesMap(typesNames) {
         const typesMap = {};
-        const types = await ProductType.findAll({
+        const existingTypes = (await ProductType.findAll({
             where: {
                 name: {
-                    [Op.in]: typesNames,
+                    [sequelize_1.Op.in]: typesNames,
                 },
             },
-        });
-        types.forEach((type) => {
+        }));
+        existingTypes.forEach((type) => {
             typesMap[type.name] = type.id;
         });
-        //save new types to the database
-        const newTypes = typesNames.filter((type) => !typesMap[type]);
-        const newTypesData = [...new Set(newTypes)].map((type) => ({
-            name: type,
-        }));
-        const createdTypes = await ProductType.bulkCreate(newTypesData);
+        const newTypes = [...new Set(typesNames.filter((type) => !typesMap[type]))];
+        const createdTypes = (await ProductType.bulkCreate(newTypes.map((name) => ({ name }))));
         createdTypes.forEach((type) => {
             typesMap[type.name] = type.id;
         });
@@ -40,153 +40,148 @@ class ProductsService {
             attributes: ["name", "id"],
         });
         return {
+            data: types,
             status: true,
             statusCode: 200,
-            data: types,
         };
     }
-    static async getProducts(page = 1, size = 50, searchQuery = "", vendorsId, categories, typesIds) {
-        // search if product title contains search query or product vendor contains search query or product variant title contains search query
+    static async getProducts(page = DEFAULT_PAGE, size = DEFAULT_SIZE, searchQuery = "", vendorsId = [], categories = [], typesIds = []) {
         const whereClause = {};
-        if (categories?.length) {
-            const validCategories = categories
-                .map((id) => Number(id))
-                .filter(Boolean);
-            const productIds = await ProductCategory.findAll({
+        if (categories.length) {
+            const validCategories = toNumberArray(categories);
+            const productIds = (await ProductCategory.findAll({
                 attributes: ["productId"],
+                group: ["productId"],
                 where: {
                     categoryId: {
-                        [Op.in]: validCategories,
+                        [sequelize_1.Op.in]: validCategories,
                     },
                 },
-                group: ["productId"],
-            });
+            }));
             whereClause.id = {
-                [Op.in]: productIds.map((p) => p.productId),
+                [sequelize_1.Op.in]: productIds.map((product) => product.productId),
             };
         }
-        if (typesIds?.length) {
-            const validTypesIds = typesIds.map((id) => Number(id)).filter(Boolean);
+        if (typesIds.length) {
             whereClause.typeId = {
-                [Op.in]: validTypesIds,
+                [sequelize_1.Op.in]: toNumberArray(typesIds),
             };
         }
         const products = await Product.findAndCountAll({
+            distinct: true,
             include: [
                 {
-                    model: Vendor,
                     as: "vendor",
                     attributes: ["name"],
-                    where: vendorsId && vendorsId.length
-                        ? { id: { [Op.in]: vendorsId.map((id) => Number(id)) } }
-                        : {},
+                    model: Vendor,
                     required: true,
+                    where: vendorsId.length > 0
+                        ? { id: { [sequelize_1.Op.in]: vendorsId.map((id) => Number(id)) } }
+                        : {},
                 },
                 {
-                    model: ProductCategory,
-                    attributes: ["categoryId"],
                     as: "categories",
+                    attributes: ["categoryId"],
                     include: [
                         {
-                            model: Category,
                             as: "category",
                             attributes: ["title"],
+                            model: Category,
                         },
                     ],
+                    model: ProductCategory,
                     required: false,
                 },
                 {
-                    model: ProductType,
                     as: "type",
+                    model: ProductType,
                     required: false,
                 },
             ],
+            limit: Number(size),
+            offset: (Number(page) - 1) * Number(size),
             where: {
                 ...whereClause,
-                // ...(vendorId ? { vendorId } : {}),
                 ...(searchQuery
                     ? {
-                        [Op.or]: [
+                        [sequelize_1.Op.or]: [
                             sequelize.where(sequelize.fn("lower", sequelize.col("Product.title")), {
-                                [Op.like]: `%${searchQuery.toLowerCase()}%`,
+                                [sequelize_1.Op.like]: `%${searchQuery.toLowerCase()}%`,
                             }),
                             sequelize.where(sequelize.fn("lower", sequelize.col("vendor.name")), {
-                                [Op.like]: `%${searchQuery.toLowerCase()}%`,
+                                [sequelize_1.Op.like]: `%${searchQuery.toLowerCase()}%`,
                             }),
                         ],
                     }
                     : {}),
             },
-            distinct: true,
-            limit: Number(size),
-            offset: (page - 1) * Number(size),
         });
         return {
-            status: true,
-            statusCode: 200,
             data: {
                 products: products.rows,
                 totalPages: Math.ceil(products.count / Number(size)),
             },
+            status: true,
+            statusCode: 200,
         };
     }
     static async getOneProduct(id) {
         const product = await Product.findByPk(id, {
             include: [
                 {
-                    model: Vendor,
                     as: "vendor",
                     attributes: ["name"],
+                    model: Vendor,
                 },
                 {
-                    model: ProductCategory,
                     as: "categories",
                     include: [
                         {
-                            model: Category,
                             as: "category",
                             attributes: ["title"],
+                            model: Category,
                         },
                     ],
+                    model: ProductCategory,
                 },
             ],
         });
         return {
+            data: product,
             status: true,
             statusCode: 200,
-            data: product,
         };
     }
     static async getProductsMappedByShopifyIds(productsIds) {
         const allVendorsMap = {};
-        const products = await Product.findAll({
-            where: {
-                shopifyId: [...productsIds, "custom"],
-            },
+        const products = (await Product.findAll({
             attributes: ["shopifyId", "id", "variants", "vendorId"],
             include: [
                 {
-                    model: Vendor,
                     as: "vendor",
+                    model: Vendor,
                 },
             ],
-        });
+            where: {
+                shopifyId: [...productsIds, "custom"],
+            },
+        }));
         const productsMap = {};
         const existingShopifyIds = new Set();
         for (const product of products) {
             productsMap[product.shopifyId] = product;
-            existingShopifyIds.add(product.shopifyId.toString());
-            allVendorsMap[product.vendorId] = product.vendor;
+            existingShopifyIds.add(String(product.shopifyId));
+            allVendorsMap[String(product.vendorId)] = product.vendor;
         }
-        const nonExistingProductsIds = productsIds.filter((id) => !existingShopifyIds.has(id.toString()));
+        const nonExistingProductsIds = productsIds.filter((id) => !existingShopifyIds.has(String(id)));
         if (nonExistingProductsIds.length > 0) {
-            const res = await ProductsService.importProducts({
+            const result = (await ProductsService.importProducts({
                 ids: nonExistingProductsIds.join(","),
-            });
-            for (const product of res.data) {
+            }));
+            for (const product of result.data) {
                 productsMap[product.shopifyId] = product;
             }
-            for (const [vendorId, vendor] of Object.entries(res.vendorsMap)) {
+            for (const [vendorId, vendor] of Object.entries(result.vendorsMap)) {
                 allVendorsMap[vendorId] = vendor;
             }
         }
@@ -196,27 +191,17 @@ class ProductsService {
         };
     }
     static async importProducts(parameters, fromImport = false) {
-        const fields = [
-            "id",
-            "title",
-            "vendor",
-            "variants",
-            "image",
-            "collection_id",
-            "product_type",
-        ];
+        const fields = ["id", "title", "vendor", "variants", "image", "collection_id", "product_type"];
         const args = ["products", fields, parameters];
         if (fromImport) {
             args.push(async (products) => {
                 await ProductsService.saveImportedProducts(products);
             });
             await ShopifyHelper.importData(...args);
+            return;
         }
-        else {
-            const products = await ShopifyHelper.importData(...args);
-            const result = await ProductsService.saveImportedProducts(products);
-            return result;
-        }
+        const products = (await ShopifyHelper.importData(...args));
+        return ProductsService.saveImportedProducts(products);
     }
     static async getInventoryMap(itemsIds) {
         const inventoryMap = {};
@@ -226,44 +211,32 @@ class ProductsService {
                 ids: itemsIdsChunk.join(","),
             });
             for (const item of inventory) {
-                inventoryMap[item.id.toString()] = item.cost;
+                inventoryMap[String(item.id)] = item.cost;
             }
         }
         return inventoryMap;
     }
     static async saveImportedProducts(products) {
         const vendorsNames = products.map((product) => product.vendor);
-        const typesNames = products
-            .map((product) => product.product_type)
-            .filter(Boolean);
+        const typesNames = products.map((product) => product.product_type).filter(Boolean);
         const vendorsMap = await VendorsService.getExistingVendorsMap(vendorsNames);
         const typesMap = await ProductsService.getExistingTypesMap(typesNames);
         const result = await ProductsService.saveProductToDB(products, vendorsMap, typesMap);
-        // const productsMap = {};
-        // result.forEach((product) => {
-        //   if (!product) {
-        //     console.log("Product not found");
-        //   }
-        //   productsMap[String(product.shopifyId)] = product;
-        // });
-        // await saveProductsCategories(productsMap);
         return {
-            status: true,
-            message: "Products imported successfully",
             data: result,
-            vendorsMap,
+            message: "Products imported successfully",
+            status: true,
             statusCode: 200,
+            vendorsMap,
         };
     }
     static async createProduct(productData) {
-        let vendor = await VendorsService.getVendorByNameAndSaveIfNotExist(productData.vendor);
-        const result = await ProductsService.saveProductToDB([productData], {
-            [productData.vendor]: vendor.id,
-        });
+        const vendor = await VendorsService.getVendorByNameAndSaveIfNotExist(productData.vendor);
+        const result = await ProductsService.saveProductToDB([productData], { [productData.vendor]: vendor }, {});
         return {
-            status: true,
-            message: "Product created successfully",
             data: result[0],
+            message: "Product created successfully",
+            status: true,
             statusCode: 200,
         };
     }
@@ -277,81 +250,63 @@ class ProductsService {
         if (itemsIds.length > 0) {
             inventoryMap = await ProductsService.getInventoryMap(itemsIds);
         }
-        productsData = productsData.map((product) => {
-            return {
-                title: product.title,
-                vendorId: vendorsMap[product.vendor].id,
-                typeId: typesMap[product.product_type] || null,
-                image: product.image
-                    ? product.image.src
-                    : `${process.env.APP_URL}/uploads/default-product.png`,
-                shopifyId: String(product.id),
-                variants: product.variants.map((variant) => {
-                    return {
-                        title: variant.title,
-                        price: variant.price,
-                        sku: variant.sku,
-                        shopifyId: String(variant.id),
-                        cost: variant.inventory_item_id &&
-                            inventoryMap[variant.inventory_item_id.toString()]
-                            ? Number(inventoryMap[variant.inventory_item_id.toString()])
-                            : 0,
-                        color: variant.option1,
-                        size: variant.option2,
-                        material: variant.option3,
-                    };
-                }),
-            };
-        });
-        //save new Products and update existing ones
-        const savedProducts = await Promise.all(productsData.map(async (product) => {
+        const normalizedProducts = productsData.map((product) => ({
+            image: product.image?.src ?? DEFAULT_PRODUCT_IMAGE,
+            shopifyId: String(product.id),
+            title: product.title,
+            typeId: product.product_type ? typesMap[product.product_type] || null : null,
+            variants: product.variants.map((variant) => ({
+                color: variant.option1,
+                cost: variant.inventory_item_id && inventoryMap[String(variant.inventory_item_id)]
+                    ? Number(inventoryMap[String(variant.inventory_item_id)])
+                    : 0,
+                material: variant.option3,
+                price: variant.price,
+                shopifyId: String(variant.id),
+                size: variant.option2,
+                sku: variant.sku,
+                title: variant.title,
+            })),
+            vendorId: vendorsMap[product.vendor]?.id ?? 0,
+        }));
+        const savedProducts = await Promise.all(normalizedProducts.map(async (product) => {
             try {
-                // First, check if product exists
-                const existingProduct = await Product.findOne({
+                const existingProduct = (await Product.findOne({
                     where: { shopifyId: product.shopifyId },
-                });
+                }));
                 if (existingProduct) {
-                    // Update existing product
                     await existingProduct.update({
-                        title: product.title,
-                        vendorId: product.vendorId,
                         image: product.image,
-                        variants: product.variants,
+                        title: product.title,
                         typeId: product.typeId,
-                        // Add other fields as needed
+                        variants: product.variants,
+                        vendorId: product.vendorId,
                     });
                     return existingProduct;
                 }
-                else {
-                    // Create new product
-                    return await Product.create({
-                        title: product.title,
-                        vendorId: product.vendorId,
-                        image: product.image,
-                        shopifyId: product.shopifyId,
-                        variants: product.variants,
-                        typeId: product.typeId,
-                        // Add other fields as needed
-                    });
-                }
+                return Product.create({
+                    image: product.image,
+                    shopifyId: product.shopifyId,
+                    title: product.title,
+                    typeId: product.typeId,
+                    variants: product.variants,
+                    vendorId: product.vendorId,
+                });
             }
-            catch (error) {
-                console.error(`Error processing product ${product.shopifyId}:`, error);
+            catch (_error) {
                 return null;
             }
         }));
-        // Filter out any null results
-        const filteredProducts = savedProducts.filter(Boolean);
-        return filteredProducts;
+        return savedProducts.filter(Boolean);
     }
     static async getAllCategories() {
         const categories = await Category.findAll({
             attributes: ["title", "id"],
         });
         return {
+            data: categories,
             status: true,
             statusCode: 200,
-            data: categories,
         };
     }
 }
