@@ -5,6 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { env } from "../config/env";
 import { dashboardRouter } from "./dashboard";
 import { notificationRouter } from "./notification";
+import { ticketRouter } from "./tickets";
 
 const userRouter = require("../../app/modules/user/user.routes");
 const factoryRouter = require("../../app/modules/factory/factory.routes");
@@ -475,6 +476,83 @@ const swaggerOptions = {
           },
           required: ["text"],
         },
+        TicketUserSummary: {
+          type: "object",
+          properties: {
+            firstName: { example: "Ahmed", type: "string" },
+            id: { example: 5, type: "integer" },
+            lastName: { example: "Hesham", type: "string" },
+          },
+        },
+        TicketAttachmentSummary: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+            description: { example: "Screenshot", type: "string" },
+            id: { example: 11, type: "integer" },
+            name: { example: "proof.png", type: "string" },
+            url: { example: "uploads/ticket/proof.png", type: "string" },
+          },
+        },
+        TicketNoteSummary: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+            id: { example: 22, type: "integer" },
+            text: { example: "تم فتح التذكرة بنجاح", type: "string" },
+            updatedAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+            user: { $ref: "#/components/schemas/TicketUserSummary" },
+          },
+        },
+        TicketOrderSummary: {
+          type: "object",
+          properties: {
+            customerName: { example: "Lamiaa Saeid", type: "string" },
+            id: { example: 12, type: "integer" },
+            operationNumber: { example: "OP-3001", type: "string" },
+            orderNumber: { example: "31668", type: "string" },
+            productName: { example: "غرفة نوم - دريسينج", type: "string" },
+            productSku: { example: "RKA-001", type: "string" },
+            sellerName: { example: "ركنة للأثاث", type: "string" },
+          },
+        },
+        TicketSummary: {
+          type: "object",
+          properties: {
+            assignedTo: { $ref: "#/components/schemas/TicketUserSummary" },
+            assigneeReply: { example: "التوصيل خلال 72 ساعة", type: "string" },
+            closedAt: { example: null, nullable: true, type: "string" },
+            createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+            creatorReply: { example: "متى بالظبط؟", type: "string" },
+            daysOpen: { example: 2, type: "integer" },
+            id: { example: 4, type: "integer" },
+            notes: { example: "تم التواصل مع شركة الشحن", type: "string" },
+            order: { $ref: "#/components/schemas/TicketOrderSummary" },
+            status: { example: 1, type: "integer" },
+            statusLabel: { example: "مفتوحة", type: "string" },
+            type: { example: 1, type: "integer" },
+            typeLabel: { example: "تأخير في التوصيل", type: "string" },
+          },
+        },
+        TicketDetails: {
+          allOf: [
+            { $ref: "#/components/schemas/TicketSummary" },
+            {
+              type: "object",
+              properties: {
+                attachments: {
+                  items: { $ref: "#/components/schemas/TicketAttachmentSummary" },
+                  type: "array",
+                },
+                createdBy: { $ref: "#/components/schemas/TicketUserSummary" },
+                notesList: {
+                  items: { $ref: "#/components/schemas/TicketNoteSummary" },
+                  type: "array",
+                },
+              },
+            },
+          ],
+        },
         ProductPayload: {
           type: "object",
           properties: {
@@ -582,6 +660,7 @@ export const createMainRouter = (): express.Router => {
   router.use("/shipments", verifyToken, isNotVendor, shipmentRouter);
   router.use("/notifications", verifyToken, notificationRouter);
   router.use("/dashboard", dashboardRouter);
+  router.use("/tickets", ticketRouter);
 
   return router;
 };

@@ -1,0 +1,100 @@
+import type { Request, Response } from "express";
+
+import { unwrap } from "../../shared/result";
+import type { TicketService } from "./ticket.service";
+
+export class TicketController {
+  public constructor(private readonly ticketService: TicketService) {}
+
+  public getMeta = async (_request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.getMeta();
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public lookupOrder = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.lookupOrder(
+      String(request.query.operationNumber ?? ""),
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public createTicket = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.createTicket(
+      request.body,
+      request.user ?? { id: 0 },
+      request.vendorId,
+    );
+    response.status(201).json({ data: unwrap(result), status: true });
+  };
+
+  public listTickets = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.listTickets(request.query as never, request.vendorId);
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public getTicketById = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.getTicketById(Number(request.params.ticketId), request.vendorId);
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public updateTicket = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.updateTicket(
+      Number(request.params.ticketId),
+      request.body,
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public addNote = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.addNote(
+      Number(request.params.ticketId),
+      request.body,
+      request.user ?? { id: 0 },
+      request.vendorId,
+    );
+    response.status(201).json({ data: unwrap(result), status: true });
+  };
+
+  public updateNote = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.updateNote(
+      Number(request.params.ticketId),
+      Number(request.params.noteId),
+      request.body,
+      request.user ?? { id: 0 },
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public deleteNote = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.deleteNote(
+      Number(request.params.ticketId),
+      Number(request.params.noteId),
+      request.user ?? { id: 0 },
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public addAttachments = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.addAttachments(
+      Number(request.params.ticketId),
+      request.filePaths ?? [],
+      request.fileNames ?? [],
+      request.descriptions ?? [],
+      request.vendorId,
+    );
+    response.status(201).json({ data: unwrap(result), status: true });
+  };
+
+  public deleteAttachment = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.deleteAttachment(
+      Number(request.params.ticketId),
+      Number(request.params.attachmentId),
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+}
