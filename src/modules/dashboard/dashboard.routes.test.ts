@@ -14,7 +14,7 @@ jest.mock("../../../app/modules/order/order.model", () => ({
     {
       customer: { firstName: "Lamiaa", lastName: "Saeid" },
       id: 1,
-      orderDate: "2026-05-01T00:00:00.000Z",
+      orderDate: new Date("2026-05-01T00:00:00.000Z"),
       orderLines: [
         {
           discount: "0",
@@ -63,7 +63,7 @@ jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
 jest.mock("../../../app/modules/notification/notification.model", () => ({
   findAll: jest.fn().mockResolvedValue([
     {
-      createdAt: "2026-05-01T00:00:00.000Z",
+      createdAt: new Date("2026-05-01T00:00:00.000Z"),
       entityId: 1,
       entityType: "order",
       id: 99,
@@ -129,6 +129,17 @@ describe("dashboardRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.items[0].orderNumber).toBe("31668");
+  });
+
+  it("returns dashboard cards for a single-day range", async () => {
+    const response = await request(app).get("/dashboard/cards").query({
+      endDate: "2026-05-01",
+      startDate: "2026-05-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+    expect(response.body.data.cards).toHaveLength(4);
   });
 
   it("returns quick actions", async () => {

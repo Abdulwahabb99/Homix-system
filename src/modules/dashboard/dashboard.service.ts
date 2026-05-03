@@ -21,6 +21,7 @@ import { GOAL_CONFIGS, OTHER_DISTRIBUTION_ITEM, QUICK_ACTIONS } from "./dashboar
 import {
   buildCard,
   collapseDistribution,
+  normalizeDateRange,
   getPreviousRange,
   getRole,
   mergeGoalConfig,
@@ -40,8 +41,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardCardsPayload>> {
     const role = getRole(user, vendorId);
-    const currentInput = this.buildMetricsInput(range, role, vendorId);
-    const previousInput = this.buildMetricsInput(getPreviousRange(range), role, vendorId);
+    const normalizedRange = normalizeDateRange(range);
+    const currentInput = this.buildMetricsInput(normalizedRange, role, vendorId);
+    const previousInput = this.buildMetricsInput(getPreviousRange(normalizedRange), role, vendorId);
     const [currentSnapshot, previousSnapshot] = await Promise.all([
       this.dashboardRepository.getSnapshot(currentInput),
       this.dashboardRepository.getSnapshot(previousInput),
@@ -49,9 +51,9 @@ export class DashboardService {
 
     return success({
       cards: this.buildCardsForRole(role, currentSnapshot, previousSnapshot),
-      endDate: range.endDate,
+      endDate: normalizedRange.endDate,
       role,
-      startDate: range.startDate,
+      startDate: normalizedRange.startDate,
     });
   }
 
@@ -77,10 +79,10 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardPerformancePayload>> {
     const role = getRole(user, vendorId);
-    const currentInput = this.buildMetricsInput(range, role, vendorId);
-    const previousInput = this.buildMetricsInput(getPreviousRange(range), role, vendorId);
+    const normalizedRange = normalizeDateRange(range);
+    const currentInput = this.buildMetricsInput(normalizedRange, role, vendorId);
     const [summaryResult, series] = await Promise.all([
-      this.getSingleCard("totalSales", range, user, vendorId),
+      this.getSingleCard("totalSales", normalizedRange, user, vendorId),
       this.dashboardRepository.getPerformanceSeries(currentInput),
     ]);
 
@@ -89,10 +91,10 @@ export class DashboardService {
     }
 
     return success({
-      endDate: range.endDate,
+      endDate: normalizedRange.endDate,
       role,
       series,
-      startDate: range.startDate,
+      startDate: normalizedRange.startDate,
       summary: summaryResult.data,
     });
   }
@@ -103,8 +105,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardListPayload<DashboardActivityItem>>> {
     const role = getRole(user, vendorId);
+    const normalizedRange = normalizeDateRange(range);
     const items = await this.dashboardRepository.getActivities(
-      this.buildMetricsInput(range, role, vendorId),
+      this.buildMetricsInput(normalizedRange, role, vendorId),
       user.id ?? 0,
     );
 
@@ -117,8 +120,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardListPayload<DashboardLatestOrderItem>>> {
     const role = getRole(user, vendorId);
+    const normalizedRange = normalizeDateRange(range);
     const items = await this.dashboardRepository.getLatestOrders(
-      this.buildMetricsInput(range, role, vendorId),
+      this.buildMetricsInput(normalizedRange, role, vendorId),
     );
 
     return success({ items, role });
@@ -130,8 +134,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardListPayload<DashboardLeaderboardEntry>>> {
     const role = getRole(user, vendorId);
+    const normalizedRange = normalizeDateRange(range);
     const items = await this.dashboardRepository.getLeaderboard(
-      this.buildMetricsInput(range, role, vendorId),
+      this.buildMetricsInput(normalizedRange, role, vendorId),
     );
 
     return success({ items, role });
@@ -151,8 +156,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardListPayload<DashboardSalesDistributionItem>>> {
     const role = getRole(user, vendorId);
+    const normalizedRange = normalizeDateRange(range);
     const items = await this.dashboardRepository.getSalesDistribution(
-      this.buildMetricsInput(range, role, vendorId),
+      this.buildMetricsInput(normalizedRange, role, vendorId),
     );
 
     return success({
@@ -167,7 +173,7 @@ export class DashboardService {
     vendorId?: number | null,
   ): Promise<Result<DashboardListPayload<DashboardGoalProgressItem>>> {
     const role = getRole(user, vendorId);
-    const metricsInput = this.buildMetricsInput(range, role, vendorId);
+    const metricsInput = this.buildMetricsInput(normalizeDateRange(range), role, vendorId);
     const [snapshot, deliveredOrders] = await Promise.all([
       this.dashboardRepository.getSnapshot(metricsInput),
       this.dashboardRepository.getDeliveredOrdersCount(metricsInput),
@@ -217,9 +223,9 @@ export class DashboardService {
     vendorId?: number | null,
   ): DashboardMetricsInput {
     return {
-      endDate: new Date(range.endDate).toISOString(),
+      endDate: range.endDate,
       role,
-      startDate: new Date(range.startDate).toISOString(),
+      startDate: range.startDate,
       vendorId: vendorId ?? undefined,
     };
   }

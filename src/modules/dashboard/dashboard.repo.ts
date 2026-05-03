@@ -114,6 +114,11 @@ const getString = (value: unknown, fallback = ""): string => {
   return typeof value === "string" ? value : fallback;
 };
 
+const toIsoString = (value: unknown): string => {
+  const parsedDate = value instanceof Date ? value : new Date(String(value ?? ""));
+  return Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString();
+};
+
 const getCustomerName = (customer: PlainRecord | undefined): string => {
   if (!customer) {
     return "عميل";
@@ -216,7 +221,7 @@ export class DashboardRepository {
     return notifications.map((notification) => {
       const plainNotification = toPlain(notification);
       return {
-        createdAt: new Date(getString(plainNotification.createdAt)).toISOString(),
+        createdAt: toIsoString(plainNotification.createdAt),
         entityId: Number(plainNotification.entityId ?? 0),
         entityType: getString(plainNotification.entityType),
         id: Number(plainNotification.id ?? 0),
@@ -516,7 +521,7 @@ export class DashboardRepository {
             vendorName: getString(vendor?.name, "غير محدد"),
           };
         }),
-        orderDate: new Date(getString(plainOrder.orderDate)).toISOString(),
+        orderDate: toIsoString(plainOrder.orderDate),
         orderNumber: getString(plainOrder.orderNumber, getString(plainOrder.name)),
         status: plainOrder.status === null || plainOrder.status === undefined ? null : Number(plainOrder.status),
         totalPrice: parseNumber(plainOrder.totalPrice),

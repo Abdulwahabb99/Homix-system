@@ -132,4 +132,51 @@ describe("DashboardService", () => {
       expect(result.data.items[3]?.currentValue).toBe(25);
     }
   });
+
+  it("normalizes date-only ranges to inclusive day boundaries", async () => {
+    const getSnapshot = jest
+      .fn()
+      .mockResolvedValueOnce({
+        activeMakers: 5,
+        activeProducts: 0,
+        pendingOrders: 3,
+        totalOrders: 10,
+        totalSales: 1000,
+      })
+      .mockResolvedValueOnce({
+        activeMakers: 4,
+        activeProducts: 0,
+        pendingOrders: 2,
+        totalOrders: 8,
+        totalSales: 800,
+      });
+    const dashboardRepository = {
+      getSnapshot,
+    } as never;
+    const service = new DashboardService(dashboardRepository);
+
+    await service.getCards(
+      {
+        endDate: "2026-05-01",
+        startDate: "2026-05-01",
+      },
+      { userType: "1" },
+      null,
+    );
+
+    expect(getSnapshot).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        endDate: "2026-05-01T23:59:59.999Z",
+        startDate: "2026-05-01T00:00:00.000Z",
+      }),
+    );
+    expect(getSnapshot).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        endDate: "2026-04-30T23:59:59.999Z",
+        startDate: "2026-04-30T00:00:00.000Z",
+      }),
+    );
+  });
 });

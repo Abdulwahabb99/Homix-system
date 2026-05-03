@@ -12,6 +12,7 @@ import type {
 const PREVIOUS_PERIOD_LABEL = "مقارنة بالفترة السابقة";
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 const PERCENTAGE_PRECISION = 10;
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const CARD_LABELS: Record<DashboardCardKey, string> = {
   activeMakers: "صُنّاع نشطون",
@@ -84,12 +85,33 @@ export const getPreviousRange = ({ endDate, startDate }: DateRangeInput): DateRa
   const currentStartDate = new Date(startDate);
   const currentEndDate = new Date(endDate);
   const rangeDuration = currentEndDate.getTime() - currentStartDate.getTime();
-  const previousEndDate = new Date(currentStartDate.getTime() - DAY_IN_MILLISECONDS);
+  const previousEndDate = new Date(currentStartDate.getTime() - 1);
   const previousStartDate = new Date(previousEndDate.getTime() - rangeDuration);
 
   return {
     endDate: previousEndDate.toISOString(),
     startDate: previousStartDate.toISOString(),
+  };
+};
+
+const toUtcDate = (value: string, endOfDay: boolean): Date => {
+  const [year = 0, month = 1, day = 1] = value
+    .split("-")
+    .map((part) => Number.parseInt(part, 10));
+  return new Date(Date.UTC(year, month - 1, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0));
+};
+
+export const normalizeDateRange = ({ endDate, startDate }: DateRangeInput): DateRangeInput => {
+  const normalizedStartDate = DATE_ONLY_PATTERN.test(startDate)
+    ? toUtcDate(startDate, false)
+    : new Date(startDate);
+  const normalizedEndDate = DATE_ONLY_PATTERN.test(endDate)
+    ? toUtcDate(endDate, true)
+    : new Date(endDate);
+
+  return {
+    endDate: normalizedEndDate.toISOString(),
+    startDate: normalizedStartDate.toISOString(),
   };
 };
 
