@@ -15,9 +15,24 @@ const CategoriesRouter = express_1.default.Router();
  *     tags:
  *       - Categories
  *     summary: Get all categories
+ *     description: Returns the category names available for product filtering and import mapping.
  *     responses:
  *       200:
  *         description: List of categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CategoriesResponse'
+ *             examples:
+ *               default:
+ *                 value:
+ *                   status: true
+ *                   statusCode: 200
+ *                   data:
+ *                     - غرف نوم
+ *                     - سفرة
+ *       401:
+ *         description: Missing or invalid bearer token
  */
 CategoriesRouter.get("/", verifyToken, productsController.getAllCategories);
 module.exports = CategoriesRouter;

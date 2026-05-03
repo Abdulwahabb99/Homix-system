@@ -10,6 +10,7 @@ const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const env_1 = require("../config/env");
 const dashboard_1 = require("./dashboard");
 const notification_1 = require("./notification");
+const tickets_1 = require("./tickets");
 const userRouter = require("../../app/modules/user/user.routes");
 const factoryRouter = require("../../app/modules/factory/factory.routes");
 const orderRouter = require("../../app/modules/order/order.routes");
@@ -31,6 +32,601 @@ const swaggerOptions = {
     ],
     definition: {
         components: {
+            schemas: {
+                DashboardCard: {
+                    type: "object",
+                    properties: {
+                        changePercentage: { example: 12.4, type: "number" },
+                        currentValue: { example: 847320, type: "number" },
+                        key: {
+                            enum: ["activeMakers", "activeProducts", "pendingOrders", "totalOrders", "totalSales"],
+                            type: "string",
+                        },
+                        previousValue: { example: 754000, type: "number" },
+                        trend: { enum: ["up", "down", "flat"], type: "string" },
+                    },
+                    required: ["key", "currentValue", "previousValue", "changePercentage", "trend"],
+                },
+                DashboardCardEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: { $ref: "#/components/schemas/DashboardCard" },
+                        status: { example: true, type: "boolean" },
+                    },
+                    required: ["status", "data"],
+                },
+                DashboardCardsEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            properties: {
+                                cards: {
+                                    items: { $ref: "#/components/schemas/DashboardCard" },
+                                    type: "array",
+                                },
+                                endDate: { example: "2026-05-31", type: "string" },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                                startDate: { example: "2026-05-01", type: "string" },
+                            },
+                            type: "object",
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                    required: ["status", "data"],
+                },
+                DashboardPerformancePoint: {
+                    type: "object",
+                    properties: {
+                        date: { example: "2026-05-01", type: "string" },
+                        orders: { example: 42, type: "integer" },
+                        sales: { example: 51200, type: "number" },
+                    },
+                    required: ["date", "orders", "sales"],
+                },
+                DashboardPerformanceEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                endDate: { example: "2026-05-31", type: "string" },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                                series: {
+                                    items: { $ref: "#/components/schemas/DashboardPerformancePoint" },
+                                    type: "array",
+                                },
+                                startDate: { example: "2026-05-01", type: "string" },
+                                summary: { $ref: "#/components/schemas/DashboardCard" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardActivityItem: {
+                    type: "object",
+                    properties: {
+                        createdAt: { example: "2026-05-02T00:45:00.000Z", format: "date-time", type: "string" },
+                        entityId: { example: 31668, type: "integer" },
+                        entityType: { example: "order", type: "string" },
+                        id: { example: 91, type: "integer" },
+                        text: { example: "تم اضافة طلب جديد رقم 31668", type: "string" },
+                    },
+                },
+                DashboardLatestOrderItem: {
+                    type: "object",
+                    properties: {
+                        amount: { example: 12999, type: "number" },
+                        customerName: { example: "Lamiaa Saeid", type: "string" },
+                        id: { example: 31668, type: "integer" },
+                        orderDate: { example: "2026-05-02T00:45:00.000Z", format: "date-time", type: "string" },
+                        orderNumber: { example: "31668", type: "string" },
+                        productName: { example: "غرفة نوم - دريسينج", type: "string" },
+                        status: { example: 1, nullable: true, type: "integer" },
+                        statusLabel: { example: "معلق", type: "string" },
+                    },
+                },
+                DashboardLeaderboardItem: {
+                    type: "object",
+                    properties: {
+                        id: { example: 4, nullable: true, type: "integer" },
+                        name: { example: "ركنة للأثاث", type: "string" },
+                        rank: { example: 1, type: "integer" },
+                        secondaryLabel: { example: "صانع", type: "string" },
+                        totalSales: { example: 284000, type: "number" },
+                    },
+                },
+                DashboardSalesDistributionItem: {
+                    type: "object",
+                    properties: {
+                        color: { example: "#6366F1", type: "string" },
+                        label: { example: "غرفة النوم", type: "string" },
+                        percentage: { example: 40, type: "number" },
+                        value: { example: 320000, type: "number" },
+                    },
+                },
+                DashboardQuickActionItem: {
+                    type: "object",
+                    properties: {
+                        description: { example: "رفع منتج جديد", type: "string" },
+                        icon: { example: "package", type: "string" },
+                        key: { example: "add-product", type: "string" },
+                        label: { example: "إضافة منتج", type: "string" },
+                        route: { example: "/products/new", type: "string" },
+                    },
+                },
+                DashboardGoalProgressItem: {
+                    type: "object",
+                    properties: {
+                        color: { example: "#6366F1", type: "string" },
+                        currentValue: { example: 847000, type: "number" },
+                        key: { example: "salesTarget", type: "string" },
+                        label: { example: "هدف المبيعات", type: "string" },
+                        progressPercentage: { example: 84.7, type: "number" },
+                        targetValue: { example: 1000000, type: "number" },
+                    },
+                },
+                DashboardActivitiesEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardActivityItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardLatestOrdersEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardLatestOrderItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardLeaderboardEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardLeaderboardItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardSalesDistributionEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardSalesDistributionItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardQuickActionsEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardQuickActionItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                DashboardGoalsProgressEnvelope: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                items: {
+                                    items: { $ref: "#/components/schemas/DashboardGoalProgressItem" },
+                                    type: "array",
+                                },
+                                role: { enum: ["admin", "vendor"], type: "string" },
+                            },
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                },
+                EmptyObject: {
+                    additionalProperties: false,
+                    type: "object",
+                },
+                GenericMessageResponse: {
+                    type: "object",
+                    properties: {
+                        message: { example: "Operation completed successfully", type: "string" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                    required: ["message", "status"],
+                },
+                ErrorResponse: {
+                    type: "object",
+                    properties: {
+                        message: { example: "Validation failed", type: "string" },
+                        status: { example: false, type: "boolean" },
+                        statusCode: { example: 400, type: "integer" },
+                    },
+                    required: ["message"],
+                },
+                NotificationItem: {
+                    type: "object",
+                    properties: {
+                        createdAt: { example: "2026-05-02T00:45:00.000Z", format: "date-time", type: "string" },
+                        id: { example: 17, type: "integer" },
+                        isRead: { example: false, type: "boolean" },
+                        message: { example: "طلب جديد رقم 31668", type: "string" },
+                        type: { example: "order", type: "string" },
+                    },
+                    required: ["id", "message"],
+                },
+                NotificationListResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { $ref: "#/components/schemas/NotificationItem" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                    },
+                    required: ["data"],
+                },
+                UserSummary: {
+                    type: "object",
+                    properties: {
+                        email: { example: "admin@homix.com", type: "string" },
+                        firstName: { example: "Ahmed", type: "string" },
+                        id: { example: 1, type: "integer" },
+                        isActive: { example: true, type: "boolean" },
+                        lastName: { example: "Hesham", type: "string" },
+                        userType: { example: "admin", type: "string" },
+                        vendorId: { example: 4, nullable: true, type: "integer" },
+                    },
+                },
+                UserListResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { $ref: "#/components/schemas/UserSummary" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                UserResponse: {
+                    type: "object",
+                    properties: {
+                        data: { $ref: "#/components/schemas/UserSummary" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                LoginRequest: {
+                    type: "object",
+                    properties: {
+                        email: { example: "admin@homix.com", type: "string" },
+                        password: { example: "Secret123!", type: "string" },
+                    },
+                    required: ["email", "password"],
+                },
+                LoginResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "object",
+                            properties: {
+                                token: { example: "jwt-token", type: "string" },
+                                user: { $ref: "#/components/schemas/UserSummary" },
+                            },
+                        },
+                        message: { example: "Logged in successfully", type: "string" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                UserUpsertRequest: {
+                    type: "object",
+                    properties: {
+                        email: { example: "ops@homix.com", type: "string" },
+                        firstName: { example: "Ibrahim", type: "string" },
+                        password: { example: "Secret123!", type: "string" },
+                        userType: { example: "admin", type: "string" },
+                        vendorId: { example: 4, nullable: true, type: "integer" },
+                    },
+                },
+                VendorPayload: {
+                    type: "object",
+                    properties: {
+                        email: { example: "vendor@homix.com", type: "string" },
+                        name: { example: "ركنة للأثاث", type: "string" },
+                        password: { example: "Secret123!", type: "string" },
+                    },
+                    required: ["name"],
+                },
+                VendorSummary: {
+                    type: "object",
+                    properties: {
+                        email: { example: "vendor@homix.com", type: "string" },
+                        id: { example: 4, type: "integer" },
+                        isActive: { example: true, type: "boolean" },
+                        name: { example: "ركنة للأثاث", type: "string" },
+                    },
+                },
+                VendorResponse: {
+                    type: "object",
+                    properties: {
+                        data: { $ref: "#/components/schemas/VendorSummary" },
+                        message: { example: "Vendor fetched successfully", type: "string" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                VendorListResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { $ref: "#/components/schemas/VendorSummary" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                FactoryPayload: {
+                    type: "object",
+                    properties: {
+                        address: { example: "Nasr City, Cairo", type: "string" },
+                        name: { example: "مصنع الموردن", type: "string" },
+                        phoneNumber: { example: "+201000000000", type: "string" },
+                        status: { example: "active", type: "string" },
+                    },
+                    required: ["name"],
+                },
+                AttachmentSummary: {
+                    type: "object",
+                    properties: {
+                        attachmentName: { example: "spec-sheet.pdf", type: "string" },
+                        attachmentPath: { example: "https://cdn.homix.com/factories/spec-sheet.pdf", type: "string" },
+                        description: { example: "Factory profile", type: "string" },
+                        id: { example: 9, type: "integer" },
+                    },
+                },
+                FactorySummary: {
+                    type: "object",
+                    properties: {
+                        attachments: {
+                            items: { $ref: "#/components/schemas/AttachmentSummary" },
+                            type: "array",
+                        },
+                        id: { example: 3, type: "integer" },
+                        name: { example: "مصنع الموردن", type: "string" },
+                        status: { example: "active", type: "string" },
+                    },
+                },
+                FactoryResponse: {
+                    type: "object",
+                    properties: {
+                        data: { $ref: "#/components/schemas/FactorySummary" },
+                        message: { example: "Factory fetched successfully", type: "string" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                FactoryListResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { $ref: "#/components/schemas/FactorySummary" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                OrderLineUpdateRequest: {
+                    type: "object",
+                    properties: {
+                        color: { example: "Walnut", type: "string" },
+                        cost: { example: 1250, type: "number" },
+                        itemShipping: { example: 150, type: "number" },
+                        itemStatus: { example: 2, type: "integer" },
+                        material: { example: "Wood", type: "string" },
+                        notes: { example: "Urgent finishing", type: "string" },
+                        size: { example: "200x80", type: "string" },
+                        status: { example: 3, type: "integer" },
+                        toBeCollected: { example: 0, type: "integer" },
+                    },
+                },
+                NotePayload: {
+                    type: "object",
+                    properties: {
+                        text: { example: "Customer requested a darker stain", type: "string" },
+                    },
+                    required: ["text"],
+                },
+                TicketUserSummary: {
+                    type: "object",
+                    properties: {
+                        firstName: { example: "Ahmed", type: "string" },
+                        id: { example: 5, type: "integer" },
+                        lastName: { example: "Hesham", type: "string" },
+                    },
+                },
+                TicketAttachmentSummary: {
+                    type: "object",
+                    properties: {
+                        createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+                        description: { example: "Screenshot", type: "string" },
+                        id: { example: 11, type: "integer" },
+                        name: { example: "proof.png", type: "string" },
+                        url: { example: "uploads/ticket/proof.png", type: "string" },
+                    },
+                },
+                TicketNoteSummary: {
+                    type: "object",
+                    properties: {
+                        createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+                        id: { example: 22, type: "integer" },
+                        text: { example: "تم فتح التذكرة بنجاح", type: "string" },
+                        updatedAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+                        user: { $ref: "#/components/schemas/TicketUserSummary" },
+                    },
+                },
+                TicketOrderSummary: {
+                    type: "object",
+                    properties: {
+                        customerName: { example: "Lamiaa Saeid", type: "string" },
+                        id: { example: 12, type: "integer" },
+                        operationNumber: { example: "OP-3001", type: "string" },
+                        orderNumber: { example: "31668", type: "string" },
+                        productName: { example: "غرفة نوم - دريسينج", type: "string" },
+                        productSku: { example: "RKA-001", type: "string" },
+                        sellerName: { example: "ركنة للأثاث", type: "string" },
+                    },
+                },
+                TicketSummary: {
+                    type: "object",
+                    properties: {
+                        assignedTo: { $ref: "#/components/schemas/TicketUserSummary" },
+                        assigneeReply: { example: "التوصيل خلال 72 ساعة", type: "string" },
+                        closedAt: { example: null, nullable: true, type: "string" },
+                        createdAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+                        creatorReply: { example: "متى بالظبط؟", type: "string" },
+                        daysOpen: { example: 2, type: "integer" },
+                        id: { example: 4, type: "integer" },
+                        notes: { example: "تم التواصل مع شركة الشحن", type: "string" },
+                        order: { $ref: "#/components/schemas/TicketOrderSummary" },
+                        status: { example: 1, type: "integer" },
+                        statusLabel: { example: "مفتوحة", type: "string" },
+                        type: { example: 1, type: "integer" },
+                        typeLabel: { example: "تأخير في التوصيل", type: "string" },
+                    },
+                },
+                TicketDetails: {
+                    allOf: [
+                        { $ref: "#/components/schemas/TicketSummary" },
+                        {
+                            type: "object",
+                            properties: {
+                                attachments: {
+                                    items: { $ref: "#/components/schemas/TicketAttachmentSummary" },
+                                    type: "array",
+                                },
+                                createdBy: { $ref: "#/components/schemas/TicketUserSummary" },
+                                notesList: {
+                                    items: { $ref: "#/components/schemas/TicketNoteSummary" },
+                                    type: "array",
+                                },
+                            },
+                        },
+                    ],
+                },
+                ProductPayload: {
+                    type: "object",
+                    properties: {
+                        category: { example: "غرف نوم", type: "string" },
+                        name: { example: "دريسينج هاوس", type: "string" },
+                        price: { example: "16999", type: "string" },
+                        productType: { example: "دريسنج", type: "string" },
+                        vendor: { example: "ركنة للأثاث", type: "string" },
+                    },
+                    required: ["name"],
+                },
+                ProductSummary: {
+                    type: "object",
+                    properties: {
+                        category: { example: "غرف نوم", type: "string" },
+                        id: { example: 31668, type: "integer" },
+                        image: { example: "https://cdn.homix.com/products/31668.png", type: "string" },
+                        name: { example: "دريسينج هاوس", type: "string" },
+                        price: { example: 16999, type: "number" },
+                        productType: { example: "دريسنج", type: "string" },
+                        vendor: { example: "ركنة للأثاث", type: "string" },
+                    },
+                },
+                ProductListResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            properties: {
+                                products: {
+                                    items: { $ref: "#/components/schemas/ProductSummary" },
+                                    type: "array",
+                                },
+                                totalCount: { example: 72, type: "integer" },
+                            },
+                            type: "object",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                ProductResponse: {
+                    type: "object",
+                    properties: {
+                        data: { $ref: "#/components/schemas/ProductSummary" },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                ProductTypesResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { example: "غرف نوم", type: "string" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+                CategoriesResponse: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            items: { example: "سفرة", type: "string" },
+                            type: "array",
+                        },
+                        status: { example: true, type: "boolean" },
+                        statusCode: { example: 200, type: "integer" },
+                    },
+                },
+            },
             securitySchemes: {
                 bearerAuth: {
                     bearerFormat: "JWT",
@@ -64,6 +660,7 @@ const createMainRouter = () => {
     router.use("/shipments", verifyToken, isNotVendor, shipmentRouter);
     router.use("/notifications", verifyToken, notification_1.notificationRouter);
     router.use("/dashboard", dashboard_1.dashboardRouter);
+    router.use("/tickets", tickets_1.ticketRouter);
     return router;
 };
 exports.createMainRouter = createMainRouter;

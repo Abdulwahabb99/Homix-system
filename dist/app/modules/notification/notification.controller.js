@@ -1,35 +1,6 @@
 "use strict";
-const NotificationService = require("./notification.service");
-class NotificationController {
-    static async getNotifications(req, res) {
-        try {
-            const notifications = await NotificationService.getNotifications(req.user.id);
-            return res.status(200).json({ status: true, notifications });
-        }
-        catch (error) {
-            return res.status(500).json({ status: false, message: error.message });
-        }
-    }
-    static async markAsRead(req, res) {
-        try {
-            await NotificationService.markAsRead(req.user.id);
-            return res
-                .status(200)
-                .json({ status: true, message: "Notifications marked as read" });
-        }
-        catch (error) {
-            return res.status(500).json({ status: false, message: error.message });
-        }
-    }
-    static async clearNotifications(req, res) {
-        try {
-            const result = await NotificationService.clearNotifications(req.user.id);
-            return res.status(200).json(result);
-        }
-        catch (error) {
-            return res.status(500).json({ status: false, message: error.message });
-        }
-    }
-}
-module.exports = NotificationController;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = void 0;
+var notification_controller_1 = require("../../../src/modules/notification/notification.controller");
+Object.defineProperty(exports, "default", { enumerable: true, get: function () { return notification_controller_1.NotificationController; } });
 //# sourceMappingURL=notification.controller.js.map

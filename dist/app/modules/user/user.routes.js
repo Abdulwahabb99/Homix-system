@@ -18,9 +18,28 @@ const UserRouter = express_1.default.Router();
  *     tags:
  *       - Users
  *     summary: Get all admin users
+ *     description: Returns the administrative user list. Vendor users are blocked from this endpoint.
  *     responses:
  *       200:
  *         description: Users list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserListResponse'
+ *             examples:
+ *               default:
+ *                 value:
+ *                   status: true
+ *                   statusCode: 200
+ *                   data:
+ *                     - id: 1
+ *                       firstName: Ahmed
+ *                       lastName: Hesham
+ *                       email: admin@homix.com
+ *                       userType: admin
+ *                       isActive: true
+ *       401:
+ *         description: Missing or invalid bearer token
  */
 UserRouter.get("/", verifyToken, isNotVendor, UserController.getAllUsers);
 /**
@@ -41,6 +60,14 @@ UserRouter.get("/", verifyToken, isNotVendor, UserController.getAllUsers);
  *     responses:
  *       200:
  *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *       404:
+ *         description: User not found
  */
 UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
 /**
@@ -58,9 +85,29 @@ UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
  *         required: true
  *         schema:
  *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserUpsertRequest'
+ *           examples:
+ *             updateAdmin:
+ *               value:
+ *                 firstName: Ibrahim
+ *                 email: ibrahim@homix.com
+ *                 userType: admin
  *     responses:
  *       200:
  *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *       404:
+ *         description: User not found
  */
 UserRouter.put("/:id", verifyToken, isAdmin, UserController.editUser);
 /**
@@ -70,9 +117,26 @@ UserRouter.put("/:id", verifyToken, isAdmin, UserController.editUser);
  *     tags:
  *       - Users
  *     summary: Login user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *           examples:
+ *             adminLogin:
+ *               value:
+ *                 email: admin@homix.com
+ *                 password: Secret123!
  *     responses:
  *       200:
  *         description: Login result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       401:
+ *         description: Invalid credentials
  */
 UserRouter.post("/login", AuthController.login);
 /**
@@ -84,9 +148,30 @@ UserRouter.post("/login", AuthController.login);
  *     tags:
  *       - Users
  *     summary: Create user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserUpsertRequest'
+ *           examples:
+ *             createAdmin:
+ *               value:
+ *                 firstName: Nour
+ *                 email: nour@homix.com
+ *                 password: Secret123!
+ *                 userType: admin
  *     responses:
  *       200:
  *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *       409:
+ *         description: User already exists
  */
 UserRouter.post("/", verifyToken, isAdmin, AuthController.addUser);
 /**
@@ -107,6 +192,14 @@ UserRouter.post("/", verifyToken, isAdmin, AuthController.addUser);
  *     responses:
  *       200:
  *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/GenericMessageResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *       404:
+ *         description: User not found
  */
 UserRouter.delete("/:id", verifyToken, isAdmin, UserController.deleteUser);
 module.exports = UserRouter;
