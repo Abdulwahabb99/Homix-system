@@ -7,6 +7,7 @@ const Dashboard = React.lazy(
   () => import(/* webpackPrefetch: true */ "claude/dashboard/HomixDashboardPage")
 );
 const Orders = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Orders"));
+const Tickets = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Tickets"));
 const ProtectedRoutes = React.lazy(
   () => import(/* webpackPrefetch: true */ "components/ProtectedRoutes/ProtectedRoutes")
 );
@@ -76,6 +77,20 @@ export const adminRoutes = [
     component: (
       <ProtectedRoutes>
         <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "التذاكر",
+    key: "tickets",
+    icon: <Icon fontSize="small">confirmation_number</Icon>,
+    route: "/tickets",
+    component: (
+      <ProtectedRoutes>
+        <Suspense fallback={<div><Spinner /></div>}>
+          <Tickets />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },
@@ -170,14 +185,22 @@ export const vendorsRoutes = [
     route: "/orders",
     component: (
       <ProtectedRoutes>
-        <Suspense
-          fallback={
-            <div>
-              <Spinner />
-            </div>
-          }
-        >
+        <Suspense fallback={<div><Spinner /></div>}>
           <Orders />
+        </Suspense>
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "التذاكر",
+    key: "tickets",
+    icon: <Icon fontSize="small">confirmation_number</Icon>,
+    route: "/tickets",
+    component: (
+      <ProtectedRoutes>
+        <Suspense fallback={<div><Spinner /></div>}>
+          <Tickets />
         </Suspense>
       </ProtectedRoutes>
     ),
@@ -250,6 +273,20 @@ export const logisticsRoutes = [
     component: (
       <ProtectedRoutes>
         <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "التذاكر",
+    key: "tickets",
+    icon: <Icon fontSize="small">confirmation_number</Icon>,
+    route: "/tickets",
+    component: (
+      <ProtectedRoutes>
+        <Suspense fallback={<div><Spinner /></div>}>
+          <Tickets />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },
@@ -328,6 +365,20 @@ export const operationRoutes = [
     component: (
       <ProtectedRoutes>
         <Shipments />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "التذاكر",
+    key: "tickets",
+    icon: <Icon fontSize="small">confirmation_number</Icon>,
+    route: "/tickets",
+    component: (
+      <ProtectedRoutes>
+        <Suspense fallback={<div><Spinner /></div>}>
+          <Tickets />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },

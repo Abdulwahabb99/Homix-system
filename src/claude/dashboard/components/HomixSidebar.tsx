@@ -73,6 +73,12 @@ const icons = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   ),
+  tickets: (
+    <svg viewBox="0 0 24 24">
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+    </svg>
+  ),
   shipments: (
     <svg viewBox="0 0 24 24">
       <path d="M1 3h15v13H1z" />
@@ -97,6 +103,7 @@ const adminMain: NavItem[] = [
   { to: "/orders", label: "الطلبات", icon: icons.orders, badge: "72", badgeType: "warn" },
   { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default" },
   { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
   { to: "/financialReports", label: "الإيرادات", icon: icons.revenue },
 ];
 
@@ -111,6 +118,7 @@ const vendorMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true },
   { to: "/orders", label: "الطلبات", icon: icons.orders },
   { to: "/products", label: "المنتجات", icon: icons.product },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
   { to: "/financialReports", label: "تقارير مالية", icon: icons.reports },
 ];
 
@@ -119,12 +127,14 @@ const operationsMain: NavItem[] = [
   { to: "/orders", label: "الطلبات", icon: icons.orders },
   { to: "/factories", label: "المصانع", icon: icons.suppliers },
   { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
 ];
 
 const logisticsMain: NavItem[] = [
   { to: "/products", label: "المنتجات", icon: icons.product },
   { to: "/orders", label: "الطلبات", icon: icons.orders },
   { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
 ];
 
 function getInitials(): string {

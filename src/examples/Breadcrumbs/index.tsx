@@ -46,6 +46,11 @@ function Breadcrumbs({
   const currentText = formatSegment((title && String(title)) || lastSegment || "الرئيسية");
 
   const isLight = Boolean(light);
+  // الألوان الذهبية/الكريمية الموحّدة للـ pill
+  const GOLD = "#b8932a";
+  const GOLD_BORDER = "rgba(185, 152, 60, 0.40)";
+  const CREAM_BG = "#fef9ef";
+
   const pillSx = {
     display: "inline-flex",
     alignItems: "center",
@@ -54,8 +59,8 @@ function Breadcrumbs({
     py: 0.65,
     borderRadius: 2.5,
     border: "1px solid",
-    borderColor: isLight ? alpha("#fff", 0.22) : alpha(theme.palette.primary.main, 0.12),
-    bgcolor: isLight ? alpha("#fff", 0.1) : alpha(theme.palette.primary.main, 0.04),
+    borderColor: isLight ? alpha("#fff", 0.22) : GOLD_BORDER,
+    bgcolor: isLight ? alpha("#fff", 0.1) : CREAM_BG,
     backdropFilter: isLight ? "blur(8px)" : "none",
     "& .MuiBreadcrumbs-ol": {
       flexWrap: isSm ? "wrap" : "nowrap",
@@ -74,15 +79,15 @@ function Breadcrumbs({
     letterSpacing: "0.01em",
     lineHeight: 1.4,
     textTransform: "lowercase" as const,
-    color: isLight ? theme.palette.common.white : theme.palette.text.primary,
+    color: isLight ? theme.palette.common.white : alpha(GOLD, 0.75),
   };
 
   const currentTextSx = {
     ...crumbTextSx,
-    fontWeight: 600,
+    fontWeight: 700,
     maxWidth: { xs: 160, sm: 240, md: 360 },
     textTransform: "none" as const,
-    color: isLight ? theme.palette.common.white : theme.palette.primary.main,
+    color: isLight ? theme.palette.common.white : GOLD,
     fontVariantNumeric: "tabular-nums" as const,
   };
 
@@ -90,7 +95,7 @@ function Breadcrumbs({
     <NavigateNextIcon
       sx={{
         fontSize: 16,
-        color: isLight ? alpha("#fff", 0.5) : theme.palette.text.disabled,
+        color: isLight ? alpha("#fff", 0.5) : alpha(GOLD, 0.5),
         display: "block",
         mx: 0.15,
         flexShrink: 0,
@@ -126,8 +131,8 @@ function Breadcrumbs({
       color: "inherit",
       transition: "background-color 0.2s",
       "&:hover": {
-        bgcolor: isLight ? alpha("#fff", 0.1) : alpha(theme.palette.primary.main, 0.08),
-      },
+            bgcolor: isLight ? alpha("#fff", 0.1) : alpha(GOLD, 0.08),
+          },
     },
   };
 
@@ -142,12 +147,12 @@ function Breadcrumbs({
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: isLight ? theme.palette.common.white : theme.palette.primary.main,
+                color: isLight ? theme.palette.common.white : GOLD,
                 p: 0.25,
                 borderRadius: 1,
                 transition: "background-color 0.2s",
                 "&:hover": {
-                  bgcolor: isLight ? alpha("#fff", 0.12) : alpha(theme.palette.primary.main, 0.1),
+                  bgcolor: isLight ? alpha("#fff", 0.12) : alpha(GOLD, 0.1),
                 },
               }}
             >
