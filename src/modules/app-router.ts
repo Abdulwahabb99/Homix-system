@@ -647,6 +647,15 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 export const createMainRouter = (): express.Router => {
   const router = express.Router({ mergeParams: true });
 
+  router.head("/", (_request, response) => {
+    response.sendStatus(200);
+  });
+  router.get("/", (_request, response) => {
+    response.status(200).json({
+      message: "Homix API is running",
+      status: true,
+    });
+  });
   router.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
   router.use("/orders", orderRouter);
   router.use("/orderLines", orderLineRouter);
