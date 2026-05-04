@@ -476,6 +476,263 @@ const swaggerOptions = {
           },
           required: ["text"],
         },
+        OrderMetaOption: {
+          type: "object",
+          properties: {
+            id: { oneOf: [{ type: "integer" }, { type: "string" }] },
+            label: { example: "ركنة للأثاث", type: "string" },
+          },
+          required: ["id", "label"],
+        },
+        OrderMetaResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                assignees: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                manufactureStatuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                paymentStatuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                priorities: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                statuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                vendors: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+              },
+              required: ["assignees", "manufactureStatuses", "paymentStatuses", "priorities", "statuses", "vendors"],
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        OrderSummaryCard: {
+          type: "object",
+          properties: {
+            key: {
+              enum: ["totalOrders", "pendingOrders", "inProgressOrders", "deliveredOrders", "canceledOrRefundedOrders", "urgentOrders"],
+              type: "string",
+            },
+            label: { example: "إجمالي الطلبات", type: "string" },
+            value: { example: 720, type: "integer" },
+          },
+          required: ["key", "label", "value"],
+        },
+        OrderSummaryResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                cards: { items: { $ref: "#/components/schemas/OrderSummaryCard" }, type: "array" },
+              },
+              required: ["cards"],
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        OrderListItem: {
+          type: "object",
+          properties: {
+            code: { example: "3001", type: "string" },
+            customerName: { example: "Lamiaa Saeid", type: "string" },
+            daysSinceOrder: { example: 3, nullable: true, type: "integer" },
+            deliveryPriority: { enum: ["onSchedule", "almostDue", "urgent"], nullable: true, type: "string" },
+            deliveryPriorityLabel: { example: "بالمدة", type: "string" },
+            expectedDeliveryDate: { example: "2026-05-06T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            id: { example: 7, type: "integer" },
+            manufactureStatus: { example: 2, nullable: true, type: "integer" },
+            manufactureStatusLabel: { example: "في مدة التصنيع", type: "string" },
+            operationNumber: { example: "OP-3001", type: "string" },
+            orderDate: { example: "2026-05-01T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            orderNumber: { example: "31668", type: "string" },
+            paymentStatus: { example: 1, nullable: true, type: "integer" },
+            paymentStatusLabel: { example: "دفع عند الاستلام", type: "string" },
+            productCode: { example: "RKA-001", type: "string" },
+            productImage: { example: "https://example.com/product.png", type: "string" },
+            productName: { example: "ركنة للأثاث", type: "string" },
+            status: { example: 2, nullable: true, type: "integer" },
+            statusLabel: { example: "معلق", type: "string" },
+            totalCost: { example: 1200, type: "number" },
+            totalPrice: { example: 2299, type: "number" },
+            userName: { example: "Sara Mohamed", type: "string" },
+            vendorId: { example: 3, nullable: true, type: "integer" },
+            vendorName: { example: "ركنة للأثاث", type: "string" },
+          },
+          required: ["id", "operationNumber", "orderNumber", "customerName", "productName", "statusLabel"],
+        },
+        OrderListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/OrderListItem" }, type: "array" },
+                orders: { items: { additionalProperties: true, type: "object" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 50, type: "integer" },
+                totalItems: { example: 72, type: "integer" },
+                totalPages: { example: 2, type: "integer" },
+              },
+              required: ["items", "orders", "page", "size", "totalItems", "totalPages"],
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        OrderAttachment: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-05-04T00:00:00.000Z", format: "date-time", type: "string" },
+            description: { example: "invoice", type: "string" },
+            id: { example: 9, type: "integer" },
+            name: { example: "invoice.pdf", type: "string" },
+            url: { example: "/uploads/invoice.pdf", type: "string" },
+          },
+          required: ["id", "name", "url", "createdAt"],
+        },
+        OrderNote: {
+          type: "object",
+          properties: {
+            attachments: { items: { $ref: "#/components/schemas/OrderAttachment" }, type: "array" },
+            createdAt: { example: "2026-05-04T00:00:00.000Z", format: "date-time", type: "string" },
+            id: { example: 4, type: "integer" },
+            text: { example: "ابدأ التصنيع", type: "string" },
+            userName: { example: "Ahmed Hesham", type: "string" },
+          },
+          required: ["id", "text", "userName", "createdAt", "attachments"],
+        },
+        OrderEvent: {
+          type: "object",
+          properties: {
+            action: { example: "update", type: "string" },
+            createdAt: { example: "2026-05-04T01:00:00.000Z", format: "date-time", type: "string" },
+            field: { example: "status", type: "string" },
+            id: { example: 8, type: "integer" },
+            message: { example: "Status changed to in progress", type: "string" },
+            userName: { example: "Ahmed Hesham", type: "string" },
+          },
+          required: ["id", "action", "field", "message", "createdAt"],
+        },
+        OrderDetailsView: {
+          type: "object",
+          properties: {
+            customer: {
+              type: "object",
+              properties: {
+                address: { example: "Cairo", type: "string" },
+                email: { example: "lamiaa@example.com", type: "string" },
+                name: { example: "Lamiaa Saeid", type: "string" },
+                phoneNumber: { example: "01000000000", type: "string" },
+              },
+            },
+            financial: {
+              type: "object",
+              properties: {
+                amountToCollect: { example: 2099, type: "number" },
+                commission: { example: 20, type: "number" },
+                discount: { example: 100, type: "number" },
+                downPayment: { example: 200, type: "number" },
+                shippingFees: { example: 0, type: "number" },
+                totalCost: { example: 1200, type: "number" },
+                totalPrice: { example: 2299, type: "number" },
+              },
+            },
+            notes: { items: { $ref: "#/components/schemas/OrderNote" }, type: "array" },
+            order: {
+              allOf: [
+                { $ref: "#/components/schemas/OrderListItem" },
+                {
+                  type: "object",
+                  properties: {
+                    customerId: { example: 5, nullable: true, type: "integer" },
+                    deliveryDate: { example: "2026-05-05T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+                    notes: { example: "important note", type: "string" },
+                    shipmentType: { example: "warehouse", type: "string" },
+                  },
+                },
+              ],
+            },
+            orderLine: {
+              type: "object",
+              properties: {
+                color: { example: "blue", type: "string" },
+                material: { example: "wood", type: "string" },
+                quantity: { example: 1, type: "integer" },
+                size: { example: "100x100", type: "string" },
+                sku: { example: "RKA-001", type: "string" },
+                typeName: { example: "غرفة نوم", type: "string" },
+                unitCost: { example: 900, type: "number" },
+              },
+            },
+            timeline: { items: { $ref: "#/components/schemas/OrderEvent" }, type: "array" },
+          },
+          required: ["customer", "financial", "notes", "order", "orderLine", "timeline"],
+        },
+        OrderDetailsResponse: {
+          type: "object",
+          properties: {
+            data: {
+              allOf: [
+                { additionalProperties: true, type: "object" },
+                {
+                  type: "object",
+                  properties: {
+                    view: { $ref: "#/components/schemas/OrderDetailsView" },
+                  },
+                  required: ["view"],
+                },
+              ],
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        OrderBulkUpdateRequest: {
+          type: "object",
+          properties: {
+            orderData: {
+              additionalProperties: true,
+              type: "object",
+              example: { expectedDeliveryDate: "2026-05-10", status: 2 },
+            },
+            orderIds: { items: { example: 7, type: "integer" }, minItems: 1, type: "array" },
+          },
+          required: ["orderData", "orderIds"],
+        },
+        OrderBulkDeleteRequest: {
+          type: "object",
+          properties: {
+            orderIds: { items: { example: 7, type: "integer" }, minItems: 1, type: "array" },
+          },
+          required: ["orderIds"],
+        },
+        OrderMutationRequest: {
+          additionalProperties: true,
+          type: "object",
+          example: {
+            customerId: 5,
+            expectedDeliveryDate: "2026-05-10",
+            manufactureStatus: 2,
+            paymentStatus: 1,
+            status: 1,
+            totalPrice: 2299,
+          },
+        },
+        OrderFinancialReportResponse: {
+          type: "object",
+          properties: {
+            data: {
+              additionalProperties: true,
+              type: "object",
+              example: {
+                totalCollected: 125000,
+                totalCommission: 17500,
+                totalOrders: 72,
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
         TicketUserSummary: {
           type: "object",
           properties: {

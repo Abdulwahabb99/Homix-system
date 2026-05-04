@@ -94,7 +94,14 @@ const buildIncludes = (): Record<string, unknown>[] => {
   return [
     {
       as: "orderLines",
-      include: [{ as: "product", include: [{ as: "vendor" }, { as: "type", model: productTypeModel }], model: productModel }],
+      include: [{
+        as: "product",
+        include: [
+          { as: "vendor", model: vendorModel },
+          { as: "type", model: productTypeModel },
+        ],
+        model: productModel,
+      }],
       model: orderLineModel,
       required: true,
     },
@@ -139,6 +146,10 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
 };
 
 export class OrderRepository {
+  public async findOrderEntity(orderId: number): Promise<unknown | null> {
+    return orderModel.findByPk(orderId);
+  }
+
   public async listOrders(filters: OrderListQuery, vendorId?: number | null): Promise<OrderListResponse> {
     const result = await orderModel.findAndCountAll({
       distinct: true,
@@ -239,5 +250,64 @@ export class OrderRepository {
       statuses: Object.entries(ORDER_STATUS).map(([label, id]) => ({ id, label })),
       vendors: vendors.map((vendor: unknown) => ({ id: toNumber(toPlain(vendor).id), label: toText(toPlain(vendor).name) })),
     };
+  }
+
+  public async createOrderLog(entry: {
+    action: string;
+    entityId: number;
+    entityType: "order";
+    field?: string;
+    from?: unknown;
+    to?: unknown;
+    userId: number;
+  }): Promise<void> {
+    await logModel.create(entry);
+  }
+
+  public async deleteOrder(orderId: number): Promise<void> {
+    await orderModel.destroy({ where: { id: orderId } });
+  }
+
+  public async bulkDelete(orderIds: number[]): Promise<void> {
+    await orderModel.destroy({
+      where: {
+        id: {
+          [Op.in]: orderIds,
+        },
+      },
+    });
+  }
+
+  public async findNoteById(noteId: number): Promise<unknown | null> {
+    return noteModel.findByPk(noteId);
+  }
+
+  public async updateOrderNote(noteId: number, text: string): Promise<unknown> {
+    const note = await noteModel.findByPk(noteId);
+    if (!note) return null;
+    note.text = text;
+    await note.save();
+    return note;
+  }
+
+  public async deleteOrderNote(noteId: number): Promise<void> {
+    await noteModel.destroy({ where: { id: noteId } });
+  }
+
+  public async createNoteAttachments(
+    noteId: number,
+    filePaths: string[],
+    fileNames: string[],
+    descriptions: string[],
+  ): Promise<void> {
+    for (let index = 0; index < filePaths.length; index += 1) {
+      await attachmentModel.create({
+        description: descriptions[index] || "",
+        modelId: noteId,
+        modelType: "Note",
+        name: fileNames[index],
+        url: filePaths[index],
+      });
+    }
   }
 }
