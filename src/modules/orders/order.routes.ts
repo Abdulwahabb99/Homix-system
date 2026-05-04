@@ -33,7 +33,8 @@ export const orderRouter = express.Router();
  *       - bearerAuth: []
  *     tags: [Orders]
  *     summary: Get order filter metadata
- *     description: Returns the dropdown/filter options used by the orders page, including vendors, assignees, and status lists.
+ *     description: Returns the dropdown/filter options used by the orders page. This endpoint has no query parameters.
+ *       `statuses`, `manufactureStatuses`, and `paymentStatuses` currently return internal constant labels from the backend such as `PENDING`, `IN_PROGRESS`, `COD`, and `PAID`.
  *     responses:
  *       200:
  *         description: Order filter options
@@ -41,6 +42,40 @@ export const orderRouter = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/OrderMetaResponse'
+ *             examples:
+ *               default:
+ *                 summary: Orders filter metadata
+ *                 value:
+ *                   status: true
+ *                   data:
+ *                     assignees:
+ *                       - id: 1
+ *                         label: Sara Mohamed
+ *                     manufactureStatuses:
+ *                       - id: 1
+ *                         label: Accepted
+ *                       - id: 2
+ *                         label: IN_PRODUCTION
+ *                     paymentStatuses:
+ *                       - id: 1
+ *                         label: COD
+ *                       - id: 2
+ *                         label: PAID
+ *                     priorities:
+ *                       - id: onSchedule
+ *                         label: بالمدة
+ *                       - id: almostDue
+ *                         label: مستعجل
+ *                       - id: urgent
+ *                         label: مستعجل جدا
+ *                     statuses:
+ *                       - id: 1
+ *                         label: PENDING
+ *                       - id: 2
+ *                         label: IN_PROGRESS
+ *                     vendors:
+ *                       - id: 3
+ *                         label: ركنة للأثاث
  */
 orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
 

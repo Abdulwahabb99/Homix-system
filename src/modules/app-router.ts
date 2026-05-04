@@ -484,20 +484,81 @@ const swaggerOptions = {
           },
           required: ["id", "label"],
         },
+        OrderMetaUserOption: {
+          type: "object",
+          properties: {
+            id: { example: 1, type: "integer" },
+            label: { example: "Sara Mohamed", type: "string" },
+          },
+          required: ["id", "label"],
+        },
+        OrderMetaStatusOption: {
+          type: "object",
+          properties: {
+            id: { example: 1, type: "integer" },
+            label: { example: "PENDING", type: "string" },
+          },
+          required: ["id", "label"],
+        },
+        OrderMetaPriorityOption: {
+          type: "object",
+          properties: {
+            id: { example: "urgent", enum: ["onSchedule", "almostDue", "urgent"], type: "string" },
+            label: { example: "مستعجل جدا", type: "string" },
+          },
+          required: ["id", "label"],
+        },
+        OrderMetaVendorOption: {
+          type: "object",
+          properties: {
+            id: { example: 3, type: "integer" },
+            label: { example: "ركنة للأثاث", type: "string" },
+          },
+          required: ["id", "label"],
+        },
         OrderMetaResponse: {
           type: "object",
           properties: {
             data: {
               type: "object",
               properties: {
-                assignees: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
-                manufactureStatuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
-                paymentStatuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
-                priorities: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
-                statuses: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
-                vendors: { items: { $ref: "#/components/schemas/OrderMetaOption" }, type: "array" },
+                assignees: { items: { $ref: "#/components/schemas/OrderMetaUserOption" }, type: "array" },
+                manufactureStatuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
+                paymentStatuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
+                priorities: { items: { $ref: "#/components/schemas/OrderMetaPriorityOption" }, type: "array" },
+                statuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
+                vendors: { items: { $ref: "#/components/schemas/OrderMetaVendorOption" }, type: "array" },
               },
               required: ["assignees", "manufactureStatuses", "paymentStatuses", "priorities", "statuses", "vendors"],
+              example: {
+                assignees: [
+                  { id: 1, label: "Sara Mohamed" },
+                  { id: 5, label: "Ahmed Hesham" },
+                ],
+                manufactureStatuses: [
+                  { id: 1, label: "Accepted" },
+                  { id: 2, label: "IN_PRODUCTION" },
+                  { id: 3, label: "READY_FOR_DELIVERY" },
+                ],
+                paymentStatuses: [
+                  { id: 1, label: "COD" },
+                  { id: 2, label: "PAID" },
+                ],
+                priorities: [
+                  { id: "onSchedule", label: "بالمدة" },
+                  { id: "almostDue", label: "مستعجل" },
+                  { id: "urgent", label: "مستعجل جدا" },
+                ],
+                statuses: [
+                  { id: 1, label: "PENDING" },
+                  { id: 2, label: "IN_PROGRESS" },
+                  { id: 5, label: "DELIVERED" },
+                ],
+                vendors: [
+                  { id: 3, label: "ركنة للأثاث" },
+                  { id: 4, label: "دريسينج هاوس" },
+                ],
+              },
             },
             status: { example: true, type: "boolean" },
           },
