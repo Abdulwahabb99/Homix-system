@@ -128,7 +128,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     id: toNumber(order.id),
     manufactureStatus: toNumber(order.manufactureStatus) || null,
     manufactureStatusLabel: getManufactureLabel(order.manufactureStatus),
-    operationNumber: `OP-${toText(order.code)}`,
+    operationNumber: `${toText(order.code)}`,
     orderDate: toIsoString(order.orderDate),
     orderNumber: toText(order.orderNumber),
     paymentStatus: toNumber(order.paymentStatus) || null,
