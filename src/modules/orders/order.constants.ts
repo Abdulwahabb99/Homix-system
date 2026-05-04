@@ -1,0 +1,60 @@
+import {
+  DELIVERY_STATUS,
+  MANUFACTURE_STATUS_ARABIC,
+  ORDER_STATUS,
+  ORDER_STATUS_Arabic,
+  PAYMENT_STATUS_ARABIC,
+} from "../../../config/constants";
+
+export const DEFAULT_PAGE_NUMBER = 1;
+export const DEFAULT_PAGE_SIZE = 50;
+export const MAX_PAGE_SIZE = 200;
+
+export const FINAL_ORDER_STATUSES = [
+  ORDER_STATUS.CANCELED,
+  ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.REFUNDED,
+  ORDER_STATUS.REPLACED,
+];
+
+export const ACTIVE_VENDOR_ORDER_STATUSES = [
+  ORDER_STATUS.IN_PROGRESS,
+  ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.REFUNDED,
+  ORDER_STATUS.REPLACED,
+  ORDER_STATUS.IN_INVENTORY,
+];
+
+export const ORDER_STATUS_LABELS = ORDER_STATUS_Arabic as Record<number, string>;
+export const PAYMENT_STATUS_LABELS = PAYMENT_STATUS_ARABIC as Record<number, string>;
+export const MANUFACTURE_STATUS_LABELS = MANUFACTURE_STATUS_ARABIC as Record<number, string>;
+
+export const ORDER_SUMMARY_CARD_KEYS = [
+  "totalOrders",
+  "pendingOrders",
+  "inProgressOrders",
+  "deliveredOrders",
+  "canceledOrRefundedOrders",
+  "urgentOrders",
+] as const;
+
+export const ORDER_PRIORITY_KEYS = ["onSchedule", "almostDue", "urgent"] as const;
+
+export const ORDER_DELIVERY_PRIORITY = {
+  ALMOST_DUE: "almostDue",
+  ON_SCHEDULE: "onSchedule",
+  URGENT: "urgent",
+} as const;
+
+export const ORDER_SUMMARY_STATUS_GROUPS = {
+  canceledOrRefunded: [ORDER_STATUS.CANCELED, ORDER_STATUS.REFUNDED, ORDER_STATUS.REPLACED],
+  delivered: [ORDER_STATUS.DELIVERED],
+  inProgress: [ORDER_STATUS.IN_PROGRESS],
+  pending: [ORDER_STATUS.PENDING],
+};
+
+export const DELIVERY_STATUS_PRIORITY_MAP = {
+  [DELIVERY_STATUS.ALMOST_LAST]: ORDER_DELIVERY_PRIORITY.ALMOST_DUE,
+  [DELIVERY_STATUS.LATE]: ORDER_DELIVERY_PRIORITY.URGENT,
+  [DELIVERY_STATUS.ON_SCHEDULE]: ORDER_DELIVERY_PRIORITY.ON_SCHEDULE,
+} as const;

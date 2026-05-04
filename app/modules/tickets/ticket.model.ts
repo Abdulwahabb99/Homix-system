@@ -65,13 +65,35 @@ const Ticket = sequelize.define(
   },
 );
 
-// TODO: Restore real FK constraints after a migration normalizes legacy `orders.id`.
-Ticket.belongsTo(Order, { as: "linkedOrder", constraints: false, foreignKey: "orderId" });
-Order.hasMany(Ticket, { as: "tickets", constraints: false, foreignKey: "orderId" });
+Ticket.belongsTo(Order, {
+  as: "linkedOrder",
+  constraints: true,
+  foreignKey: "orderId",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+Order.hasMany(Ticket, {
+  as: "tickets",
+  constraints: true,
+  foreignKey: "orderId",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
 
-// TODO: Restore real FK constraints after a migration normalizes legacy `users.id`.
-Ticket.belongsTo(User, { as: "assignee", constraints: false, foreignKey: "assignedToUserId" });
-Ticket.belongsTo(User, { as: "creator", constraints: false, foreignKey: "createdByUserId" });
+Ticket.belongsTo(User, {
+  as: "assignee",
+  constraints: true,
+  foreignKey: "assignedToUserId",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
+Ticket.belongsTo(User, {
+  as: "creator",
+  constraints: true,
+  foreignKey: "createdByUserId",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
 
 Ticket.hasMany(Note, {
   as: "notesList",

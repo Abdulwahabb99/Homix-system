@@ -5,6 +5,10 @@
   "main": "dist/src/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "db:audit-parity": "tsx src/scripts/audit-db-parity.ts",
+    "db:add-ticket-fks": "tsx src/scripts/add-ticket-foreign-keys.ts",
+    "db:plan-constraints": "tsx src/scripts/plan-db-constraint-hardening.ts",
+    "db:plan-drop-duplicates": "tsx src/scripts/plan-drop-duplicate-db-constraints.ts",
     "start": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
     "dashboard:backfill-aggregates": "tsx src/scripts/backfill-dashboard-aggregates.ts",

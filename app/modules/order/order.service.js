@@ -45,9 +45,6 @@ class OrderService {
   }
   static async saveImportedOrders(ordersFromShopify, isShipment = false, user) {
     let orders = [];
-    ordersFromShopify = ordersFromShopify.filter(
-      (order) => order.order_number === 10078,
-    );
     const orderNames = ordersFromShopify.map((order) => order.name);
     const existingOrders = await Order.findAll({
       where: {
@@ -1775,7 +1772,7 @@ class OrderService {
       .map((user) => user.socketIds)
       .filter((sockets) => sockets && sockets.length > 0)
       .flat();
-    if (socketsIds.length > 0) {
+    if (socketsIds.length > 0 && global.socketIO && typeof global.socketIO.to === "function") {
       for (const socketId of socketsIds) {
         global.socketIO.to(socketId).emit("notification", {
           ...data,

@@ -85,7 +85,6 @@ const bootstrap = async (): Promise<void> => {
   registerSocketHandlers();
   registerCronJobs();
   await createDefaultData();
-  await orderService.saveMissingOrders();
 
   server.listen(env.NODE_PORT, () => {
     logger.info({ port: env.NODE_PORT }, "Server running");

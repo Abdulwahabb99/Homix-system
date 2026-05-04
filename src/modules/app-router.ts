@@ -5,11 +5,11 @@ import swaggerUi from "swagger-ui-express";
 import { env } from "../config/env";
 import { dashboardRouter } from "./dashboard";
 import { notificationRouter } from "./notification";
+import { orderRouter } from "./orders";
 import { ticketRouter } from "./tickets";
 
 const userRouter = require("../../app/modules/user/user.routes");
 const factoryRouter = require("../../app/modules/factory/factory.routes");
-const orderRouter = require("../../app/modules/order/order.routes");
 const productRouter = require("../../app/modules/product/product.routes");
 const vendorRouter = require("../../app/modules/vendor/vendor.routes");
 const employeeRouter = require("../../app/modules/employee/employee.routes");
