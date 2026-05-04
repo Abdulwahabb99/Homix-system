@@ -3,8 +3,9 @@ import type { Result } from "../../shared/result";
 import { success } from "../../shared/result";
 import { USER_TYPES } from "../../../config/constants";
 import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gateway";
+import { toText } from "./order.helpers";
 import { OrderRepository } from "./order.repo";
-import type { LegacyOrderResponse, OrderDetailsResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
+import type { LegacyOrderResponse, OrderDetailsResponse, OrderFinancialReportResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
 
 const ensureLegacySuccess = <TData>(response: LegacyOrderResponse<TData>): LegacyOrderResponse<TData> => {
   if (response.status !== false) {
@@ -51,9 +52,8 @@ export class OrderService {
     return success({ message: "Orders imported successfully" });
   }
 
-  public async financialReport(vendorId: string | number | undefined, startDate?: string, endDate?: string): Promise<Result<unknown>> {
-    const response = ensureLegacySuccess(await this.legacyGateway.financialReport(vendorId, startDate, endDate));
-    return success(response.data ?? {});
+  public async financialReport(vendorId: string | number | undefined, startDate?: string, endDate?: string): Promise<Result<OrderFinancialReportResponse>> {
+    return success(await this.orderRepository.getFinancialReport(vendorId, startDate, endDate));
   }
 
   public async updateOrder(orderId: number, payload: OrderMutationPayload, user: OrderRequestUser): Promise<Result<unknown>> {
@@ -89,8 +89,26 @@ export class OrderService {
   }
 
   public async addNote(orderId: number, text: string, user: OrderRequestUser): Promise<Result<unknown>> {
-    const response = ensureLegacySuccess(await this.legacyGateway.addNote(user, orderId, text));
-    return success(response.data ?? {});
+    const order = await this.orderRepository.findOrderEntity(orderId);
+    if (!order) throw new NotFoundError("Order not found");
+    const newNote = await this.orderRepository.createOrderNote(orderId, Number(user.id), text);
+    const userRecord = user as OrderRequestUser & { firstName?: string; lastName?: string };
+    await this.legacyGateway.sendNotification(
+      orderId,
+      toText((order as { orderNumber?: string }).orderNumber),
+      {
+        note: { text },
+        orderId,
+        type: "note",
+        user: {
+          firstName: userRecord.firstName,
+          lastName: userRecord.lastName,
+        },
+      },
+      false,
+      true,
+    );
+    return success(newNote);
   }
 
   public async updateNote(orderId: number, noteId: number, text: string, user: OrderRequestUser): Promise<Result<unknown>> {

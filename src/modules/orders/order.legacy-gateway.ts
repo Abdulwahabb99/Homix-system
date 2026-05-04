@@ -10,6 +10,14 @@ export type LegacyOrderGateway = {
   financialReport: (vendorId: string | number | undefined, startDate?: string, endDate?: string) => Promise<LegacyOrderResponse>;
   importOrders: () => Promise<void>;
   saveImportedOrders: (orders: OrderMutationPayload[], isShipment: boolean, user?: OrderRequestUser) => Promise<LegacyOrderResponse | void>;
+  sendNotification: (
+    orderId: number,
+    orderNumber: string,
+    data: Record<string, unknown>,
+    isUpdateStatus?: boolean,
+    addNote?: boolean,
+    isUpdateManufactureStatus?: boolean,
+  ) => Promise<void>;
   updateNote: (user: OrderRequestUser, orderId: number, noteId: number, text: string) => Promise<LegacyOrderResponse>;
   updateOrder: (orderId: number, payload: OrderMutationPayload, user: OrderRequestUser) => Promise<LegacyOrderResponse>;
   uploadFiles: (noteId: number, filePaths: string[], fileNames: string[], descriptions: string[]) => Promise<LegacyOrderResponse>;
@@ -29,6 +37,15 @@ export const orderLegacyGateway: LegacyOrderGateway = {
     await getLegacyOrderService().importOrders({}, true);
   },
   saveImportedOrders: (orders, isShipment, user) => getLegacyOrderService().saveImportedOrders(orders, isShipment, user),
+  sendNotification: (orderId, orderNumber, data, isUpdateStatus, addNote, isUpdateManufactureStatus) =>
+    getLegacyOrderService().sendNotification(
+      orderId,
+      orderNumber,
+      data,
+      isUpdateStatus,
+      addNote,
+      isUpdateManufactureStatus,
+    ),
   updateNote: (user, orderId, noteId, text) => getLegacyOrderService().updateNote(user, orderId, noteId, text),
   updateOrder: (orderId, payload, user) => getLegacyOrderService().updateOrder(orderId, payload, user),
   uploadFiles: (noteId, filePaths, fileNames, descriptions) =>

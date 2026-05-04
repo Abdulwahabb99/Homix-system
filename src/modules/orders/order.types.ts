@@ -57,11 +57,9 @@ export type OrderListItem = {
 
 export type OrderListResponse = {
   items: OrderListItem[];
-  orders: unknown[];
   page: number;
   size: number;
-  totalItems: number;
-  totalPages: number;
+  totalCount: number;
 };
 
 export type OrderSummaryCard = {
@@ -72,6 +70,48 @@ export type OrderSummaryCard = {
 
 export type OrderSummaryResponse = {
   cards: OrderSummaryCard[];
+};
+
+export type OrderFinancialReportRankedItem = {
+  productId?: number;
+  productImage?: string;
+  productName?: string;
+  profit: number;
+  revenue: number;
+  sku?: string;
+  vendorId?: number;
+  vendorName?: string;
+};
+
+export type OrderFinancialReportSection = {
+  ordersCount: number;
+  subTotal: number;
+  totalCommission: number;
+  totalCost: number;
+  totalDiscount: number;
+  totalDownPayment: number;
+  totalPaid: number;
+  totalProfit: number;
+  totalRevenue: number;
+  totalTax: number;
+  totalToBeCollected: number;
+};
+
+export type OrderFinancialReportResponse = {
+  DeliveredOrders: OrderFinancialReportSection;
+  ordersCount: number;
+  subTotal: number;
+  topTenProducts: OrderFinancialReportRankedItem[];
+  topTenVendors: OrderFinancialReportRankedItem[];
+  totalCommission: number;
+  totalCost: number;
+  totalDiscount: number;
+  totalDownPayment: number;
+  totalPaid: number;
+  totalProfit: number;
+  totalRevenue: number;
+  totalTax: number;
+  totalToBeCollected: number;
 };
 
 export type OrderMetaOption = {
@@ -114,7 +154,9 @@ export type OrderEvent = {
 };
 
 export type OrderDetailsView = {
+  assigneeName: string;
   customer: {
+    id: number | null;
     address: string;
     email: string;
     name: string;
@@ -131,7 +173,6 @@ export type OrderDetailsView = {
   };
   notes: OrderNote[];
   order: OrderListItem & {
-    customerId: number | null;
     deliveryDate: string | null;
     notes: string;
     shipmentType: string;
@@ -148,9 +189,7 @@ export type OrderDetailsView = {
   timeline: OrderEvent[];
 };
 
-export type OrderDetailsResponse = Record<string, unknown> & {
-  view: OrderDetailsView;
-};
+export type OrderDetailsResponse = OrderDetailsView;
 
 export type OrderMutationPayload = Record<string, unknown>;
 

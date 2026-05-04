@@ -54,4 +54,34 @@ describe("OrderService", () => {
       ok: true,
     });
   });
+
+  it("creates an order note through the repository and sends a notification through the gateway", async () => {
+    const repository = {
+      createOrderNote: jest.fn().mockResolvedValue({ id: 9, text: "hello" }),
+      findOrderEntity: jest.fn().mockResolvedValue({ orderNumber: "31668" }),
+    } as never;
+    const legacyGateway = {
+      sendNotification: jest.fn().mockResolvedValue(undefined),
+    } as never;
+    const service = new OrderService(repository, legacyGateway);
+
+    await expect(
+      service.addNote(7, "hello", { firstName: "Ahmed", id: 1, lastName: "Hesham" } as never),
+    ).resolves.toEqual({
+      data: { id: 9, text: "hello" },
+      ok: true,
+    });
+  });
+
+  it("delegates financial report reads to the typed repository", async () => {
+    const repository = {
+      getFinancialReport: jest.fn().mockResolvedValue({ ordersCount: 3, topTenProducts: [], topTenVendors: [] }),
+    } as never;
+    const service = new OrderService(repository, {} as never);
+
+    await expect(service.financialReport(3, "2026-05-01", "2026-05-31")).resolves.toEqual({
+      data: { ordersCount: 3, topTenProducts: [], topTenVendors: [] },
+      ok: true,
+    });
+  });
 });

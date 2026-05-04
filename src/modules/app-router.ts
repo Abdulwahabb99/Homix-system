@@ -566,13 +566,11 @@ const swaggerOptions = {
               type: "object",
               properties: {
                 items: { items: { $ref: "#/components/schemas/OrderListItem" }, type: "array" },
-                orders: { items: { additionalProperties: true, type: "object" }, type: "array" },
                 page: { example: 1, type: "integer" },
                 size: { example: 50, type: "integer" },
-                totalItems: { example: 72, type: "integer" },
-                totalPages: { example: 2, type: "integer" },
+                totalCount: { example: 72, type: "integer" },
               },
-              required: ["items", "orders", "page", "size", "totalItems", "totalPages"],
+              required: ["items", "page", "size", "totalCount"],
             },
             status: { example: true, type: "boolean" },
           },
@@ -615,11 +613,13 @@ const swaggerOptions = {
         OrderDetailsView: {
           type: "object",
           properties: {
+            assigneeName: { example: "Sara Mohamed", type: "string" },
             customer: {
               type: "object",
               properties: {
                 address: { example: "Cairo", type: "string" },
                 email: { example: "lamiaa@example.com", type: "string" },
+                id: { example: 5, nullable: true, type: "integer" },
                 name: { example: "Lamiaa Saeid", type: "string" },
                 phoneNumber: { example: "01000000000", type: "string" },
               },
@@ -643,7 +643,6 @@ const swaggerOptions = {
                 {
                   type: "object",
                   properties: {
-                    customerId: { example: 5, nullable: true, type: "integer" },
                     deliveryDate: { example: "2026-05-05T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
                     notes: { example: "important note", type: "string" },
                     shipmentType: { example: "warehouse", type: "string" },
@@ -670,18 +669,7 @@ const swaggerOptions = {
         OrderDetailsResponse: {
           type: "object",
           properties: {
-            data: {
-              allOf: [
-                { additionalProperties: true, type: "object" },
-                {
-                  type: "object",
-                  properties: {
-                    view: { $ref: "#/components/schemas/OrderDetailsView" },
-                  },
-                  required: ["view"],
-                },
-              ],
-            },
+            data: { $ref: "#/components/schemas/OrderDetailsView" },
             status: { example: true, type: "boolean" },
           },
           required: ["data", "status"],

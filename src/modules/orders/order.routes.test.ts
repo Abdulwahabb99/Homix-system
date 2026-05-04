@@ -92,6 +92,7 @@ const makeOrder = () => ({
     address: "Cairo",
     email: "lamiaa@example.com",
     firstName: "Lamiaa",
+    id: 5,
     lastName: "Saeid",
     phoneNumber: "01000000000",
   },
@@ -181,18 +182,18 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
-    expect(response.body.data.orders).toHaveLength(1);
     expect(response.body.data.items[0].operationNumber).toBe("OP-3001");
-    expect(response.body.data.totalPages).toBe(1);
+    expect(response.body.data.totalCount).toBe(1);
   });
 
-  it("returns order details with additive view data", async () => {
+  it("returns order details in a focused DTO shape", async () => {
     const response = await request(app).get("/orders/7");
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
-    expect(response.body.data.orderNumber).toBe("31668");
-    expect(response.body.data.view.order.productName).toBe("ركنة للأثاث");
-    expect(response.body.data.view.timeline[0].field).toBe("status");
+    expect(response.body.data.order.orderNumber).toBe("31668");
+    expect(response.body.data.order.productName).toBe("ركنة للأثاث");
+    expect(response.body.data.timeline[0].field).toBe("status");
+    expect(response.body.data.customer.id).toBe(5);
   });
 });

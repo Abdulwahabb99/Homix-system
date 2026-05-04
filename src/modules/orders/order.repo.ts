@@ -1,3 +1,4 @@
+import moment from "moment-timezone";
 import { Op } from "sequelize";
 
 import { DELIVERY_STATUS, MANUFACTURE_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "../../../config/constants";
@@ -16,7 +17,7 @@ import {
   toPlain,
   toText,
 } from "./order.helpers";
-import type { OrderDetailsResponse, OrderDetailsView, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderSummaryResponse } from "./order.types";
+import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderSummaryResponse } from "./order.types";
 
 const { sequelize } = require("../../infrastructure/database");
 const orderModel = require("../../../app/modules/order/order.model");
@@ -168,11 +169,9 @@ export class OrderRepository {
 
     return {
       items,
-      orders: result.rows,
       page: filters.page,
       size: filters.size,
-      totalItems: result.count,
-      totalPages: Math.ceil(result.count / filters.size),
+      totalCount: result.count,
     };
   }
 
@@ -201,18 +200,22 @@ export class OrderRepository {
     const timeline = sortEventsDescending(logs.map((log: unknown) => { const plainLog = toPlain(log); return { action: toText(plainLog.action), createdAt: toIsoString(plainLog.createdAt) ?? "", field: toText(plainLog.field), id: toNumber(plainLog.id), message: buildLogMessage(plainLog), userName: userNames.get(toNumber(plainLog.userId)) ?? "" }; }));
 
     const view: OrderDetailsView = {
-      customer: { address: toText(customer.address), email: toText(customer.email), name: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(), phoneNumber: toText(customer.phoneNumber) },
+      assigneeName: `${toText(toPlain(plainOrder.user).firstName)} ${toText(toPlain(plainOrder.user).lastName)}`.trim(),
+      customer: {
+        address: toText(customer.address),
+        email: toText(customer.email),
+        id: toNumber(customer.id) || null,
+        name: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
+        phoneNumber: toText(customer.phoneNumber),
+      },
       financial: { amountToCollect: toNumber(plainOrder.toBeCollected), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
       notes,
-      order: { ...summary, customerId: toNumber(plainOrder.customerId) || null, deliveryDate: toIsoString(plainOrder.deliveryDate), notes: toText(plainOrder.notes), shipmentType: toText(plainOrder.shipmentType) },
+      order: { ...summary, deliveryDate: toIsoString(plainOrder.deliveryDate), notes: toText(plainOrder.notes), shipmentType: toText(plainOrder.shipmentType) },
       orderLine: { color: toText(orderLine.color), material: toText(orderLine.material), quantity: toNumber(orderLine.quantity), size: toText(orderLine.size), sku: toText(orderLine.sku), typeName: toText(toPlain(toPlain(orderLine.product).type).name), unitCost: toNumber(orderLine.unitCost) },
       timeline,
     };
 
-    return {
-      ...plainOrder,
-      view,
-    };
+    return view;
   }
 
   public async getSummary(filters: OrderListQuery, vendorId?: number | null): Promise<OrderSummaryResponse> {
@@ -252,6 +255,169 @@ export class OrderRepository {
     };
   }
 
+  public async getFinancialReport(vendorId: string | number | undefined, startDate?: string, endDate?: string): Promise<OrderFinancialReportResponse> {
+    const start = startDate
+      ? moment.tz(new Date(startDate), "Africa/Cairo").startOf("day").utc().toDate()
+      : moment().tz("Africa/Cairo").startOf("month").utc().toDate();
+    const end = endDate
+      ? moment.tz(new Date(endDate), "Africa/Cairo").endOf("day").utc().toDate()
+      : moment().tz("Africa/Cairo").endOf("day").utc().toDate();
+
+    const whereConditions: unknown[] = [
+      sequelize.where(sequelize.col("orderDate"), { [Op.gte]: start }),
+      sequelize.where(sequelize.col("orderDate"), { [Op.lte]: end }),
+    ];
+
+    if (vendorId && String(vendorId) !== "0") {
+      whereConditions.push(
+        sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
+          [Op.eq]: Number(vendorId),
+        }),
+      );
+    }
+
+    const orders = await orderModel.findAll({
+      include: [
+        {
+          as: "orderLines",
+          include: [
+            {
+              as: "product",
+              include: [{ as: "vendor", model: vendorModel }],
+              model: productModel,
+              required: true,
+            },
+          ],
+          model: orderLineModel,
+          required: true,
+        },
+      ],
+      where: { [Op.and]: whereConditions },
+    });
+
+    const delivered: OrderFinancialReportSection = {
+      ordersCount: 0,
+      subTotal: 0,
+      totalCommission: 0,
+      totalCost: 0,
+      totalDiscount: 0,
+      totalDownPayment: 0,
+      totalPaid: 0,
+      totalProfit: 0,
+      totalRevenue: 0,
+      totalTax: 0,
+      totalToBeCollected: 0,
+    };
+
+    const topVendors = new Map<number, OrderFinancialReportRankedItem>();
+    const topProducts = new Map<number, OrderFinancialReportRankedItem>();
+
+    let ordersCount = 0;
+    let subTotal = 0;
+    let totalCommission = 0;
+    let totalCost = 0;
+    let totalDiscount = 0;
+    let totalDownPayment = 0;
+    let totalPaid = 0;
+    let totalTax = 0;
+    let totalToBeCollected = 0;
+    let shippingFees = 0;
+
+    for (const order of orders) {
+      const plainOrder = toPlain(order);
+      const isDelivered = toNumber(plainOrder.status) === ORDER_STATUS.DELIVERED;
+      const orderSubTotal = toNumber(plainOrder.subTotalPrice);
+      const orderDiscount = toNumber(plainOrder.totalDiscounts);
+      const orderCost = toNumber(plainOrder.totalCost);
+      const orderPrice = toNumber(plainOrder.totalPrice);
+      const orderCommission = toNumber(plainOrder.commission);
+      const orderTax = toNumber(plainOrder.totalTax);
+      const orderProfit = orderPrice - orderCost - orderCommission - orderTax;
+      const orderDownPayment = toNumber(plainOrder.downPayment);
+      const orderToBeCollected = toNumber(plainOrder.toBeCollected);
+
+      if (isDelivered) {
+        delivered.ordersCount += 1;
+        delivered.subTotal += orderSubTotal;
+        delivered.totalCommission += orderCommission;
+        delivered.totalCost += orderCost;
+        delivered.totalDiscount += orderDiscount;
+        delivered.totalDownPayment += orderDownPayment;
+        delivered.totalPaid += orderPrice;
+        delivered.totalProfit += orderProfit;
+        delivered.totalRevenue += orderPrice;
+        delivered.totalTax += orderTax;
+        delivered.totalToBeCollected += orderToBeCollected;
+      }
+
+      const orderLines = Array.isArray(plainOrder.orderLines) ? plainOrder.orderLines : [];
+      for (const line of orderLines) {
+        const plainLine = toPlain(line);
+        const product = toPlain(plainLine.product);
+        const vendor = toPlain(product.vendor);
+        const lineRevenue = toNumber(plainLine.price);
+        const lineProfit =
+          lineRevenue - toNumber(plainLine.cost) - toNumber(plainLine.commission) - toNumber(plainLine.tax);
+        const vendorIdNumber = toNumber(vendor.id);
+        const productIdNumber = toNumber(product.id);
+
+        if (vendorIdNumber) {
+          const vendorEntry = topVendors.get(vendorIdNumber) ?? {
+            profit: 0,
+            revenue: 0,
+            vendorId: vendorIdNumber,
+            vendorName: toText(vendor.name),
+          };
+          vendorEntry.profit += lineProfit;
+          vendorEntry.revenue += lineRevenue;
+          topVendors.set(vendorIdNumber, vendorEntry);
+        }
+
+        if (productIdNumber) {
+          const productEntry = topProducts.get(productIdNumber) ?? {
+            productId: productIdNumber,
+            productImage: toText(product.image),
+            productName: toText(product.title),
+            profit: 0,
+            revenue: 0,
+            sku: toText(plainLine.sku),
+          };
+          productEntry.profit += lineProfit;
+          productEntry.revenue += lineRevenue;
+          topProducts.set(productIdNumber, productEntry);
+        }
+      }
+
+      ordersCount += 1;
+      totalCommission += orderCommission;
+      totalCost += orderCost;
+      totalDiscount += orderDiscount;
+      totalDownPayment += orderDownPayment;
+      totalPaid += orderPrice;
+      totalTax += orderTax;
+      subTotal += orderSubTotal;
+      totalToBeCollected += orderToBeCollected;
+      shippingFees += toNumber(plainOrder.shippingFees);
+    }
+
+    return {
+      DeliveredOrders: delivered,
+      ordersCount,
+      subTotal,
+      topTenProducts: [...topProducts.values()].sort((left, right) => right.profit - left.profit).slice(0, 10),
+      topTenVendors: [...topVendors.values()].sort((left, right) => right.profit - left.profit).slice(0, 10),
+      totalCommission,
+      totalCost,
+      totalDiscount,
+      totalDownPayment,
+      totalPaid,
+      totalProfit: subTotal - totalDiscount + shippingFees - totalCost - totalCommission - totalTax,
+      totalRevenue: subTotal - totalDiscount + shippingFees,
+      totalTax,
+      totalToBeCollected,
+    };
+  }
+
   public async createOrderLog(entry: {
     action: string;
     entityId: number;
@@ -280,6 +446,15 @@ export class OrderRepository {
 
   public async findNoteById(noteId: number): Promise<unknown | null> {
     return noteModel.findByPk(noteId);
+  }
+
+  public async createOrderNote(orderId: number, userId: number, text: string): Promise<unknown> {
+    return noteModel.create({
+      entityId: orderId,
+      entityType: "order",
+      text,
+      userId,
+    });
   }
 
   public async updateOrderNote(noteId: number, text: string): Promise<unknown> {
