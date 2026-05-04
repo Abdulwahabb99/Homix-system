@@ -182,7 +182,7 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
-    expect(response.body.data.items[0].operationNumber).toBe("OP-3001");
+    expect(response.body.data.items[0].operationNumber).toBe("3001");
     expect(response.body.data.totalCount).toBe(1);
   });
 

@@ -602,7 +602,7 @@ const swaggerOptions = {
             id: { example: 7, type: "integer" },
             manufactureStatus: { example: 2, nullable: true, type: "integer" },
             manufactureStatusLabel: { example: "في مدة التصنيع", type: "string" },
-            operationNumber: { example: "OP-3001", type: "string" },
+            operationNumber: { example: "3001", type: "string" },
             orderDate: { example: "2026-05-01T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             orderNumber: { example: "31668", type: "string" },
             paymentStatus: { example: 1, nullable: true, type: "integer" },
@@ -826,7 +826,7 @@ const swaggerOptions = {
           properties: {
             customerName: { example: "Lamiaa Saeid", type: "string" },
             id: { example: 12, type: "integer" },
-            operationNumber: { example: "OP-3001", type: "string" },
+            operationNumber: { example: "3001", type: "string" },
             orderNumber: { example: "31668", type: "string" },
             productName: { example: "غرفة نوم - دريسينج", type: "string" },
             productSku: { example: "RKA-001", type: "string" },
