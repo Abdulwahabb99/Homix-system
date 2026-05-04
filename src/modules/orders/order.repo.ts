@@ -188,7 +188,7 @@ export class OrderRepository {
     if (!order) return null;
     const plainOrder = toPlain(order);
     const summary = mapOrderSummary(order);
-    const orderLine = Array.isArray(plainOrder.orderLines) ? toPlain(plainOrder.orderLines[0]) : {};
+    const orderLines = Array.isArray(plainOrder.orderLines) ? plainOrder.orderLines : [];
     const customer = toPlain(plainOrder.customer);
     const notes = Array.isArray(plainOrder.notesList) ? plainOrder.notesList.map((note) => {
       const plainNote = toPlain(note);
@@ -210,8 +210,35 @@ export class OrderRepository {
       },
       financial: { amountToCollect: toNumber(plainOrder.toBeCollected), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
       notes,
-      order: { ...summary, deliveryDate: toIsoString(plainOrder.deliveryDate), notes: toText(plainOrder.notes), shipmentType: toText(plainOrder.shipmentType) },
-      orderLine: { color: toText(orderLine.color), material: toText(orderLine.material), quantity: toNumber(orderLine.quantity), size: toText(orderLine.size), sku: toText(orderLine.sku), typeName: toText(toPlain(toPlain(orderLine.product).type).name), unitCost: toNumber(orderLine.unitCost) },
+      order: {
+        ...summary,
+        deliveryDate: toIsoString(plainOrder.deliveryDate),
+        itemsCount: orderLines.length,
+        notes: toText(plainOrder.notes),
+        shipmentType: toText(plainOrder.shipmentType),
+      },
+      items: orderLines.map((line) => {
+        const plainLine = toPlain(line);
+        const product = toPlain(plainLine.product);
+        const vendor = toPlain(product.vendor);
+        const type = toPlain(product.type);
+
+        return {
+          color: toText(plainLine.color),
+          id: toNumber(plainLine.id),
+          image: toText(product.image),
+          material: toText(plainLine.material),
+          productId: toNumber(product.id) || null,
+          productName: toText(product.title, toText(plainLine.title)),
+          quantity: toNumber(plainLine.quantity),
+          size: toText(plainLine.size),
+          sku: toText(plainLine.sku),
+          typeName: toText(type.name),
+          unitCost: toNumber(plainLine.unitCost),
+          vendorId: toNumber(vendor.id) || null,
+          vendorName: toText(vendor.name),
+        };
+      }),
       timeline,
     };
 

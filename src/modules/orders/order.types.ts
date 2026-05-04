@@ -174,18 +174,25 @@ export type OrderDetailsView = {
   notes: OrderNote[];
   order: OrderListItem & {
     deliveryDate: string | null;
+    itemsCount: number;
     notes: string;
     shipmentType: string;
   };
-  orderLine: {
+  items: Array<{
     color: string;
+    id: number;
+    image: string;
     material: string;
+    productId: number | null;
+    productName: string;
     quantity: number;
     size: string;
     sku: string;
     typeName: string;
     unitCost: number;
-  };
+    vendorId: number | null;
+    vendorName: string;
+  }>;
   timeline: OrderEvent[];
 };
 

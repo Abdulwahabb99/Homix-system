@@ -193,6 +193,9 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.orderNumber).toBe("31668");
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
+    expect(response.body.data.order.itemsCount).toBe(1);
+    expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
+    expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.timeline[0].field).toBe("status");
     expect(response.body.data.customer.id).toBe(5);
   });
