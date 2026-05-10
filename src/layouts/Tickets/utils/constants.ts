@@ -31,6 +31,8 @@ export type Ticket = {
   notes: string;
   chat: ChatMessage[];
   attachments: Attachment[];
+  /** إن وُجد من الـ API على كائن الطلب — إجمالي مالي للعرض */
+  orderTotalEgp?: number;
 };
 
 export type MockOp = {

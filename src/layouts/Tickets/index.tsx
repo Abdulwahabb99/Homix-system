@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -19,7 +20,6 @@ import {
   TicketsKpiRowSkeleton,
 } from "layouts/Tickets/components/TicketsHomixSkeletons";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
-import TicketDetailView from "layouts/Tickets/components/TicketDetailView";
 import NewTicketModal from "layouts/Tickets/components/NewTicketModal";
 import TicketSettingsModal from "layouts/Tickets/components/TicketSettingsModal";
 import {
@@ -241,6 +241,7 @@ function KpiCard({
 
 export default function Tickets() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const TICKET_PAGE_SIZE = 10;
   const [ticketTablePage, setTicketTablePage] = useState(0);
 
@@ -259,7 +260,6 @@ export default function Tickets() {
   );
 
   // views
-  const [detailTicket, setDetailTicket] = useState<Ticket | null>(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -397,10 +397,12 @@ export default function Tickets() {
   const filterStatusOptions = metaQuery.data?.statuses ?? [];
   const filterAssigneeOptions = metaQuery.data?.assignees ?? [];
 
-  const openTicket = useCallback((id: string) => {
-    const t = displayTickets.find((x) => x.id === id);
-    if (t) setDetailTicket(t);
-  }, [displayTickets]);
+  const openTicket = useCallback(
+    (ticketId: string) => {
+      navigate(`/tickets/${encodeURIComponent(ticketId)}`);
+    },
+    [navigate]
+  );
 
   function buildFiltersFromDraft(): TicketsListFilters {
     return {
@@ -440,17 +442,8 @@ export default function Tickets() {
     [queryClient]
   );
 
-  const handleUpdateTicket = useCallback(
-    (updated: Ticket) => {
-      setDetailTicket((d) => (d?.id === updated.id ? updated : d));
-      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
-    },
-    [queryClient]
-  );
-
   function handleDeleteConfirm() {
     if (!deleteTicketId) return;
-    if (detailTicket?.id === deleteTicketId) setDetailTicket(null);
     void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
     setDeleteTicketId(null);
   }
@@ -481,9 +474,9 @@ export default function Tickets() {
     </Stack>
   );
 
-  const showKpiSkeleton = !detailTicket && ticketsQuery.isLoading;
-  const showFilterSkeleton = !detailTicket && metaQuery.isLoading && !metaQuery.data;
-  const showTableSkeleton = !detailTicket && ticketsQuery.isLoading;
+  const showKpiSkeleton = ticketsQuery.isLoading;
+  const showFilterSkeleton = metaQuery.isLoading && !metaQuery.data;
+  const showTableSkeleton = ticketsQuery.isLoading;
 
   return (
     <DashboardLayout
@@ -559,16 +552,8 @@ export default function Tickets() {
         </Grid>
         )}
 
-        {/* ── Content: list or detail ── */}
-        {detailTicket ? (
-          <TicketDetailView
-            ticket={detailTicket}
-            quickReplies={quickReplies}
-            onBack={() => setDetailTicket(null)}
-            onUpdateTicket={handleUpdateTicket}
-          />
-        ) : (
-          <>
+        {/* ── Content: list ── */}
+        <>
             {showFilterSkeleton ? (
               <TicketsFilterBarSkeleton />
             ) : (
@@ -722,8 +707,7 @@ export default function Tickets() {
             />
             )}
           </>
-        )}
-      </Box>
+        </Box>
 
       {/* ── Modals ── */}
       <NewTicketModal

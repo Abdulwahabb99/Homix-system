@@ -4,6 +4,7 @@ import {
   useDashboardLatestOrders,
   type LatestOrderItem,
 } from "claude/dashboard/api/dashboardLatestOrders.api";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 /* ── status → badge class ── */
 const STATUS_CLASS: Record<number, string> = {
@@ -147,7 +148,7 @@ export default function RecentOrdersTable({ startDate, endDate }: RecentOrdersTa
               </td>
               <td style={{ color: "var(--text2)", fontSize: 12 }}>{row.productName}</td>
               <td style={{ fontWeight: 700 }}>
-                {Number(row.amount).toLocaleString("ar-EG-u-nu-latn")}
+                {formatMoneyEgpInteger(row.amount)}
                 <span style={{ fontSize: 10, fontWeight: 400, marginRight: 2 }}> ج.م</span>
               </td>
               <td>

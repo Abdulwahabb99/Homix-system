@@ -3,6 +3,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
 import { DASHBOARD_TABLE_BODY_HEIGHT_PX, getDashboardDataGridSx } from "../dashboardDataGridSx";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 const getColumns = (theme) => {
   const primary = theme.palette.primary.main;
@@ -58,7 +59,7 @@ const getColumns = (theme) => {
       filterable: false,
       renderCell: (params) => (
         <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600 }} color={text}>
-          EGP {Number(params.row.revenue).toFixed(0)}
+          EGP {formatMoneyEgpInteger(params.row.revenue)}
         </Typography>
       ),
     },
@@ -72,7 +73,7 @@ const getColumns = (theme) => {
       filterable: false,
       renderCell: (params) => (
         <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600 }} color={text}>
-          EGP {Number(params.row.profit).toFixed(0)}
+          EGP {formatMoneyEgpInteger(params.row.profit)}
         </Typography>
       ),
     },

@@ -18,6 +18,7 @@ import MostVendorsSelling from "./components/MostVendorsSelling/MostVendorsSelli
 import DashboardV2Skeleton from "./components/DashboardV2Skeleton";
 import moment from "moment";
 import SearchModal from "./components/SearchModal/SearchModal";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 function dashboardV2() {
   const navigate = useNavigate();
@@ -153,14 +154,14 @@ function dashboardV2() {
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="إجمالي المبيعات"
-                value={`${(financialreportData?.totalRevenue ?? 0).toFixed(0)} EGP`}
+                value={`${formatMoneyEgpInteger(financialreportData?.totalRevenue ?? 0)} EGP`}
                 icon={<BankBuildingIcon />}
               />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <StatsCard
                 title="إجمالي التكلفة"
-                value={`${(financialreportData?.totalCost ?? 0).toFixed(0)} EGP`}
+                value={`${formatMoneyEgpInteger(financialreportData?.totalCost ?? 0)} EGP`}
                 icon={<MoneyRotateIcon />}
               />
             </Grid>

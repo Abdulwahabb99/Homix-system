@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import type { PerformancePoint } from "claude/dashboard/api/dashboardPerformance.api";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 /* ── format "2026-05-01" → "1 مايو" ── */
 function fmtDate(iso: string) {
@@ -121,8 +122,9 @@ export default function SalesPerformanceChart({ series, isLoading, isError }: Sa
             }}
             labelStyle={{ fontWeight: 700 }}
             formatter={(v: number, name: string) => {
-              if (name === "sales")  return [`${Number(v).toLocaleString("ar-EG-u-nu-latn")} ج.م`, "المبيعات"];
-              if (name === "orders") return [`${v}`, "الطلبات"];
+              if (name === "sales")
+                return [`${formatMoneyEgpInteger(v)} ج.م`, "المبيعات"];
+              if (name === "orders") return [`${Math.round(Number(v))}`, "الطلبات"];
               return [v, name];
             }}
           />

@@ -19,6 +19,7 @@ import InsertLinkIcon from "@mui/icons-material/InsertLink";
 import SendIcon from "@mui/icons-material/Send";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 const BRAND = "#6366f1";
 
@@ -229,6 +230,9 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
                   <Box component="span" sx={{ color: BRAND, fontWeight: 800 }}>{ticket.op}</Box>
                 </InfoItem>
                 <InfoItem label="رقم الطلب">#{ticket.order}</InfoItem>
+                {ticket.orderTotalEgp != null && (
+                  <InfoItem label="إجمالي الطلب (ج.م)">{formatMoneyEgpInteger(ticket.orderTotalEgp)}</InfoItem>
+                )}
                 <InfoItem label="كود المنتج">
                   <Box
                     component="span"

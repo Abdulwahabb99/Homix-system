@@ -25,4 +25,5 @@ export const ticketKeys = {
   meta: () => [...ticketKeys.all(), "meta"] as const,
   list: (page: number, pageSize: number, filtersKey: string) =>
     [...ticketKeys.all(), "list", page, pageSize, filtersKey] as const,
+  detail: (ticketId: string) => [...ticketKeys.all(), "detail", ticketId] as const,
 };

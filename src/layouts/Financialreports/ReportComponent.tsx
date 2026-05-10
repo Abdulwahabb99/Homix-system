@@ -8,6 +8,7 @@ import PaidIcon from "@mui/icons-material/Paid";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PendingIcon from "@mui/icons-material/Pending";
+import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 function ReportComponent({ financialreportData }) {
   const {
@@ -40,7 +41,7 @@ function ReportComponent({ financialreportData }) {
             <ComplexStatisticsCard
               icon="leaderboard"
               title="السعر الاجمالي"
-              count={totalRevenue?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(totalRevenue)}
             />
           </MDBox>
         </Grid>
@@ -50,7 +51,7 @@ function ReportComponent({ financialreportData }) {
               color="success"
               icon="store"
               title="اجمالي التكلفة"
-              count={totalCost?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(totalCost)}
             />
           </MDBox>
         </Grid>
@@ -60,7 +61,7 @@ function ReportComponent({ financialreportData }) {
               color="error"
               icon={<CheckCircleIcon />}
               title="السعر الاجمالي للطلبات التي تم تسليمها"
-              count={deliveredOrders?.totalRevenue?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(deliveredOrders?.totalRevenue)}
             />
           </MDBox>
         </Grid>
@@ -70,7 +71,7 @@ function ReportComponent({ financialreportData }) {
               color="primary"
               icon={<PaidIcon />}
               title="صافي الربح"
-              count={totalProfit?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(totalProfit)}
             />
           </MDBox>
         </Grid>
@@ -80,7 +81,7 @@ function ReportComponent({ financialreportData }) {
               color="light"
               icon={<MonetizationOnIcon />}
               title="عمولة المنصة"
-              count={totalCommission?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(totalCommission)}
             />
           </MDBox>
         </Grid>
@@ -90,7 +91,7 @@ function ReportComponent({ financialreportData }) {
               color="light"
               icon={<MonetizationOnIcon />}
               title="جدية الشراء"
-              count={totalDownPayment?.toFixed(0) || 0}
+              count={formatMoneyEgpInteger(totalDownPayment)}
             />
           </MDBox>
         </Grid>
@@ -100,7 +101,7 @@ function ReportComponent({ financialreportData }) {
               color="light"
               icon={<MonetizationOnIcon />}
               title="اجمالي المبالغ المطلوب تحصيلها"
-              count={totalToBeCollected || 0}
+              count={formatMoneyEgpInteger(totalToBeCollected)}
             />
           </MDBox>
         </Grid>
@@ -120,7 +121,7 @@ function ReportComponent({ financialreportData }) {
               color="dark"
               icon={<PendingIcon />}
               title="اجمالي مبالغ الطلبات النصف مكتملة"
-              count={halfCompletedOrders?.totalRevenue || 0}
+              count={formatMoneyEgpInteger(halfCompletedOrders?.totalRevenue)}
             />
           </MDBox>
         </Grid>

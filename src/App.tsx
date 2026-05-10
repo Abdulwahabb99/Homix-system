@@ -35,6 +35,7 @@ const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/ShipmentDetails"));
+const TicketDetailPage = React.lazy(() => import("layouts/Tickets/TicketDetailPage"));
 
 function getStoredUser() {
   try {
@@ -206,6 +207,14 @@ export default function App() {
             />
             <Route path="*" element={<NotFound />} />
             <Route path="/authentication/sign-in" element={<SignIn />} />
+            <Route
+              path="/tickets/:id"
+              element={
+                <ProtectedRoutes>
+                  <TicketDetailPage />
+                </ProtectedRoutes>
+              }
+            />
             <Route
               path="/orders/:id"
               element={

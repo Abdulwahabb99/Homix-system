@@ -1,13 +1,7 @@
 import React from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import type { SalesDistributionItem } from "claude/dashboard/api/dashboardSalesDistribution.api";
-
-/* ── helpers ── */
-function fmt(val: number) {
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (val >= 1_000)     return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  return String(Math.round(val));
-}
+import { formatMoneyCompact } from "shared/formatMoney";
 
 /* ── skeleton ── */
 function DonutSkeleton() {
@@ -88,7 +82,7 @@ export default function CategoryDonutChart({ items, isLoading, isError }: Catego
           </PieChart>
         </ResponsiveContainer>
         <div className="h-donut-center">
-          <div className="h-donut-center-val">{fmt(total)}</div>
+          <div className="h-donut-center-val">{formatMoneyCompact(total)}</div>
           <div className="h-donut-center-lbl">إجمالي</div>
         </div>
       </div>
@@ -99,7 +93,7 @@ export default function CategoryDonutChart({ items, isLoading, isError }: Catego
             <div className="h-dleg-dot" style={{ background: c.color }} />
             <div className="h-dleg-info">
               <div className="h-dleg-name">{c.label}</div>
-              <div className="h-dleg-val">{fmt(c.value)} ج.م</div>
+              <div className="h-dleg-val">{formatMoneyCompact(c.value)} ج.م</div>
             </div>
             <div className="h-dleg-pct">{c.percentage}%</div>
           </div>

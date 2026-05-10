@@ -30,7 +30,14 @@ export interface TicketsListEnvelope {
   totalCount: number;
 }
 
-export interface ApiListResponse {
+export interface ApiSingleTicketResponse {
+  status?: boolean;
+  data?: Record<string, unknown>;
+  force_logout?: boolean;
+}
+
+/** غلاف استجابة قائمة التذاكر من الـ API */
+export interface ApiTicketsListResponse {
   status?: boolean;
   data?: TicketsListEnvelope;
   force_logout?: boolean;
@@ -178,7 +185,8 @@ export interface ApiMetaResponse {
 
 /* ── تحويل عنصر الـ API → Ticket (واجهة الصفحة) ───────────────────────── */
 
-function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
+/** تحويل عنصر الـ API → Ticket (قائمة أو تفاصيل) */
+export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
   const order =
     raw.order && typeof raw.order === "object"
       ? (raw.order as Record<string, unknown>)
@@ -206,6 +214,18 @@ function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
     ? (raw.attachments as Attachment[])
     : [];
 
+  const totalRaw =
+    order.totalPrice ??
+    order.totalAmount ??
+    order.orderTotal ??
+    order.subTotalPrice ??
+    order.totalRevenue;
+  let orderTotalEgp: number | undefined;
+  if (totalRaw != null && totalRaw !== "") {
+    const tn = Number(totalRaw);
+    if (Number.isFinite(tn)) orderTotalEgp = tn;
+  }
+
   return {
     id: String(raw.id ?? ""),
     op: String(order.operationNumber ?? ""),
@@ -226,6 +246,7 @@ function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
     notes: String(raw.notes ?? ""),
     chat,
     attachments,
+    ...(orderTotalEgp != null ? { orderTotalEgp } : {}),
   };
 }
 
@@ -343,20 +364,51 @@ export function useTicketsMeta(enabled = true) {
   });
 }
 
+export async function fetchTicketById(navigate: NavigateFunction, ticketId: string): Promise<Ticket> {
+  const path = `${TICKETS_LIST_PATH}/${encodeURIComponent(ticketId)}`;
+  const { data } = await axiosRequest.get<Record<string, unknown>>(path);
+
+  const root = data as unknown as ApiSingleTicketResponse;
+  if (root.force_logout) {
+    localStorage.removeItem("user");
+    navigate("/authentication/sign-in");
+    throw new Error("FORCE_LOGOUT");
+  }
+
+  const inner = root.data;
+  if (!inner || typeof inner !== "object") {
+    throw new Error("TICKET_NOT_FOUND");
+  }
+
+  const ticket = mapApiItemToTicket(inner as Record<string, unknown>);
+  if (!ticket.id) {
+    throw new Error("TICKET_NOT_FOUND");
+  }
+  return ticket;
+}
+
+export function useTicketDetail(ticketId: string, enabled = true) {
+  const navigate = useNavigate();
+
+  return useQuery({
+    queryKey: ticketKeys.detail(ticketId),
+    queryFn: () => fetchTicketById(navigate, ticketId),
+    staleTime: 30_000,
+    enabled: enabled && Boolean(ticketId),
+  });
+}
+
 export async function fetchTicketsList(
   navigate: NavigateFunction,
   params: { page: number; pageSize: number; filters?: TicketsListFilters }
 ): Promise<TicketsListResult> {
   const queryParams = buildTicketsListQueryParams(params.page, params.pageSize, params.filters);
 
-  const { data } = await axiosRequest.get<TicketsListEnvelope & { force_logout?: boolean }>(
-    TICKETS_LIST_PATH,
-    {
-      params: queryParams,
-    }
-  );
+  const { data } = await axiosRequest.get<ApiTicketsListResponse>(TICKETS_LIST_PATH, {
+    params: queryParams,
+  });
 
-  const root = data as unknown as ApiListResponse;
+  const root = data as unknown as ApiTicketsListResponse;
   if (root.force_logout) {
     localStorage.removeItem("user");
     navigate("/authentication/sign-in");

@@ -4,6 +4,7 @@ import {
   useDashboardLeaderboard,
   type LeaderboardItem,
 } from "claude/dashboard/api/dashboardLeaderboard.api";
+import { formatMoneyCompact } from "shared/formatMoney";
 
 /* ── helpers ── */
 const AV_GRADS = [
@@ -15,12 +16,6 @@ const AV_GRADS = [
 ];
 function avGrad(id: number) { return AV_GRADS[id % AV_GRADS.length]; }
 function initial(name: string) { return name.trim()[0]?.toUpperCase() ?? "?"; }
-
-function fmt(val: number) {
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (val >= 1_000)     return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  return String(Math.round(val));
-}
 
 const rankClass = (r: number) => {
   if (r === 1) return "h-gold";
@@ -104,7 +99,7 @@ export default function TopSellersCard({ startDate, endDate }: TopSellersCardPro
               <div className="h-seller-ct">{s.secondaryLabel}</div>
             </div>
             <div className="h-seller-rev">
-              <div className="h-seller-rev-val">{fmt(s.totalSales)}</div>
+              <div className="h-seller-rev-val">{formatMoneyCompact(s.totalSales)}</div>
               <div className="h-seller-rev-lbl">ج.م</div>
             </div>
           </div>

@@ -5,14 +5,9 @@ import {
   useDashboardPerformance,
   type PeriodKey,
 } from "claude/dashboard/api/dashboardPerformance.api";
+import { formatMoneyCompact } from "shared/formatMoney";
 
 /* ── helpers ── */
-function fmt(val: number) {
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (val >= 1_000)     return (val / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  return String(Math.round(val));
-}
-
 function periodLabel(period: PeriodKey) {
   const { startDate, endDate } = getPeriodDates(period);
   const fmtD = (iso: string) =>
@@ -95,7 +90,7 @@ export default function SalesChartCard() {
             isLoading={isLoading}
             val={
               <>
-                {summary ? fmt(summary.currentValue) : "—"}
+                {summary ? formatMoneyCompact(summary.currentValue) : "—"}
                 <span className="h-sales-stat-currency"> ج.م</span>
               </>
             }
