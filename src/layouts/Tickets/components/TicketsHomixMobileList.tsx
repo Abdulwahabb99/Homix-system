@@ -52,10 +52,33 @@ interface Props {
   tickets: Ticket[];
   onView: (id: string) => void;
   onDelete: (id: string) => void;
+  isLoading?: boolean;
 }
 
 /** قائمة بطاقات للشاشات &lt; md — نفس فكرة OrdersHomixMobileList */
-export default function TicketsHomixMobileList({ tickets, onView, onDelete }: Props) {
+export default function TicketsHomixMobileList({
+  tickets,
+  onView,
+  onDelete,
+  isLoading = false,
+}: Props) {
+  if (isLoading && tickets.length === 0) {
+    return (
+      <Box
+        sx={{
+          py: 4,
+          px: 2,
+          textAlign: "center",
+          fontFamily: FONT,
+          fontSize: "12.5px",
+          color: HX.tx3,
+        }}
+      >
+        جارٍ التحميل…
+      </Box>
+    );
+  }
+
   if (tickets.length === 0) {
     return (
       <Box

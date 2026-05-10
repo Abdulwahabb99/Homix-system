@@ -134,6 +134,7 @@ export interface TicketsHomixTableProps {
   onView: (id: string) => void;
   onDelete: (id: string) => void;
   headerActions?: React.ReactNode;
+  isLoading?: boolean;
 }
 
 export default function TicketsHomixTable({
@@ -145,6 +146,7 @@ export default function TicketsHomixTable({
   onView,
   onDelete,
   headerActions,
+  isLoading = false,
 }: TicketsHomixTableProps) {
   const colCount = COLS.length;
   const tableWidth = COLS.reduce((s, c) => s + c.w, 0);
@@ -207,7 +209,12 @@ export default function TicketsHomixTable({
           scrollbarColor: `${HX.border} transparent`,
         }}
       >
-        <TicketsHomixMobileList tickets={tickets} onView={onView} onDelete={onDelete} />
+        <TicketsHomixMobileList
+          tickets={tickets}
+          onView={onView}
+          onDelete={onDelete}
+          isLoading={isLoading}
+        />
       </Box>
 
       <Box
@@ -245,14 +252,22 @@ export default function TicketsHomixTable({
             </tr>
           </thead>
           <tbody>
-            {tickets.length === 0 && (
+            {isLoading && tickets.length === 0 && (
+              <tr>
+                <td colSpan={colCount} style={{ ...TD, textAlign: "center", padding: "40px 0", color: HX.tx3 }}>
+                  جارٍ التحميل…
+                </td>
+              </tr>
+            )}
+            {!isLoading && tickets.length === 0 && (
               <tr>
                 <td colSpan={colCount} style={{ ...TD, textAlign: "center", padding: "40px 0", color: HX.tx3 }}>
                   لا توجد تذاكر مطابقة
                 </td>
               </tr>
             )}
-            {tickets.map((t) => (
+            {!isLoading &&
+              tickets.map((t) => (
               <tr
                 key={t.id}
                 onMouseEnter={(e) => {

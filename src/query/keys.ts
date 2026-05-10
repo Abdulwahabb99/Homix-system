@@ -19,3 +19,9 @@ export const userKeys = {
   all: () => ["users"],
   list: () => [...userKeys.all(), "list"],
 };
+
+export const ticketKeys = {
+  all: () => ["tickets"] as const,
+  list: (page: number, pageSize: number) =>
+    [...ticketKeys.all(), "list", page, pageSize] as const,
+};

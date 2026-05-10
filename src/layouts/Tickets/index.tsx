@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -24,6 +25,8 @@ import {
   MockOp,
   Ticket,
 } from "layouts/Tickets/utils/constants";
+import { ticketKeys } from "query/keys";
+import { useTicketsList } from "query/ticketsList.api";
 
 const BRAND = "#6366f1";
 
@@ -228,12 +231,28 @@ function KpiCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Tickets() {
-  const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS);
+  const queryClient = useQueryClient();
+  const TICKET_PAGE_SIZE = 10;
+  const [ticketTablePage, setTicketTablePage] = useState(0);
+
+  const ticketsQuery = useTicketsList({
+    page: ticketTablePage + 1,
+    pageSize: TICKET_PAGE_SIZE,
+  });
+
+  const tickets = useMemo((): Ticket[] => {
+    if (ticketsQuery.isError) return MOCK_TICKETS;
+    return ticketsQuery.data?.items ?? [];
+  }, [ticketsQuery.isError, ticketsQuery.data?.items]);
+
+  /** للترقيم من السيرفر؛ عند الخطأ نستخدم طول القائمة المعروضة (وهم/احتياطي). */
+  const listTotalCount = ticketsQuery.isError ? tickets.length : (ticketsQuery.data?.totalCount ?? 0);
+
   const [ticketTypes, setTicketTypes] = useState<string[]>(DEFAULT_TICKET_TYPES);
   const [quickReplies, setQuickReplies] = useState<string[]>(DEFAULT_QUICK_REPLIES);
 
   // views
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [detailTicket, setDetailTicket] = useState<Ticket | null>(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
@@ -247,18 +266,9 @@ export default function Tickets() {
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
 
-  const TICKET_PAGE_SIZE = 10;
-  const [ticketTablePage, setTicketTablePage] = useState(0);
-
   useEffect(() => {
     setTicketTablePage(0);
   }, [filterOp, filterOrder, filterType, filterStatus, filterResp, filterFrom, filterTo]);
-
-  // ── Derived ──
-  const selectedTicket = useMemo(
-    () => tickets.find((t) => t.id === selectedTicketId) ?? null,
-    [tickets, selectedTicketId]
-  );
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
@@ -273,12 +283,21 @@ export default function Tickets() {
     });
   }, [tickets, filterOp, filterOrder, filterType, filterStatus, filterResp, filterFrom, filterTo]);
 
-  const pagedTickets = useMemo(() => {
-    const start = ticketTablePage * TICKET_PAGE_SIZE;
-    return filteredTickets.slice(start, start + TICKET_PAGE_SIZE);
-  }, [filteredTickets, ticketTablePage]);
-
   const kpi = useMemo(() => {
+    const summary = ticketsQuery.data?.summary;
+    if (!ticketsQuery.isError && summary) {
+      const avgClose =
+        summary.averageResolutionDays > 0
+          ? summary.averageResolutionDays.toFixed(1)
+          : "0.0";
+      return {
+        total: summary.total,
+        open: summary.open,
+        closed: summary.closed,
+        overdue7: summary.overdueOpen,
+        avgClose,
+      };
+    }
     const total = tickets.length;
     const open = tickets.filter((t) => t.status === "مفتوحة").length;
     const closed = tickets.filter((t) => t.status === "مغلقة").length;
@@ -289,9 +308,14 @@ export default function Tickets() {
         ? (closedWithDays.reduce((s, t) => s + t.days, 0) / closedWithDays.length).toFixed(1)
         : "1.8";
     return { total, open, closed, overdue7, avgClose };
-  }, [tickets]);
+  }, [ticketsQuery.isError, ticketsQuery.data?.summary, tickets]);
 
   const responsibles = useMemo(() => Array.from(new Set(tickets.map((t) => t.resp))), [tickets]);
+
+  const openTicket = useCallback((id: string) => {
+    const t = filteredTickets.find((x) => x.id === id);
+    if (t) setDetailTicket(t);
+  }, [filteredTickets]);
 
   // ── Handlers ──
   function resetFilters() {
@@ -305,44 +329,26 @@ export default function Tickets() {
   }
 
   const handleCreateTicket = useCallback(
-    (data: { op: MockOp; type: string; resp: string; notes: string }) => {
-      const now = new Date().toISOString();
-      const today = now.split("T")[0];
-      const time = new Date().toTimeString().slice(0, 5);
-      const newT: Ticket = {
-        id: `TK-${String(tickets.length + 1).padStart(3, "0")}`,
-        op: data.op.op,
-        order: data.op.order,
-        code: data.op.code,
-        seller: data.op.seller,
-        type: data.type,
-        openDate: today,
-        closeDate: "—",
-        days: 0,
-        status: "مفتوحة",
-        resp: data.resp,
-        adminReply: "—",
-        ownerReply: "—",
-        notes: data.notes,
-        chat: [
-          { from: "admin", name: data.resp, msg: "تم فتح التذكرة بنجاح", time: `${today} ${time}` },
-        ],
-        attachments: [],
-      };
-      setTickets((prev) => [newT, ...prev]);
+    (_data: { op: MockOp; type: string; resp: string; notes: string }) => {
+      void _data;
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
     },
-    [tickets.length]
+    [queryClient]
   );
 
-  const handleUpdateTicket = useCallback((updated: Ticket) => {
-    setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  }, []);
+  const handleUpdateTicket = useCallback(
+    (updated: Ticket) => {
+      setDetailTicket((d) => (d?.id === updated.id ? updated : d));
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
+    },
+    [queryClient]
+  );
 
   function handleDeleteConfirm() {
     if (!deleteTicketId) return;
-    setTickets((prev) => prev.filter((t) => t.id !== deleteTicketId));
+    if (detailTicket?.id === deleteTicketId) setDetailTicket(null);
+    void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
     setDeleteTicketId(null);
-    if (selectedTicketId === deleteTicketId) setSelectedTicketId(null);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -446,11 +452,11 @@ export default function Tickets() {
         </Grid>
 
         {/* ── Content: list or detail ── */}
-        {selectedTicket ? (
+        {detailTicket ? (
           <TicketDetailView
-            ticket={selectedTicket}
+            ticket={detailTicket}
             quickReplies={quickReplies}
-            onBack={() => setSelectedTicketId(null)}
+            onBack={() => setDetailTicket(null)}
             onUpdateTicket={handleUpdateTicket}
           />
         ) : (
@@ -568,13 +574,14 @@ export default function Tickets() {
             </Box>
 
             <TicketsHomixTable
-              tickets={pagedTickets}
-              totalCount={filteredTickets.length}
+              tickets={filteredTickets}
+              totalCount={listTotalCount}
               page={ticketTablePage}
               pageSize={TICKET_PAGE_SIZE}
               onPageChange={setTicketTablePage}
-              onView={setSelectedTicketId}
+              onView={openTicket}
               onDelete={setDeleteTicketId}
+              isLoading={ticketsQuery.isLoading}
               headerActions={
                 <Button size="small" sx={BTN_G}>
                   تصدير Excel
