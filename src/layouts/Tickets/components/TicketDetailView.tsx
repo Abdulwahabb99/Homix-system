@@ -23,6 +23,29 @@ import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 const BRAND = "#6366f1";
 
+/** أزرار فرعية أوضح من outlined الافتراضي (تباين ثابت في كل الثيمات) */
+const btnOutlinedBrandSx = {
+  borderRadius: 1.5,
+  fontWeight: 600,
+  fontSize: "0.72rem",
+  height: 28,
+  minWidth: 0,
+  px: 1.25,
+  py: 0,
+  textTransform: "none" as const,
+  flexShrink: 0,
+  color: BRAND,
+  border: `1px solid ${alpha(BRAND, 0.5)}`,
+  bgcolor: "background.paper",
+  boxShadow: "none",
+  "&:hover": {
+    border: `1px solid ${BRAND}`,
+    bgcolor: alpha(BRAND, 0.1),
+    color: BRAND,
+    boxShadow: "none",
+  },
+} as const;
+
 type Props = {
   ticket: Ticket;
   quickReplies: string[];
@@ -211,8 +234,10 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
                   <Button
                     size="small"
                     variant="outlined"
+                    color="inherit"
+                    disableElevation
                     onClick={toggleStatus}
-                    sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: "0.72rem", height: 28, textTransform: "none" }}
+                    sx={btnOutlinedBrandSx}
                   >
                     تغيير الحالة
                   </Button>
@@ -286,8 +311,10 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
                 <Button
                   size="small"
                   variant="outlined"
+                  color="inherit"
+                  disableElevation
                   onClick={() => fileInputRef.current?.click()}
-                  sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: "0.72rem", height: 28, textTransform: "none" }}
+                  sx={btnOutlinedBrandSx}
                 >
                   + إضافة مرفق
                 </Button>

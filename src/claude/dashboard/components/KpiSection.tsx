@@ -1,7 +1,7 @@
 import React from "react";
 import { KpiIcon } from "claude/dashboard/components/KpiIcons";
 import type { DashboardCard } from "claude/dashboard/api/dashboardCards.api";
-import { formatMoneyCompact } from "shared/formatMoney";
+import { formatMoneyCompactOneDecimal } from "shared/formatMoney";
 
 /* ── map API key → icon + colors ── */
 const KEY_META: Record<string, {
@@ -95,7 +95,9 @@ export default function KpiSection({ cards, isLoading }: KpiSectionProps) {
             </div>
 
             <div className="h-kpi-val">
-              {card.key === "totalSales" ? formatMoneyCompact(card.currentValue) : fmt(card.currentValue)}
+              {card.key === "totalSales"
+                ? formatMoneyCompactOneDecimal(card.currentValue)
+                : fmt(card.currentValue)}
             </div>
             <div className="h-kpi-label">{card.label}</div>
 

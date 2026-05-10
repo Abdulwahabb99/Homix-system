@@ -10,18 +10,16 @@ const FONT = "'Cairo', sans-serif";
 
 function ActionBtn({
   onClick,
-  bg,
-  hoverBg,
-  color,
+  tone,
   children,
 }: {
   onClick: () => void;
-  bg: string;
-  hoverBg: string;
-  color: string;
+  tone: "accent" | "danger";
   children: React.ReactNode;
 }) {
   const [hover, setHover] = React.useState(false);
+  const fill = tone === "accent" ? HX.accent : HX.red;
+  const restBorder = tone === "accent" ? HX.accentBorder : "rgba(239,68,68,0.42)";
   return (
     <button
       type="button"
@@ -32,14 +30,15 @@ function ActionBtn({
         width: 24,
         height: 24,
         borderRadius: 6,
-        border: "none",
+        border: `1px solid ${hover ? fill : restBorder}`,
+        boxSizing: "border-box",
         cursor: "pointer",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        background: hover ? hoverBg : bg,
-        color: hover ? "#fff" : color,
-        transition: "background .15s, color .15s",
+        background: hover ? fill : HX.surface,
+        color: hover ? "#fff" : fill,
+        transition: "background .15s, color .15s, border-color .15s",
         padding: 0,
       }}
     >
@@ -136,20 +135,10 @@ export default function TicketsHomixMobileList({
               </Box>
             </Stack>
             <Stack direction="row" spacing={0.35}>
-              <ActionBtn
-                onClick={() => onView(t.id)}
-                bg={HX.accentLight}
-                hoverBg={HX.accent}
-                color={HX.accent}
-              >
+              <ActionBtn onClick={() => onView(t.id)} tone="accent">
                 <VisibilityIcon sx={{ fontSize: 13 }} />
               </ActionBtn>
-              <ActionBtn
-                onClick={() => onDelete(t.id)}
-                bg={HX.redLight}
-                hoverBg={HX.red}
-                color={HX.red}
-              >
+              <ActionBtn onClick={() => onDelete(t.id)} tone="danger">
                 <DeleteIcon sx={{ fontSize: 13 }} />
               </ActionBtn>
             </Stack>

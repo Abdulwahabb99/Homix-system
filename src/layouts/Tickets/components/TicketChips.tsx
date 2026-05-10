@@ -1,5 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
   TICKET_TYPE_COLOR,
   DEFAULT_TYPE_COLOR,
@@ -12,6 +13,8 @@ type TicketStatusChipProps = { status: "مفتوحة" | "مغلقة"; size?: "sm
 
 export function TicketStatusChip({ status, size = "small" }: TicketStatusChipProps) {
   const isOpen = status === "مفتوحة";
+  const dotOpen = "#d97706";
+  const dotClosed = "#059669";
   return (
     <Box
       component="span"
@@ -25,15 +28,15 @@ export function TicketStatusChip({ status, size = "small" }: TicketStatusChipPro
         fontSize: size === "small" ? "0.72rem" : "0.8rem",
         fontWeight: 700,
         whiteSpace: "nowrap",
-        bgcolor: isOpen ? "rgba(245,158,11,0.12)" : "rgba(16,185,129,0.12)",
-        color: isOpen ? "#92400e" : "#065f46",
-        border: `1px solid ${isOpen ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)"}`,
+        bgcolor: isOpen ? "rgba(245,158,11,0.14)" : "rgba(16,185,129,0.14)",
+        color: isOpen ? "#78350f" : "#064e3b",
+        border: `1px solid ${isOpen ? alpha(dotOpen, 0.45) : alpha(dotClosed, 0.45)}`,
         "& .dot": {
           display: "inline-block",
           width: 5,
           height: 5,
           borderRadius: "50%",
-          bgcolor: isOpen ? "#f59e0b" : "#10b981",
+          bgcolor: isOpen ? dotOpen : dotClosed,
           flexShrink: 0,
         },
       }}
@@ -49,7 +52,8 @@ export function TicketStatusChip({ status, size = "small" }: TicketStatusChipPro
 type TicketTypeChipProps = { type: string; size?: "small" | "medium" };
 
 export function TicketTypeChip({ type, size = "small" }: TicketTypeChipProps) {
-  const colors = TICKET_TYPE_COLOR[type] ?? DEFAULT_TYPE_COLOR;
+  const key = type.trim();
+  const colors = TICKET_TYPE_COLOR[key] ?? DEFAULT_TYPE_COLOR;
   return (
     <Box
       component="span"
@@ -65,6 +69,7 @@ export function TicketTypeChip({ type, size = "small" }: TicketTypeChipProps) {
         whiteSpace: "nowrap",
         bgcolor: colors.bg,
         color: colors.color,
+        border: `1px solid ${alpha(colors.dot, 0.42)}`,
         "& .dot": {
           display: "inline-block",
           width: 5,
@@ -86,15 +91,15 @@ export function TicketTypeChip({ type, size = "small" }: TicketTypeChipProps) {
 type DayCounterProps = { days: number; isOpen: boolean };
 
 const DAY_VARIANT_STYLES = {
-  ok: { bg: "rgba(16,185,129,0.12)", color: "#10b981" },
-  warn: { bg: "rgba(245,158,11,0.12)", color: "#92400e" },
-  danger: { bg: "rgba(239,68,68,0.12)", color: "#ef4444" },
-  closed: { bg: "rgba(0,0,0,0.05)", color: "#9ca3af" },
+  ok: { bg: "rgba(16,185,129,0.14)", color: "#047857", border: "rgba(5,150,105,0.45)" },
+  warn: { bg: "rgba(245,158,11,0.14)", color: "#78350f", border: "rgba(217,119,6,0.45)" },
+  danger: { bg: "rgba(239,68,68,0.14)", color: "#991b1b", border: "rgba(220,38,38,0.45)" },
+  closed: { bg: "rgba(55,65,81,0.08)", color: "#374151", border: "rgba(75,85,99,0.35)" },
 };
 
 export function DayCounter({ days, isOpen }: DayCounterProps) {
   const variant = getDayCounterVariant(days, isOpen);
-  const { bg, color } = DAY_VARIANT_STYLES[variant];
+  const { bg, color, border } = DAY_VARIANT_STYLES[variant];
   const label = variant === "closed" ? "مغلق" : `⏱ ${days} يوم`;
   return (
     <Box
@@ -110,6 +115,7 @@ export function DayCounter({ days, isOpen }: DayCounterProps) {
         fontWeight: 700,
         bgcolor: bg,
         color,
+        border: `1px solid ${border}`,
         whiteSpace: "nowrap",
       }}
     >
