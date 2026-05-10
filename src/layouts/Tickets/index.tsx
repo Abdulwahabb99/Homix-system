@@ -1,40 +1,19 @@
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  Grid,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
-import HomixDataTable from "shared/components/HomixDataTable/HomixDataTable";
+import TicketsHomixTable from "layouts/Tickets/components/TicketsHomixTable";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
-import {
-  TicketStatusChip,
-  TicketTypeChip,
-  DayCounter,
-} from "layouts/Tickets/components/TicketChips";
 import TicketDetailView from "layouts/Tickets/components/TicketDetailView";
 import NewTicketModal from "layouts/Tickets/components/NewTicketModal";
 import TicketSettingsModal from "layouts/Tickets/components/TicketSettingsModal";
@@ -268,6 +247,13 @@ export default function Tickets() {
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
 
+  const TICKET_PAGE_SIZE = 10;
+  const [ticketTablePage, setTicketTablePage] = useState(0);
+
+  useEffect(() => {
+    setTicketTablePage(0);
+  }, [filterOp, filterOrder, filterType, filterStatus, filterResp, filterFrom, filterTo]);
+
   // ── Derived ──
   const selectedTicket = useMemo(
     () => tickets.find((t) => t.id === selectedTicketId) ?? null,
@@ -286,6 +272,11 @@ export default function Tickets() {
       return true;
     });
   }, [tickets, filterOp, filterOrder, filterType, filterStatus, filterResp, filterFrom, filterTo]);
+
+  const pagedTickets = useMemo(() => {
+    const start = ticketTablePage * TICKET_PAGE_SIZE;
+    return filteredTickets.slice(start, start + TICKET_PAGE_SIZE);
+  }, [filteredTickets, ticketTablePage]);
 
   const kpi = useMemo(() => {
     const total = tickets.length;
@@ -353,224 +344,6 @@ export default function Tickets() {
     setDeleteTicketId(null);
     if (selectedTicketId === deleteTicketId) setSelectedTicketId(null);
   }
-
-  // ── Columns ──
-  const columns = useMemo(
-    () => [
-      {
-        field: "op",
-        headerName: "رقم العملية",
-        minWidth: 110,
-        renderCell: (p: any) => (
-          <Typography
-            variant="body2"
-            fontWeight={800}
-            sx={{
-              color: BRAND,
-              cursor: "pointer",
-              fontSize: "0.8rem",
-              textDecoration: "underline",
-              textDecorationColor: "transparent",
-              "&:hover": { textDecorationColor: BRAND },
-              transition: "0.15s",
-            }}
-            onClick={() => setSelectedTicketId(p.row.id)}
-          >
-            {p.row.op}
-          </Typography>
-        ),
-      },
-      {
-        field: "order",
-        headerName: "رقم الطلب",
-        minWidth: 100,
-        renderCell: (p: any) => (
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
-            #{p.row.order}
-          </Typography>
-        ),
-      },
-      {
-        field: "code",
-        headerName: "كود المنتج",
-        minWidth: 100,
-        renderCell: (p: any) => (
-          <Box
-            component="span"
-            sx={{
-              fontFamily: "monospace",
-              fontSize: "0.75rem",
-              bgcolor: (t: any) => alpha(t.palette.text.primary, 0.06),
-              px: 0.75,
-              py: 0.25,
-              borderRadius: 1,
-              color: "text.secondary",
-            }}
-          >
-            {p.row.code}
-          </Box>
-        ),
-      },
-      { field: "seller", headerName: "البائع", minWidth: 130, flex: 0.8 },
-      {
-        field: "type",
-        headerName: "نوع التذكرة",
-        minWidth: 140,
-        renderCell: (p: any) => <TicketTypeChip type={p.row.type} />,
-      },
-      { field: "openDate", headerName: "تاريخ الرفع", minWidth: 110, sortable: false },
-      { field: "closeDate", headerName: "تاريخ الغلق", minWidth: 110, sortable: false },
-      {
-        field: "days",
-        headerName: "عداد الأيام",
-        minWidth: 110,
-        sortable: false,
-        renderCell: (p: any) => <DayCounter days={p.row.days} isOpen={p.row.status === "مفتوحة"} />,
-      },
-      {
-        field: "status",
-        headerName: "الحالة",
-        minWidth: 110,
-        renderCell: (p: any) => <TicketStatusChip status={p.row.status} />,
-      },
-      {
-        field: "resp",
-        headerName: "المسئول",
-        minWidth: 130,
-        renderCell: (p: any) => (
-          <Stack direction="row" alignItems="center" spacing={0.75}>
-            <Box
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.55rem",
-                fontWeight: 800,
-                color: "#fff",
-                flexShrink: 0,
-              }}
-            >
-              {(p.row.resp ?? "؟").charAt(0)}
-            </Box>
-            <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-              {p.row.resp}
-            </Typography>
-          </Stack>
-        ),
-      },
-      {
-        field: "adminReply",
-        headerName: "رد المسئول",
-        minWidth: 140,
-        sortable: false,
-        flex: 0.7,
-        renderCell: (p: any) => (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#1d4ed8",
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {p.row.adminReply}
-          </Typography>
-        ),
-      },
-      {
-        field: "ownerReply",
-        headerName: "رد صاحب التذكرة",
-        minWidth: 140,
-        sortable: false,
-        flex: 0.7,
-        renderCell: (p: any) => (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              fontSize: "0.78rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {p.row.ownerReply || "—"}
-          </Typography>
-        ),
-      },
-      {
-        field: "notes",
-        headerName: "ملاحظات",
-        minWidth: 130,
-        sortable: false,
-        flex: 0.6,
-        renderCell: (p: any) => (
-          <Typography
-            variant="body2"
-            color="text.disabled"
-            sx={{
-              fontSize: "0.75rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {p.row.notes || "—"}
-          </Typography>
-        ),
-      },
-      {
-        field: "actions",
-        headerName: "",
-        minWidth: 90,
-        sortable: false,
-        renderCell: (p: any) => (
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="عرض التفاصيل">
-              <IconButton
-                size="small"
-                onClick={() => setSelectedTicketId(p.row.id)}
-                sx={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(BRAND, 0.1),
-                  color: BRAND,
-                  "&:hover": { bgcolor: BRAND, color: "#fff" },
-                }}
-              >
-                <VisibilityOutlinedIcon sx={{ fontSize: 13 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="حذف التذكرة">
-              <IconButton
-                size="small"
-                onClick={() => setDeleteTicketId(p.row.id)}
-                sx={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 1.5,
-                  bgcolor: "rgba(239,68,68,0.1)",
-                  color: "#ef4444",
-                  "&:hover": { bgcolor: "#ef4444", color: "#fff" },
-                }}
-              >
-                <DeleteOutlineIcon sx={{ fontSize: 13 }} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
-      },
-    ],
-    []
-  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   const pageActions = (
@@ -794,56 +567,20 @@ export default function Tickets() {
               </Button>
             </Box>
 
-            {/* Table */}
-            <Box
-              sx={{
-                borderRadius: 2.5,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                boxShadow: "0 1px 2px rgba(15,23,42,0.05), 0 2px 12px rgba(15,23,42,0.04)",
-                overflow: "hidden",
-                // إخفاء footer الـ DataGrid بالكامل بالـ CSS كضمان إضافي فوق hideFooter
-                "& .MuiDataGrid-footerContainer": { display: "none !important" },
-              }}
-            >
-              {/* Table header */}
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                px={2}
-                py={1.5}
-                sx={{ borderBottom: "1px solid", borderColor: "divider" }}
-              >
-                <Box>
-                  <Typography variant="body2" fontWeight={700} color="text.primary">
-                    قائمة التذاكر
-                  </Typography>
-                  <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.72rem" }}>
-                    {filteredTickets.length} تذكرة
-                  </Typography>
-                </Box>
+            <TicketsHomixTable
+              tickets={pagedTickets}
+              totalCount={filteredTickets.length}
+              page={ticketTablePage}
+              pageSize={TICKET_PAGE_SIZE}
+              onPageChange={setTicketTablePage}
+              onView={setSelectedTicketId}
+              onDelete={setDeleteTicketId}
+              headerActions={
                 <Button size="small" sx={BTN_G}>
                   تصدير Excel
                 </Button>
-              </Stack>
-
-              <HomixDataTable
-                rows={filteredTickets}
-                columns={columns}
-                getRowId={(r) => r.id}
-                height={520}
-                page={0}
-                pageSize={100}
-                onPageChange={() => undefined}
-                rowCount={filteredTickets.length}
-                onSelectionModelChange={() => undefined}
-                hideFooter
-                disablePagination
-                sx={{ border: "none", borderRadius: 0 }}
-              />
-            </Box>
+              }
+            />
           </>
         )}
       </Box>
