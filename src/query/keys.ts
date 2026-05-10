@@ -22,6 +22,7 @@ export const userKeys = {
 
 export const ticketKeys = {
   all: () => ["tickets"] as const,
-  list: (page: number, pageSize: number) =>
-    [...ticketKeys.all(), "list", page, pageSize] as const,
+  meta: () => [...ticketKeys.all(), "meta"] as const,
+  list: (page: number, pageSize: number, filtersKey: string) =>
+    [...ticketKeys.all(), "list", page, pageSize, filtersKey] as const,
 };

@@ -6,9 +6,11 @@ import type { Attachment, ChatMessage, Ticket } from "layouts/Tickets/utils/cons
 import { ticketKeys } from "query/keys";
 
 /**
- * مسار جلب قائمة التذاكر — يُرسل كـ query: `page`, `size`
+ * مسار جلب قائمة التذاكر — query params (جميعها اختيارية ما عدا page/size من الواجهة):
+ * page, size, assignedToUserId, operationNumber, orderNumber, startDate, endDate, status, type
  */
 export const TICKETS_LIST_PATH = "/tickets";
+export const TICKETS_META_PATH = "/tickets/meta";
 
 /* ── شكل الاستجابة من الـ backend ───────────────────────────────────────── */
 
@@ -40,6 +42,138 @@ export interface TicketsListResult {
   size: number;
   totalCount: number;
   summary: TicketsSummary;
+}
+
+/** فلاتر الـ API لـ GET /tickets — القيم غير المحددة لا تُرسل */
+export interface TicketsListFilters {
+  assignedToUserId?: number;
+  operationNumber?: string;
+  orderNumber?: string;
+  startDate?: string;
+  endDate?: string;
+  /** حسب الباكند، مثال: 1 مفتوحة، 2 مغلقة */
+  status?: number;
+  type?: number;
+}
+
+/** مفتاح ثابت لـ React Query من الفلاتر */
+export function serializeTicketsListFilters(f: TicketsListFilters): string {
+  const o = {
+    a: f.assignedToUserId ?? null,
+    o: f.operationNumber ?? null,
+    n: f.orderNumber ?? null,
+    s0: f.startDate ?? null,
+    s1: f.endDate ?? null,
+    st: f.status ?? null,
+    ty: f.type ?? null,
+  };
+  return JSON.stringify(o);
+}
+
+function buildTicketsListQueryParams(
+  page: number,
+  pageSize: number,
+  filters: TicketsListFilters | undefined
+): Record<string, string | number> {
+  const params: Record<string, string | number> = {
+    page,
+    size: pageSize,
+  };
+  if (!filters) return params;
+
+  if (filters.assignedToUserId != null && Number.isFinite(filters.assignedToUserId)) {
+    params.assignedToUserId = filters.assignedToUserId;
+  }
+  if (filters.operationNumber?.trim()) {
+    params.operationNumber = filters.operationNumber.trim();
+  }
+  if (filters.orderNumber?.trim()) {
+    params.orderNumber = filters.orderNumber.trim();
+  }
+  if (filters.startDate?.trim()) {
+    params.startDate = filters.startDate.trim();
+  }
+  if (filters.endDate?.trim()) {
+    params.endDate = filters.endDate.trim();
+  }
+  if (filters.status != null && Number.isFinite(filters.status)) {
+    params.status = filters.status;
+  }
+  if (filters.type != null && Number.isFinite(filters.type)) {
+    params.type = filters.type;
+  }
+
+  return params;
+}
+
+/** قيم `status` في الـ API — يجب أن تتطابق مع الباكند */
+export function ticketStatusUiToApi(statusLabel: string): number | undefined {
+  const s = statusLabel.trim();
+  if (s === "مفتوحة") return 1;
+  if (s === "مغلقة") return 2;
+  return undefined;
+}
+
+/**
+ * تحويل عنوان نوع التذكرة إلى `type` (integer) كما يُنتظر في الـ query.
+ * يُفترض أن ترتيب `orderedTypes` يطابق أرقام الأنواع 1..N في السيرفر.
+ */
+export function ticketTypeLabelToApiType(label: string, orderedTypes: string[]): number | undefined {
+  const i = orderedTypes.indexOf(label.trim());
+  if (i < 0) return undefined;
+  return i + 1;
+}
+
+/** إحصائيات البلاطات + خيارات الفلاتر — من `GET /tickets/meta` (داخل `data`) */
+export interface TicketMetaAssignee {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
+export interface TicketMetaOption {
+  key: number;
+  label: string;
+}
+
+export interface TicketsMeta {
+  /** الأرقام التالية تُعرض في البلاطات فقط إذا أرجعها السيرفر ضمن نفس الـ meta */
+  total?: number;
+  open?: number;
+  closed?: number;
+  overdueOpen?: number;
+  averageResolutionDays?: number;
+  openBeyond3Days?: number;
+  newTicketsWeekDelta?: number;
+  totalSubtitle?: string;
+  openSubtitle?: string;
+  closedSubtitle?: string;
+  averageSubtitle?: string;
+  overdueSubtitle?: string;
+  assignees: TicketMetaAssignee[];
+  statuses: TicketMetaOption[];
+  types: TicketMetaOption[];
+}
+
+export function formatTicketMetaAssigneeName(a: TicketMetaAssignee): string {
+  return [a.firstName, a.lastName].filter(Boolean).join(" ").trim() || "—";
+}
+
+export function ticketsMetaHasKpi(m: TicketsMeta | null | undefined): boolean {
+  if (!m) return false;
+  return (
+    m.total != null ||
+    m.open != null ||
+    m.closed != null ||
+    m.overdueOpen != null ||
+    m.averageResolutionDays != null
+  );
+}
+
+export interface ApiMetaResponse {
+  status?: boolean;
+  data?: Record<string, unknown>;
+  force_logout?: boolean;
 }
 
 /* ── تحويل عنصر الـ API → Ticket (واجهة الصفحة) ───────────────────────── */
@@ -105,17 +239,120 @@ function emptySummary(): TicketsSummary {
   };
 }
 
+function pickStr(v: unknown): string | undefined {
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  return s || undefined;
+}
+
+function mapAssignees(raw: unknown): TicketMetaAssignee[] {
+  if (!Array.isArray(raw)) return [];
+  const out: TicketMetaAssignee[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== "object") continue;
+    const o = x as Record<string, unknown>;
+    const id = Number(o.id);
+    if (!Number.isFinite(id)) continue;
+    out.push({
+      id,
+      firstName: String(o.firstName ?? ""),
+      lastName: String(o.lastName ?? ""),
+    });
+  }
+  return out;
+}
+
+function mapKeyedOptions(raw: unknown): TicketMetaOption[] {
+  if (!Array.isArray(raw)) return [];
+  const out: TicketMetaOption[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== "object") continue;
+    const o = x as Record<string, unknown>;
+    const key = Number(o.key ?? o.id);
+    const label = String(o.label ?? "").trim();
+    if (!Number.isFinite(key) || !label) continue;
+    out.push({ key, label });
+  }
+  return out;
+}
+
+function emptyTicketsMeta(): TicketsMeta {
+  return {
+    assignees: [],
+    statuses: [],
+    types: [],
+  };
+}
+
+/** يدعم camelCase و snake_case من الـ backend */
+function mapApiToTicketsMeta(raw: Record<string, unknown>): TicketsMeta {
+  const optNum = (v: unknown): number | undefined =>
+    v !== undefined && v !== null && String(v).trim() !== "" && Number.isFinite(Number(v))
+      ? Number(v)
+      : undefined;
+
+  return {
+    total: optNum(raw.total),
+    open: optNum(raw.open),
+    closed: optNum(raw.closed),
+    overdueOpen: optNum(raw.overdueOpen ?? raw.overdue_open),
+    averageResolutionDays: optNum(
+      raw.averageResolutionDays ?? raw.average_resolution_days
+    ),
+    openBeyond3Days: optNum(raw.openBeyond3Days ?? raw.open_beyond_3_days),
+    newTicketsWeekDelta: optNum(
+      raw.newTicketsWeekDelta ?? raw.new_tickets_week_delta
+    ),
+    totalSubtitle: pickStr(raw.totalSubtitle ?? raw.total_subtitle),
+    openSubtitle: pickStr(raw.openSubtitle ?? raw.open_subtitle),
+    closedSubtitle: pickStr(raw.closedSubtitle ?? raw.closed_subtitle),
+    averageSubtitle: pickStr(raw.averageSubtitle ?? raw.average_subtitle),
+    overdueSubtitle: pickStr(raw.overdueSubtitle ?? raw.overdue_subtitle),
+    assignees: mapAssignees(raw.assignees),
+    statuses: mapKeyedOptions(raw.statuses),
+    types: mapKeyedOptions(raw.types),
+  };
+}
+
+export async function fetchTicketsMeta(navigate: NavigateFunction): Promise<TicketsMeta> {
+  const { data } = await axiosRequest.get<Record<string, unknown>>(TICKETS_META_PATH);
+
+  const root = data as unknown as ApiMetaResponse;
+  if (root.force_logout) {
+    localStorage.removeItem("user");
+    navigate("/authentication/sign-in");
+    throw new Error("FORCE_LOGOUT");
+  }
+
+  const inner = root.data;
+  if (!inner || typeof inner !== "object") {
+    return emptyTicketsMeta();
+  }
+
+  return mapApiToTicketsMeta(inner as Record<string, unknown>);
+}
+
+export function useTicketsMeta(enabled = true) {
+  const navigate = useNavigate();
+
+  return useQuery({
+    queryKey: ticketKeys.meta(),
+    queryFn: () => fetchTicketsMeta(navigate),
+    staleTime: 30_000,
+    enabled,
+  });
+}
+
 export async function fetchTicketsList(
   navigate: NavigateFunction,
-  params: { page: number; pageSize: number }
+  params: { page: number; pageSize: number; filters?: TicketsListFilters }
 ): Promise<TicketsListResult> {
+  const queryParams = buildTicketsListQueryParams(params.page, params.pageSize, params.filters);
+
   const { data } = await axiosRequest.get<TicketsListEnvelope & { force_logout?: boolean }>(
     TICKETS_LIST_PATH,
     {
-      params: {
-        page: params.page,
-        size: params.pageSize,
-      },
+      params: queryParams,
     }
   );
 
@@ -154,16 +391,18 @@ export interface UseTicketsListParams {
   /** صفحة السيرفر (تبدأ من 1 عادةً) */
   page: number;
   pageSize: number;
+  filters?: TicketsListFilters;
   /** تعطيل الجلب (مثلاً أثناء شاشة تفاصيل) */
   enabled?: boolean;
 }
 
-export function useTicketsList({ page, pageSize, enabled = true }: UseTicketsListParams) {
+export function useTicketsList({ page, pageSize, filters, enabled = true }: UseTicketsListParams) {
   const navigate = useNavigate();
+  const filtersKey = serializeTicketsListFilters(filters ?? {});
 
   return useQuery({
-    queryKey: ticketKeys.list(page, pageSize),
-    queryFn: () => fetchTicketsList(navigate, { page, pageSize }),
+    queryKey: ticketKeys.list(page, pageSize, filtersKey),
+    queryFn: () => fetchTicketsList(navigate, { page, pageSize, filters }),
     staleTime: 30_000,
     enabled,
   });
