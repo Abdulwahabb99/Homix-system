@@ -139,10 +139,10 @@ export default function RecentOrdersTable({ startDate, endDate }: RecentOrdersTa
               </td>
               <td>
                 <div className="h-client-mini">
-                  <span>{row.customerName}</span>
                   <div className="h-av-mini" style={{ background: avGrad(row.customerName) }}>
                     {initials(row.customerName)}
                   </div>
+                  <span>{row.customerName}</span>
                 </div>
               </td>
               <td style={{ color: "var(--text2)", fontSize: 12 }}>{row.productName}</td>

@@ -682,6 +682,7 @@
   border-bottom: 0.5px solid var(--border);
   color: var(--text);
   vertical-align: middle;
+  text-align: right;
 }
 .h-orders-table tr:last-child td {
   border-bottom: none;
@@ -695,10 +696,20 @@
   font-size: 12.5px;
 }
 .h-client-mini {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
-  flex-direction: row-reverse;
+  flex-direction: row;
+  max-width: 100%;
+  min-width: 0;
+}
+.h-client-mini span {
+  min-width: 0;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .h-av-mini {
   width: 28px;
