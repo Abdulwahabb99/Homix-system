@@ -870,6 +870,146 @@ const swaggerOptions = {
             },
           ],
         },
+        TicketMetaResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                assignees: {
+                  items: { $ref: "#/components/schemas/TicketUserSummary" },
+                  type: "array",
+                },
+                statuses: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      key: { example: 1, type: "integer" },
+                      label: { example: "مفتوحة", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+                types: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      key: { example: 1, type: "integer" },
+                      label: { example: "تأخير في التوصيل", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketLookupResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/TicketOrderSummary" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: {
+                  items: { $ref: "#/components/schemas/TicketSummary" },
+                  type: "array",
+                },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                summary: {
+                  type: "object",
+                  properties: {
+                    averageResolutionDays: { example: 3, type: "number" },
+                    closed: { example: 6, type: "integer" },
+                    open: { example: 14, type: "integer" },
+                    overdueOpen: { example: 2, type: "integer" },
+                    total: { example: 20, type: "integer" },
+                  },
+                },
+                totalCount: { example: 20, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketDetailsResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/TicketDetails" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketNoteResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/TicketNoteSummary" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketAttachmentListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              items: { $ref: "#/components/schemas/TicketAttachmentSummary" },
+              type: "array",
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketMessageResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                message: { example: "Note deleted successfully", type: "string" },
+              },
+              required: ["message"],
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        TicketMutationRequest: {
+          type: "object",
+          properties: {
+            assignedToUserId: { example: 5, type: "integer" },
+            notes: { example: "العميل طلب تحديثًا عاجلًا عن موعد التسليم", type: "string" },
+            orderId: { example: 12, type: "integer" },
+            type: { example: 1, type: "integer" },
+          },
+          required: ["orderId", "type"],
+        },
+        TicketUpdateRequest: {
+          type: "object",
+          properties: {
+            assignedToUserId: { example: 8, nullable: true, type: "integer" },
+            notes: { example: "تم التواصل مع شركة الشحن وجارٍ المتابعة", type: "string" },
+            status: { example: 2, type: "integer" },
+            type: { example: 1, type: "integer" },
+          },
+        },
+        TicketNoteRequest: {
+          type: "object",
+          properties: {
+            text: { example: "تم إرسال رقم الشحنة للعميل", type: "string" },
+          },
+          required: ["text"],
+        },
         ProductPayload: {
           type: "object",
           properties: {
