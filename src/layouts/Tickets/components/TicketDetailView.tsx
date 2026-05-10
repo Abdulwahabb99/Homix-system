@@ -17,6 +17,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AttachmentIcon from "@mui/icons-material/Attachment";
 import InsertLinkIcon from "@mui/icons-material/InsertLink";
 import SendIcon from "@mui/icons-material/Send";
+import EditIcon from "@mui/icons-material/Edit";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
@@ -53,6 +54,9 @@ type Props = {
   onUpdateTicket: (updated: Ticket) => void;
   onSendChatMessage: (text: string) => Promise<void>;
   sendChatPending?: boolean;
+  /** PUT /tickets/.../notes/{id} — متاح فقط للأدمن في الواجهة */
+  onEditNote?: (noteId: string, text: string) => Promise<void>;
+  editNotePending?: boolean;
 };
 
 function InfoItem({
@@ -86,16 +90,34 @@ function InfoItem({
 function ChatBubble({
   msg,
   currentUserId,
+  isAdminUser,
+  onEditNote,
+  editNotePending,
 }: {
   msg: ChatMessage;
   currentUserId: number | null;
+  isAdminUser: boolean;
+  onEditNote?: (noteId: string, text: string) => Promise<void>;
+  editNotePending?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(msg.msg);
+
+  useEffect(() => {
+    setDraft(msg.msg);
+  }, [msg.msg]);
+
   const isMine =
     msg.authorUserId != null &&
     currentUserId != null &&
     Number(msg.authorUserId) === Number(currentUserId);
-  const isAdmin = msg.from === "admin";
+  const isFromRoleAdmin = msg.from === "admin";
   const timePart = msg.time.split(" ")[1] ?? msg.time;
+
+  const noteId = msg.id;
+  const isOptimisticNote = noteId != null && String(noteId).startsWith("optimistic-");
+  const canEdit =
+    Boolean(isAdminUser && isMine && onEditNote && noteId && !isOptimisticNote);
 
   if (isMine) {
     return (
@@ -118,41 +140,109 @@ function ChatBubble({
         >
           {(msg.name ?? "؟").charAt(0)}
         </Box>
-        <Box sx={{ maxWidth: "75%" }}>
-          <Box
-            sx={{
-              px: 1.75,
-              py: 1.1,
-              borderRadius: "12px 0 12px 12px",
-              fontSize: "0.82rem",
-              lineHeight: 1.6,
-              bgcolor: BRAND,
-              color: "#fff",
-              border: "1px solid",
-              borderColor: "rgba(255,255,255,0.2)",
-            }}
+        <Box sx={{ maxWidth: "75%", flex: 1, minWidth: 0 }}>
+          {editing && canEdit ? (
+            <Box>
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                disabled={editNotePending}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "background.paper" } }}
+              />
+              <Stack direction="row" spacing={0.75} justifyContent="flex-end" mt={1}>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setDraft(msg.msg);
+                    setEditing(false);
+                  }}
+                  disabled={editNotePending}
+                  sx={{ textTransform: "none", fontSize: "0.72rem" }}
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disableElevation
+                  disabled={editNotePending || !draft.trim()}
+                  onClick={async () => {
+                    if (!noteId || !onEditNote) return;
+                    try {
+                      await onEditNote(noteId, draft.trim());
+                      setEditing(false);
+                    } catch {
+                      /* الخطأ من usePutTicketNote */
+                    }
+                  }}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.72rem",
+                    bgcolor: BRAND,
+                    "&:hover": { bgcolor: "#5254e0" },
+                  }}
+                >
+                  حفظ
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                px: 1.75,
+                py: 1.1,
+                borderRadius: "12px 0 12px 12px",
+                fontSize: "0.82rem",
+                lineHeight: 1.6,
+                bgcolor: BRAND,
+                color: "#fff",
+                border: "1px solid",
+                borderColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              {msg.msg}
+            </Box>
+          )}
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap={0.5}
+            sx={{ mt: 0.4 }}
           >
-            {msg.msg}
-          </Box>
-          <Typography
-            variant="caption"
-            sx={{
-              display: "block",
-              mt: 0.4,
-              textAlign: "left",
-              fontSize: "0.68rem",
-              fontWeight: 700,
-              color: BRAND,
-            }}
-          >
-            أنت · {timePart}
-          </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                color: BRAND,
+              }}
+            >
+              أنت · {timePart}
+            </Typography>
+            {canEdit && !editing ? (
+              <Tooltip title="تعديل الملاحظة">
+                <IconButton
+                  size="small"
+                  aria-label="تعديل"
+                  onClick={() => setEditing(true)}
+                  sx={{ color: BRAND, p: 0.35 }}
+                >
+                  <EditIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </Stack>
         </Box>
       </Stack>
     );
   }
 
-  const rowReverse = isAdmin;
+  const rowReverse = isFromRoleAdmin;
   return (
     <Stack direction={rowReverse ? "row-reverse" : "row"} spacing={1} alignItems="flex-start">
       <Box
@@ -167,7 +257,7 @@ function ChatBubble({
           fontWeight: 800,
           color: "#fff",
           flexShrink: 0,
-          background: isAdmin
+          background: isFromRoleAdmin
             ? "linear-gradient(135deg,#6366f1,#8b5cf6)"
             : "linear-gradient(135deg,#f59e0b,#d97706)",
         }}
@@ -179,15 +269,15 @@ function ChatBubble({
           sx={{
             px: 1.75,
             py: 1.1,
-            borderRadius: isAdmin ? "12px 0 12px 12px" : "0 12px 12px 12px",
+            borderRadius: isFromRoleAdmin ? "12px 0 12px 12px" : "0 12px 12px 12px",
             fontSize: "0.82rem",
             lineHeight: 1.6,
-            bgcolor: isAdmin
+            bgcolor: isFromRoleAdmin
               ? (t) => alpha(BRAND, 0.11)
               : (t: any) => alpha(t.palette.text.primary, 0.06),
             color: "text.primary",
             border: "1px solid",
-            borderColor: isAdmin ? alpha(BRAND, 0.28) : "divider",
+            borderColor: isFromRoleAdmin ? alpha(BRAND, 0.28) : "divider",
           }}
         >
           {msg.msg}
@@ -216,6 +306,8 @@ export default function TicketDetailView({
   onUpdateTicket,
   onSendChatMessage,
   sendChatPending = false,
+  onEditNote,
+  editNotePending = false,
 }: Props) {
   const [chatInput, setChatInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
@@ -224,13 +316,21 @@ export default function TicketDetailView({
 
   const isOpen = ticket.status === "مفتوحة";
 
-  const currentUserId = useMemo(() => {
+  const { currentUserId, isAdminUser } = useMemo(() => {
     try {
-      const u = JSON.parse(localStorage.getItem("user") || "{}") as { id?: unknown; userId?: unknown };
+      const u = JSON.parse(localStorage.getItem("user") || "{}") as {
+        id?: unknown;
+        userId?: unknown;
+        userType?: unknown;
+      };
       const id = Number(u?.id ?? u?.userId);
-      return Number.isFinite(id) ? id : null;
+      return {
+        currentUserId: Number.isFinite(id) ? id : null,
+        /** أدمن فقط (نفس المشروع: userType === "1") — يمكنه تعديل ملاحظاته */
+        isAdminUser: String(u?.userType) === "1",
+      };
     } catch {
-      return null;
+      return { currentUserId: null, isAdminUser: false };
     }
   }, []);
 
@@ -561,7 +661,14 @@ export default function TicketDetailView({
               }}
             >
               {ticket.chat.map((m, i) => (
-                <ChatBubble key={m.id ?? `c-${i}-${m.time}`} msg={m} currentUserId={currentUserId} />
+                <ChatBubble
+                  key={m.id ?? `c-${i}-${m.time}`}
+                  msg={m}
+                  currentUserId={currentUserId}
+                  isAdminUser={isAdminUser}
+                  onEditNote={onEditNote}
+                  editNotePending={editNotePending}
+                />
               ))}
               <div ref={chatEndRef} />
             </Box>

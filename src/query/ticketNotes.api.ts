@@ -11,6 +11,10 @@ function notesPath(ticketId: string): string {
   return `${TICKETS_LIST_PATH}/${encodeURIComponent(ticketId)}/notes`;
 }
 
+function noteDetailPath(ticketId: string, noteId: string): string {
+  return `${TICKETS_LIST_PATH}/${encodeURIComponent(ticketId)}/notes/${encodeURIComponent(noteId)}`;
+}
+
 function formatNowChatTime(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
@@ -65,6 +69,39 @@ export async function postTicketNote(
     navigate("/authentication/sign-in");
     throw new Error("FORCE_LOGOUT");
   }
+}
+
+/** PUT — تعديل ملاحظة موجودة */
+export async function putTicketNote(
+  navigate: NavigateFunction,
+  ticketId: string,
+  noteId: string,
+  text: string
+): Promise<void> {
+  const { data } = await axiosRequest.put<Record<string, unknown>>(noteDetailPath(ticketId, noteId), {
+    text: text.trim(),
+  });
+  const root = data as unknown as ApiEnvelope;
+  if (root.force_logout) {
+    localStorage.removeItem("user");
+    navigate("/authentication/sign-in");
+    throw new Error("FORCE_LOGOUT");
+  }
+}
+
+export function usePutTicketNote(ticketId: string) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { noteId: string; text: string }>({
+    mutationFn: ({ noteId, text }) => putTicketNote(navigate, ticketId, noteId, text),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(ticketId) });
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر تعديل الملاحظة");
+    },
+  });
 }
 
 export function usePostTicketNote(ticketId: string) {
