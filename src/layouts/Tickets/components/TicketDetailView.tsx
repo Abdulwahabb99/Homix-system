@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -20,6 +20,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 const BRAND = "#6366f1";
 
@@ -51,6 +52,8 @@ type Props = {
   quickReplies: string[];
   onBack: () => void;
   onUpdateTicket: (updated: Ticket) => void;
+  onSendChatMessage: (text: string) => Promise<void>;
+  sendChatPending?: boolean;
 };
 
 function InfoItem({
@@ -133,7 +136,14 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
   );
 }
 
-export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdateTicket }: Props) {
+export default function TicketDetailView({
+  ticket,
+  quickReplies,
+  onBack,
+  onUpdateTicket,
+  onSendChatMessage,
+  sendChatPending = false,
+}: Props) {
   const [chatInput, setChatInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -141,15 +151,23 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
 
   const isOpen = ticket.status === "مفتوحة";
 
-  function sendMessage() {
+  useEffect(() => {
+    if (ticket.chat.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [ticket.chat.length]);
+
+  async function sendMessage() {
     const msg = chatInput.trim();
-    if (!msg) return;
-    const now = new Date();
-    const time = `${now.toISOString().split("T")[0]} ${now.toTimeString().slice(0, 5)}`;
-    const newMsg: ChatMessage = { from: "admin", name: "أحمد هشام", msg, time };
-    onUpdateTicket({ ...ticket, chat: [...ticket.chat, newMsg], adminReply: msg });
-    setChatInput("");
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    if (!msg || sendChatPending) return;
+    try {
+      await onSendChatMessage(msg);
+      setChatInput("");
+      onUpdateTicket({ ...ticket, adminReply: msg });
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch {
+      NotificationMeassage("error", "تعذّر إرسال الرسالة");
+    }
   }
 
   function toggleStatus() {
@@ -440,7 +458,7 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
                 💬 المحادثة
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.72rem" }}>
-                {ticket.chat.length} رسائل
+                {ticket.chat.length} رسالة
               </Typography>
             </Box>
 
@@ -460,7 +478,7 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
               }}
             >
               {ticket.chat.map((m, i) => (
-                <ChatBubble key={i} msg={m} />
+                <ChatBubble key={m.id ?? `c-${i}-${m.time}`} msg={m} />
               ))}
               <div ref={chatEndRef} />
             </Box>
@@ -504,13 +522,15 @@ export default function TicketDetailView({ ticket, quickReplies, onBack, onUpdat
                   placeholder="اكتب ردك..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && void sendMessage()}
+                  disabled={sendChatPending}
                   sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                 />
                 <Button
                   variant="contained"
                   disableElevation
-                  onClick={sendMessage}
+                  onClick={() => void sendMessage()}
+                  disabled={sendChatPending}
                   sx={{
                     borderRadius: 2,
                     minWidth: 80,

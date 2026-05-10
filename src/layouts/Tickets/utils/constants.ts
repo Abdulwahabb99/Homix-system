@@ -7,6 +7,8 @@ export type ChatMessage = {
   name: string;
   msg: string;
   time: string;
+  /** معرف الملاحظة من الـ API عند العرض من notesList */
+  id?: string;
 };
 
 export type Attachment = {

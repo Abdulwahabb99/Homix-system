@@ -183,7 +183,63 @@ export interface ApiMetaResponse {
   force_logout?: boolean;
 }
 
-/* ── تحويل عنصر الـ API → Ticket (واجهة الصفحة) ───────────────────────── */
+/* ── تحويل عنصر الـ API → Ticket (قائمة أو تفاصيل) ───────────────────────── */
+
+/** notesList من تفاصيل التذكرة → رسائل المحادثة (مرتبة من الأقدم للأحدث) */
+function mapNotesListToChat(raw: Record<string, unknown>): ChatMessage[] | null {
+  const list = raw.notesList;
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  const createdBy =
+    raw.createdBy && typeof raw.createdBy === "object"
+      ? (raw.createdBy as Record<string, unknown>)
+      : {};
+  const assignedTo =
+    raw.assignedTo && typeof raw.assignedTo === "object"
+      ? (raw.assignedTo as Record<string, unknown>)
+      : {};
+  const createdById = Number(createdBy.id);
+  const assignedToId = Number(assignedTo.id);
+
+  const sorted = [...list].sort((a, b) => {
+    const oa = a && typeof a === "object" ? (a as Record<string, unknown>) : {};
+    const ob = b && typeof b === "object" ? (b as Record<string, unknown>) : {};
+    return String(oa.createdAt ?? "").localeCompare(String(ob.createdAt ?? ""));
+  });
+
+  return sorted.map((item) => {
+    const n = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    const text = String(n.text ?? n.message ?? "").trim();
+    const created = String(n.createdAt ?? "");
+    const u = n.user && typeof n.user === "object" ? (n.user as Record<string, unknown>) : {};
+    const uid = Number(u.id);
+    const fn = String(u.firstName ?? "").trim();
+    const ln = String(u.lastName ?? "").trim();
+    const name = [fn, ln].filter(Boolean).join(" ").trim() || "—";
+
+    /** المسند = رد الدعم؛ منشئ التذكرة (غير المسند) = صاحب التذكرة */
+    let from: ChatMessage["from"] = "admin";
+    if (Number.isFinite(assignedToId) && uid === assignedToId) {
+      from = "admin";
+    } else if (Number.isFinite(createdById) && uid === createdById) {
+      from = "owner";
+    } else {
+      from = "admin";
+    }
+
+    const time =
+      created.length >= 16 ? `${created.slice(0, 10)} ${created.slice(11, 16)}` : created;
+    const noteId = n.id != null && String(n.id).trim() !== "" ? String(n.id) : undefined;
+
+    return {
+      from,
+      name,
+      msg: text,
+      time,
+      ...(noteId ? { id: noteId } : {}),
+    } satisfies ChatMessage;
+  });
+}
 
 /** تحويل عنصر الـ API → Ticket (قائمة أو تفاصيل) */
 export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
@@ -209,7 +265,9 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
   const createdAt = raw.createdAt != null ? String(raw.createdAt) : "";
   const closedAt = raw.closedAt;
 
-  const chat: ChatMessage[] = Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : [];
+  const fromNotes = mapNotesListToChat(raw);
+  const chat: ChatMessage[] =
+    fromNotes ?? (Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : []);
   const attachments: Attachment[] = Array.isArray(raw.attachments)
     ? (raw.attachments as Attachment[])
     : [];

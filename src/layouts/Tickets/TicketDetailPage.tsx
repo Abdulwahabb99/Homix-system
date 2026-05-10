@@ -9,6 +9,7 @@ import type { Ticket } from "layouts/Tickets/utils/constants";
 import { DEFAULT_QUICK_REPLIES } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 import { useTicketDetail } from "query/ticketsList.api";
+import { usePostTicketNote } from "query/ticketNotes.api";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export default function TicketDetailPage() {
   const queryClient = useQueryClient();
 
   const ticketQuery = useTicketDetail(id ?? "", Boolean(id));
+  const postNoteMutation = usePostTicketNote(id ?? "");
 
   const handleBack = useCallback(() => {
     navigate("/tickets");
@@ -27,6 +29,11 @@ export default function TicketDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
     },
     [queryClient]
+  );
+
+  const handleSendChatMessage = useCallback(
+    (text: string) => postNoteMutation.mutateAsync(text),
+    [postNoteMutation]
   );
 
   if (!id) {
@@ -71,6 +78,8 @@ export default function TicketDetailPage() {
           quickReplies={DEFAULT_QUICK_REPLIES}
           onBack={handleBack}
           onUpdateTicket={handleUpdateTicket}
+          onSendChatMessage={handleSendChatMessage}
+          sendChatPending={postNoteMutation.isPending}
         />
       </Box>
     </DashboardLayout>
