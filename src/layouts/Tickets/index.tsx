@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -13,6 +13,11 @@ import ScheduleIcon from "@mui/icons-material/Schedule";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import TicketsHomixTable from "layouts/Tickets/components/TicketsHomixTable";
+import {
+  TicketsFilterBarSkeleton,
+  TicketsHomixTableSkeleton,
+  TicketsKpiRowSkeleton,
+} from "layouts/Tickets/components/TicketsHomixSkeletons";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import TicketDetailView from "layouts/Tickets/components/TicketDetailView";
 import NewTicketModal from "layouts/Tickets/components/NewTicketModal";
@@ -28,7 +33,6 @@ import { ticketKeys } from "query/keys";
 import {
   type TicketsListFilters,
   formatTicketMetaAssigneeName,
-  ticketsMetaHasKpi,
   useTicketsList,
   useTicketsMeta,
 } from "query/ticketsList.api";
@@ -260,7 +264,7 @@ export default function Tickets() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
 
-  // filters — المسند إليه والنوع والحالة كمفاتيح رقمية من `/tickets/meta`
+  // filters — مسودة في الشريط؛ تُطبَّق على الـ API فقط بعد «تطبيق»
   const [filterOp, setFilterOp] = useState("");
   const [filterOrder, setFilterOrder] = useState("");
   const [filterTypeKey, setFilterTypeKey] = useState("");
@@ -269,23 +273,12 @@ export default function Tickets() {
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
 
-  const listFilters = useMemo(
-    (): TicketsListFilters => ({
-      operationNumber: filterOp.trim() || undefined,
-      orderNumber: filterOrder.trim() || undefined,
-      startDate: filterFrom.trim() || undefined,
-      endDate: filterTo.trim() || undefined,
-      status: filterStatusKey ? Number(filterStatusKey) : undefined,
-      type: filterTypeKey ? Number(filterTypeKey) : undefined,
-      assignedToUserId: filterAssigneeId ? Number(filterAssigneeId) : undefined,
-    }),
-    [filterOp, filterOrder, filterFrom, filterTo, filterStatusKey, filterTypeKey, filterAssigneeId]
-  );
+  const [appliedFilters, setAppliedFilters] = useState<TicketsListFilters>({});
 
   const ticketsQuery = useTicketsList({
     page: ticketTablePage + 1,
     pageSize: TICKET_PAGE_SIZE,
-    filters: listFilters,
+    filters: appliedFilters,
   });
 
   const tickets = useMemo((): Ticket[] => {
@@ -293,42 +286,38 @@ export default function Tickets() {
     return ticketsQuery.data?.items ?? [];
   }, [ticketsQuery.isError, ticketsQuery.data?.items]);
 
-  useEffect(() => {
-    setTicketTablePage(0);
-  }, [filterOp, filterOrder, filterTypeKey, filterStatusKey, filterAssigneeId, filterFrom, filterTo]);
-
-  /** وضع الـ mock: تصفية كاملة على العميل */
+  /** وضع الـ mock: نفس الفلاتر المطبّقة على السيرفر */
   const filteredMockTickets = useMemo(() => {
     const meta = metaQuery.data;
     const typeLabel =
-      filterTypeKey && meta?.types?.find((x) => String(x.key) === filterTypeKey)?.label;
+      appliedFilters.type != null
+        ? meta?.types?.find((x) => x.key === appliedFilters.type)?.label
+        : undefined;
     const statusLabel =
-      filterStatusKey && meta?.statuses?.find((x) => String(x.key) === filterStatusKey)?.label;
+      appliedFilters.status != null
+        ? meta?.statuses?.find((x) => x.key === appliedFilters.status)?.label
+        : undefined;
     const assignee =
-      filterAssigneeId && meta?.assignees?.find((a) => String(a.id) === filterAssigneeId);
+      appliedFilters.assignedToUserId != null
+        ? meta?.assignees?.find((a) => a.id === appliedFilters.assignedToUserId)
+        : undefined;
     const assigneeDisplay = assignee ? formatTicketMetaAssigneeName(assignee) : "";
+    const opQ = appliedFilters.operationNumber?.trim() ?? "";
+    const ordQ = appliedFilters.orderNumber?.trim() ?? "";
 
     return tickets.filter((t) => {
-      if (filterOp && !t.op.toLowerCase().includes(filterOp.toLowerCase())) return false;
-      if (filterOrder && !t.order.includes(filterOrder)) return false;
-      if (filterTypeKey && typeLabel && t.type !== typeLabel) return false;
-      if (filterStatusKey && statusLabel && t.status !== statusLabel) return false;
-      if (filterAssigneeId && assigneeDisplay && t.resp !== assigneeDisplay) return false;
-      if (filterFrom && t.openDate < filterFrom) return false;
-      if (filterTo && t.openDate > filterTo) return false;
+      if (opQ && !t.op.toLowerCase().includes(opQ.toLowerCase())) return false;
+      if (ordQ && !t.order.includes(ordQ)) return false;
+      if (appliedFilters.type != null && typeLabel && t.type !== typeLabel) return false;
+      if (appliedFilters.status != null && statusLabel && t.status !== statusLabel) return false;
+      if (appliedFilters.assignedToUserId != null && assigneeDisplay && t.resp !== assigneeDisplay) {
+        return false;
+      }
+      if (appliedFilters.startDate && t.openDate < appliedFilters.startDate) return false;
+      if (appliedFilters.endDate && t.openDate > appliedFilters.endDate) return false;
       return true;
     });
-  }, [
-    tickets,
-    metaQuery.data,
-    filterOp,
-    filterOrder,
-    filterTypeKey,
-    filterStatusKey,
-    filterAssigneeId,
-    filterFrom,
-    filterTo,
-  ]);
+  }, [tickets, metaQuery.data, appliedFilters]);
 
   const displayTickets = useMemo(() => {
     if (ticketsQuery.isError) return filteredMockTickets;
@@ -338,21 +327,8 @@ export default function Tickets() {
     ? filteredMockTickets.length
     : (ticketsQuery.data?.totalCount ?? 0);
 
+  /** أرقام البلاطات من `summary` في استجابة قائمة التذاكر */
   const kpi = useMemo(() => {
-    const meta = metaQuery.data;
-    if (meta && !metaQuery.isError && ticketsMetaHasKpi(meta)) {
-      const avgClose =
-        (meta.averageResolutionDays ?? 0) > 0
-          ? (meta.averageResolutionDays as number).toFixed(1)
-          : "0.0";
-      return {
-        total: meta.total ?? 0,
-        open: meta.open ?? 0,
-        closed: meta.closed ?? 0,
-        overdue7: meta.overdueOpen ?? 0,
-        avgClose,
-      };
-    }
     const summary = ticketsQuery.data?.summary;
     if (!ticketsQuery.isError && summary) {
       const avgClose =
@@ -377,26 +353,29 @@ export default function Tickets() {
         ? (closedWithDays.reduce((s, t) => s + t.days, 0) / closedWithDays.length).toFixed(1)
         : "1.8";
     return { total, open, closed, overdue7, avgClose };
-  }, [metaQuery.data, metaQuery.isError, ticketsQuery.isError, ticketsQuery.data?.summary, tickets]);
+  }, [ticketsQuery.isError, ticketsQuery.data?.summary, tickets]);
 
+  /** نصوص المساعدة تحت البلاطات؛ يمكن دمج عناوين اختيارية من الـ meta مع نسب من `summary` */
   const tileNotes = useMemo(() => {
     const meta = metaQuery.data;
     const openPassed3 = tickets.filter((t) => t.status === "مفتوحة" && t.days > 3).length;
-    if (meta && !metaQuery.isError && ticketsMetaHasKpi(meta)) {
+    const summary = ticketsQuery.data?.summary;
+
+    if (!ticketsQuery.isError && summary) {
       return {
         total:
-          meta.totalSubtitle ??
-          (meta.newTicketsWeekDelta != null
+          meta?.totalSubtitle ??
+          (meta?.newTicketsWeekDelta != null
             ? `↑ ${meta.newTicketsWeekDelta} من الأسبوع الماضي`
             : "↑ 8 من الأسبوع الماضي"),
         open:
-          meta.openSubtitle ??
-          `${meta.openBeyond3Days ?? openPassed3} تجاوزت 3 أيام`,
+          meta?.openSubtitle ??
+          `${meta?.openBeyond3Days ?? openPassed3} تجاوزت 3 أيام`,
         closed:
-          meta.closedSubtitle ??
-          `↑ ${kpi.total ? ((kpi.closed / kpi.total) * 100).toFixed(1) : 0}% معدل الإغلاق`,
-        avg: meta.averageSubtitle ?? "↑ أفضل من الشهر الماضي",
-        overdue: meta.overdueSubtitle ?? "تحتاج تدخل فوري",
+          meta?.closedSubtitle ??
+          `↑ ${summary.total ? ((summary.closed / summary.total) * 100).toFixed(1) : 0}% معدل الإغلاق`,
+        avg: meta?.averageSubtitle ?? "↑ أفضل من الشهر الماضي",
+        overdue: meta?.overdueSubtitle ?? "تحتاج تدخل فوري",
       };
     }
     return {
@@ -406,7 +385,13 @@ export default function Tickets() {
       avg: "↑ أفضل من الشهر الماضي",
       overdue: "تحتاج تدخل فوري",
     };
-  }, [metaQuery.data, metaQuery.isError, tickets, kpi]);
+  }, [
+    metaQuery.data,
+    ticketsQuery.isError,
+    ticketsQuery.data?.summary,
+    tickets,
+    kpi,
+  ]);
 
   const filterTypeOptions = metaQuery.data?.types ?? [];
   const filterStatusOptions = metaQuery.data?.statuses ?? [];
@@ -417,6 +402,23 @@ export default function Tickets() {
     if (t) setDetailTicket(t);
   }, [displayTickets]);
 
+  function buildFiltersFromDraft(): TicketsListFilters {
+    return {
+      operationNumber: filterOp.trim() || undefined,
+      orderNumber: filterOrder.trim() || undefined,
+      startDate: filterFrom.trim() || undefined,
+      endDate: filterTo.trim() || undefined,
+      status: filterStatusKey ? Number(filterStatusKey) : undefined,
+      type: filterTypeKey ? Number(filterTypeKey) : undefined,
+      assignedToUserId: filterAssigneeId ? Number(filterAssigneeId) : undefined,
+    };
+  }
+
+  function handleApplyFilters() {
+    setAppliedFilters(buildFiltersFromDraft());
+    setTicketTablePage(0);
+  }
+
   // ── Handlers ──
   function resetFilters() {
     setFilterOp("");
@@ -426,6 +428,8 @@ export default function Tickets() {
     setFilterAssigneeId("");
     setFilterFrom("");
     setFilterTo("");
+    setAppliedFilters({});
+    setTicketTablePage(0);
   }
 
   const handleCreateTicket = useCallback(
@@ -477,6 +481,10 @@ export default function Tickets() {
     </Stack>
   );
 
+  const showKpiSkeleton = !detailTicket && ticketsQuery.isLoading;
+  const showFilterSkeleton = !detailTicket && metaQuery.isLoading && !metaQuery.data;
+  const showTableSkeleton = !detailTicket && ticketsQuery.isLoading;
+
   return (
     <DashboardLayout
       pageTitle="التذاكر"
@@ -485,6 +493,9 @@ export default function Tickets() {
     >
       <Box sx={{ maxWidth: 1680, mx: "auto", width: "100%", mt: 2.5 }}>
         {/* ── KPI Row ── */}
+        {showKpiSkeleton ? (
+          <TicketsKpiRowSkeleton />
+        ) : (
         <Grid container spacing={1.5} mb={2.5}>
           <Grid item xs={6} sm={4} md={12 / 5}>
             <KpiCard
@@ -546,6 +557,7 @@ export default function Tickets() {
             />
           </Grid>
         </Grid>
+        )}
 
         {/* ── Content: list or detail ── */}
         {detailTicket ? (
@@ -557,7 +569,9 @@ export default function Tickets() {
           />
         ) : (
           <>
-            {/* Filter Bar — نفس ستايل .fbar في tickets.html */}
+            {showFilterSkeleton ? (
+              <TicketsFilterBarSkeleton />
+            ) : (
             <Box
               sx={{
                 bgcolor: "#fff",
@@ -662,20 +676,35 @@ export default function Tickets() {
                 sx={FINPUT_SX(138)}
               />
 
-              <Box sx={{ flex: 1 }} />
-
-              <Button variant="contained" disableElevation sx={BTN_P}>
-                تطبيق
-              </Button>
-              <Button
-                onClick={resetFilters}
-                startIcon={<RefreshIcon sx={{ fontSize: "13px !important" }} />}
-                sx={BTN_G}
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexShrink: 0,
+                  flexWrap: "nowrap",
+                  flexBasis: { xs: "100%", md: "auto" },
+                  justifyContent: { xs: "flex-end", md: "flex-start" },
+                  ml: { xs: 0, md: "auto" },
+                }}
               >
-                إعادة ضبط
-              </Button>
+                <Button variant="contained" disableElevation sx={BTN_P} onClick={handleApplyFilters}>
+                  تطبيق
+                </Button>
+                <Button
+                  onClick={resetFilters}
+                  startIcon={<RefreshIcon sx={{ fontSize: "13px !important" }} />}
+                  sx={BTN_G}
+                >
+                  إعادة ضبط
+                </Button>
+              </Box>
             </Box>
+            )}
 
+            {showTableSkeleton ? (
+              <TicketsHomixTableSkeleton rows={10} />
+            ) : (
             <TicketsHomixTable
               tickets={displayTickets}
               totalCount={listTotalCount}
@@ -684,13 +713,14 @@ export default function Tickets() {
               onPageChange={setTicketTablePage}
               onView={openTicket}
               onDelete={setDeleteTicketId}
-              isLoading={ticketsQuery.isLoading}
+              isLoading={false}
               headerActions={
                 <Button size="small" sx={BTN_G}>
                   تصدير Excel
                 </Button>
               }
             />
+            )}
           </>
         )}
       </Box>
