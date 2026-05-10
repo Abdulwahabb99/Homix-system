@@ -237,6 +237,7 @@ function mapNotesListToChat(raw: Record<string, unknown>): ChatMessage[] | null 
       msg: text,
       time,
       ...(noteId ? { id: noteId } : {}),
+      ...(Number.isFinite(uid) ? { authorUserId: uid } : {}),
     } satisfies ChatMessage;
   });
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -20,7 +20,6 @@ import SendIcon from "@mui/icons-material/Send";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
-import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 const BRAND = "#6366f1";
 
@@ -84,11 +83,78 @@ function InfoItem({
   );
 }
 
-function ChatBubble({ msg }: { msg: ChatMessage }) {
+function ChatBubble({
+  msg,
+  currentUserId,
+}: {
+  msg: ChatMessage;
+  currentUserId: number | null;
+}) {
+  const isMine =
+    msg.authorUserId != null &&
+    currentUserId != null &&
+    Number(msg.authorUserId) === Number(currentUserId);
   const isAdmin = msg.from === "admin";
   const timePart = msg.time.split(" ")[1] ?? msg.time;
+
+  if (isMine) {
+    return (
+      <Stack direction="row-reverse" spacing={1} alignItems="flex-start">
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "0.65rem",
+            fontWeight: 800,
+            color: "#fff",
+            flexShrink: 0,
+            background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+            boxShadow: "0 0 0 2px rgba(99,102,241,0.35)",
+          }}
+        >
+          {(msg.name ?? "؟").charAt(0)}
+        </Box>
+        <Box sx={{ maxWidth: "75%" }}>
+          <Box
+            sx={{
+              px: 1.75,
+              py: 1.1,
+              borderRadius: "12px 0 12px 12px",
+              fontSize: "0.82rem",
+              lineHeight: 1.6,
+              bgcolor: BRAND,
+              color: "#fff",
+              border: "1px solid",
+              borderColor: "rgba(255,255,255,0.2)",
+            }}
+          >
+            {msg.msg}
+          </Box>
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 0.4,
+              textAlign: "left",
+              fontSize: "0.68rem",
+              fontWeight: 700,
+              color: BRAND,
+            }}
+          >
+            أنت · {timePart}
+          </Typography>
+        </Box>
+      </Stack>
+    );
+  }
+
+  const rowReverse = isAdmin;
   return (
-    <Stack direction={isAdmin ? "row-reverse" : "row"} spacing={1} alignItems="flex-start">
+    <Stack direction={rowReverse ? "row-reverse" : "row"} spacing={1} alignItems="flex-start">
       <Box
         sx={{
           width: 30,
@@ -116,10 +182,12 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
             borderRadius: isAdmin ? "12px 0 12px 12px" : "0 12px 12px 12px",
             fontSize: "0.82rem",
             lineHeight: 1.6,
-            bgcolor: isAdmin ? BRAND : (t: any) => alpha(t.palette.text.primary, 0.06),
-            color: isAdmin ? "#fff" : "text.primary",
-            border: isAdmin ? "none" : "1px solid",
-            borderColor: isAdmin ? "transparent" : "divider",
+            bgcolor: isAdmin
+              ? (t) => alpha(BRAND, 0.11)
+              : (t: any) => alpha(t.palette.text.primary, 0.06),
+            color: "text.primary",
+            border: "1px solid",
+            borderColor: isAdmin ? alpha(BRAND, 0.28) : "divider",
           }}
         >
           {msg.msg}
@@ -127,7 +195,12 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
         <Typography
           variant="caption"
           color="text.disabled"
-          sx={{ display: "block", mt: 0.4, textAlign: isAdmin ? "left" : "right", fontSize: "0.68rem" }}
+          sx={{
+            display: "block",
+            mt: 0.4,
+            textAlign: rowReverse ? "left" : "right",
+            fontSize: "0.68rem",
+          }}
         >
           {msg.name} · {timePart}
         </Typography>
@@ -151,6 +224,16 @@ export default function TicketDetailView({
 
   const isOpen = ticket.status === "مفتوحة";
 
+  const currentUserId = useMemo(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}") as { id?: unknown; userId?: unknown };
+      const id = Number(u?.id ?? u?.userId);
+      return Number.isFinite(id) ? id : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (ticket.chat.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -166,7 +249,7 @@ export default function TicketDetailView({
       onUpdateTicket({ ...ticket, adminReply: msg });
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch {
-      NotificationMeassage("error", "تعذّر إرسال الرسالة");
+      /* فشل الإرسال: التراجع والـ toast من usePostTicketNote */
     }
   }
 
@@ -478,7 +561,7 @@ export default function TicketDetailView({
               }}
             >
               {ticket.chat.map((m, i) => (
-                <ChatBubble key={m.id ?? `c-${i}-${m.time}`} msg={m} />
+                <ChatBubble key={m.id ?? `c-${i}-${m.time}`} msg={m} currentUserId={currentUserId} />
               ))}
               <div ref={chatEndRef} />
             </Box>

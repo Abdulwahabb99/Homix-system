@@ -9,6 +9,8 @@ export type ChatMessage = {
   time: string;
   /** معرف الملاحظة من الـ API عند العرض من notesList */
   id?: string;
+  /** معرف المستخدم الحقيقي لكاتب الملاحظة (مقارنة مع المستخدم المسجّل) */
+  authorUserId?: number;
 };
 
 export type Attachment = {
