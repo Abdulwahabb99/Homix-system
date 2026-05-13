@@ -129,7 +129,7 @@ const makeOrder = () => ({
         image: "https://example.com/product.png",
         title: "ركنة للأثاث",
         type: { name: "غرفة نوم" },
-        vendor: { id: 3, name: "ركنة للأثاث" },
+        vendor: { daysToDeliver: 5, id: 3, name: "ركنة للأثاث" },
       },
       quantity: 1,
       size: "100x100",
@@ -183,6 +183,7 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0].operationNumber).toBe("3001");
+    expect(response.body.data.items[0].fine).toBe(0);
     expect(response.body.data.totalCount).toBe(1);
   });
 
@@ -192,8 +193,10 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.orderNumber).toBe("31668");
+    expect(response.body.data.order.fine).toBe(0);
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
     expect(response.body.data.order.itemsCount).toBe(1);
+    expect(response.body.data.financial.fine).toBe(0);
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.timeline[0].field).toBe("status");

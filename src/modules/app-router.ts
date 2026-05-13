@@ -369,6 +369,8 @@ const swaggerOptions = {
         VendorPayload: {
           type: "object",
           properties: {
+            accountManagerUserId: { example: 12, nullable: true, type: "integer" },
+            daysToDeliver: { example: 7, nullable: true, type: "integer" },
             email: { example: "vendor@homix.com", type: "string" },
             name: { example: "ركنة للأثاث", type: "string" },
             password: { example: "Secret123!", type: "string" },
@@ -378,6 +380,9 @@ const swaggerOptions = {
         VendorSummary: {
           type: "object",
           properties: {
+            accountManager: { $ref: "#/components/schemas/UserSummary", nullable: true },
+            accountManagerUserId: { example: 12, nullable: true, type: "integer" },
+            daysToDeliver: { example: 7, nullable: true, type: "integer" },
             email: { example: "vendor@homix.com", type: "string" },
             id: { example: 4, type: "integer" },
             isActive: { example: true, type: "boolean" },
@@ -599,6 +604,7 @@ const swaggerOptions = {
             deliveryPriority: { enum: ["onSchedule", "almostDue", "urgent"], nullable: true, type: "string" },
             deliveryPriorityLabel: { example: "بالمدة", type: "string" },
             expectedDeliveryDate: { example: "2026-05-06T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            fine: { example: 48, type: "number" },
             id: { example: 7, type: "integer" },
             manufactureStatus: { example: 2, nullable: true, type: "integer" },
             manufactureStatusLabel: { example: "في مدة التصنيع", type: "string" },
@@ -692,6 +698,7 @@ const swaggerOptions = {
                 commission: { example: 20, type: "number" },
                 discount: { example: 100, type: "number" },
                 downPayment: { example: 200, type: "number" },
+                fine: { example: 48, type: "number" },
                 shippingFees: { example: 0, type: "number" },
                 totalCost: { example: 1200, type: "number" },
                 totalPrice: { example: 2299, type: "number" },

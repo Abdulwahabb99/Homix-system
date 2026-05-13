@@ -35,6 +35,7 @@ export type OrderListItem = {
   deliveryPriority: OrderPriorityKey | null;
   deliveryPriorityLabel: string;
   expectedDeliveryDate: string | null;
+  fine: number;
   id: number;
   manufactureStatus: number | null;
   manufactureStatusLabel: string;
@@ -167,6 +168,7 @@ export type OrderDetailsView = {
     commission: number;
     discount: number;
     downPayment: number;
+    fine: number;
     shippingFees: number;
     totalCost: number;
     totalPrice: number;

@@ -7,6 +7,8 @@ const UserService = require("../user/user.service") as typeof import("../user/us
 const Vendor = require("./vendor.model") as typeof import("./vendor.model");
 
 type VendorRecord = {
+  accountManager?: UserRecord | null;
+  accountManagerUserId?: number | null;
   active?: boolean;
   destroyed?: boolean;
   destroy: () => Promise<void>;
@@ -21,13 +23,16 @@ type UserRecord = {
   deletedAt?: Date | null;
   destroy: () => Promise<void>;
   email?: string;
+  firstName?: string;
   id: number;
+  lastName?: string;
   restore?: () => Promise<void>;
   vendorId?: number | null;
 };
 
 type VendorCreateInput = {
   active?: boolean;
+  accountManagerUserId?: number | null;
   daysToDeliver?: number;
   email?: string;
   name: string;
@@ -48,6 +53,18 @@ type VendorResponse = {
   statusCode: number;
 };
 
+const toUserSummary = (user?: UserRecord | null): { firstName: string; id: number; lastName: string } | null => {
+  if (!user?.id) {
+    return null;
+  }
+
+  return {
+    firstName: user.firstName ?? "",
+    id: user.id,
+    lastName: user.lastName ?? "",
+  };
+};
+
 const sanitizeVendorName = (name: string): string => {
   return name.replace(/[^a-zA-Z0-9]/g, "");
 };
@@ -57,7 +74,20 @@ class VendorsService {
     const transaction = await Vendor.sequelize.transaction();
 
     try {
+      if (data.accountManagerUserId) {
+        const accountManager = await User.findByPk(data.accountManagerUserId);
+        if (!accountManager) {
+          await transaction.rollback();
+          return {
+            message: "Account manager not found",
+            status: false,
+            statusCode: 404,
+          };
+        }
+      }
+
       let vendor = (await Vendor.create({
+        accountManagerUserId: data.accountManagerUserId ?? null,
         name: data.name,
       })) as VendorRecord;
 
@@ -89,6 +119,9 @@ class VendorsService {
         data: {
           ...plainVendor,
           active: true,
+          accountManager: toUserSummary(data.accountManagerUserId
+            ? ((await User.findByPk(data.accountManagerUserId)) as UserRecord | null)
+            : null),
         },
         message: "Vendor created successfully",
         status: true,
@@ -101,7 +134,16 @@ class VendorsService {
   }
 
   public static async getOne(id: string): Promise<VendorResponse> {
-    const vendor = (await Vendor.findByPk(id)) as VendorRecord | null;
+    const vendor = (await Vendor.findByPk(id, {
+      include: [
+        {
+          as: "accountManager",
+          attributes: ["firstName", "id", "lastName"],
+          model: User,
+          required: false,
+        },
+      ],
+    })) as VendorRecord | null;
     if (!vendor) {
       return {
         message: "Vendor not found",
@@ -117,6 +159,7 @@ class VendorsService {
       data: {
         ...vendorData,
         active: Boolean(user),
+        accountManager: toUserSummary(vendorData.accountManager),
         email: user?.email,
         user,
       },
@@ -135,21 +178,43 @@ class VendorsService {
       };
     }
 
+    if (data.accountManagerUserId) {
+      const accountManager = await User.findByPk(data.accountManagerUserId);
+      if (!accountManager) {
+        return {
+          message: "Account manager not found",
+          status: false,
+          statusCode: 404,
+        };
+      }
+    }
+
     const user = await UserService.updateVendorUser(id, {
       active: data.active,
       email: data.email,
       name: data.name,
       password: data.password,
     } as VendorUserUpdateInput);
-    const vendor = await existingVendor.update({
+    const vendorPayload: Record<string, unknown> = {
       daysToDeliver: data.daysToDeliver,
       name: data.name,
-    });
+    };
+
+    if (Object.prototype.hasOwnProperty.call(data, "accountManagerUserId")) {
+      vendorPayload.accountManagerUserId = data.accountManagerUserId ?? null;
+    }
+
+    const vendor = await existingVendor.update(vendorPayload);
+    const updatedVendor = vendor.toJSON();
+    const accountManager = updatedVendor.accountManagerUserId
+      ? ((await User.findByPk(updatedVendor.accountManagerUserId)) as UserRecord | null)
+      : null;
 
     return {
       data: {
-        ...vendor.toJSON(),
+        ...updatedVendor,
         active: Boolean(user),
+        accountManager: toUserSummary(accountManager),
         user,
       },
       message: "Vendor updated successfully",
@@ -211,10 +276,19 @@ class VendorsService {
 
   public static async getAllVendors(): Promise<VendorResponse> {
     const vendors = (await Vendor.findAll({
-      include: {
-        as: "user",
-        model: User,
-      },
+      include: [
+        {
+          as: "user",
+          model: User,
+          required: false,
+        },
+        {
+          as: "accountManager",
+          attributes: ["firstName", "id", "lastName"],
+          model: User,
+          required: false,
+        },
+      ],
     })) as Array<VendorRecord & { user?: UserRecord | null }>;
 
     return {
@@ -223,6 +297,7 @@ class VendorsService {
         return {
           ...vendorData,
           active: Boolean(vendorData.user),
+          accountManager: toUserSummary(vendorData.accountManager),
         };
       }),
       status: true,

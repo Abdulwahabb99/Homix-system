@@ -27,6 +27,41 @@ const ProductType = require("../product/productType.model");
 const Log = require("../logs/log.model");
 const PREFIX = "H";
 const CUSTOM_PREFIX = "CU";
+const FINAL_FINE_STATUSES = [
+  ORDER_STATUS.CANCELED,
+  ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.IN_INVENTORY,
+];
+
+const normalizeNumber = (value) => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+};
+
+const calculateExceededDays = (orderDate, daysToDeliver, endDate = new Date()) => {
+  const deliveryWindow = normalizeNumber(daysToDeliver);
+  if (!orderDate || deliveryWindow <= 0) {
+    return 0;
+  }
+
+  const startMoment = moment(orderDate);
+  const endMoment = moment(endDate);
+  if (!startMoment.isValid() || !endMoment.isValid()) {
+    return 0;
+  }
+
+  return Math.max(0, endMoment.startOf("day").diff(startMoment.startOf("day"), "days") - deliveryWindow);
+};
+
+const calculateOrderFine = ({ baseAmount, daysToDeliver, orderDate, endDate = new Date() }) => {
+  const exceededDays = calculateExceededDays(orderDate, daysToDeliver, endDate);
+  if (exceededDays < 1) {
+    return 0;
+  }
+
+  const amount = normalizeNumber(baseAmount);
+  return Math.round(amount * 0.01 * exceededDays * 100) / 100;
+};
 
 class OrderService {
   static async importOrders(parameters, fromImport) {
@@ -285,7 +320,8 @@ class OrderService {
           toBeCollected: order.toBeCollected || 0,
           itemShipping: order.itemShipping || 0,
           deliveryStatus: order.deliveryStatus || null,
-          userId: order.userId || null,
+          fine: 0,
+          userId: vendor?.accountManagerUserId || null,
         };
         // status: order.status || null,
         // financialStatus: order.financial_status || null,
@@ -1541,6 +1577,7 @@ class OrderService {
           );
         }
       }
+
     }
 
     await Order.update(orderData, {
@@ -1813,6 +1850,66 @@ class OrderService {
     });
 
     return result;
+  }
+
+  static async recalculateDailyFines() {
+    const activeOrders = await Order.findAll({
+      attributes: ["id", "fine", "orderDate", "status", "subTotalPrice"],
+      include: [
+        {
+          model: OrderLine,
+          as: "orderLines",
+          required: false,
+          include: [
+            {
+              model: Product,
+              as: "product",
+              required: false,
+              include: [
+                {
+                  model: Vendor,
+                  as: "vendor",
+                  required: false,
+                  attributes: ["daysToDeliver"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      where: {
+        status: {
+          [Op.notIn]: FINAL_FINE_STATUSES,
+        },
+      },
+    });
+
+    let updatedCount = 0;
+
+    for (const order of activeOrders) {
+      const firstOrderLine = Array.isArray(order.orderLines)
+        ? order.orderLines[0]
+        : null;
+      const nextFine = calculateOrderFine({
+        baseAmount: order.subTotalPrice,
+        daysToDeliver: firstOrderLine?.product?.vendor?.daysToDeliver,
+        orderDate: order.orderDate,
+      });
+
+      if (normalizeNumber(order.fine) === nextFine) {
+        continue;
+      }
+
+      await order.update({ fine: nextFine });
+      updatedCount += 1;
+    }
+
+    return {
+      message: `Daily fines recalculated for ${updatedCount} orders`,
+      status: true,
+      statusCode: 200,
+      updatedCount,
+    };
   }
 }
 module.exports = OrderService;

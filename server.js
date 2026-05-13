@@ -18,7 +18,7 @@ const createDefaultData = require("./config/defaultData.seeder");
 const { Server } = require("socket.io");
 const User = require("./app/modules/user/user.model");
 const cron = require("node-cron");
-const { saveMissingOrders } = require("./app/modules/order/order.service");
+const { recalculateDailyFines, saveMissingOrders } = require("./app/modules/order/order.service");
 
 const startServer = async () => {
   try {
@@ -155,6 +155,24 @@ const startServer = async () => {
           console.log("Cron task completed successfully." + result.message);
         } catch (error) {
           console.error("Error in cron task:", error);
+        }
+      },
+      {
+        scheduled: true,
+        timezone: "Africa/Cairo",
+      },
+    );
+    cron.schedule(
+      "0 0 * * *",
+      async () => {
+        try {
+          console.log("Running daily fine cron task...");
+          const result = await recalculateDailyFines();
+          console.log(
+            `Daily fine cron task completed successfully. Updated ${result.updatedCount} orders.`,
+          );
+        } catch (error) {
+          console.error("Error in daily fine cron task:", error);
         }
       },
       {

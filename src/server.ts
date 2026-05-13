@@ -78,6 +78,24 @@ const registerCronJobs = (): void => {
       timezone: "Africa/Cairo",
     },
   );
+
+  cron.schedule(
+    "0 0 * * *",
+    async () => {
+      logger.info({ operationName: "recalculateDailyFines" }, "Cron started");
+      const result = await orderService.recalculateDailyFines();
+      logger.info(
+        {
+          operationName: "recalculateDailyFines",
+          updatedCount: result?.updatedCount ?? 0,
+        },
+        "Cron completed",
+      );
+    },
+    {
+      timezone: "Africa/Cairo",
+    },
+  );
 };
 
 const bootstrap = async (): Promise<void> => {

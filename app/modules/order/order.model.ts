@@ -130,6 +130,11 @@ const Order = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    fine: {
+      type: DataTypes.DECIMAL,
+      allowNull: true,
+      defaultValue: 0,
+    },
     shippedFromInventory: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
@@ -202,6 +207,9 @@ const Order = sequelize.define(
       },
       {
         fields: ["userId"],
+      },
+      {
+        fields: ["fine"],
       },
       {
         fields: ["financialStatus"],

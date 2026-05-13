@@ -125,6 +125,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     deliveryPriority: priority,
     deliveryPriorityLabel: getDeliveryPriorityLabel(priority),
     expectedDeliveryDate: toIsoString(order.expectedDeliveryDate),
+    fine: toNumber(order.fine),
     id: toNumber(order.id),
     manufactureStatus: toNumber(order.manufactureStatus) || null,
     manufactureStatusLabel: getManufactureLabel(order.manufactureStatus),
@@ -208,7 +209,7 @@ export class OrderRepository {
         name: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
         phoneNumber: toText(customer.phoneNumber),
       },
-      financial: { amountToCollect: toNumber(plainOrder.toBeCollected), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
+      financial: { amountToCollect: toNumber(plainOrder.toBeCollected), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), fine: toNumber(plainOrder.fine), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
       notes,
       order: {
         ...summary,
@@ -274,10 +275,10 @@ export class OrderRepository {
     ]);
     return {
       assignees: assignees.map((user: unknown) => ({ id: toNumber(toPlain(user).id), label: `${toText(toPlain(user).firstName)} ${toText(toPlain(user).lastName)}`.trim() })),
-      manufactureStatuses: Object.entries(MANUFACTURE_STATUS).map(([label, id]) => ({ id, label })),
-      paymentStatuses: Object.entries(PAYMENT_STATUS).map(([label, id]) => ({ id, label })),
+      manufactureStatuses: Object.entries(MANUFACTURE_STATUS).map(([label, id]) => ({ id: Number(id), label })),
+      paymentStatuses: Object.entries(PAYMENT_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       priorities: [{ id: "onSchedule", label: "بالمدة" }, { id: "almostDue", label: "مستعجل" }, { id: "urgent", label: "مستعجل جدا" }],
-      statuses: Object.entries(ORDER_STATUS).map(([label, id]) => ({ id, label })),
+      statuses: Object.entries(ORDER_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       vendors: vendors.map((vendor: unknown) => ({ id: toNumber(toPlain(vendor).id), label: toText(toPlain(vendor).name) })),
     };
   }

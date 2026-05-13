@@ -13,6 +13,10 @@ const Vendor = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    accountManagerUserId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "vendors",
@@ -21,6 +25,9 @@ const Vendor = sequelize.define(
     indexes: [
       {
         fields: ["name"],
+      },
+      {
+        fields: ["accountManagerUserId"],
       },
       {
         fields: ["deletedAt"],
@@ -32,6 +39,11 @@ const Vendor = sequelize.define(
 Vendor.hasOne(User, {
   foreignKey: "vendorId",
   as: "user",
+});
+
+Vendor.belongsTo(User, {
+  foreignKey: "accountManagerUserId",
+  as: "accountManager",
 });
 
 
