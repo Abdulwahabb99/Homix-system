@@ -49,6 +49,16 @@ async function main() {
       type: DataTypes.DECIMAL,
     });
 
+    await ensureColumn(queryInterface, "orders", "deliveryBy", {
+      allowNull: true,
+      type: DataTypes.INTEGER,
+    });
+
+    await queryInterface.changeColumn("orders", "deliveryBy", {
+      allowNull: true,
+      type: DataTypes.INTEGER,
+    }).catch(() => console.log("orders.deliveryBy type already updated"));
+
     await queryInterface.addIndex("vendors", ["accountManagerUserId"], {
       name: "vendors_accountManagerUserId_idx",
     }).catch(() => console.log("vendors_accountManagerUserId_idx already exists"));
@@ -56,6 +66,10 @@ async function main() {
     await queryInterface.addIndex("orders", ["fine"], {
       name: "orders_fine_idx",
     }).catch(() => console.log("orders_fine_idx already exists"));
+
+    await queryInterface.addIndex("orders", ["deliveryBy"], {
+      name: "orders_deliveryBy_idx",
+    }).catch(() => console.log("orders_deliveryBy_idx already exists"));
 
     console.log("Migration completed successfully");
     await sequelize.close();

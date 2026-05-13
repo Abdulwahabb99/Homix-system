@@ -97,6 +97,7 @@ const makeOrder = () => ({
     phoneNumber: "01000000000",
   },
   customerId: 5,
+  deliveryBy: 1,
   deliveryDate: "2026-05-05T00:00:00.000Z",
   downPayment: "200",
   expectedDeliveryDate: "2026-05-06T00:00:00.000Z",
@@ -182,6 +183,7 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
+    expect(response.body.data.items[0].deliveryBy).toBe(1);
     expect(response.body.data.items[0].operationNumber).toBe("3001");
     expect(response.body.data.items[0].fine).toBe(0);
     expect(response.body.data.totalCount).toBe(1);
@@ -192,6 +194,7 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
+    expect(response.body.data.order.deliveryBy).toBe(1);
     expect(response.body.data.order.orderNumber).toBe("31668");
     expect(response.body.data.order.fine).toBe(0);
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");

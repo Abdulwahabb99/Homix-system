@@ -173,6 +173,10 @@ const Order = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    deliveryBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     totalVendorDue: {
       type: DataTypes.DECIMAL,
       allowNull: true,
@@ -225,6 +229,9 @@ const Order = sequelize.define(
       },
       {
         fields: ["shipmentStatus"],
+      },
+      {
+        fields: ["deliveryBy"],
       },
       // New indexes for query optimization
       {

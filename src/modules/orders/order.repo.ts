@@ -122,6 +122,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     code: toText(order.code),
     customerName: `${toText(toPlain(order.customer).firstName)} ${toText(toPlain(order.customer).lastName)}`.trim(),
     daysSinceOrder: getDaysSince(order.orderDate),
+    deliveryBy: toNumber(order.deliveryBy) || null,
     deliveryPriority: priority,
     deliveryPriorityLabel: getDeliveryPriorityLabel(priority),
     expectedDeliveryDate: toIsoString(order.expectedDeliveryDate),

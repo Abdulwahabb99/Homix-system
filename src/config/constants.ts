@@ -33,6 +33,16 @@ export const DELIVERY_STATUS = {
   LATE: 3,
 } as const;
 
+export const DELIVERY_BY = {
+  HOMIX: 1,
+  VENDOR: 2,
+} as const;
+
+export const DELIVERY_BY_ARABIC = {
+  1: "هوميكس",
+  2: "بائع",
+} as const;
+
 export const ORDER_LINE_ITEM_STATUS = {
   NOT_COMPLETED: 1,
   COMPLETED: 2,

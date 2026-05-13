@@ -601,6 +601,13 @@ const swaggerOptions = {
             code: { example: "3001", type: "string" },
             customerName: { example: "Lamiaa Saeid", type: "string" },
             daysSinceOrder: { example: 3, nullable: true, type: "integer" },
+            deliveryBy: {
+              description: "Who handles delivery for the order. `1` = هوميكس, `2` = البائع.",
+              enum: [1, 2],
+              example: 1,
+              nullable: true,
+              type: "integer",
+            },
             deliveryPriority: { enum: ["onSchedule", "almostDue", "urgent"], nullable: true, type: "string" },
             deliveryPriorityLabel: { example: "بالمدة", type: "string" },
             expectedDeliveryDate: { example: "2026-05-06T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },

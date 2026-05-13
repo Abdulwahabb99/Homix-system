@@ -308,6 +308,7 @@ class OrderService {
           governorate: order.governorate || null,
           shipmentStatus: order.shipmentStatus || null,
           shipmentType: order.shipmentType || null,
+          deliveryBy: order.deliveryBy || null,
           expectedDate: order.expectedDate || null,
           expectedDeliveryDate: vendor.daysToDeliver
             ? moment().add(vendor.daysToDeliver, "days").toDate()

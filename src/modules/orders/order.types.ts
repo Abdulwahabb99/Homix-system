@@ -34,6 +34,7 @@ export type OrderListItem = {
   daysSinceOrder: number | null;
   deliveryPriority: OrderPriorityKey | null;
   deliveryPriorityLabel: string;
+  deliveryBy: number | null;
   expectedDeliveryDate: string | null;
   fine: number;
   id: number;
