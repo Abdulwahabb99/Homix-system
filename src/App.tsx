@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense, useCallback } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -31,7 +31,9 @@ import { setNotifications } from "store/slices/notificationsSlice";
 import axiosRequest from "shared/functions/axiosRequest";
 import {
   isJwtExpired,
-  redirectToSignIn,
+  subscribeAuthStorage,
+  getUserStorageSnapshot,
+  clearAuthStorage,
 } from "shared/functions/sessionGuard";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
@@ -40,23 +42,43 @@ const ProductDetails = React.lazy(() => import("layouts/Products/components/Prod
 const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/ShipmentDetails"));
 const TicketDetailPage = React.lazy(() => import("layouts/Tickets/TicketDetailPage"));
 
-function getStoredUser() {
+function parseUserFromStorageRaw(raw: string | null): Record<string, unknown> | null {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem("user");
-    if (!raw) return null;
-    return JSON.parse(raw);
+    const u = JSON.parse(raw) as unknown;
+    return u && typeof u === "object" ? (u as Record<string, unknown>) : null;
   } catch {
     return null;
   }
 }
 
 export default function App() {
-  const user = getStoredUser();
+  const [storageTick, setStorageTick] = useState(0);
+  const bumpStorageRead = useCallback(() => setStorageTick((t) => t + 1), []);
+
+  useEffect(() => subscribeAuthStorage(bumpStorageRead), [bumpStorageRead]);
+
+  const { pathname } = useLocation();
+  useEffect(() => {
+    bumpStorageRead();
+  }, [pathname, bumpStorageRead]);
+
+  const userRaw = useMemo(() => getUserStorageSnapshot(), [storageTick]);
+
+  const parsed = useMemo(() => parseUserFromStorageRaw(userRaw), [userRaw]);
+
+  const sessionOk = Boolean(
+    parsed &&
+      typeof parsed.token === "string" &&
+      parsed.token.length > 0 &&
+      !isJwtExpired(parsed.token)
+  );
+
+  const user = sessionOk ? parsed : null;
   const [controller] = useMaterialUIController();
   const { layout, darkMode } = controller;
   const [isUserInteracted, setIsUserInteracted] = useState(false);
 
-  const { pathname } = useLocation();
   const reduxDispatch = useDispatch();
 
   const isVendor = user?.userType === "2";
@@ -83,7 +105,7 @@ export default function App() {
       }),
     []
   );
-  useSocket(user?.id, (data) => {
+  useSocket(user?.id != null ? Number(user.id) : undefined, (data) => {
     if (data?.message === "Successfully subscribed to notifications") return;
     if (isUserInteracted) {
       playNotificationSound();
@@ -109,12 +131,10 @@ export default function App() {
     });
 
   useEffect(() => {
-    const token = user?.token;
-    if (!token) return;
-    if (isJwtExpired(token)) {
-      redirectToSignIn();
+    if (userRaw && !sessionOk) {
+      clearAuthStorage();
     }
-  }, [user?.token]);
+  }, [userRaw, sessionOk]);
 
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
@@ -123,10 +143,10 @@ export default function App() {
   }, [pathname]);
 
   useEffect(() => {
-    if (user) {
-      reduxDispatch(setUser({ user: { ...user }, token: user.token }));
+    if (user && sessionOk) {
+      reduxDispatch(setUser({ user: { ...user }, token: user.token as string }));
     }
-  }, [reduxDispatch]);
+  }, [user, sessionOk, reduxDispatch]);
 
   useEffect(() => {
     const handleUserInteraction = () => {
@@ -167,10 +187,10 @@ export default function App() {
           localStorage.setItem("notifications", JSON.stringify(notifications));
         });
     };
-    if (user) {
+    if (user && sessionOk) {
       getNotifications();
     }
-  }, []);
+  }, [user, sessionOk]);
 
   // useEffect(() => {
   //   const saved = JSON.parse(localStorage.getItem("notifications")) || [];
@@ -191,118 +211,127 @@ export default function App() {
         {layout === "dashboard" && user && <GlobalHomixSidenav navRole={homixNavRole} />}
         <Suspense fallback={<Spinner />}>
           <Routes>
-            {getRoutes(
-              isVendor
-                ? vendorsRoutes
-                : isAdmin
-                ? adminRoutes
-                : isOperations
-                ? operationRoutes
-                : logisticsRoutes
+            {!sessionOk ? (
+              <>
+                <Route path="/authentication/sign-in" element={<SignIn />} />
+                <Route path="*" element={<Navigate to="/authentication/sign-in" replace />} />
+              </>
+            ) : (
+              <>
+                {getRoutes(
+                  isVendor
+                    ? vendorsRoutes
+                    : isAdmin
+                    ? adminRoutes
+                    : isOperations
+                    ? operationRoutes
+                    : logisticsRoutes
+                )}
+                <Route
+                  path="/"
+                  index
+                  element={<Navigate to={isAdmin || isVendor ? "/home" : "/products"} />}
+                />
+                <Route path="/authentication/sign-in" element={<SignIn />} />
+                <Route
+                  path="/tickets/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <TicketDetailPage />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <OrderDetails />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/orders/edit/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <OrderEdit />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/orders/add"
+                  element={
+                    <ProtectedRoutes>
+                      <AddOrderModal />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/shipments/add"
+                  element={
+                    <ProtectedRoutes>
+                      <AddShipmentsModal />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/shipments/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <ShipmentDetails />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/products/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <ProductDetails />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/factories/add"
+                  element={
+                    <ProtectedRoutes>
+                      <AddEditFactory type="add" />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/factories/edit/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <AddEditFactory type="edit" />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/factories/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <FactoryDetails />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/users/add"
+                  element={
+                    <ProtectedRoutes>
+                      <AddEditUser type="add" />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/users/edit/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <AddEditUser type="edit" />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </>
             )}
-            <Route
-              path="/"
-              index
-              element={<Navigate to={isAdmin || isVendor ? "/home" : "/products"} />}
-            />
-            <Route path="/authentication/sign-in" element={<SignIn />} />
-            <Route
-              path="/tickets/:id"
-              element={
-                <ProtectedRoutes>
-                  <TicketDetailPage />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/orders/:id"
-              element={
-                <ProtectedRoutes>
-                  <OrderDetails />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/orders/edit/:id"
-              element={
-                <ProtectedRoutes>
-                  <OrderEdit />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/orders/add"
-              element={
-                <ProtectedRoutes>
-                  <AddOrderModal />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/shipments/add"
-              element={
-                <ProtectedRoutes>
-                  <AddShipmentsModal />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/shipments/:id"
-              element={
-                <ProtectedRoutes>
-                  <ShipmentDetails />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/products/:id"
-              element={
-                <ProtectedRoutes>
-                  <ProductDetails />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/factories/add"
-              element={
-                <ProtectedRoutes>
-                  <AddEditFactory type="add" />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/factories/edit/:id"
-              element={
-                <ProtectedRoutes>
-                  <AddEditFactory type="edit" />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/factories/:id"
-              element={
-                <ProtectedRoutes>
-                  <FactoryDetails />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/users/add"
-              element={
-                <ProtectedRoutes>
-                  <AddEditUser type="add" />
-                </ProtectedRoutes>
-              }
-            />
-            <Route
-              path="/users/edit/:id"
-              element={
-                <ProtectedRoutes>
-                  <AddEditUser type="edit" />
-                </ProtectedRoutes>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </ThemeProvider>

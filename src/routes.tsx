@@ -19,9 +19,6 @@ const Factories = React.lazy(
 );
 const Users = React.lazy(() => import("./layouts/Users/Users"));
 const Shipments = React.lazy(() => import("./layouts/Shipments/Shipments"));
-const user = JSON.parse(localStorage.getItem("user"));
-const isVendor = user?.userType === "2";
-const isAdmin = user?.userType === "1";
 
 export const adminRoutes = [
   {

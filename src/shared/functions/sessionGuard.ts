@@ -1,5 +1,8 @@
-/** مسار تسجيل الدخول — يُفضّل معه `window.location` لإعادة تحميل نظيفة بعد انتهاء الجلسة */
+/** مسار تسجيل الدخول */
 export const SIGN_IN_PATH = "/authentication/sign-in";
+
+/** يُطلَق بعد تغيير `localStorage.user` (نفس التاب أو عبر `clearAuthStorage`) لمزامنة React */
+export const AUTH_STORAGE_CHANGED = "homix-auth-changed";
 
 export function clearAuthStorage(): void {
   try {
@@ -7,21 +10,39 @@ export function clearAuthStorage(): void {
   } catch {
     /* ignore */
   }
+  window.dispatchEvent(new Event(AUTH_STORAGE_CHANGED));
 }
 
-function isAlreadyOnSignIn(): boolean {
-  const path = window.location.pathname;
-  return path === SIGN_IN_PATH || path.startsWith(`${SIGN_IN_PATH}/`);
+/** قراءة خام لمفتاح `user` من التخزين */
+export function getUserStorageSnapshot(): string | null {
+  try {
+    return localStorage.getItem("user");
+  } catch {
+    return null;
+  }
+}
+
+export function subscribeAuthStorage(onStoreChange: () => void): () => void {
+  const run = () => onStoreChange();
+  window.addEventListener(AUTH_STORAGE_CHANGED, run);
+  window.addEventListener("storage", run);
+  const onVis = () => onStoreChange();
+  document.addEventListener("visibilitychange", onVis);
+  window.addEventListener("focus", onVis);
+  return () => {
+    window.removeEventListener(AUTH_STORAGE_CHANGED, run);
+    window.removeEventListener("storage", run);
+    document.removeEventListener("visibilitychange", onVis);
+    window.removeEventListener("focus", onVis);
+  };
 }
 
 /**
- * مسح الجلسة وإجبار فتح صفحة تسجيل الدخول.
- * يُستخدم عند 401 أو انتهاء الـ JWT عندما لا يكفي `<Navigate />` لأن التطبيق قد لا يُعاد رسمه فورًا.
+ * مسح الجلسة؛ التوجيه لتسجيل الدخول يتم عبر مسارات App عند `!sessionOk`
+ * (مع `Navigate`) حتى لا تعلق على صفحة 404.
  */
 export function redirectToSignIn(): void {
   clearAuthStorage();
-  if (isAlreadyOnSignIn()) return;
-  window.location.replace(SIGN_IN_PATH);
 }
 
 export function isJwtExpired(token: string | undefined | null): boolean {

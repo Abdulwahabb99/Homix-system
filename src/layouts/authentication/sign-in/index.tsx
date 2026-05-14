@@ -12,6 +12,7 @@ import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import { EmailOutlined, LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
 import axiosRequest from "shared/functions/axiosRequest";
+import { AUTH_STORAGE_CHANGED } from "shared/functions/sessionGuard";
 import { setNotifications } from "store/slices/notificationsSlice";
 import { Button, Input } from "components/ui";
 
@@ -88,6 +89,7 @@ function Basic() {
           "user",
           JSON.stringify({ ...response.data.data.user, token: response.data.data.token })
         );
+        window.dispatchEvent(new Event(AUTH_STORAGE_CHANGED));
         dispatch(
           setUser({ user: { ...response.data.data.user }, token: response.data.data.token })
         );
