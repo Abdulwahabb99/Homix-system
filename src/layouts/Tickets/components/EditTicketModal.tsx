@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -16,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import type { Theme } from "@mui/material/styles";
 import type { Ticket } from "layouts/Tickets/utils/constants";
 import type { TicketMetaAssignee } from "query/ticketsList.api";
 import { formatTicketMetaAssigneeName } from "query/ticketsList.api";
@@ -23,7 +25,7 @@ import type { TicketPatchPayload } from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
 
-/** ارتفاع أوضح لحقول الـ Select (حالة التذكرة / المسئول) */
+/** ارتفاع أوضح لحقل «حالة التذكرة» */
 const selectOutlinedSx = {
   minHeight: 48,
   borderRadius: 1,
@@ -35,6 +37,28 @@ const selectOutlinedSx = {
     display: "flex",
     alignItems: "center",
   },
+} as const;
+
+const assigneeAutocompleteSx = {
+  direction: "rtl" as const,
+  width: "100%",
+  fontFamily: "'Cairo',sans-serif",
+  "& .MuiAutocomplete-option": {
+    fontSize: "0.875rem",
+    fontFamily: "'Cairo',sans-serif",
+  },
+  "& .MuiAutocomplete-inputRoot": {
+    minHeight: 48,
+    py: "3px",
+    fontSize: "0.875rem",
+    fontFamily: "'Cairo',sans-serif",
+  },
+  "& .MuiAutocomplete-input": {
+    py: "10px !important",
+    textAlign: "start" as const,
+    minWidth: "2.5rem !important",
+  },
+  "& .MuiAutocomplete-endAdornment": { top: "unset" },
 } as const;
 
 type Props = {
@@ -141,29 +165,37 @@ export default function EditTicketModal({
               </Select>
             </FormControl>
 
-            <FormControl fullWidth required>
-              <InputLabel id="edit-ticket-assignee">المسئول</InputLabel>
-              <Select
-                labelId="edit-ticket-assignee"
-                label="المسئول"
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(String(e.target.value))}
-                disabled={isSubmitting || assignees.length === 0}
-                sx={selectOutlinedSx}
-              >
-                {assignees.length === 0 ? (
-                  <MenuItem value="" disabled>
-                    لا يوجد مسئولين في القائمة
-                  </MenuItem>
-                ) : (
-                  assignees.map((a) => (
-                    <MenuItem key={a.id} value={String(a.id)}>
-                      {formatTicketMetaAssigneeName(a)}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
+            <Autocomplete<TicketMetaAssignee, false, false, false>
+              options={assignees}
+              value={assignees.find((a) => String(a.id) === assigneeId) ?? null}
+              onChange={(_, v) => setAssigneeId(v ? String(v.id) : "")}
+              getOptionLabel={(a) => formatTicketMetaAssigneeName(a)}
+              isOptionEqualToValue={(a, b) => a.id === b.id}
+              disabled={isSubmitting || assignees.length === 0}
+              noOptionsText="لا نتائج"
+              openOnFocus
+              clearOnEscape
+              ListboxProps={{ style: { maxHeight: 280, overflow: "auto" } }}
+              componentsProps={{
+                popper: {
+                  sx: { zIndex: (t: Theme) => t.zIndex.modal + 2 },
+                },
+                paper: {
+                  elevation: 8,
+                  sx: { borderRadius: 2, mt: 0.5 },
+                },
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="المسئول"
+                  required
+                  placeholder={assignees.length ? "ابحث بالاسم…" : "لا يوجد مسئولين"}
+                  InputLabelProps={{ ...params.InputLabelProps, required: true }}
+                />
+              )}
+              sx={assigneeAutocompleteSx}
+            />
 
             <TextField
               label="ملاحظات"
