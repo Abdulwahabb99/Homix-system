@@ -546,13 +546,13 @@ const swaggerOptions = {
                   { id: 2, label: "بائع" },
                 ],
                 manufactureStatuses: [
-                  { id: 1, label: "Accepted" },
-                  { id: 2, label: "IN_PRODUCTION" },
-                  { id: 3, label: "READY_FOR_DELIVERY" },
+                  { id: 1, label: "مقبول" },
+                  { id: 2, label: "قيد التصنيع" },
+                  { id: 3, label: "جاهز للشحن" },
                 ],
                 paymentStatuses: [
-                  { id: 1, label: "COD" },
-                  { id: 2, label: "PAID" },
+                  { id: 1, label: "الدفع عند الاستلام" },
+                  { id: 2, label: "مدفوع" },
                 ],
                 priorities: [
                   { id: 1, label: "بالمدة" },
@@ -560,9 +560,9 @@ const swaggerOptions = {
                   { id: 3, label: "مستعجل جدا" },
                 ],
                 statuses: [
-                  { id: 1, label: "PENDING" },
-                  { id: 2, label: "IN_PROGRESS" },
-                  { id: 5, label: "DELIVERED" },
+                  { id: 1, label: "معلق" },
+                  { id: 2, label: "قيد التصنيع" },
+                  { id: 5, label: "تم التسليم" },
                 ],
                 vendors: [
                   { id: 3, label: "ركنة للأثاث" },

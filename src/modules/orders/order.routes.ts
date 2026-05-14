@@ -33,8 +33,7 @@ export const orderRouter = express.Router();
  *       - bearerAuth: []
  *     tags: [Orders]
  *     summary: Get order filter metadata
- *     description: Returns the dropdown/filter options used by the orders page. This endpoint has no query parameters.
- *       `statuses`, `manufactureStatuses`, and `paymentStatuses` currently return internal constant labels from the backend such as `PENDING`, `IN_PROGRESS`, `COD`, and `PAID`.
+ *     description: Returns the dropdown/filter options used by the orders page. This endpoint has no query parameters. Labels are returned in Arabic for statuses, manufacture statuses, payment statuses, priorities, and delivery-by options.
  *     responses:
  *       200:
  *         description: Order filter options
@@ -53,14 +52,14 @@ export const orderRouter = express.Router();
  *                         label: Sara Mohamed
  *                     manufactureStatuses:
  *                       - id: 1
- *                         label: Accepted
+ *                         label: مقبول
  *                       - id: 2
- *                         label: IN_PRODUCTION
+ *                         label: قيد التصنيع
  *                     paymentStatuses:
  *                       - id: 1
- *                         label: COD
+ *                         label: الدفع عند الاستلام
  *                       - id: 2
- *                         label: PAID
+ *                         label: مدفوع
  *                     priorities:
  *                       - id: onSchedule
  *                         label: بالمدة
@@ -70,9 +69,9 @@ export const orderRouter = express.Router();
  *                         label: مستعجل جدا
  *                     statuses:
  *                       - id: 1
- *                         label: PENDING
+ *                         label: معلق
  *                       - id: 2
- *                         label: IN_PROGRESS
+ *                         label: قيد التصنيع
  *                     vendors:
  *                       - id: 3
  *                         label: ركنة للأثاث

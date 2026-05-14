@@ -1,7 +1,15 @@
 import moment from "moment-timezone";
 import { Op } from "sequelize";
 
-import { DELIVERY_BY, DELIVERY_BY_ARABIC, DELIVERY_STATUS, MANUFACTURE_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "../../../config/constants";
+import {
+  DELIVERY_BY,
+  DELIVERY_BY_ARABIC,
+  DELIVERY_STATUS,
+  MANUFACTURE_STATUS_ARABIC,
+  ORDER_STATUS,
+  ORDER_STATUS_Arabic,
+  PAYMENT_STATUS_ARABIC,
+} from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
   buildLogMessage,
@@ -286,10 +294,10 @@ export class OrderRepository {
     return {
       assignees: assignees.map((user: unknown) => ({ id: toNumber(toPlain(user).id), label: `${toText(toPlain(user).firstName)} ${toText(toPlain(user).lastName)}`.trim() })),
       deliveryByOptions: Object.entries(DELIVERY_BY).map(([, id]) => ({ id: Number(id), label: DELIVERY_BY_ARABIC[id as keyof typeof DELIVERY_BY_ARABIC] ?? String(id) })),
-      manufactureStatuses: Object.entries(MANUFACTURE_STATUS).map(([label, id]) => ({ id: Number(id), label })),
-      paymentStatuses: Object.entries(PAYMENT_STATUS).map(([label, id]) => ({ id: Number(id), label })),
+      manufactureStatuses: Object.entries(MANUFACTURE_STATUS_ARABIC).map(([id, label]) => ({ id: Number(id), label: String(label) })),
+      paymentStatuses: Object.entries(PAYMENT_STATUS_ARABIC).map(([id, label]) => ({ id: Number(id), label: String(label) })),
       priorities: [{ id: 1, label: "بالمدة" }, { id: 2, label: "مستعجل" }, { id: 3, label: "مستعجل جدا" }],
-      statuses: Object.entries(ORDER_STATUS).map(([label, id]) => ({ id: Number(id), label })),
+      statuses: Object.entries(ORDER_STATUS_Arabic).map(([id, label]) => ({ id: Number(id), label: String(label) })),
       vendors: vendors.map((vendor: unknown) => ({ id: toNumber(toPlain(vendor).id), label: toText(toPlain(vendor).name) })),
     };
   }
