@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Stack, TablePagination } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import type { Ticket } from "../utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "./TicketChips";
@@ -23,7 +24,7 @@ const COLS = [
   { key: "adminReply", label: "رد المسئول", w: 128 },
   { key: "ownerReply", label: "رد صاحب التذكرة", w: 128 },
   { key: "notes", label: "ملاحظات", w: 118 },
-  { key: "actions", label: "", w: 88 },
+  { key: "actions", label: "", w: 112 },
 ] as const;
 
 const TH: React.CSSProperties = {
@@ -91,12 +92,17 @@ function ActionBtn({
   children,
 }: {
   onClick: (e: React.MouseEvent) => void;
-  tone: "accent" | "danger";
+  tone: "accent" | "danger" | "edit";
   children: React.ReactNode;
 }) {
   const [hover, setHover] = React.useState(false);
-  const fill = tone === "accent" ? HX.accent : HX.red;
-  const restBorder = tone === "accent" ? HX.accentBorder : "rgba(239,68,68,0.42)";
+  const fill = tone === "accent" ? HX.accent : tone === "danger" ? HX.red : "#059669";
+  const restBorder =
+    tone === "accent"
+      ? HX.accentBorder
+      : tone === "danger"
+        ? "rgba(239,68,68,0.42)"
+        : "rgba(5,150,105,0.45)";
   return (
     <button
       type="button"
@@ -133,6 +139,8 @@ export interface TicketsHomixTableProps {
   onPageChange: (page: number) => void;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
+  /** فتح مودال التعديل (PATCH /tickets/{id}) */
+  onEdit?: (ticket: Ticket) => void;
   headerActions?: React.ReactNode;
   isLoading?: boolean;
 }
@@ -145,6 +153,7 @@ export default function TicketsHomixTable({
   onPageChange,
   onView,
   onDelete,
+  onEdit,
   headerActions,
   isLoading = false,
 }: TicketsHomixTableProps) {
@@ -213,6 +222,7 @@ export default function TicketsHomixTable({
           tickets={tickets}
           onView={onView}
           onDelete={onDelete}
+          onEdit={onEdit}
           isLoading={isLoading}
         />
       </Box>
@@ -374,6 +384,17 @@ export default function TicketsHomixTable({
                 </td>
                 <td style={{ ...TD, textAlign: "start" }}>
                   <span style={{ display: "inline-flex", gap: 3, justifyContent: "flex-start" }}>
+                    {onEdit ? (
+                      <ActionBtn
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(t);
+                        }}
+                        tone="edit"
+                      >
+                        <EditOutlinedIcon style={{ fontSize: 11 }} />
+                      </ActionBtn>
+                    ) : null}
                     <ActionBtn
                       onClick={(e) => {
                         e.stopPropagation();

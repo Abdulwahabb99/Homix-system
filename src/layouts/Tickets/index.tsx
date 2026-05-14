@@ -14,6 +14,7 @@ import ScheduleIcon from "@mui/icons-material/Schedule";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import TicketsHomixTable from "layouts/Tickets/components/TicketsHomixTable";
+import EditTicketModal from "layouts/Tickets/components/EditTicketModal";
 import {
   TicketsFilterBarSkeleton,
   TicketsHomixTableSkeleton,
@@ -36,6 +37,7 @@ import {
   useTicketsList,
   useTicketsMeta,
 } from "query/ticketsList.api";
+import { usePatchTicketFromList, type TicketPatchPayload } from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
 
@@ -263,6 +265,9 @@ export default function Tickets() {
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
+  const [editTicket, setEditTicket] = useState<Ticket | null>(null);
+
+  const patchTicketListMutation = usePatchTicketFromList();
 
   // filters — مسودة في الشريط؛ تُطبَّق على الـ API فقط بعد «تطبيق»
   const [filterOp, setFilterOp] = useState("");
@@ -395,7 +400,10 @@ export default function Tickets() {
 
   const filterTypeOptions = metaQuery.data?.types ?? [];
   const filterStatusOptions = metaQuery.data?.statuses ?? [];
-  const filterAssigneeOptions = metaQuery.data?.assignees ?? [];
+  const filterAssigneeOptions = useMemo(
+    () => metaQuery.data?.assignees ?? [],
+    [metaQuery.data?.assignees]
+  );
 
   const openTicket = useCallback(
     (ticketId: string) => {
@@ -447,6 +455,22 @@ export default function Tickets() {
     void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
     setDeleteTicketId(null);
   }
+
+  const handleSaveEditTicket = useCallback(
+    async (payload: Required<Pick<TicketPatchPayload, "status" | "assignedToUserId" | "notes">>) => {
+      if (!editTicket) return;
+      try {
+        await patchTicketListMutation.mutateAsync({
+          ticketId: editTicket.id,
+          patch: payload,
+        });
+        setEditTicket(null);
+      } catch {
+        /* الإشعار من usePatchTicketFromList */
+      }
+    },
+    [editTicket, patchTicketListMutation]
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   const pageActions = (
@@ -698,6 +722,7 @@ export default function Tickets() {
               onPageChange={setTicketTablePage}
               onView={openTicket}
               onDelete={setDeleteTicketId}
+              onEdit={(t) => setEditTicket(t)}
               isLoading={false}
               headerActions={
                 <Button size="small" sx={BTN_G}>
@@ -733,6 +758,15 @@ export default function Tickets() {
         onClose={() => setDeleteTicketId(null)}
         handleConfirmDelete={handleDeleteConfirm}
         title="هذه التذكرة"
+      />
+
+      <EditTicketModal
+        open={editTicket != null}
+        onClose={() => setEditTicket(null)}
+        ticket={editTicket}
+        assignees={filterAssigneeOptions}
+        onSubmit={handleSaveEditTicket}
+        isSubmitting={patchTicketListMutation.isPending}
       />
     </DashboardLayout>
   );

@@ -134,7 +134,7 @@ const COLS = [
   { label: "رد المسئول", w: 128 },
   { label: "رد صاحب التذكرة", w: 128 },
   { label: "ملاحظات", w: 118 },
-  { label: "", w: 88 },
+  { label: "", w: 112 },
 ] as const;
 
 const SK_W = [52, 44, 78, 88, 88, 48, 48, 36, 68, 96, 70, 70, 64, 44];
@@ -252,7 +252,7 @@ export function TicketsHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
                       />
                     ) : ci === 13 ? (
                       <Box sx={{ display: "flex", gap: "3px", justifyContent: "flex-start" }}>
-                        {[0, 1].map((j) => (
+                        {[0, 1, 2].map((j) => (
                           <Skeleton key={j} variant="rounded" animation="wave" width={26} height={26} sx={{ borderRadius: "7px", ...skSx }} />
                         ))}
                       </Box>

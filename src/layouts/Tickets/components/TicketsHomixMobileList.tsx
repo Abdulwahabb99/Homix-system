@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Stack } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import type { Ticket } from "../utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "./TicketChips";
@@ -14,12 +15,17 @@ function ActionBtn({
   children,
 }: {
   onClick: () => void;
-  tone: "accent" | "danger";
+  tone: "accent" | "danger" | "edit";
   children: React.ReactNode;
 }) {
   const [hover, setHover] = React.useState(false);
-  const fill = tone === "accent" ? HX.accent : HX.red;
-  const restBorder = tone === "accent" ? HX.accentBorder : "rgba(239,68,68,0.42)";
+  const fill = tone === "accent" ? HX.accent : tone === "danger" ? HX.red : "#059669";
+  const restBorder =
+    tone === "accent"
+      ? HX.accentBorder
+      : tone === "danger"
+        ? "rgba(239,68,68,0.42)"
+        : "rgba(5,150,105,0.45)";
   return (
     <button
       type="button"
@@ -51,6 +57,7 @@ interface Props {
   tickets: Ticket[];
   onView: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (ticket: Ticket) => void;
   isLoading?: boolean;
 }
 
@@ -59,6 +66,7 @@ export default function TicketsHomixMobileList({
   tickets,
   onView,
   onDelete,
+  onEdit,
   isLoading = false,
 }: Props) {
   if (isLoading && tickets.length === 0) {
@@ -135,6 +143,11 @@ export default function TicketsHomixMobileList({
               </Box>
             </Stack>
             <Stack direction="row" spacing={0.35}>
+              {onEdit ? (
+                <ActionBtn onClick={() => onEdit(t)} tone="edit">
+                  <EditOutlinedIcon sx={{ fontSize: 13 }} />
+                </ActionBtn>
+              ) : null}
               <ActionBtn onClick={() => onView(t.id)} tone="accent">
                 <VisibilityIcon sx={{ fontSize: 13 }} />
               </ActionBtn>
