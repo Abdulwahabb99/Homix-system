@@ -12,9 +12,9 @@ const FONT = "'Cairo', sans-serif";
 const COLS = [
   { key: "op", label: "رقم العملية", w: 110 },
   { key: "order", label: "رقم الطلب", w: 92 },
-  { key: "code", label: "كود المنتج", w: 100 },
+  { key: "code", label: "كود المنتج", w: 128 },
   { key: "seller", label: "البائع", w: 128 },
-  { key: "type", label: "نوع التذكرة", w: 122 },
+  { key: "type", label: "نوع التذكرة", w: 148 },
   { key: "openDate", label: "تاريخ الرفع", w: 98 },
   { key: "closeDate", label: "تاريخ الغلق", w: 98 },
   { key: "days", label: "عداد الأيام", w: 96 },
@@ -32,7 +32,7 @@ const TH: React.CSSProperties = {
   fontWeight: 700,
   color: HX.tx3,
   background: HX.surface2,
-  textAlign: "right",
+  textAlign: "start",
   padding: "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
   borderRight: "none",
@@ -40,20 +40,20 @@ const TH: React.CSSProperties = {
   whiteSpace: "nowrap",
   letterSpacing: ".3px",
   overflow: "hidden",
+  verticalAlign: "top",
 };
 
 const TD: React.CSSProperties = {
   fontFamily: FONT,
   fontSize: "12px",
   color: HX.tx,
-  textAlign: "right",
+  textAlign: "start",
   padding: "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
   borderRight: "none",
   borderLeft: "none",
   whiteSpace: "nowrap",
-  verticalAlign: "middle",
-  overflow: "hidden",
+  verticalAlign: "top",
 };
 
 const AV_COLORS = [
@@ -297,15 +297,25 @@ export default function TicketsHomixTable({
                   </span>
                 </td>
                 <td style={{ ...TD, color: HX.tx2, fontWeight: 600 }}>#{t.order}</td>
-                <td style={TD}>
+                <td
+                  style={{
+                    ...TD,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    overflow: "visible",
+                  }}
+                >
                   <span
                     style={{
+                      display: "inline-block",
+                      maxWidth: "100%",
                       fontFamily: "monospace",
                       fontSize: 11,
                       background: HX.surface2,
                       padding: "2px 7px",
                       borderRadius: 5,
                       color: HX.tx2,
+                      lineHeight: 1.45,
                     }}
                   >
                     {t.code}
@@ -314,8 +324,14 @@ export default function TicketsHomixTable({
                 <td style={TD}>
                   <Ellip>{t.seller}</Ellip>
                 </td>
-                <td style={TD}>
-                  <TicketTypeChip type={t.type} />
+                <td
+                  style={{
+                    ...TD,
+                    whiteSpace: "normal",
+                    overflow: "visible",
+                  }}
+                >
+                  <TicketTypeChip type={t.type} allowWrap />
                 </td>
                 <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>{t.openDate}</td>
                 <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>{t.closeDate}</td>
@@ -356,8 +372,8 @@ export default function TicketsHomixTable({
                 <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
                   <Ellip>{t.notes || "—"}</Ellip>
                 </td>
-                <td style={{ ...TD, textAlign: "center" }}>
-                  <span style={{ display: "inline-flex", gap: 3, justifyContent: "center" }}>
+                <td style={{ ...TD, textAlign: "start" }}>
+                  <span style={{ display: "inline-flex", gap: 3, justifyContent: "flex-start" }}>
                     <ActionBtn
                       onClick={(e) => {
                         e.stopPropagation();

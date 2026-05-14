@@ -107,22 +107,25 @@ const TH_SK: React.CSSProperties = {
   borderBottom: `0.5px solid ${HX.border}`,
   whiteSpace: "nowrap",
   fontFamily: "'Cairo',sans-serif",
-  textAlign: "right",
+  textAlign: "start",
+  verticalAlign: "top",
 };
 
 const TD_SK: React.CSSProperties = {
   padding: "9px 11px",
   borderBottom: `0.5px solid ${HX.border}`,
   fontFamily: "'Cairo',sans-serif",
+  verticalAlign: "top",
+  textAlign: "start",
 };
 
 /** نفس أعمدة TicketsHomixTable */
 const COLS = [
   { label: "رقم العملية", w: 110 },
   { label: "رقم الطلب", w: 92 },
-  { label: "كود المنتج", w: 100 },
+  { label: "كود المنتج", w: 128 },
   { label: "البائع", w: 128 },
-  { label: "نوع التذكرة", w: 122 },
+  { label: "نوع التذكرة", w: 148 },
   { label: "تاريخ الرفع", w: 98 },
   { label: "تاريخ الغلق", w: 98 },
   { label: "عداد الأيام", w: 96 },
@@ -134,7 +137,7 @@ const COLS = [
   { label: "", w: 88 },
 ] as const;
 
-const SK_W = [52, 44, 58, 88, 72, 48, 48, 36, 68, 96, 70, 70, 64, 44];
+const SK_W = [52, 44, 78, 88, 88, 48, 48, 36, 68, 96, 70, 70, 64, 44];
 
 function TicketsMobileCardsSkeleton({ rows = 6 }: { rows?: number }) {
   return (
@@ -248,7 +251,7 @@ export function TicketsHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
                         sx={{ borderRadius: "20px", ...skSx }}
                       />
                     ) : ci === 13 ? (
-                      <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
+                      <Box sx={{ display: "flex", gap: "3px", justifyContent: "flex-start" }}>
                         {[0, 1].map((j) => (
                           <Skeleton key={j} variant="rounded" animation="wave" width={26} height={26} sx={{ borderRadius: "7px", ...skSx }} />
                         ))}

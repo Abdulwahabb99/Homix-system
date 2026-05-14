@@ -49,9 +49,9 @@ export function TicketStatusChip({ status, size = "small" }: TicketStatusChipPro
 
 // ─── نوع التذكرة ──────────────────────────────────────────────────────────────
 
-type TicketTypeChipProps = { type: string; size?: "small" | "medium" };
+type TicketTypeChipProps = { type: string; size?: "small" | "medium"; allowWrap?: boolean };
 
-export function TicketTypeChip({ type, size = "small" }: TicketTypeChipProps) {
+export function TicketTypeChip({ type, size = "small", allowWrap = false }: TicketTypeChipProps) {
   const key = type.trim();
   const colors = TICKET_TYPE_COLOR[key] ?? DEFAULT_TYPE_COLOR;
   return (
@@ -66,7 +66,9 @@ export function TicketTypeChip({ type, size = "small" }: TicketTypeChipProps) {
         borderRadius: "20px",
         fontSize: size === "small" ? "0.72rem" : "0.8rem",
         fontWeight: 700,
-        whiteSpace: "nowrap",
+        whiteSpace: allowWrap ? "normal" : "nowrap",
+        flexWrap: allowWrap ? "wrap" : "nowrap",
+        maxWidth: allowWrap ? "100%" : undefined,
         bgcolor: colors.bg,
         color: colors.color,
         border: `1px solid ${alpha(colors.dot, 0.42)}`,
