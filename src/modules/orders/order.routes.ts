@@ -116,6 +116,9 @@ orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
  *         name: paymentStatus
  *         schema: { type: string, example: "1,2" }
  *       - in: query
+ *         name: deliveryBy
+ *         schema: { type: string, example: "1,2" }
+ *       - in: query
  *         name: userId
  *         schema: { type: integer }
  *       - in: query
@@ -248,6 +251,9 @@ orderRouter.get("/financialReport", verifyToken, asyncHandler(orderController.fi
  *         name: paymentStatus
  *         schema: { type: string, example: "1,2" }
  *       - in: query
+ *         name: deliveryBy
+ *         schema: { type: string, example: "1,2" }
+ *       - in: query
  *         name: startDate
  *         schema: { type: string, format: date }
  *       - in: query
@@ -306,6 +312,9 @@ orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrder
  *         schema: { type: string, example: "2,3" }
  *       - in: query
  *         name: paymentStatus
+ *         schema: { type: string, example: "1,2" }
+ *       - in: query
+ *         name: deliveryBy
  *         schema: { type: string, example: "1,2" }
  *       - in: query
  *         name: userId

@@ -9,6 +9,7 @@ export type OrderRequestUser = NonNullable<Request["user"]>;
 
 export type OrderListQuery = {
   customerName?: string;
+  deliveryBy?: string;
   deliveryStatus?: string;
   endDate?: string;
   manufactureStatus?: string;
@@ -123,6 +124,7 @@ export type OrderMetaOption = {
 
 export type OrderMetaResponse = {
   assignees: OrderMetaOption[];
+  deliveryByOptions: OrderMetaOption[];
   manufactureStatuses: OrderMetaOption[];
   paymentStatuses: OrderMetaOption[];
   priorities: OrderMetaOption[];

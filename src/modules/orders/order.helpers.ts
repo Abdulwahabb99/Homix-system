@@ -83,6 +83,18 @@ export const getOrderPriority = (expectedDeliveryDate: unknown): OrderPriorityKe
   return deliveryStatus ? DELIVERY_STATUS_PRIORITY_MAP[deliveryStatus] ?? null : null;
 };
 
+export const getOrderPriorityFromDeliveryStatus = (
+  deliveryStatus: unknown,
+  expectedDeliveryDate?: unknown,
+): OrderPriorityKey | null => {
+  const parsedDeliveryStatus = toNumber(deliveryStatus);
+  if (parsedDeliveryStatus) {
+    return DELIVERY_STATUS_PRIORITY_MAP[parsedDeliveryStatus as keyof typeof DELIVERY_STATUS_PRIORITY_MAP] ?? null;
+  }
+
+  return getOrderPriority(expectedDeliveryDate);
+};
+
 export const getDeliveryPriorityLabel = (priority: OrderPriorityKey | null): string => {
   if (priority === ORDER_DELIVERY_PRIORITY.URGENT) {
     return "مستعجل جدا";

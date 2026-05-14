@@ -1,13 +1,14 @@
 import moment from "moment-timezone";
 import { Op } from "sequelize";
 
-import { DELIVERY_STATUS, MANUFACTURE_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "../../../config/constants";
+import { DELIVERY_BY, DELIVERY_BY_ARABIC, DELIVERY_STATUS, MANUFACTURE_STATUS, ORDER_STATUS, PAYMENT_STATUS } from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
   buildLogMessage,
   getDaysSince,
   getDeliveryPriorityLabel,
   getOrderPriority,
+  getOrderPriorityFromDeliveryStatus,
   getStatusLabel,
   getManufactureLabel,
   getPaymentLabel,
@@ -74,6 +75,9 @@ const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record
   if (filters.paymentStatus) {
     andConditions.push(sequelize.where(sequelize.col("Order.paymentStatus"), { [Op.in]: filters.paymentStatus.split(",").map(Number) }));
   }
+  if (filters.deliveryBy) {
+    andConditions.push(sequelize.where(sequelize.col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
+  }
   if (filters.userId) {
     andConditions.push(sequelize.where(sequelize.col("Order.userId"), { [Op.eq]: filters.userId }));
   }
@@ -116,7 +120,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
   const product = toPlain(orderLine.product);
   const vendor = toPlain(product.vendor);
   const user = toPlain(order.user);
-  const priority = getOrderPriority(order.expectedDeliveryDate);
+  const priority = getOrderPriorityFromDeliveryStatus(order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
     code: toText(order.code),
@@ -163,11 +167,15 @@ export class OrderRepository {
       subQuery: false,
       where: buildFilters(filters, vendorId),
     });
-    const items = result.rows.map((row: unknown) => mapOrderSummary(row)).filter((item: OrderListItem) => {
-      const matchesPriority = !filters.priority || item.deliveryPriority === filters.priority;
-      const matchesDeliveryStatus = !filters.deliveryStatus || filters.deliveryStatus.split(",").map(Number).includes(getOrderPriority(item.expectedDeliveryDate) === "urgent" ? DELIVERY_STATUS.LATE : getOrderPriority(item.expectedDeliveryDate) === "almostDue" ? DELIVERY_STATUS.ALMOST_LAST : DELIVERY_STATUS.ON_SCHEDULE);
-      return matchesPriority && matchesDeliveryStatus;
-    });
+    const items = result.rows
+      .map((row: unknown): { item: OrderListItem; row: Record<string, unknown> } => ({ item: mapOrderSummary(row), row: toPlain(row) }))
+      .filter(({ item, row }: { item: OrderListItem; row: Record<string, unknown> }) => {
+        const matchesPriority = !filters.priority || item.deliveryPriority === filters.priority;
+        const matchesDeliveryStatus = !filters.deliveryStatus
+          || filters.deliveryStatus.split(",").map(Number).includes(toNumber(row.deliveryStatus));
+        return matchesPriority && matchesDeliveryStatus;
+      })
+      .map(({ item }: { item: OrderListItem; row: Record<string, unknown> }) => item);
 
     return {
       items,
@@ -257,7 +265,7 @@ export class OrderRepository {
       if (ORDER_SUMMARY_STATUS_GROUPS.inProgress.includes(status)) counts.inProgressOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.delivered.includes(status)) counts.deliveredOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += 1;
-      if (getOrderPriority(plainOrder.expectedDeliveryDate) === "urgent" && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
+      if (getOrderPriorityFromDeliveryStatus(plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === "urgent" && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
     }
     return { cards: [
       { key: "urgentOrders", label: "مستعجل جدا", value: counts.urgentOrders },
@@ -276,6 +284,7 @@ export class OrderRepository {
     ]);
     return {
       assignees: assignees.map((user: unknown) => ({ id: toNumber(toPlain(user).id), label: `${toText(toPlain(user).firstName)} ${toText(toPlain(user).lastName)}`.trim() })),
+      deliveryByOptions: Object.entries(DELIVERY_BY).map(([, id]) => ({ id: Number(id), label: DELIVERY_BY_ARABIC[id as keyof typeof DELIVERY_BY_ARABIC] ?? String(id) })),
       manufactureStatuses: Object.entries(MANUFACTURE_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       paymentStatuses: Object.entries(PAYMENT_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       priorities: [{ id: "onSchedule", label: "بالمدة" }, { id: "almostDue", label: "مستعجل" }, { id: "urgent", label: "مستعجل جدا" }],

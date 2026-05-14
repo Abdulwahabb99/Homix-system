@@ -528,17 +528,22 @@ const swaggerOptions = {
               type: "object",
               properties: {
                 assignees: { items: { $ref: "#/components/schemas/OrderMetaUserOption" }, type: "array" },
+                deliveryByOptions: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
                 manufactureStatuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
                 paymentStatuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
                 priorities: { items: { $ref: "#/components/schemas/OrderMetaPriorityOption" }, type: "array" },
                 statuses: { items: { $ref: "#/components/schemas/OrderMetaStatusOption" }, type: "array" },
                 vendors: { items: { $ref: "#/components/schemas/OrderMetaVendorOption" }, type: "array" },
               },
-              required: ["assignees", "manufactureStatuses", "paymentStatuses", "priorities", "statuses", "vendors"],
+              required: ["assignees", "deliveryByOptions", "manufactureStatuses", "paymentStatuses", "priorities", "statuses", "vendors"],
               example: {
                 assignees: [
                   { id: 1, label: "Sara Mohamed" },
                   { id: 5, label: "Ahmed Hesham" },
+                ],
+                deliveryByOptions: [
+                  { id: 1, label: "هوميكس" },
+                  { id: 2, label: "بائع" },
                 ],
                 manufactureStatuses: [
                   { id: 1, label: "Accepted" },

@@ -1,4 +1,5 @@
 import express from "express";
+import { Op } from "sequelize";
 import request from "supertest";
 
 const orderModel = {
@@ -165,6 +166,10 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
+    expect(response.body.data.deliveryByOptions).toEqual([
+      { id: 1, label: "هوميكس" },
+      { id: 2, label: "بائع" },
+    ]);
     expect(response.body.data.vendors[0]).toEqual({ id: 3, label: "ركنة للأثاث" });
   });
 
@@ -187,6 +192,23 @@ describe("orderRouter", () => {
     expect(response.body.data.items[0].operationNumber).toBe("3001");
     expect(response.body.data.items[0].fine).toBe(0);
     expect(response.body.data.totalCount).toBe(1);
+  });
+
+  it("applies deliveryBy filter to the orders query", async () => {
+    const response = await request(app).get("/orders").query({ deliveryBy: "1", page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    const whereClause = orderModel.findAndCountAll.mock.calls[0][0].where as Record<PropertyKey, unknown>;
+    const andKey = Object.getOwnPropertySymbols(whereClause)[0];
+    const conditions = andKey && Array.isArray(whereClause[andKey])
+      ? whereClause[andKey] as Array<Record<PropertyKey, unknown>>
+      : [];
+
+    expect(conditions).toContainEqual(
+      expect.objectContaining({
+        [Op.in]: [1],
+      }),
+    );
   });
 
   it("returns order details in a focused DTO shape", async () => {
