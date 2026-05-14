@@ -16,6 +16,10 @@ function attachmentsUploadPath(ticketId: string): string {
   return `${TICKETS_LIST_PATH}/${encodeURIComponent(ticketId)}/attachments/upload`;
 }
 
+function attachmentDetailPath(ticketId: string, attachmentId: number): string {
+  return `${TICKETS_LIST_PATH}/${encodeURIComponent(ticketId)}/attachments/${encodeURIComponent(String(attachmentId))}`;
+}
+
 function buildAttachmentsFormData(files: File[], descriptions?: string[]): FormData {
   const formData = new FormData();
   for (const file of files) {
@@ -61,6 +65,39 @@ export function useUploadTicketAttachments(ticketId: string) {
     },
     onError: () => {
       NotificationMeassage("error", "تعذّر رفع المرفق");
+    },
+  });
+}
+
+/** DELETE /tickets/{ticketId}/attachments/{attachmentId} — يُفترض أن يسمح به الـ API للأدمن فقط */
+export async function deleteTicketAttachment(
+  navigate: NavigateFunction,
+  ticketId: string,
+  attachmentId: number
+): Promise<void> {
+  const { data } = await axiosRequest.delete<Record<string, unknown>>(
+    attachmentDetailPath(ticketId, attachmentId)
+  );
+  const root = (data ?? {}) as unknown as ApiEnvelope;
+  if (root.force_logout) {
+    localStorage.removeItem("user");
+    navigate("/authentication/sign-in");
+    throw new Error("FORCE_LOGOUT");
+  }
+}
+
+export function useDeleteTicketAttachment(ticketId: string) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, number>({
+    mutationFn: (attachmentId: number) => deleteTicketAttachment(navigate, ticketId, attachmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(ticketId) });
+      NotificationMeassage("success", "تم حذف المرفق");
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر حذف المرفق");
     },
   });
 }

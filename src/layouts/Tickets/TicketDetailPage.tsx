@@ -10,7 +10,8 @@ import { DEFAULT_QUICK_REPLIES } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 import { useTicketDetail } from "query/ticketsList.api";
 import { useDeleteTicketNote, usePostTicketNote, usePutTicketNote } from "query/ticketNotes.api";
-import { useUploadTicketAttachments } from "query/ticketAttachments.api";
+import { useDeleteTicketAttachment, useUploadTicketAttachments } from "query/ticketAttachments.api";
+import { useUpdateTicket, type TicketUpdatePayload } from "query/ticketUpdate.api";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,8 @@ export default function TicketDetailPage() {
   const putNoteMutation = usePutTicketNote(id ?? "");
   const deleteNoteMutation = useDeleteTicketNote(id ?? "");
   const uploadAttachmentsMutation = useUploadTicketAttachments(id ?? "");
+  const deleteAttachmentMutation = useDeleteTicketAttachment(id ?? "");
+  const updateTicketMutation = useUpdateTicket(id ?? "");
 
   const handleBack = useCallback(() => {
     navigate("/tickets");
@@ -53,6 +56,18 @@ export default function TicketDetailPage() {
   const handleUploadFiles = useCallback(
     (files: File[]) => uploadAttachmentsMutation.mutateAsync({ files }),
     [uploadAttachmentsMutation]
+  );
+
+  const handleDeleteAttachment = useCallback(
+    (attachmentId: number) => deleteAttachmentMutation.mutateAsync(attachmentId),
+    [deleteAttachmentMutation]
+  );
+
+  const handleCommitTicketStatus = useCallback(
+    async (payload: TicketUpdatePayload) => {
+      await updateTicketMutation.mutateAsync(payload);
+    },
+    [updateTicketMutation]
   );
 
   if (!id) {
@@ -105,6 +120,10 @@ export default function TicketDetailPage() {
           deleteNotePending={deleteNoteMutation.isPending}
           onUploadFiles={handleUploadFiles}
           uploadFilesPending={uploadAttachmentsMutation.isPending}
+          onDeleteAttachment={handleDeleteAttachment}
+          deleteAttachmentPending={deleteAttachmentMutation.isPending}
+          onCommitTicketStatusChange={handleCommitTicketStatus}
+          commitTicketStatusPending={updateTicketMutation.isPending}
         />
       </Box>
     </DashboardLayout>

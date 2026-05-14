@@ -26,6 +26,8 @@ export type ConfirmDeleteModalProps = {
   tone?: Tone;
   confirmButtonText?: string;
   cancelButtonText?: string;
+  /** عند true: يُعطّل أزرار التأكيد والإغلاق حتى ينتهي الطلب */
+  confirmLoading?: boolean;
 };
 
 const BRAND = "#6366f1";
@@ -42,6 +44,7 @@ function ConfirmDeleteModal({
   tone = "danger",
   confirmButtonText,
   cancelButtonText,
+  confirmLoading = false,
 }: ConfirmDeleteModalProps) {
   const theme = useTheme();
   const isDanger = tone === "danger";
@@ -53,10 +56,15 @@ function ConfirmDeleteModal({
 
   const headTitle = isDanger ? `تأكيد حذف ${title}` : title || "تأكيد";
 
+  const handleDialogClose = () => {
+    if (confirmLoading) return;
+    onClose();
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleDialogClose}
       maxWidth="xs"
       fullWidth
       transitionDuration={220}
@@ -87,9 +95,10 @@ function ConfirmDeleteModal({
       }}
     >
       <IconButton
-        onClick={onClose}
+        onClick={handleDialogClose}
         aria-label="إغلاق"
         size="small"
+        disabled={confirmLoading}
         sx={{
           position: "absolute",
           top: 10,
@@ -171,11 +180,12 @@ function ConfirmDeleteModal({
         }}
       >
         <Button
-          onClick={onClose}
+          onClick={handleDialogClose}
           variant="contained"
           size="large"
           fullWidth
           disableElevation
+          disabled={confirmLoading}
           sx={(t) => ({
             minHeight: 48,
             maxWidth: { sm: 170 },
@@ -201,6 +211,7 @@ function ConfirmDeleteModal({
           size="large"
           fullWidth
           disableElevation
+          disabled={confirmLoading}
           sx={{
             minHeight: 48,
             maxWidth: { sm: 200 },

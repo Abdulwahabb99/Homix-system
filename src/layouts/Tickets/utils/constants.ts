@@ -40,6 +40,8 @@ export type Ticket = {
   notes: string;
   chat: ChatMessage[];
   attachments: Attachment[];
+  /** معرّف المستخدم المسند إليه التذكرة (من assignedTo.id) — لمطلوب تحديث التذكرة عبر API */
+  assignedToUserId?: number;
   /** إن وُجد من الـ API على كائن الطلب — إجمالي مالي للعرض */
   orderTotalEgp?: number;
 };

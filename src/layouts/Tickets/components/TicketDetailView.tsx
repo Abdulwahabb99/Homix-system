@@ -15,13 +15,15 @@ import {
 import { alpha } from "@mui/material/styles";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AttachmentIcon from "@mui/icons-material/Attachment";
-import InsertLinkIcon from "@mui/icons-material/InsertLink";
+import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
+import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
+import type { TicketUpdatePayload } from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
 
@@ -72,6 +74,12 @@ type Props = {
   /** POST /tickets/.../attachments/upload — عند التوفّر يُرفع الملف للخادم ويُحدَّث العرض بعد النجاح */
   onUploadFiles?: (files: File[]) => Promise<void>;
   uploadFilesPending?: boolean;
+  /** DELETE /tickets/.../attachments/{id} — يُعرض زر الحذف للأدمن فقط عند توفر id من الـ API */
+  onDeleteAttachment?: (attachmentId: number) => Promise<void>;
+  deleteAttachmentPending?: boolean;
+  /** PATCH /tickets/{ticketId} — تغيير الحالة فقط: مفتوحة → 2، مغلقة → 1 (الجسم: status فقط) */
+  onCommitTicketStatusChange?: (payload: TicketUpdatePayload) => Promise<void>;
+  commitTicketStatusPending?: boolean;
 };
 
 function InfoItem({
@@ -359,9 +367,19 @@ export default function TicketDetailView({
   deleteNotePending = false,
   onUploadFiles,
   uploadFilesPending = false,
+  onDeleteAttachment,
+  deleteAttachmentPending = false,
+  onCommitTicketStatusChange,
+  commitTicketStatusPending = false,
 }: Props) {
   const [chatInput, setChatInput] = useState("");
-  const [linkInput, setLinkInput] = useState("");
+  /** ملفات اختيرت من الجهاز ولم تُرفَع بعد — الرفع يحدث عند الضغط على «إضافة الملفات» */
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([]);
+  /** تأكيد حذف مرفق (أدمن فقط — يُعرض الـ dialog) */
+  const [pendingDeleteAttachment, setPendingDeleteAttachment] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -404,7 +422,19 @@ export default function TicketDetailView({
     }
   }
 
-  function toggleStatus() {
+  async function toggleStatus() {
+    if (commitTicketStatusPending) return;
+    if (onCommitTicketStatusChange) {
+      const nextApiStatus = isOpen ? 2 : 1;
+      try {
+        await onCommitTicketStatusChange({
+          status: nextApiStatus,
+        });
+      } catch {
+        /* الإشعار من useUpdateTicket */
+      }
+      return;
+    }
     const newStatus = isOpen ? ("مغلقة" as const) : ("مفتوحة" as const);
     const today = new Date().toISOString().split("T")[0];
     onUpdateTicket({
@@ -415,35 +445,41 @@ export default function TicketDetailView({
     });
   }
 
-  async function handleFileAttach(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || uploadFilesPending) return;
-    const reset = () => {
-      e.target.value = "";
-    };
+  function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    /** يجب نسخ الملفات قبل مسح القيمة — FileList «حي» ويُفرَّغ مع إعادة ضبط الحقل */
+    const picked = input.files?.length ? Array.from(input.files) : [];
+    input.value = "";
+    if (!picked.length || uploadFilesPending) return;
+    setPendingUploadFiles((prev) => [...prev, ...picked]);
+  }
+
+  function removePendingFile(index: number) {
+    setPendingUploadFiles((prev) => prev.filter((_, j) => j !== index));
+  }
+
+  async function commitPendingUploads() {
+    if (!pendingUploadFiles.length || uploadFilesPending) return;
+    const files = [...pendingUploadFiles];
     if (onUploadFiles) {
       try {
-        await onUploadFiles([file]);
+        await onUploadFiles(files);
+        setPendingUploadFiles([]);
       } catch {
         /* الإشعار من useUploadTicketAttachments */
       }
-      reset();
       return;
     }
-    const type: Attachment["type"] = file.type.startsWith("image")
-      ? "image"
-      : file.type.startsWith("video")
-        ? "video"
-        : "file";
-    onUpdateTicket({ ...ticket, attachments: [...ticket.attachments, { type, name: file.name }] });
-    reset();
-  }
-
-  function addLink() {
-    const val = linkInput.trim();
-    if (!val) return;
-    onUpdateTicket({ ...ticket, attachments: [...ticket.attachments, { type: "link", name: val }] });
-    setLinkInput("");
+    const newAtt: Attachment[] = files.map((file) => ({
+      type: file.type.startsWith("image")
+        ? "image"
+        : file.type.startsWith("video")
+          ? "video"
+          : "file",
+      name: file.name,
+    }));
+    onUpdateTicket({ ...ticket, attachments: [...ticket.attachments, ...newAtt] });
+    setPendingUploadFiles([]);
   }
 
   const attachIconMap: Record<Attachment["type"], string> = {
@@ -509,7 +545,8 @@ export default function TicketDetailView({
                     variant="outlined"
                     color="inherit"
                     disableElevation
-                    onClick={toggleStatus}
+                    disabled={commitTicketStatusPending}
+                    onClick={() => void toggleStatus()}
                     sx={btnOutlinedBrandSx}
                   >
                     تغيير الحالة
@@ -590,14 +627,15 @@ export default function TicketDetailView({
                   onClick={() => fileInputRef.current?.click()}
                   sx={btnOutlinedBrandSx}
                 >
-                  + إضافة مرفق
+                  اختيار ملفات
                 </Button>
                 <input
                   ref={fileInputRef}
                   type="file"
                   hidden
+                  multiple
                   accept="image/*,video/*,application/pdf,.pdf,.doc,.docx"
-                  onChange={handleFileAttach}
+                  onChange={handleFilesChosen}
                 />
               </Box>
               <Box sx={{ p: 2 }}>
@@ -606,11 +644,8 @@ export default function TicketDetailView({
                     {ticket.attachments.map((a, i) => (
                       <Grid item xs={4} key={a.id != null ? `att-${a.id}` : `att-${i}-${a.name}`}>
                         <Box
-                          onClick={() => {
-                            const href = attachmentOpenHref(a.url);
-                            if (href) window.open(href, "_blank", "noopener,noreferrer");
-                          }}
                           sx={{
+                            position: "relative",
                             border: "1px solid",
                             borderColor: "divider",
                             borderRadius: 2,
@@ -622,20 +657,52 @@ export default function TicketDetailView({
                             transition: "0.15s",
                           }}
                         >
-                          <Box sx={{ fontSize: "1.25rem", mb: 0.5 }}>{attachIconMap[a.type]}</Box>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: "block",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              fontSize: "0.68rem",
+                          {isAdminUser && onDeleteAttachment && a.id != null && (
+                            <Tooltip title="حذف المرفق">
+                              <IconButton
+                                size="small"
+                                aria-label="حذف المرفق"
+                                disabled={deleteAttachmentPending}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setPendingDeleteAttachment({ id: a.id!, name: a.name });
+                                }}
+                                sx={{
+                                  position: "absolute",
+                                  top: 2,
+                                  insetInlineEnd: 2,
+                                  p: 0.25,
+                                  color: "text.secondary",
+                                  bgcolor: (t) => alpha(t.palette.background.paper, 0.92),
+                                  "&:hover": { color: "error.main", bgcolor: "background.paper" },
+                                }}
+                              >
+                                <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Box
+                            onClick={() => {
+                              const href = attachmentOpenHref(a.url);
+                              if (href) window.open(href, "_blank", "noopener,noreferrer");
                             }}
+                            sx={{ cursor: attachmentOpenHref(a.url) ? "pointer" : "default" }}
                           >
-                            {a.name}
-                          </Typography>
+                            <Box sx={{ fontSize: "1.25rem", mb: 0.5 }}>{attachIconMap[a.type]}</Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: "block",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                fontSize: "0.68rem",
+                              }}
+                            >
+                              {a.name}
+                            </Typography>
+                          </Box>
                         </Box>
                       </Grid>
                     ))}
@@ -660,31 +727,40 @@ export default function TicketDetailView({
                 >
                   <Box sx={{ fontSize: "1.1rem", mb: 0.5 }}>📎</Box>
                   <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    اسحب ملفًا هنا (صورة، فيديو، PDF…) أو اضغط للرفع
+                    اسحب ملفات هنا أو اضغط للاختيار — ثم اضغط «إضافة الملفات» للرفع
                   </Typography>
                 </Box>
 
-                {/* Link input */}
-                <Stack direction="row" spacing={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="أضف رابط..."
-                    value={linkInput}
-                    onChange={(e) => setLinkInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addLink()}
-                    InputProps={{ startAdornment: <InsertLinkIcon sx={{ fontSize: 16, color: "text.disabled", mr: 0.5 }} /> }}
-                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                  />
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    onClick={addLink}
-                    sx={{ borderRadius: 2, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, bgcolor: BRAND, "&:hover": { bgcolor: "#5254e0" } }}
-                  >
-                    إضافة رابط
-                  </Button>
-                </Stack>
+                {pendingUploadFiles.length > 0 && (
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: "block", mb: 1, fontSize: "0.7rem" }}>
+                      ملفات مختارة (لم تُرفَع بعد)
+                    </Typography>
+                    <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
+                      {pendingUploadFiles.map((f, i) => (
+                        <Chip
+                          key={`${f.name}-${f.size}-${i}`}
+                          size="small"
+                          label={f.name}
+                          onDelete={() => removePendingFile(i)}
+                          deleteIcon={<CloseIcon sx={{ fontSize: "16px !important" }} />}
+                          sx={{ maxWidth: "100%", "& .MuiChip-label": { overflow: "hidden", textOverflow: "ellipsis" } }}
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  disableElevation
+                  disabled={pendingUploadFiles.length === 0 || uploadFilesPending}
+                  onClick={() => void commitPendingUploads()}
+                  sx={{ borderRadius: 2, fontWeight: 700, py: 1, bgcolor: BRAND, "&:hover": { bgcolor: "#5254e0" } }}
+                >
+                  إضافة الملفات
+                </Button>
               </Box>
             </Paper>
           </Stack>
@@ -817,6 +893,24 @@ export default function TicketDetailView({
           </Paper>
         </Grid>
       </Grid>
+
+      <ConfirmDeleteModal
+        open={pendingDeleteAttachment != null}
+        onClose={() => setPendingDeleteAttachment(null)}
+        handleConfirmDelete={() => {
+          if (!pendingDeleteAttachment || !onDeleteAttachment) return;
+          void onDeleteAttachment(pendingDeleteAttachment.id).then(() => {
+            setPendingDeleteAttachment(null);
+          });
+        }}
+        title="حذف المرفق"
+        message={
+          pendingDeleteAttachment
+            ? `هل تريد حذف «${pendingDeleteAttachment.name}»؟ لا يمكن التراجع عن هذا الإجراء.`
+            : undefined
+        }
+        confirmLoading={deleteAttachmentPending}
+      />
     </Box>
   );
 }

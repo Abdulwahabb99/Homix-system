@@ -326,6 +326,9 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
     if (Number.isFinite(tn)) orderTotalEgp = tn;
   }
 
+  const assignedToId = Number(assignedTo.id);
+  const assignedToUserId = Number.isFinite(assignedToId) ? assignedToId : undefined;
+
   return {
     id: String(raw.id ?? ""),
     op: String(order.operationNumber ?? ""),
@@ -346,6 +349,7 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
     notes: String(raw.notes ?? ""),
     chat,
     attachments,
+    ...(assignedToUserId != null ? { assignedToUserId } : {}),
     ...(orderTotalEgp != null ? { orderTotalEgp } : {}),
   };
 }
