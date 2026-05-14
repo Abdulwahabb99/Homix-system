@@ -51,6 +51,21 @@ const assigneeAutocompleteSx = {
   "& .MuiAutocomplete-endAdornment": { top: "unset" },
 } as const;
 
+/** نفس ارتفاع/راحة حقل المسئول (Autocomplete) تقريبًا */
+const ticketTypeSelectSx = {
+  borderRadius: 2,
+  fontFamily: "'Cairo',sans-serif",
+  fontSize: "0.875rem",
+  "& .MuiOutlinedInput-notchedOutline": { borderRadius: 2 },
+  "& .MuiSelect-select": {
+    display: "flex",
+    alignItems: "center",
+    minHeight: 48,
+    py: "11px",
+    boxSizing: "border-box",
+  },
+} as const;
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -193,7 +208,7 @@ export default function NewTicketModal({
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, pt: 2.5, pb: 1 }}>
-        <Typography variant="caption" fontWeight={700} color="text.secondary" mb={0.75} display="block">
+        <Typography variant="caption" fontWeight={700} color="text.secondary" my={0.75} display="block">
           رقم العملية أو رقم الطلب (بحث عبر الخادم)
         </Typography>
         <Stack direction="row" spacing={1} mb={foundOrder ? 2 : 0}>
@@ -271,13 +286,14 @@ export default function NewTicketModal({
             </Paper>
 
             <Stack spacing={2}>
-              <FormControl size="small" fullWidth disabled={!typeOptions.length || createPending}>
-                <InputLabel>نوع التذكرة</InputLabel>
+              <FormControl fullWidth disabled={!typeOptions.length || createPending}>
+                <InputLabel id="new-ticket-type-label">نوع التذكرة</InputLabel>
                 <Select
+                  labelId="new-ticket-type-label"
                   value={typeKey || (firstTypeKey != null ? String(firstTypeKey) : "")}
                   label="نوع التذكرة"
                   onChange={(e) => setTypeKey(String(e.target.value))}
-                  sx={{ borderRadius: 2 }}
+                  sx={ticketTypeSelectSx}
                 >
                   {typeOptions.map((t) => (
                     <MenuItem key={t.key} value={String(t.key)}>
@@ -341,7 +357,23 @@ export default function NewTicketModal({
           onClick={handleDialogClose}
           variant="outlined"
           disabled={createPending}
-          sx={{ borderRadius: 2, fontWeight: 600, textTransform: "none" }}
+          sx={{
+            borderRadius: 2,
+            fontWeight: 600,
+            textTransform: "none",
+            fontFamily: "'Cairo',sans-serif",
+            color: "#374151",
+            borderColor: "rgba(15, 23, 42, 0.18)",
+            "&:hover": {
+              color: "#111827",
+              borderColor: BRAND,
+              backgroundColor: alpha(BRAND, 0.06),
+            },
+            "&:disabled": {
+              color: "rgba(55, 65, 81, 0.45)",
+              borderColor: "rgba(15, 23, 42, 0.12)",
+            },
+          }}
         >
           إلغاء
         </Button>
