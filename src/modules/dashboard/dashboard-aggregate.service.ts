@@ -766,7 +766,7 @@ export class DashboardAggregateService {
     );
 
     const adminMap = new Map<string, CategoryAggregateRecord>();
-    const vendorRows: CategoryAggregateRecord[] = [];
+    const vendorMap = new Map<string, CategoryAggregateRecord>();
 
     for (const row of rows) {
       const metricDate = row.metricDate;
@@ -777,17 +777,22 @@ export class DashboardAggregateService {
       const totalSales = Number(row.totalSales ?? 0);
 
       if (vendorId !== null) {
-        vendorRows.push({
+        const vendorKey = `${metricDate}:${vendorId}:${categoryId}`;
+        const currentVendorRow = vendorMap.get(vendorKey) ?? {
           categoryId,
           categoryTitle: row.categoryTitle,
           metricDate,
           role: "vendor",
           scopeId: vendorId,
-          totalOrders,
-          totalQuantity,
-          totalSales,
+          totalOrders: 0,
+          totalQuantity: 0,
+          totalSales: 0,
           vendorId,
-        });
+        };
+        currentVendorRow.totalOrders += totalOrders;
+        currentVendorRow.totalQuantity += totalQuantity;
+        currentVendorRow.totalSales += totalSales;
+        vendorMap.set(vendorKey, currentVendorRow);
       }
 
       const adminKey = `${metricDate}:${categoryId}`;
@@ -808,6 +813,6 @@ export class DashboardAggregateService {
       adminMap.set(adminKey, currentAdminRow);
     }
 
-    return [...adminMap.values(), ...vendorRows];
+    return [...adminMap.values(), ...vendorMap.values()];
   }
 }
