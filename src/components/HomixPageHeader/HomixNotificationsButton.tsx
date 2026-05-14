@@ -64,18 +64,20 @@ export default function HomixNotificationsButton() {
   return (
     <>
       <Badge
+        variant="dot"
         color="error"
         overlap="circular"
-        badgeContent={unread.length}
         invisible={unread.length === 0}
         sx={{
           flexShrink: 0,
-          "& .MuiBadge-badge": {
-            fontSize: "0.65rem",
-            fontWeight: 800,
-            minWidth: 18,
-            height: 18,
-            padding: "0 5px",
+          "& .MuiBadge-dot": {
+            minWidth: 6,
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            border: `1.5px solid ${BELL_SURFACE}`,
+            top: 5,
+            right: 5,
           },
         }}
       >
@@ -86,16 +88,16 @@ export default function HomixNotificationsButton() {
           aria-expanded={anchorEl ? "true" : "false"}
           onClick={open}
           sx={{
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             border: "0.5px solid rgba(0,0,0,0.1)",
-            borderRadius: "8px",
+            borderRadius: "9px",
             bgcolor: BELL_SURFACE,
             boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
             "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
           }}
         >
-          <NotificationsOutlinedIcon sx={{ fontSize: 22 }} />
+          <NotificationsOutlinedIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Badge>
 

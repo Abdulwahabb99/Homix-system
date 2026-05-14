@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Icon, IconButton, Stack, Typography, useMediaQuery } from "@mui/material";
+import { Box, Icon, IconButton, Stack, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import { useLocation } from "react-router-dom";
@@ -12,24 +12,31 @@ export interface HomixPageHeaderProps {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
+  /** يستبدل مسار التنقل الافتراضي (مثلاً تفاصيل طلب بعناوين عربية واضحة) */
+  breadcrumb?: React.ReactNode;
   sx?: SxProps<Theme>;
 }
 
 /**
- * الشريط العلوي الموحّد: إشعارات عند نهاية السطر (الشمال في rtl)، breadcrumbs أو عنوان وأزرار.
+ * الشريط العلوي الموحّد: breadcrumbs أو عنوان، + مجموعة نهاية السطر: إشعارات ثم الإجراءات (ثم قائمة الجوال).
  */
-export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter }: HomixPageHeaderProps) {
+export default function HomixPageHeader({
+  title,
+  subtitle,
+  actions,
+  breadcrumb,
+  sx: sxOuter,
+}: HomixPageHeaderProps) {
   const theme = useTheme();
-  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const { pathname } = useLocation();
   const route = pathname.split("/").slice(1).filter(Boolean);
 
   const [muiController, dispatch] = useMaterialUIController();
   const { miniSidenav } = muiController;
 
-  const crumbs = title === undefined || title === null;
+  const useAutoBreadcrumbs =
+    breadcrumb == null && (title === undefined || title === null);
   const hasActions = actions != null && actions !== false;
-  const clusterReservePx = isXlUp ? 58 : 100;
 
   return (
     <Box
@@ -44,9 +51,9 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
         mx: theme.spacing(-3),
         pb: "10px",
         pt: "10px",
-        minHeight: 58,
+        minHeight: 56,
         paddingInlineStart: { xs: 2, xl: "22px" },
-        paddingInlineEnd: `${clusterReservePx + 14}px`,
+        paddingInlineEnd: { xs: 2, xl: "22px" },
         bgcolor: HX.surface,
         borderBottom: `1px solid ${HX.border2}`,
         boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
@@ -57,48 +64,19 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
     >
       <Box
         sx={{
-          position: "absolute",
-          insetInlineEnd: { xs: 8, xl: 10 },
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 2,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <HomixNotificationsButton />
-        <IconButton
-          size="small"
-          aria-label="فتح القائمة"
-          onClick={() => setMiniSidenav(dispatch, !miniSidenav)}
-          sx={{
-            display: { xs: "inline-flex", xl: "none" },
-            width: 40,
-            height: 40,
-            border: "0.5px solid rgba(0,0,0,0.1)",
-            borderRadius: "8px",
-            bgcolor: HX.surface,
-            color: HX.tx2,
-            boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
-            "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
-          }}
-        >
-          <Icon sx={{ fontSize: 22 }}>{miniSidenav ? "menu_open" : "menu"}</Icon>
-        </IconButton>
-      </Box>
-
-      <Box
-        sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flex: 1,
           minWidth: 0,
+          gap: 1.5,
+          flexWrap: { xs: "wrap", sm: "nowrap" },
         }}
       >
         <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>
-          {crumbs ? (
+          {breadcrumb != null ? (
+            <Box sx={{ "& *": { fontFamily: "'Cairo',sans-serif" } }}>{breadcrumb}</Box>
+          ) : useAutoBreadcrumbs ? (
             <Breadcrumbs icon="home" title={route[route.length - 1]} route={route} light={false} />
           ) : typeof title === "string" ? (
             <Typography
@@ -117,7 +95,7 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
             <Box sx={{ "& *": { fontFamily: "'Cairo',sans-serif" } }}>{title}</Box>
           )}
 
-          {!crumbs && subtitle != null && (
+          {!useAutoBreadcrumbs && subtitle != null && (
             <Box sx={{ display: { xs: "none", md: "block" } }}>
               {typeof subtitle === "string" ? (
                 <Typography
@@ -138,16 +116,42 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
           )}
         </Box>
 
-        {hasActions && (
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{ flexShrink: 0, position: "relative", zIndex: 3 }}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}
+        >
+          <HomixNotificationsButton />
+          {hasActions && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ flexShrink: 0, flexWrap: "wrap" }}
+            >
+              {actions}
+            </Stack>
+          )}
+          <IconButton
+            size="small"
+            aria-label="فتح القائمة"
+            onClick={() => setMiniSidenav(dispatch, !miniSidenav)}
+            sx={{
+              display: { xs: "inline-flex", xl: "none" },
+              width: 40,
+              height: 40,
+              border: "0.5px solid rgba(0,0,0,0.1)",
+              borderRadius: "8px",
+              bgcolor: HX.surface,
+              color: HX.tx2,
+              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
+              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+            }}
           >
-            {actions}
-          </Stack>
-        )}
+            <Icon sx={{ fontSize: 22 }}>{miniSidenav ? "menu_open" : "menu"}</Icon>
+          </IconButton>
+        </Stack>
       </Box>
     </Box>
   );
