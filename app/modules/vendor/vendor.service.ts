@@ -1,9 +1,11 @@
 import bcrypt from "bcryptjs";
 
 import { env } from "../../../src/config/env";
+import { USER_TYPES } from "../../../config/constants";
 
 const User = require("../user/user.model") as typeof import("../user/user.model");
 const UserService = require("../user/user.service") as typeof import("../user/user.service");
+const Notification = require("../notification/notification.model") as typeof import("../notification/notification.model");
 const Vendor = require("./vendor.model") as typeof import("./vendor.model");
 
 type VendorRecord = {
@@ -27,6 +29,7 @@ type UserRecord = {
   id: number;
   lastName?: string;
   restore?: () => Promise<void>;
+  socketIds?: string[];
   vendorId?: number | null;
 };
 
@@ -70,6 +73,39 @@ const sanitizeVendorName = (name: string): string => {
 };
 
 class VendorsService {
+  private static async notifyAdminsForNewVendor(vendor: VendorRecord): Promise<void> {
+    const admins = (await User.findAll({
+      attributes: ["id", "socketIds"],
+      where: {
+        userType: USER_TYPES.ADMIN,
+      },
+    })) as UserRecord[];
+
+    if (admins.length === 0) {
+      return;
+    }
+
+    const text = `تم إضافة بائع جديد: ${vendor.name}`;
+    await Notification.bulkCreate(admins.map((admin) => ({
+      entityId: vendor.id,
+      entityType: "vendor",
+      text,
+      userId: admin.id,
+    })));
+
+    const socketIds = admins.flatMap((admin) => admin.socketIds ?? []);
+    if (socketIds.length > 0 && global.socketIO && typeof global.socketIO.to === "function") {
+      for (const socketId of socketIds) {
+        global.socketIO.to(socketId).emit("notification", {
+          entityId: vendor.id,
+          entityType: "vendor",
+          text,
+          userId: null,
+        });
+      }
+    }
+  }
+
   public static async create(data: VendorCreateInput): Promise<VendorResponse> {
     const transaction = await Vendor.sequelize.transaction();
 
@@ -115,6 +151,7 @@ class VendorsService {
       }
 
       await transaction.commit();
+      await VendorsService.notifyAdminsForNewVendor(plainVendor);
       return {
         data: {
           ...plainVendor,
