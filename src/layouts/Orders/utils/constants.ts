@@ -50,3 +50,23 @@ export const paymentStatusValues = {
   2: "مدفوع",
   1: "دفع عند الاستلام",
 };
+
+/** يطابق PriorityBadge: 1 بالمدة، 2 مستعجل، 3 مستعجل جداً — مع دعم القيم النصية القديمة */
+export type OrderDeliveryPriorityBadgeLevel = "very-urgent" | "urgent" | "normal";
+
+export function mapDeliveryPriorityToBadgeLevel(
+  dp: string | number | null | undefined
+): OrderDeliveryPriorityBadgeLevel | null {
+  if (dp === null || dp === undefined || dp === "") return null;
+  const n = Number(dp);
+  if (n === 3) return "very-urgent";
+  if (n === 2) return "urgent";
+  if (n === 1) return "normal";
+  const s = String(dp).toLowerCase();
+  if (s === "3") return "very-urgent";
+  if (s === "2" || s === "almostdue") return "urgent";
+  if (s === "1" || s === "onschedule") return "normal";
+  if (s.includes("very") || s.includes("مستعجل جدا")) return "very-urgent";
+  if (s.includes("urgent") || s.includes("مستعجل")) return "urgent";
+  return "normal";
+}

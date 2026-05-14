@@ -14,7 +14,7 @@ import {
   DeliveryByBadge,
   PriorityBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
-import type { PriorityLevel } from "layouts/Orders/components/OrdersHomixBadges";
+import { mapDeliveryPriorityToBadgeLevel } from "layouts/Orders/utils/constants";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -38,14 +38,6 @@ function avColor(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AV_COLORS.length;
   return AV_COLORS[h];
-}
-
-function mapDeliveryPriorityToLevel(dp: string | null | undefined): PriorityLevel | null {
-  if (dp == null || dp === "") return null;
-  const s = String(dp).toLowerCase();
-  if (s.includes("very") || s.includes("مستعجل جدا")) return "very-urgent";
-  if (s.includes("urgent") || s.includes("مستعجل")) return "urgent";
-  return "normal";
 }
 
 function rowKey(order: Order) {
@@ -161,7 +153,7 @@ interface Order {
   vendorName?: string;
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
-  deliveryPriority?: string | null;
+  deliveryPriority?: string | number | null;
   createdAt?: string;
 }
 interface User {
@@ -278,7 +270,7 @@ export default function OrdersHomixMobileList({
               ? calculateDaysFromPoDate(order.PoDate)
               : null;
         const productCode = order.items?.[0]?.code ?? "—";
-        const priorityLevel = mapDeliveryPriorityToLevel(order.deliveryPriority ?? undefined);
+        const priorityLevel = mapDeliveryPriorityToBadgeLevel(order.deliveryPriority ?? undefined);
 
         return (
           <Box

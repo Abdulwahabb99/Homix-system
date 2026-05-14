@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -19,6 +19,7 @@ import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { PAYMENT_STATUS, DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
+import type { OrdersMeta } from "query/ordersMeta.api";
 
 export interface FiltersPanelValue {
   orderStatus: number[];
@@ -28,6 +29,10 @@ export interface FiltersPanelValue {
   fromDate: string;
   toDate: string;
   userId: string;
+  /** معرفات أولوية من الـ API (أرقام أو سلاسل حسب الـ meta) */
+  priorities: string[];
+  /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
+  deliveryBy: number[];
 }
 
 interface User { id: string | number; firstName?: string; lastName?: string }
@@ -36,6 +41,8 @@ interface OrdersHomixFiltersPanelProps {
   isVendor: boolean;
   vendors: { label: string; value: string | number }[];
   users: User[];
+  /** خيارات الفلاتر من `GET /orders/meta` — عند الفراغ تُستخدم الثوابت المحلية */
+  meta: OrdersMeta | null | undefined;
   value: FiltersPanelValue;
   onApply: (v: FiltersPanelValue) => void;
   onReset: () => void;
@@ -95,18 +102,94 @@ const MENU_PROPS = {
   },
 };
 
-type PriorityLevel = "very-urgent" | "urgent" | "normal";
-
-const PRIORITY_OPTIONS: { key: PriorityLevel; label: string; bg: string; color: string; dot: string; activeBg: string }[] = [
-  { key: "very-urgent", label: "مستعجل جداً",  bg: HX.redLight,   color: HX.red,   dot: HX.red,   activeBg: HX.red   },
-  { key: "urgent",      label: "مستعجل",        bg: HX.amberLight, color: HX.amber, dot: HX.amber, activeBg: HX.amber },
-  { key: "normal",      label: "بالمدة المحددة", bg: HX.greenLight, color: HX.green, dot: HX.green, activeBg: HX.green },
+const FALLBACK_PRIORITY_ROWS: { id: string; label: string }[] = [
+  { id: "1", label: "بالمدة" },
+  { id: "2", label: "مستعجل" },
+  { id: "3", label: "مستعجل جدا" },
 ];
 
+const FALLBACK_DELIVERY_BY: { id: number; label: string }[] = [
+  { id: 1, label: "هوميكس" },
+  { id: 2, label: "بائع" },
+];
+
+function priorityPillStyle(id: string) {
+  switch (id) {
+    case "3":
+    case "urgent":
+      return {
+        bg: HX.redLight,
+        color: HX.red,
+        dot: HX.red,
+        activeBg: HX.red,
+      };
+    case "2":
+    case "almostDue":
+      return {
+        bg: HX.amberLight,
+        color: HX.amber,
+        dot: HX.amber,
+        activeBg: HX.amber,
+      };
+    case "1":
+    case "onSchedule":
+    default:
+      return {
+        bg: HX.greenLight,
+        color: HX.green,
+        dot: HX.green,
+        activeBg: HX.green,
+      };
+  }
+}
+
 export default function OrdersHomixFiltersPanel({
-  isVendor, vendors, users, value, onApply, onReset,
+  isVendor, vendors, users, meta, value, onApply, onReset,
 }: OrdersHomixFiltersPanelProps) {
   const [open, setOpen] = useState(true);
+
+  const statusOpts = useMemo(
+    () =>
+      meta?.statuses?.length
+        ? meta.statuses.map((s) => ({ value: s.id, label: s.label }))
+        : statusoptions,
+    [meta?.statuses]
+  );
+
+  const manufactureOpts = useMemo(
+    () =>
+      meta?.manufactureStatuses?.length
+        ? meta.manufactureStatuses.map((s) => ({ value: s.id, label: s.label }))
+        : DELIVERY_STATUS,
+    [meta?.manufactureStatuses]
+  );
+
+  const paymentOpts = useMemo(
+    () =>
+      meta?.paymentStatuses?.length
+        ? meta.paymentStatuses.map((s) => ({ value: s.id, label: s.label }))
+        : PAYMENT_STATUS,
+    [meta?.paymentStatuses]
+  );
+
+  const priorityOpts = useMemo(
+    () => (meta?.priorities?.length ? meta.priorities : FALLBACK_PRIORITY_ROWS),
+    [meta?.priorities]
+  );
+
+  const assigneeOpts = useMemo(() => {
+    if (meta?.assignees?.length) return meta.assignees;
+    return users.map((u) => ({
+      id: Number(u.id),
+      label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
+    }));
+  }, [meta?.assignees, users]);
+
+  const deliveryByOpts = useMemo(
+    () =>
+      meta?.deliveryByOptions?.length ? meta.deliveryByOptions : FALLBACK_DELIVERY_BY,
+    [meta?.deliveryByOptions]
+  );
 
   /* draft state — synced when external value changes */
   const [draftStatus,   setDraftStatus]   = useState<number[]>(value.orderStatus ?? []);
@@ -116,7 +199,8 @@ export default function OrdersHomixFiltersPanel({
   const [draftUserId,   setDraftUserId]   = useState<string>(value.userId ?? "");
   const [draftFrom,     setDraftFrom]     = useState<string>(value.fromDate ?? "");
   const [draftTo,       setDraftTo]       = useState<string>(value.toDate ?? "");
-  const [activePriorities, setActivePriorities] = useState<PriorityLevel[]>([]);
+  const [draftPriorities, setDraftPriorities] = useState<string[]>(value.priorities ?? []);
+  const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
 
   useEffect(() => {
     setDraftStatus(value.orderStatus ?? []);
@@ -126,6 +210,8 @@ export default function OrdersHomixFiltersPanel({
     setDraftUserId(value.userId ?? "");
     setDraftFrom(value.fromDate ?? "");
     setDraftTo(value.toDate ?? "");
+    setDraftPriorities(value.priorities ?? []);
+    setDraftDeliveryBy(value.deliveryBy ?? []);
   }, [value]);
 
   const totalActive =
@@ -135,11 +221,13 @@ export default function OrdersHomixFiltersPanel({
     (isVendor ? 0 : draftVendor.length) +
     (draftUserId ? 1 : 0) +
     (draftFrom ? 1 : 0) +
-    (draftTo ? 1 : 0);
+    (draftTo ? 1 : 0) +
+    draftPriorities.length +
+    draftDeliveryBy.length;
 
-  const handleTogglePriority = (p: PriorityLevel) => {
-    setActivePriorities((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
+  const handleTogglePriority = (id: string) => {
+    setDraftPriorities((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
@@ -152,6 +240,8 @@ export default function OrdersHomixFiltersPanel({
       fromDate:       draftFrom,
       toDate:         draftTo,
       userId:         draftUserId,
+      priorities:     draftPriorities,
+      deliveryBy:     draftDeliveryBy,
     });
   };
 
@@ -163,7 +253,8 @@ export default function OrdersHomixFiltersPanel({
     setDraftUserId("");
     setDraftFrom("");
     setDraftTo("");
-    setActivePriorities([]);
+    setDraftPriorities([]);
+    setDraftDeliveryBy([]);
     onReset();
   };
 
@@ -171,24 +262,32 @@ export default function OrdersHomixFiltersPanel({
   interface ActiveChip { label: string; onRemove: () => void }
   const chips: ActiveChip[] = [
     ...draftStatus.map((s) => ({
-      label: `حالة: ${statusoptions.find((o) => o.value === s)?.label?.trim() ?? s}`,
+      label: `حالة: ${statusOpts.find((o) => o.value === s)?.label?.trim() ?? s}`,
       onRemove: () => setDraftStatus((p) => p.filter((x) => x !== s)),
     })),
     ...draftDelivery.map((s) => ({
-      label: `تصنيع: ${DELIVERY_STATUS.find((o) => o.value === s)?.label ?? s}`,
+      label: `تصنيع: ${manufactureOpts.find((o) => o.value === s)?.label ?? s}`,
       onRemove: () => setDraftDelivery((p) => p.filter((x) => x !== s)),
     })),
     ...(draftPayment
-      ? [{ label: `دفع: ${PAYMENT_STATUS.find((o) => String(o.value) === draftPayment)?.label ?? draftPayment}`, onRemove: () => setDraftPayment("") }]
+      ? [{ label: `دفع: ${paymentOpts.find((o) => String(o.value) === draftPayment)?.label ?? draftPayment}`, onRemove: () => setDraftPayment("") }]
       : []),
     ...(isVendor ? [] : draftVendor.map((v) => ({
       label: `مصنع: ${vendors.find((o) => String(o.value) === v)?.label ?? v}`,
       onRemove: () => setDraftVendor((p) => p.filter((x) => x !== v)),
     }))),
     ...(draftUserId ? [{
-      label: `مسئول: ${(() => { const u = users.find((x) => String(x.id) === draftUserId); return u ? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() : draftUserId; })()}`,
+      label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === draftUserId)?.label ?? draftUserId}`,
       onRemove: () => setDraftUserId(""),
     }] : []),
+    ...draftPriorities.map((pid) => ({
+      label: `أولوية: ${priorityOpts.find((p) => String(p.id) === String(pid))?.label ?? pid}`,
+      onRemove: () => setDraftPriorities((p) => p.filter((x) => x !== pid)),
+    })),
+    ...draftDeliveryBy.map((id) => ({
+      label: `توصيل: ${deliveryByOpts.find((o) => o.id === id)?.label ?? id}`,
+      onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
+    })),
     ...(draftFrom  ? [{ label: `من: ${draftFrom}`,   onRemove: () => setDraftFrom("")  }] : []),
     ...(draftTo    ? [{ label: `إلى: ${draftTo}`,    onRemove: () => setDraftTo("")    }] : []),
   ];
@@ -272,11 +371,11 @@ export default function OrdersHomixFiltersPanel({
                     renderValue={(sel) => sel.length === 0
                       ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل الحالات</span>
                       : sel.length === 1
-                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{statusoptions.find((o) => o.value === sel[0])?.label}</span>
+                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{statusOpts.find((o) => o.value === sel[0])?.label}</span>
                       : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
                     }
                   >
-                    {statusoptions.map((o) => (
+                    {statusOpts.map((o) => (
                       <MenuItem key={o.value} value={o.value} dense>
                         <Checkbox size="small" checked={draftStatus.includes(o.value)} sx={{ py: 0, mr: 0.5 }} />
                         <ListItemText primary={o.label} primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }} />
@@ -297,11 +396,11 @@ export default function OrdersHomixFiltersPanel({
                     renderValue={(sel) => sel.length === 0
                       ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل الحالات</span>
                       : sel.length === 1
-                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{DELIVERY_STATUS.find((o) => o.value === sel[0])?.label}</span>
+                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{manufactureOpts.find((o) => o.value === sel[0])?.label}</span>
                       : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
                     }
                   >
-                    {DELIVERY_STATUS.map((o) => (
+                    {manufactureOpts.map((o) => (
                       <MenuItem key={o.value} value={o.value} dense>
                         <Checkbox size="small" checked={draftDelivery.includes(o.value)} sx={{ py: 0, mr: 0.5 }} />
                         <ListItemText primary={o.label} primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }} />
@@ -322,13 +421,13 @@ export default function OrdersHomixFiltersPanel({
                       input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
                       renderValue={(sel) => !sel
                         ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>الكل</span>
-                        : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{PAYMENT_STATUS.find((o) => String(o.value) === sel)?.label ?? sel}</span>
+                        : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{paymentOpts.find((o) => String(o.value) === sel)?.label ?? sel}</span>
                       }
                     >
                       <MenuItem value="" dense>
                         <em style={{ fontSize: "12.5px", color: HX.tx2, fontFamily: "'Cairo',sans-serif" }}>الكل</em>
                       </MenuItem>
-                      {PAYMENT_STATUS.map((o) => (
+                      {paymentOpts.map((o) => (
                         <MenuItem key={o.value} value={String(o.value)} dense>
                           {o.label}
                         </MenuItem>
@@ -339,15 +438,43 @@ export default function OrdersHomixFiltersPanel({
               </Grid>
             )}
 
-            {/* التوصيل بواسطة — visual placeholder */}
+            {/* التوصيل بواسطة — من الـ meta: deliveryByOptions */}
             <Grid item xs={12} sm={6} md={12 / 5}>
               <FieldBox label="التوصيل بواسطة">
-                <FormControl fullWidth size="small" disabled>
-                  <Select displayEmpty value="" input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                    renderValue={() => <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>الكل</span>}
+                <FormControl fullWidth size="small">
+                  <Select
+                    multiple
+                    displayEmpty
+                    value={draftDeliveryBy}
+                    onChange={(e) => setDraftDeliveryBy(e.target.value as number[])}
+                    input={<OutlinedInput />}
+                    MenuProps={MENU_PROPS}
+                    sx={selectSx}
+                    renderValue={(sel) =>
+                      sel.length === 0 ? (
+                        <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>الكل</span>
+                      ) : sel.length === 1 ? (
+                        <span style={{ fontFamily: "'Cairo',sans-serif" }}>
+                          {deliveryByOpts.find((o) => o.id === sel[0])?.label}
+                        </span>
+                      ) : (
+                        <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
+                      )
+                    }
                   >
-                    <MenuItem value="" dense>المخزن</MenuItem>
-                    <MenuItem value="seller" dense>البائع</MenuItem>
+                    {deliveryByOpts.map((o) => (
+                      <MenuItem key={o.id} value={o.id} dense>
+                        <Checkbox
+                          size="small"
+                          checked={draftDeliveryBy.includes(o.id)}
+                          sx={{ py: 0, mr: 0.5 }}
+                        />
+                        <ListItemText
+                          primary={o.label}
+                          primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }}
+                        />
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </FieldBox>
@@ -410,9 +537,9 @@ export default function OrdersHomixFiltersPanel({
                     renderValue={(sel) => !sel
                       ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل المسئولين</span>
                       : (() => {
-                          const u = users.find((x) => String(x.id) === sel);
+                          const u = assigneeOpts.find((x) => String(x.id) === sel);
                           return <span style={{ fontFamily: "'Cairo',sans-serif" }}>
-                            {u ? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() : sel}
+                            {u?.label ?? sel}
                           </span>;
                         })()
                     }
@@ -420,9 +547,9 @@ export default function OrdersHomixFiltersPanel({
                     <MenuItem value="" dense>
                       <em style={{ fontSize: "12.5px", color: HX.tx2, fontFamily: "'Cairo',sans-serif" }}>كل المسئولين</em>
                     </MenuItem>
-                    {users.map((u) => (
+                    {assigneeOpts.map((u) => (
                       <MenuItem key={String(u.id)} value={String(u.id)} dense>
-                        {`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id)}
+                        {u.label}
                       </MenuItem>
                     ))}
                   </Select>
@@ -468,27 +595,28 @@ export default function OrdersHomixFiltersPanel({
             <Grid item xs={12} sm={12} md={6}>
               <FieldBox label="الأولوية">
                 <Stack direction="row" flexWrap="wrap" gap="7px" sx={{ minHeight: 34, alignItems: "center" }}>
-                  {PRIORITY_OPTIONS.map((p) => {
-                    const active = activePriorities.includes(p.key);
+                  {priorityOpts.map((p) => {
+                    const active = draftPriorities.includes(p.id);
+                    const sty = priorityPillStyle(p.id);
                     return (
                       <Box
-                        key={p.key}
-                        onClick={() => handleTogglePriority(p.key)}
+                        key={p.id}
+                        onClick={() => handleTogglePriority(p.id)}
                         sx={{
                           display: "inline-flex", alignItems: "center", gap: "6px",
                           px: "15px", py: "7px", borderRadius: "8px",
                           fontSize: "12px", fontWeight: 600, fontFamily: "'Cairo',sans-serif",
                           border: "0.5px solid", cursor: "pointer", transition: ".15s",
                           userSelect: "none",
-                          bgcolor: active ? p.activeBg : p.bg,
-                          color: active ? "#fff" : p.color,
-                          borderColor: active ? p.activeBg : `${p.dot}40`,
+                          bgcolor: active ? sty.activeBg : sty.bg,
+                          color: active ? "#fff" : sty.color,
+                          borderColor: active ? sty.activeBg : `${sty.dot}40`,
                           "&:hover": { transform: "translateY(-1px)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
                         }}
                       >
                         <Box sx={{
                           width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                          bgcolor: active ? "#fff" : p.dot,
+                          bgcolor: active ? "#fff" : sty.dot,
                         }} />
                         {p.label}
                       </Box>

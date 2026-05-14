@@ -2,12 +2,13 @@
  * مفاتيح React Query — ثبّت الأسماء هنا واستخدم invalidate بنفس الهرمية.
  */
 export const orderKeys = {
-  all: () => ["orders"],
-  lists: () => [...orderKeys.all(), "list"],
+  all: () => ["orders"] as const,
+  meta: () => [...orderKeys.all(), "meta"] as const,
+  lists: () => [...orderKeys.all(), "list"] as const,
   /**
    * @param {string} filtersKey سلسلة JSON ثابتة من واجهة الطلبات (فلاتر + صفحة + تواريخ)
    */
-  list: (filtersKey) => [...orderKeys.lists(), filtersKey],
+  list: (filtersKey: string) => [...orderKeys.lists(), filtersKey] as const,
 };
 
 export const vendorKeys = {

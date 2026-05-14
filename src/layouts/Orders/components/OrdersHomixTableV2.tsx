@@ -15,7 +15,7 @@ import {
   DeliveryByBadge,
   PriorityBadge,
 } from "./OrdersHomixBadges";
-import type { PriorityLevel } from "./OrdersHomixBadges";
+import { mapDeliveryPriorityToBadgeLevel } from "layouts/Orders/utils/constants";
 import OrdersHomixMobileList from "./OrdersHomixMobileList";
 
 /* ─────────────────────────────────────────
@@ -43,14 +43,6 @@ function avColor(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AV_COLORS.length;
   return AV_COLORS[h];
-}
-
-function mapDeliveryPriorityToLevel(dp: string | null | undefined): PriorityLevel | null {
-  if (dp == null || dp === "") return null;
-  const s = String(dp).toLowerCase();
-  if (s.includes("very") || s.includes("مستعجل جدا")) return "very-urgent";
-  if (s.includes("urgent") || s.includes("مستعجل")) return "urgent";
-  return "normal";
 }
 
 /* ─────────────────────────────────────────
@@ -201,7 +193,7 @@ interface Order {
   vendorName?: string;
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
-  deliveryPriority?: string | null;
+  deliveryPriority?: string | number | null;
   createdAt?: string;
 }
 interface User   { id: string | number; firstName?: string; lastName?: string }
@@ -501,7 +493,7 @@ export default function OrdersHomixTableV2({
                     ? calculateDaysFromPoDate(order.PoDate)
                     : null;
               const productCode = order.items?.[0]?.code ?? "—";
-              const priorityLevel = mapDeliveryPriorityToLevel(order.deliveryPriority ?? undefined);
+              const priorityLevel = mapDeliveryPriorityToBadgeLevel(order.deliveryPriority ?? undefined);
 
               const rowBg = isSelected ? "#f5f3ff" : undefined;
 

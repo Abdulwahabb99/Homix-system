@@ -16,6 +16,7 @@ import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
+import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
 
 /* ── New UI components ── */
 import OrdersHomixListingHeader from "layouts/Orders/components/OrdersHomixListingHeader";
@@ -66,6 +67,17 @@ function Orders() {
     return raw.split(",");
   }, [searchParams]);
   const payment = searchParams.get("paymentStatus") || "";
+  const filterUserId = searchParams.get("userId") || "";
+  const deliveryPriorityParam = searchParams.get("deliveryPriority") || "";
+  const deliveryPriorityList = useMemo(() => {
+    if (!deliveryPriorityParam) return [];
+    return deliveryPriorityParam.split(",").map((s) => s.trim()).filter(Boolean);
+  }, [deliveryPriorityParam]);
+  const deliveryByList = useMemo(() => {
+    const raw = searchParams.get("deliveryBy");
+    if (!raw) return [];
+    return raw.split(",").map((s) => Number(s.trim())).filter((n) => !isNaN(n));
+  }, [searchParams]);
   const deliveryStatusList = useMemo(() => {
     const raw = searchParams.get("deliveryStatus");
     if (!raw) return [];
@@ -117,16 +129,24 @@ function Orders() {
   const orderNumberParam   = searchParams.get("orderNumber");
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
+  const deliveryByParam = searchParams.get("deliveryBy");
 
-  /* ── Orders query (unchanged) ── */
+  const metaQuery = useOrdersMeta(Boolean(token));
+
   const ordersListFiltersKey = useMemo(
     () =>
       JSON.stringify({
         p: page, on: orderNumberParam, v: vendorIdParam,
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
+        u: filterUserId || null,
+        dp: deliveryPriorityParam || null,
+        db: deliveryByParam || null,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
       }),
-    [page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam, deliveryStatusParam, startDate, endDate]
+    [
+      page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
+      deliveryStatusParam, filterUserId, deliveryPriorityParam, deliveryByParam, startDate, endDate,
+    ]
   );
 
   const {
@@ -139,7 +159,11 @@ function Orders() {
       fetchOrdersList({
         params: {
           page, orderNumberParam, vendorIdParam, orderStatusParam,
-          paymentStatusParam, deliveryStatusParam, startDate, endDate,
+          paymentStatusParam, deliveryStatusParam,
+          userIdParam: filterUserId || undefined,
+          deliveryPriorityParam: deliveryPriorityParam || undefined,
+          deliveryByParam: deliveryByParam || undefined,
+          startDate, endDate,
         },
         navigate,
       }),
@@ -163,6 +187,12 @@ function Orders() {
     },
     staleTime: 5 * 60_000,
   });
+
+  const filterVendorOptions = useMemo(() => {
+    const fromMeta = metaQuery.data?.vendors;
+    if (fromMeta?.length) return mergeHomixVendorOptions(fromMeta);
+    return vendors;
+  }, [metaQuery.data?.vendors, vendors]);
 
   /* ── Users query (unchanged) ── */
   const { data: users = [] } = useQuery({
@@ -250,6 +280,8 @@ function Orders() {
     fromDate: string;
     toDate: string;
     userId: string;
+    priorities: string[];
+    deliveryBy: number[];
   }) => {
     setParams({
       page:           "1",
@@ -257,6 +289,9 @@ function Orders() {
       vendorId:       d.selectedVendor?.length ? d.selectedVendor            : "",
       paymentStatus:  d.paymentStatus || "",
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
+      userId:         d.userId || "",
+      deliveryPriority: d.priorities?.length ? d.priorities.join(",") : "",
+      deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
     });
     /* Apply date range via existing hook */
     const from = strToMoment(d.fromDate);
@@ -267,7 +302,16 @@ function Orders() {
   };
 
   const handleFilterReset = () => {
-    setParams({ page: "1", status: "", vendorId: "", paymentStatus: "", deliveryStatus: "" });
+    setParams({
+      page: "1",
+      status: "",
+      vendorId: "",
+      paymentStatus: "",
+      deliveryStatus: "",
+      userId: "",
+      deliveryPriority: "",
+      deliveryBy: "",
+    });
     handleDateReset();
   };
 
@@ -323,6 +367,9 @@ function Orders() {
       ...(orderStatusParam   && { status:         orderStatusParam }),
       ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
       ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
+      ...(filterUserId       && { userId:         filterUserId }),
+      ...(deliveryPriorityParam && { deliveryPriority: deliveryPriorityParam }),
+      ...(deliveryByParam     && { deliveryBy:     deliveryByParam }),
       ...(startDate          && { startDate:      rangeDateToIso(startDate) }),
       ...(endDate            && { endDate:        rangeDateToIso(endDate) }),
     });
@@ -419,8 +466,9 @@ function Orders() {
 
               <OrdersHomixFiltersPanel
                 isVendor={isVendor}
-                vendors={vendors}
+                vendors={filterVendorOptions}
                 users={users}
+                meta={metaQuery.data}
                 value={{
                   orderStatus:    orderStatus,
                   selectedVendor: selectedVendor,
@@ -428,7 +476,9 @@ function Orders() {
                   deliveryStatus: deliveryStatusList,
                   fromDate:       currentFromDate,
                   toDate:         currentToDate,
-                  userId:         "",
+                  userId:         filterUserId,
+                  priorities:     deliveryPriorityList,
+                  deliveryBy:     deliveryByList,
                 }}
                 onApply={handleApplyFilters}
                 onReset={handleFilterReset}
@@ -436,7 +486,8 @@ function Orders() {
 
               {/* Global reset — shown when any filter is active */}
               {(orderStatus.length > 0 || selectedVendor.length > 0 || payment ||
-                deliveryStatusList.length > 0 || startDate || endDate) && (
+                deliveryStatusList.length > 0 || startDate || endDate ||
+                filterUserId || deliveryPriorityList.length > 0 || deliveryByList.length > 0) && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Box component="button" onClick={handleFullReset} sx={{
                     fontSize: "12px", fontWeight: 600, fontFamily: "'Cairo',sans-serif",
