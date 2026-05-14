@@ -715,15 +715,31 @@ export class DashboardAggregateService {
       },
     );
 
-    return rows.map((row) => ({
-      metricDate: row.metricDate,
-      productId: Number(row.productId),
-      productTitle: row.productTitle,
-      totalOrders: Number(row.totalOrders ?? 0),
-      totalQuantity: Number(row.totalQuantity ?? 0),
-      totalSales: Number(row.totalSales ?? 0),
-      vendorId: Number(row.vendorId),
-    }));
+    const productMap = new Map<string, ProductAggregateRecord>();
+
+    for (const row of rows) {
+      const metricDate = row.metricDate;
+      const productId = Number(row.productId);
+      const vendorId = Number(row.vendorId);
+      const key = `${metricDate}:${vendorId}:${productId}`;
+      const currentRow = productMap.get(key) ?? {
+        metricDate,
+        productId,
+        productTitle: row.productTitle,
+        totalOrders: 0,
+        totalQuantity: 0,
+        totalSales: 0,
+        vendorId,
+      };
+
+      currentRow.totalOrders += Number(row.totalOrders ?? 0);
+      currentRow.totalQuantity += Number(row.totalQuantity ?? 0);
+      currentRow.totalSales += Number(row.totalSales ?? 0);
+
+      productMap.set(key, currentRow);
+    }
+
+    return [...productMap.values()];
   }
 
   private async getCategoryAggregateRows(startDate: Date, endDate: Date): Promise<CategoryAggregateRecord[]> {
