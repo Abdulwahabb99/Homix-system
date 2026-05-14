@@ -508,7 +508,7 @@ const swaggerOptions = {
         OrderMetaPriorityOption: {
           type: "object",
           properties: {
-            id: { example: "urgent", enum: ["onSchedule", "almostDue", "urgent"], type: "string" },
+            id: { example: 3, enum: [1, 2, 3], type: "integer" },
             label: { example: "مستعجل جدا", type: "string" },
           },
           required: ["id", "label"],
@@ -555,9 +555,9 @@ const swaggerOptions = {
                   { id: 2, label: "PAID" },
                 ],
                 priorities: [
-                  { id: "onSchedule", label: "بالمدة" },
-                  { id: "almostDue", label: "مستعجل" },
-                  { id: "urgent", label: "مستعجل جدا" },
+                  { id: 1, label: "بالمدة" },
+                  { id: 2, label: "مستعجل" },
+                  { id: 3, label: "مستعجل جدا" },
                 ],
                 statuses: [
                   { id: 1, label: "PENDING" },
@@ -613,7 +613,7 @@ const swaggerOptions = {
               nullable: true,
               type: "integer",
             },
-            deliveryPriority: { enum: ["onSchedule", "almostDue", "urgent"], nullable: true, type: "string" },
+            deliveryPriority: { enum: [1, 2, 3], nullable: true, type: "integer" },
             deliveryPriorityLabel: { example: "بالمدة", type: "string" },
             expectedDeliveryDate: { example: "2026-05-06T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             fine: {

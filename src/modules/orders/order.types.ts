@@ -1,11 +1,11 @@
 import type { Request } from "express";
 
 import type { ORDER_PRIORITY_KEYS, ORDER_SUMMARY_CARD_KEYS } from "./order.constants";
-
-export type OrderPriorityKey = (typeof ORDER_PRIORITY_KEYS)[number];
 export type OrderSummaryCardKey = (typeof ORDER_SUMMARY_CARD_KEYS)[number];
 
 export type OrderRequestUser = NonNullable<Request["user"]>;
+
+export type OrderPriorityKey = (typeof ORDER_PRIORITY_KEYS)[number];
 
 export type OrderListQuery = {
   customerName?: string;
@@ -17,7 +17,7 @@ export type OrderListQuery = {
   orderNumber?: string;
   page: number;
   paymentStatus?: string;
-  priority?: OrderPriorityKey;
+  priority?: string;
   productCode?: string;
   size: number;
   startDate?: string;

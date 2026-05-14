@@ -38,12 +38,22 @@ export const ORDER_SUMMARY_CARD_KEYS = [
   "urgentOrders",
 ] as const;
 
-export const ORDER_PRIORITY_KEYS = ["onSchedule", "almostDue", "urgent"] as const;
+export const ORDER_PRIORITY = {
+  ON_SCHEDULE: 1,
+  ALMOST_DUE: 2,
+  URGENT: 3,
+} as const;
+
+export const ORDER_PRIORITY_KEYS = [
+  ORDER_PRIORITY.ON_SCHEDULE,
+  ORDER_PRIORITY.ALMOST_DUE,
+  ORDER_PRIORITY.URGENT,
+] as const;
 
 export const ORDER_DELIVERY_PRIORITY = {
-  ALMOST_DUE: "almostDue",
-  ON_SCHEDULE: "onSchedule",
-  URGENT: "urgent",
+  ALMOST_DUE: ORDER_PRIORITY.ALMOST_DUE,
+  ON_SCHEDULE: ORDER_PRIORITY.ON_SCHEDULE,
+  URGENT: ORDER_PRIORITY.URGENT,
 } as const;
 
 export const ORDER_SUMMARY_STATUS_GROUPS = {

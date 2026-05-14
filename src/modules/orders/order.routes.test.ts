@@ -100,6 +100,7 @@ const makeOrder = () => ({
   customerId: 5,
   deliveryBy: 1,
   deliveryDate: "2026-05-05T00:00:00.000Z",
+  deliveryStatus: 3,
   downPayment: "200",
   expectedDeliveryDate: "2026-05-06T00:00:00.000Z",
   id: 7,
@@ -209,6 +210,28 @@ describe("orderRouter", () => {
         [Op.in]: [1],
       }),
     );
+  });
+
+  it("supports multiple priority filters", async () => {
+    orderModel.findAndCountAll.mockResolvedValue({
+      count: 2,
+      rows: [
+        makeOrder(),
+        {
+          ...makeOrder(),
+          deliveryStatus: 1,
+          expectedDeliveryDate: "2026-05-20T00:00:00.000Z",
+          id: 8,
+          orderNumber: "31669",
+        },
+      ],
+    });
+
+    const response = await request(app).get("/orders").query({ page: 1, priority: "3,2", size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items).toHaveLength(1);
+    expect(response.body.data.items[0].orderNumber).toBe("31668");
   });
 
   it("returns order details in a focused DTO shape", async () => {

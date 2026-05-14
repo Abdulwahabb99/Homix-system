@@ -131,7 +131,7 @@ orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
  *         name: priority
  *         schema:
  *           type: string
- *           enum: [onSchedule, almostDue, urgent]
+ *           example: "3,2"
  *       - in: query
  *         name: deliveryStatus
  *         schema: { type: string, example: "1,2" }
@@ -329,7 +329,7 @@ orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrder
  *         name: priority
  *         schema:
  *           type: string
- *           enum: [onSchedule, almostDue, urgent]
+ *           example: "3,2"
  *       - in: query
  *         name: deliveryStatus
  *         schema: { type: string, example: "1,2" }

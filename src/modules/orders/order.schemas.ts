@@ -3,6 +3,10 @@ import { z } from "zod";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, ORDER_PRIORITY_KEYS } from "./order.constants";
 
 const csvNumberString = z.string().trim().min(1);
+const csvPriorityString = z.string().trim().min(1).refine(
+  (value) => value.split(",").every((item) => ORDER_PRIORITY_KEYS.includes(Number(item.trim()) as typeof ORDER_PRIORITY_KEYS[number])),
+  "Invalid priority value",
+);
 
 export const orderIdParamsSchema = z.object({
   orderId: z.coerce.number().int().positive(),
@@ -22,7 +26,7 @@ export const orderListQuerySchema = z.object({
   orderNumber: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   paymentStatus: csvNumberString.optional(),
-  priority: z.enum(ORDER_PRIORITY_KEYS).optional(),
+  priority: csvPriorityString.optional(),
   productCode: z.string().trim().optional(),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   startDate: z.string().trim().optional(),

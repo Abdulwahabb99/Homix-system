@@ -87,12 +87,17 @@ export const getOrderPriorityFromDeliveryStatus = (
   deliveryStatus: unknown,
   expectedDeliveryDate?: unknown,
 ): OrderPriorityKey | null => {
+  const dateBasedPriority = getOrderPriority(expectedDeliveryDate);
+  if (dateBasedPriority) {
+    return dateBasedPriority;
+  }
+
   const parsedDeliveryStatus = toNumber(deliveryStatus);
   if (parsedDeliveryStatus) {
     return DELIVERY_STATUS_PRIORITY_MAP[parsedDeliveryStatus as keyof typeof DELIVERY_STATUS_PRIORITY_MAP] ?? null;
   }
 
-  return getOrderPriority(expectedDeliveryDate);
+  return null;
 };
 
 export const getDeliveryPriorityLabel = (priority: OrderPriorityKey | null): string => {

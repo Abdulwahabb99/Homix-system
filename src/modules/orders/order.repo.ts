@@ -170,7 +170,8 @@ export class OrderRepository {
     const items = result.rows
       .map((row: unknown): { item: OrderListItem; row: Record<string, unknown> } => ({ item: mapOrderSummary(row), row: toPlain(row) }))
       .filter(({ item, row }: { item: OrderListItem; row: Record<string, unknown> }) => {
-        const matchesPriority = !filters.priority || item.deliveryPriority === filters.priority;
+        const matchesPriority = !filters.priority
+          || filters.priority.split(",").map((value) => Number(value.trim())).includes(item.deliveryPriority ?? 0);
         const matchesDeliveryStatus = !filters.deliveryStatus
           || filters.deliveryStatus.split(",").map(Number).includes(toNumber(row.deliveryStatus));
         return matchesPriority && matchesDeliveryStatus;
@@ -265,7 +266,7 @@ export class OrderRepository {
       if (ORDER_SUMMARY_STATUS_GROUPS.inProgress.includes(status)) counts.inProgressOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.delivered.includes(status)) counts.deliveredOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += 1;
-      if (getOrderPriorityFromDeliveryStatus(plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === "urgent" && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
+      if (getOrderPriorityFromDeliveryStatus(plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === 3 && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
     }
     return { cards: [
       { key: "urgentOrders", label: "مستعجل جدا", value: counts.urgentOrders },
@@ -287,7 +288,7 @@ export class OrderRepository {
       deliveryByOptions: Object.entries(DELIVERY_BY).map(([, id]) => ({ id: Number(id), label: DELIVERY_BY_ARABIC[id as keyof typeof DELIVERY_BY_ARABIC] ?? String(id) })),
       manufactureStatuses: Object.entries(MANUFACTURE_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       paymentStatuses: Object.entries(PAYMENT_STATUS).map(([label, id]) => ({ id: Number(id), label })),
-      priorities: [{ id: "onSchedule", label: "بالمدة" }, { id: "almostDue", label: "مستعجل" }, { id: "urgent", label: "مستعجل جدا" }],
+      priorities: [{ id: 1, label: "بالمدة" }, { id: 2, label: "مستعجل" }, { id: 3, label: "مستعجل جدا" }],
       statuses: Object.entries(ORDER_STATUS).map(([label, id]) => ({ id: Number(id), label })),
       vendors: vendors.map((vendor: unknown) => ({ id: toNumber(toPlain(vendor).id), label: toText(toPlain(vendor).name) })),
     };
