@@ -25,8 +25,10 @@ import { OrderStatusChip } from "../components/OrderStatusChips";
 import { OD } from "./odTheme";
 import {
   formatOrderDetailDate,
+  formatOrderDetailDateTime,
   getOrderFlowSteps,
   getOrderLineProductDescriptionPlainText,
+  getStatusHistoryEntryMessage,
 } from "./orderDetailNormalize";
 import { getOrderDetailPaymentLabel } from "./orderDetailPayment";
 
@@ -188,7 +190,7 @@ export default function OrderDetailsView({
                       }}
                     >
                       {(() => {
-                        const flowSteps = getOrderFlowSteps(orderDetails, manufactureStatus);
+                        const flowSteps = getOrderFlowSteps(orderDetails, manufactureStatus, orderDetails.statusHistory);
                         return flowSteps.map((step, si) => (
                           <React.Fragment key={step.label}>
                             <Stack alignItems="center" spacing={0.5} sx={{ minWidth: 36 }}>
@@ -1175,17 +1177,19 @@ export default function OrderDetailsView({
                           </Stack>
                         </Box>
                         <Box sx={{ px: 2, py: 1.5 }}>
-                          {Array.isArray(orderDetails.timeline) && orderDetails.timeline.length > 0 ? (
+                          {Array.isArray(orderDetails.statusHistory) && orderDetails.statusHistory.length > 0 ? (
                             <Stack spacing={0}>
-                              {orderDetails.timeline.map((ev, ti) => (
+                              {orderDetails.statusHistory.map((ev: any, ti: number) => (
                                 <Stack
-                                  key={ti}
+                                  key={ev.id ?? ti}
                                   direction="row"
                                   spacing={1.5}
                                   alignItems="flex-start"
                                   sx={{
                                     py: 1.25,
-                                    borderRight: `2px solid ${ti === orderDetails.timeline.length - 1 ? "transparent" : OD.brd}`,
+                                    borderRight: `2px solid ${
+                                      ti === orderDetails.statusHistory.length - 1 ? "transparent" : OD.brd
+                                    }`,
                                     pr: 1.75,
                                     mr: 1.75,
                                     position: "relative",
@@ -1209,13 +1213,15 @@ export default function OrderDetailsView({
                                   </Box>
                                   <Box sx={{ mr: 3, flex: 1 }}>
                                     <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: OD.tx }}>
-                                      {ev.action ?? ev.title ?? ev.message ?? "—"}
+                                      {getStatusHistoryEntryMessage(ev)}
                                     </Typography>
-                                    <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
-                                      {ev.detail ?? ev.description ?? ""}
-                                    </Typography>
+                                    {ev.userName ? (
+                                      <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
+                                        بواسطة {ev.userName}
+                                      </Typography>
+                                    ) : null}
                                     <Typography sx={{ fontSize: "0.65rem", color: OD.tx3, mt: 0.5 }}>
-                                      {ev.createdAt || ev.at ? formatOrderDetailDate(ev.createdAt ?? ev.at) : ""}
+                                      {ev.changedAt ? formatOrderDetailDateTime(ev.changedAt) : "—"}
                                     </Typography>
                                   </Box>
                                 </Stack>

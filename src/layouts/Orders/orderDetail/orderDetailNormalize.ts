@@ -1,22 +1,73 @@
-export function getOrderFlowSteps(orderDetails: any, manufactureStatus: number | null) {
+export type FlowStepState = "done" | "active" | "pending";
+
+const FLOW_STEP_LABELS = ["الطلب", "المخزن", "التصنيع", "الشحن", "التسليم"] as const;
+
+/**
+ * يطابق منطق الشريط السابق: رقم الخطوة النشطة (0…4) من حالة الطلب وحالة التصنيع الحالية.
+ * — معلق: المخزن نشط (1)، مؤكد+: التصنيع نشط (2)، في المخزن/قيد التصنيع: (2)، الشحن/التسليم من manufactureStatus.
+ */
+export function computeActiveIndexFromStatus(st: number, mfg: number | null | undefined): number {
+  const m = mfg == null || Number.isNaN(Number(mfg)) ? null : Number(mfg);
+  if (st === 1) return 1;
+  if (st === 8) return 2;
+  if (st === 2 || m === 2) return 2;
+  if (m === 3) return 3;
+  if (m != null && m >= 4) return 4;
+  if (st >= 3) return 2;
+  return 1;
+}
+
+function orderStatusesImplyDelivered(codes: Iterable<number>): boolean {
+  for (const c of codes) {
+    if (c === 5) return true;
+  }
+  return false;
+}
+
+/**
+ * شريط التقدّم الخمسي: يدمج الحالة الحالية مع أقصى مرحلة ظهرت في `statusHistory`
+ * (من `fromStatus` / `toStatus`) حتى يعكس الرحلة الفعلية مع بقاء نفس الشكل البصري.
+ */
+export function getOrderFlowSteps(
+  orderDetails: any,
+  manufactureStatus: number | null,
+  statusHistory?: any[] | null
+): { label: string; state: FlowStepState }[] {
+  const labels = [...FLOW_STEP_LABELS];
   const st = Number(orderDetails?.status ?? 0);
   const mfg = manufactureStatus == null ? null : Number(manufactureStatus);
-  const labels = ["الطلب", "المخزن", "التصنيع", "الشحن", "التسليم"];
 
-  if (st === 5) {
+  const codes: number[] = [st];
+  if (Array.isArray(statusHistory)) {
+    for (const h of statusHistory) {
+      if (h?.fromStatus != null && h.fromStatus !== "") codes.push(Number(h.fromStatus));
+      if (h?.toStatus != null && h.toStatus !== "") codes.push(Number(h.toStatus));
+    }
+  }
+
+  if (st === 5 || orderStatusesImplyDelivered(codes)) {
     return labels.map((label) => ({ label, state: "done" as const }));
   }
 
-  let activeIdx = 1;
-  if (st === 1) activeIdx = 1;
-  else if (st === 8) activeIdx = 2;
-  else if (st === 2 || mfg === 2) activeIdx = 2;
-  else if (mfg === 3) activeIdx = 3;
-  else if (mfg != null && mfg >= 4) activeIdx = 4;
-  else if (st >= 3) activeIdx = 2;
+  let activeIdx = computeActiveIndexFromStatus(st, mfg);
+
+  if (Array.isArray(statusHistory) && statusHistory.length > 0) {
+    for (const h of statusHistory) {
+      const pairs = [h?.fromStatus, h?.toStatus];
+      for (const raw of pairs) {
+        if (raw == null || raw === "") continue;
+        const code = Number(raw);
+        if (code === 5) {
+          return labels.map((label) => ({ label, state: "done" as const }));
+        }
+        activeIdx = Math.max(activeIdx, computeActiveIndexFromStatus(code, mfg));
+      }
+    }
+  }
+
+  activeIdx = Math.min(activeIdx, labels.length - 1);
 
   return labels.map((label, i) => {
-    if (i === 0) return { label, state: "done" as const };
     if (i < activeIdx) return { label, state: "done" as const };
     if (i === activeIdx) return { label, state: "active" as const };
     return { label, state: "pending" as const };
@@ -32,6 +83,28 @@ export function formatOrderDetailDate(iso: string | null | undefined): string {
     month: "long",
     year: "numeric",
   }).format(d);
+}
+
+export function formatOrderDetailDateTime(iso: string | null | undefined): string {
+  if (iso == null || iso === "") return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("ar-EG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+/** نص واحد لعرض بند `statusHistory` في الواجهة. */
+export function getStatusHistoryEntryMessage(ev: any): string {
+  const to = String(ev?.toStatusLabel ?? "").trim();
+  const from = String(ev?.fromStatusLabel ?? "").trim();
+  if (from) return `من ${from} إلى ${to || "—"}`;
+  if (to) return `تم تعيين الحالة إلى: ${to}`;
+  return "—";
 }
 
 export function getOrderLineProductDescriptionPlainText(line: any): string {
@@ -74,6 +147,7 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     if (!Array.isArray(legacy.orderLines)) legacy.orderLines = [];
     legacy.createdAt = legacy.createdAt ?? legacy.orderDate;
     legacy.deliveryStatus = legacy.deliveryStatus ?? legacy.manufactureStatus;
+    if (!Array.isArray(legacy.statusHistory)) legacy.statusHistory = [];
     return legacy;
   }
 
@@ -130,6 +204,11 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
   const notesRaw = root.notes ?? root.notesList ?? [];
   const notesList = Array.isArray(notesRaw) ? notesRaw : [];
 
+  const rawHistory = Array.isArray(root.statusHistory) ? root.statusHistory : [];
+  const statusHistory = rawHistory
+    .slice()
+    .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
+
   const merged = {
     ...order,
     name: order.orderNumber != null ? `#${order.orderNumber}` : order.code ?? order.name,
@@ -151,7 +230,7 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     userId: order.userId,
     userName: order.userName,
     assigneeName: root.assigneeName ?? "",
-    timeline: root.timeline ?? [],
+    statusHistory,
   };
 
   return merged;
