@@ -9,7 +9,8 @@ import type { Ticket } from "layouts/Tickets/utils/constants";
 import { DEFAULT_QUICK_REPLIES } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 import { useTicketDetail } from "query/ticketsList.api";
-import { usePostTicketNote, usePutTicketNote } from "query/ticketNotes.api";
+import { useDeleteTicketNote, usePostTicketNote, usePutTicketNote } from "query/ticketNotes.api";
+import { useUploadTicketAttachments } from "query/ticketAttachments.api";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,8 @@ export default function TicketDetailPage() {
   const ticketQuery = useTicketDetail(id ?? "", Boolean(id));
   const postNoteMutation = usePostTicketNote(id ?? "");
   const putNoteMutation = usePutTicketNote(id ?? "");
+  const deleteNoteMutation = useDeleteTicketNote(id ?? "");
+  const uploadAttachmentsMutation = useUploadTicketAttachments(id ?? "");
 
   const handleBack = useCallback(() => {
     navigate("/tickets");
@@ -40,6 +43,16 @@ export default function TicketDetailPage() {
   const handleEditNote = useCallback(
     (noteId: string, text: string) => putNoteMutation.mutateAsync({ noteId, text }),
     [putNoteMutation]
+  );
+
+  const handleDeleteNote = useCallback(
+    (noteId: string) => deleteNoteMutation.mutateAsync(noteId),
+    [deleteNoteMutation]
+  );
+
+  const handleUploadFiles = useCallback(
+    (files: File[]) => uploadAttachmentsMutation.mutateAsync({ files }),
+    [uploadAttachmentsMutation]
   );
 
   if (!id) {
@@ -88,6 +101,10 @@ export default function TicketDetailPage() {
           sendChatPending={postNoteMutation.isPending}
           onEditNote={handleEditNote}
           editNotePending={putNoteMutation.isPending}
+          onDeleteNote={handleDeleteNote}
+          deleteNotePending={deleteNoteMutation.isPending}
+          onUploadFiles={handleUploadFiles}
+          uploadFilesPending={uploadAttachmentsMutation.isPending}
         />
       </Box>
     </DashboardLayout>

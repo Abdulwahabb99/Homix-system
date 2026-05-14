@@ -18,11 +18,20 @@ import AttachmentIcon from "@mui/icons-material/Attachment";
 import InsertLinkIcon from "@mui/icons-material/InsertLink";
 import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
 
 const BRAND = "#6366f1";
+
+function attachmentOpenHref(url: string | undefined): string | undefined {
+  if (!url?.trim()) return undefined;
+  const u = url.trim();
+  if (/^https?:\/\//i.test(u)) return u;
+  const base = String(process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+  return base ? `${base}/${u.replace(/^\//, "")}` : u;
+}
 
 /** أزرار فرعية أوضح من outlined الافتراضي (تباين ثابت في كل الثيمات) */
 const btnOutlinedBrandSx = {
@@ -57,6 +66,12 @@ type Props = {
   /** PUT /tickets/.../notes/{id} — متاح فقط للأدمن في الواجهة */
   onEditNote?: (noteId: string, text: string) => Promise<void>;
   editNotePending?: boolean;
+  /** DELETE نفس المسار — للأدمن فقط في الواجهة */
+  onDeleteNote?: (noteId: string) => Promise<void>;
+  deleteNotePending?: boolean;
+  /** POST /tickets/.../attachments/upload — عند التوفّر يُرفع الملف للخادم ويُحدَّث العرض بعد النجاح */
+  onUploadFiles?: (files: File[]) => Promise<void>;
+  uploadFilesPending?: boolean;
 };
 
 function InfoItem({
@@ -93,12 +108,16 @@ function ChatBubble({
   isAdminUser,
   onEditNote,
   editNotePending,
+  onDeleteNote,
+  deleteNotePending,
 }: {
   msg: ChatMessage;
   currentUserId: number | null;
   isAdminUser: boolean;
   onEditNote?: (noteId: string, text: string) => Promise<void>;
   editNotePending?: boolean;
+  onDeleteNote?: (noteId: string) => Promise<void>;
+  deleteNotePending?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(msg.msg);
@@ -116,8 +135,10 @@ function ChatBubble({
 
   const noteId = msg.id;
   const isOptimisticNote = noteId != null && String(noteId).startsWith("optimistic-");
-  const canEdit =
-    Boolean(isAdminUser && isMine && onEditNote && noteId && !isOptimisticNote);
+  const canMutateOwnNote = Boolean(isAdminUser && isMine && noteId && !isOptimisticNote);
+  const canEdit = canMutateOwnNote && Boolean(onEditNote);
+  const canDelete = canMutateOwnNote && Boolean(onDeleteNote);
+  const noteActionPending = Boolean(editNotePending || deleteNotePending);
 
   if (isMine) {
     return (
@@ -150,7 +171,7 @@ function ChatBubble({
                 size="small"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                disabled={editNotePending}
+                disabled={noteActionPending}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "background.paper" } }}
               />
               <Stack direction="row" spacing={0.75} justifyContent="flex-end" mt={1}>
@@ -160,7 +181,7 @@ function ChatBubble({
                     setDraft(msg.msg);
                     setEditing(false);
                   }}
-                  disabled={editNotePending}
+                  disabled={noteActionPending}
                   sx={{ textTransform: "none", fontSize: "0.72rem" }}
                 >
                   إلغاء
@@ -169,7 +190,7 @@ function ChatBubble({
                   size="small"
                   variant="contained"
                   disableElevation
-                  disabled={editNotePending || !draft.trim()}
+                  disabled={noteActionPending || !draft.trim()}
                   onClick={async () => {
                     if (!noteId || !onEditNote) return;
                     try {
@@ -224,17 +245,43 @@ function ChatBubble({
             >
               أنت · {timePart}
             </Typography>
-            {canEdit && !editing ? (
-              <Tooltip title="تعديل الملاحظة">
-                <IconButton
-                  size="small"
-                  aria-label="تعديل"
-                  onClick={() => setEditing(true)}
-                  sx={{ color: BRAND, p: 0.35 }}
-                >
-                  <EditIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
+            {(canEdit || canDelete) && !editing ? (
+              <Stack direction="row" alignItems="center" spacing={0}>
+                {canEdit ? (
+                  <Tooltip title="تعديل الملاحظة">
+                    <IconButton
+                      size="small"
+                      aria-label="تعديل"
+                      onClick={() => setEditing(true)}
+                      disabled={noteActionPending}
+                      sx={{ color: BRAND, p: 0.35 }}
+                    >
+                      <EditIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                {canDelete ? (
+                  <Tooltip title="حذف الملاحظة">
+                    <IconButton
+                      size="small"
+                      aria-label="حذف"
+                      disabled={noteActionPending}
+                      onClick={async () => {
+                        if (!noteId || !onDeleteNote) return;
+                        if (!window.confirm("هل تريد حذف هذه الملاحظة؟")) return;
+                        try {
+                          await onDeleteNote(noteId);
+                        } catch {
+                          /* من useDeleteTicketNote */
+                        }
+                      }}
+                      sx={{ color: BRAND, p: 0.35 }}
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+              </Stack>
             ) : null}
           </Stack>
         </Box>
@@ -308,6 +355,10 @@ export default function TicketDetailView({
   sendChatPending = false,
   onEditNote,
   editNotePending = false,
+  onDeleteNote,
+  deleteNotePending = false,
+  onUploadFiles,
+  uploadFilesPending = false,
 }: Props) {
   const [chatInput, setChatInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
@@ -364,12 +415,28 @@ export default function TicketDetailView({
     });
   }
 
-  function handleFileAttach(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileAttach(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const type: Attachment["type"] = file.type.startsWith("image") ? "image" : "video";
+    if (!file || uploadFilesPending) return;
+    const reset = () => {
+      e.target.value = "";
+    };
+    if (onUploadFiles) {
+      try {
+        await onUploadFiles([file]);
+      } catch {
+        /* الإشعار من useUploadTicketAttachments */
+      }
+      reset();
+      return;
+    }
+    const type: Attachment["type"] = file.type.startsWith("image")
+      ? "image"
+      : file.type.startsWith("video")
+        ? "video"
+        : "file";
     onUpdateTicket({ ...ticket, attachments: [...ticket.attachments, { type, name: file.name }] });
-    e.target.value = "";
+    reset();
   }
 
   function addLink() {
@@ -379,7 +446,12 @@ export default function TicketDetailView({
     setLinkInput("");
   }
 
-  const attachIconMap: Record<Attachment["type"], string> = { image: "🖼️", video: "🎬", link: "🔗" };
+  const attachIconMap: Record<Attachment["type"], string> = {
+    image: "🖼️",
+    video: "🎬",
+    link: "🔗",
+    file: "📄",
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -514,6 +586,7 @@ export default function TicketDetailView({
                   variant="outlined"
                   color="inherit"
                   disableElevation
+                  disabled={uploadFilesPending}
                   onClick={() => fileInputRef.current?.click()}
                   sx={btnOutlinedBrandSx}
                 >
@@ -523,7 +596,7 @@ export default function TicketDetailView({
                   ref={fileInputRef}
                   type="file"
                   hidden
-                  accept="image/*,video/*"
+                  accept="image/*,video/*,application/pdf,.pdf,.doc,.docx"
                   onChange={handleFileAttach}
                 />
               </Box>
@@ -531,8 +604,12 @@ export default function TicketDetailView({
                 {ticket.attachments.length > 0 && (
                   <Grid container spacing={1} mb={1.5}>
                     {ticket.attachments.map((a, i) => (
-                      <Grid item xs={4} key={i}>
+                      <Grid item xs={4} key={a.id != null ? `att-${a.id}` : `att-${i}-${a.name}`}>
                         <Box
+                          onClick={() => {
+                            const href = attachmentOpenHref(a.url);
+                            if (href) window.open(href, "_blank", "noopener,noreferrer");
+                          }}
                           sx={{
                             border: "1px solid",
                             borderColor: "divider",
@@ -540,7 +617,7 @@ export default function TicketDetailView({
                             p: 1.25,
                             textAlign: "center",
                             bgcolor: (t) => alpha(t.palette.text.primary, 0.03),
-                            cursor: "pointer",
+                            cursor: attachmentOpenHref(a.url) ? "pointer" : "default",
                             "&:hover": { borderColor: BRAND, color: BRAND },
                             transition: "0.15s",
                           }}
@@ -567,7 +644,7 @@ export default function TicketDetailView({
 
                 {/* Drop zone */}
                 <Box
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => !uploadFilesPending && fileInputRef.current?.click()}
                   sx={{
                     border: "1px dashed",
                     borderColor: "divider",
@@ -583,7 +660,7 @@ export default function TicketDetailView({
                 >
                   <Box sx={{ fontSize: "1.1rem", mb: 0.5 }}>📎</Box>
                   <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                    اسحب صورة أو فيديو هنا، أو اضغط للرفع
+                    اسحب ملفًا هنا (صورة، فيديو، PDF…) أو اضغط للرفع
                   </Typography>
                 </Box>
 
@@ -668,6 +745,8 @@ export default function TicketDetailView({
                   isAdminUser={isAdminUser}
                   onEditNote={onEditNote}
                   editNotePending={editNotePending}
+                  onDeleteNote={onDeleteNote}
+                  deleteNotePending={deleteNotePending}
                 />
               ))}
               <div ref={chatEndRef} />

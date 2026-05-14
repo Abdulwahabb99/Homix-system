@@ -89,6 +89,21 @@ export async function putTicketNote(
   }
 }
 
+/** DELETE — مسح ملاحظة */
+export async function deleteTicketNote(
+  navigate: NavigateFunction,
+  ticketId: string,
+  noteId: string
+): Promise<void> {
+  const { data } = await axiosRequest.delete<Record<string, unknown>>(noteDetailPath(ticketId, noteId));
+  const root = (data ?? {}) as unknown as ApiEnvelope;
+  if (root.force_logout) {
+    localStorage.removeItem("user");
+    navigate("/authentication/sign-in");
+    throw new Error("FORCE_LOGOUT");
+  }
+}
+
 export function usePutTicketNote(ticketId: string) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -100,6 +115,21 @@ export function usePutTicketNote(ticketId: string) {
     },
     onError: () => {
       NotificationMeassage("error", "تعذّر تعديل الملاحظة");
+    },
+  });
+}
+
+export function useDeleteTicketNote(ticketId: string) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (noteId: string) => deleteTicketNote(navigate, ticketId, noteId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(ticketId) });
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر حذف الملاحظة");
     },
   });
 }

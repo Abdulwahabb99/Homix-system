@@ -242,6 +242,49 @@ function mapNotesListToChat(raw: Record<string, unknown>): ChatMessage[] | null 
   });
 }
 
+function inferAttachmentType(name: string, maybeUrl?: string): Attachment["type"] {
+  const n = name.trim().toLowerCase();
+  const ext = n.includes(".") ? n.split(".").pop() ?? "" : "";
+  const imageExts = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"]);
+  const videoExts = new Set(["mp4", "webm", "mov", "m4v", "avi", "mkv"]);
+  if (imageExts.has(ext)) return "image";
+  if (videoExts.has(ext)) return "video";
+  if (maybeUrl && /^https?:\/\//i.test(maybeUrl.trim())) return "link";
+  return "file";
+}
+
+/** عنصر مرفق من الـ API (مثال: id, name, url, description, createdAt) */
+export function mapApiAttachment(raw: unknown): Attachment | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const name = String(o.name ?? "").trim();
+  if (!name) return null;
+  const url = o.url != null && String(o.url).trim() !== "" ? String(o.url) : undefined;
+  const type = inferAttachmentType(name, url);
+  const id = Number(o.id);
+  const description =
+    o.description != null && String(o.description).trim() !== "" ? String(o.description) : undefined;
+  const createdAt = o.createdAt != null ? String(o.createdAt) : undefined;
+  return {
+    type,
+    name,
+    ...(Number.isFinite(id) ? { id } : {}),
+    ...(url ? { url } : {}),
+    ...(description ? { description } : {}),
+    ...(createdAt ? { createdAt } : {}),
+  };
+}
+
+export function mapApiAttachmentList(raw: unknown): Attachment[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Attachment[] = [];
+  for (const x of raw) {
+    const a = mapApiAttachment(x);
+    if (a) out.push(a);
+  }
+  return out;
+}
+
 /** تحويل عنصر الـ API → Ticket (قائمة أو تفاصيل) */
 export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
   const order =
@@ -269,9 +312,7 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
   const fromNotes = mapNotesListToChat(raw);
   const chat: ChatMessage[] =
     fromNotes ?? (Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : []);
-  const attachments: Attachment[] = Array.isArray(raw.attachments)
-    ? (raw.attachments as Attachment[])
-    : [];
+  const attachments = mapApiAttachmentList(raw.attachments);
 
   const totalRaw =
     order.totalPrice ??

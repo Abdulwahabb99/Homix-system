@@ -14,8 +14,13 @@ export type ChatMessage = {
 };
 
 export type Attachment = {
-  type: "image" | "video" | "link";
+  type: "image" | "video" | "link" | "file";
   name: string;
+  id?: number;
+  /** مسار نسبي أو URL كامل من الـ API */
+  url?: string;
+  description?: string;
+  createdAt?: string;
 };
 
 export type Ticket = {
