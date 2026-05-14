@@ -739,8 +739,8 @@ export class DashboardAggregateService {
       `
         SELECT
           DATE(o."orderDate")::text AS "metricDate",
-          COALESCE(c."id", ${UNCATEGORIZED_CATEGORY_ID}) AS "categoryId",
-          COALESCE(c."title", '${UNCATEGORIZED_CATEGORY_TITLE}') AS "categoryTitle",
+          COALESCE(pt."id", ${UNCATEGORIZED_CATEGORY_ID}) AS "categoryId",
+          COALESCE(pt."name", '${UNCATEGORIZED_CATEGORY_TITLE}') AS "categoryTitle",
           p."vendorId" AS "vendorId",
           COUNT(DISTINCT o."id")::int AS "totalOrders",
           COALESCE(SUM(ol."quantity"), 0)::int AS "totalQuantity",
@@ -748,13 +748,12 @@ export class DashboardAggregateService {
         FROM "orderLines" ol
         INNER JOIN "orders" o ON o."id" = ol."orderId" AND o."deletedAt" IS NULL
         INNER JOIN "products" p ON p."id" = ol."productId" AND p."deletedAt" IS NULL
-        LEFT JOIN "productsCategories" pc ON pc."productId" = p."id"
-        LEFT JOIN "categories" c ON c."id" = pc."categoryId" AND c."deletedAt" IS NULL
+        LEFT JOIN "productsTypes" pt ON pt."id" = p."typeId" AND pt."deletedAt" IS NULL
         WHERE ol."deletedAt" IS NULL
           AND p."vendorId" IS NOT NULL
           AND o."orderDate" >= :startDate
           AND o."orderDate" < :exclusiveEndDate
-        GROUP BY DATE(o."orderDate"), COALESCE(c."id", ${UNCATEGORIZED_CATEGORY_ID}), COALESCE(c."title", '${UNCATEGORIZED_CATEGORY_TITLE}'), p."vendorId"
+        GROUP BY DATE(o."orderDate"), COALESCE(pt."id", ${UNCATEGORIZED_CATEGORY_ID}), COALESCE(pt."name", '${UNCATEGORIZED_CATEGORY_TITLE}'), p."vendorId"
         ORDER BY DATE(o."orderDate") ASC, p."vendorId" ASC
       `,
       {
