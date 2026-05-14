@@ -1,84 +1,164 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Autocomplete,
   Button,
-  TextField,
-  Select,
-  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
-  InputLabel,
-  Box,
-  Typography,
-  Stack,
-  Grid,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+  Grid,
+  Box,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
-import { MOCK_OPS, RESPONSIBLE_OPTIONS, MockOp } from "layouts/Tickets/utils/constants";
+import type { ResolvedOrderForTicket } from "query/ticketCreate.api";
+import type { CreateTicketPayload } from "query/ticketCreate.api";
+import type { TicketMetaAssignee, TicketMetaOption } from "query/ticketsList.api";
+import { formatTicketMetaAssigneeName } from "query/ticketsList.api";
 
 const BRAND = "#6366f1";
+
+const assigneeAutocompleteSx = {
+  direction: "rtl" as const,
+  width: "100%",
+  fontFamily: "'Cairo',sans-serif",
+  "& .MuiAutocomplete-option": {
+    fontSize: "0.875rem",
+    fontFamily: "'Cairo',sans-serif",
+  },
+  "& .MuiAutocomplete-inputRoot": {
+    minHeight: 48,
+    py: "3px",
+    fontSize: "0.875rem",
+    fontFamily: "'Cairo',sans-serif",
+  },
+  "& .MuiAutocomplete-input": {
+    py: "10px !important",
+    textAlign: "start" as const,
+    minWidth: "2.5rem !important",
+  },
+  "& .MuiAutocomplete-endAdornment": { top: "unset" },
+} as const;
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  ticketTypes: string[];
-  onCreateTicket: (data: {
-    op: MockOp;
-    type: string;
-    resp: string;
-    notes: string;
-  }) => void;
+  /** أنواع التذكرة من الـ meta — المفتاح يُرسل للـ API كـ type */
+  typeOptions: TicketMetaOption[];
+  assignees: TicketMetaAssignee[];
+  onLookupOrder: (input: string) => Promise<ResolvedOrderForTicket | null>;
+  onCreateTicket: (payload: CreateTicketPayload) => Promise<void>;
+  createPending?: boolean;
 };
 
-export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTicket }: Props) {
+export default function NewTicketModal({
+  open,
+  onClose,
+  typeOptions,
+  assignees,
+  onLookupOrder,
+  onCreateTicket,
+  createPending = false,
+}: Props) {
   const [opInput, setOpInput] = useState("");
-  const [foundOp, setFoundOp] = useState<MockOp | null>(null);
+  const [foundOrder, setFoundOrder] = useState<ResolvedOrderForTicket | null>(null);
   const [opError, setOpError] = useState("");
-  const [type, setType] = useState(ticketTypes[0] ?? "");
-  const [resp, setResp] = useState(RESPONSIBLE_OPTIONS[0]);
+  const [searchPending, setSearchPending] = useState(false);
+  const [typeKey, setTypeKey] = useState<string>("");
+  const [assigneeId, setAssigneeId] = useState("");
   const [notes, setNotes] = useState("");
 
-  function handleSearch() {
-    const val = opInput.trim().toUpperCase();
-    const found = MOCK_OPS[val];
-    if (!found) {
-      setOpError("رقم العملية غير موجود، جرب: OP-3001 أو OP-3002");
-      setFoundOp(null);
-    } else {
+  useEffect(() => {
+    if (!open) {
+      setOpInput("");
+      setFoundOrder(null);
       setOpError("");
-      setFoundOp(found);
-    }
-  }
-
-  function handleCreate() {
-    if (!foundOp) {
-      setOpError("ابحث أولاً عن رقم العملية");
+      setSearchPending(false);
+      setTypeKey(typeOptions[0] ? String(typeOptions[0].key) : "");
+      setAssigneeId("");
+      setNotes("");
       return;
     }
-    onCreateTicket({ op: foundOp, type, resp, notes });
-    handleClose();
+    if (typeOptions[0]) {
+      setTypeKey((k) => (k ? k : String(typeOptions[0].key)));
+    }
+  }, [open, typeOptions]);
+
+  async function handleSearch() {
+    const raw = opInput.trim();
+    setOpError("");
+    setFoundOrder(null);
+    if (!raw) {
+      setOpError("أدخل رقم العملية أو رقم الطلب");
+      return;
+    }
+    setSearchPending(true);
+    try {
+      const res = await onLookupOrder(raw);
+      if (!res) {
+        setOpError("لم يتم العثور على الطلب. تأكد من رقم العملية أو رقم الطلب.");
+        return;
+      }
+      setFoundOrder(res);
+    } catch {
+      setOpError("تعذّر البحث عن الطلب");
+    } finally {
+      setSearchPending(false);
+    }
   }
 
-  function handleClose() {
-    setOpInput("");
-    setFoundOp(null);
+  async function handleCreate() {
+    if (!foundOrder) {
+      setOpError("ابحث أولاً عن الطلب");
+      return;
+    }
+    const tid = Number(typeKey);
+    const aid = Number(assigneeId);
+    if (!Number.isFinite(tid) || !Number.isFinite(aid)) {
+      setOpError("اختر نوع التذكرة والمسئول");
+      return;
+    }
     setOpError("");
-    setType(ticketTypes[0] ?? "");
-    setResp(RESPONSIBLE_OPTIONS[0]);
-    setNotes("");
+    try {
+      await onCreateTicket({
+        orderId: foundOrder.orderId,
+        type: tid,
+        assignedToUserId: aid,
+        notes: notes.trim(),
+      });
+    } catch {
+      /* الإشعار من الـ mutation */
+    }
+  }
+
+  function handleDialogClose() {
+    if (createPending || searchPending) return;
     onClose();
   }
+
+  const firstTypeKey = typeOptions[0]?.key;
+  const canSubmit =
+    Boolean(foundOrder) &&
+    assigneeId !== "" &&
+    typeKey !== "" &&
+    !createPending &&
+    !searchPending;
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={handleDialogClose}
       maxWidth="sm"
       fullWidth
       BackdropProps={{ sx: { backdropFilter: "blur(4px)", bgcolor: "rgba(15,23,42,0.45)" } }}
@@ -107,32 +187,33 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
         }}
       >
         إضافة تذكرة جديدة
-        <IconButton size="small" onClick={handleClose} sx={{ color: "text.secondary" }}>
+        <IconButton size="small" onClick={handleDialogClose} disabled={createPending} sx={{ color: "text.secondary" }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, pt: 2.5, pb: 1 }}>
-        {/* Search OP */}
         <Typography variant="caption" fontWeight={700} color="text.secondary" mb={0.75} display="block">
-          ابحث برقم العملية
+          رقم العملية أو رقم الطلب (بحث عبر الخادم)
         </Typography>
-        <Stack direction="row" spacing={1} mb={foundOp ? 2 : 0}>
+        <Stack direction="row" spacing={1} mb={foundOrder ? 2 : 0}>
           <TextField
             fullWidth
             size="small"
-            placeholder="مثال: OP-3001"
+            placeholder="مثال: 3001 أو 31668"
             value={opInput}
             onChange={(e) => setOpInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
             error={Boolean(opError)}
             helperText={opError}
+            disabled={searchPending || createPending}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <Button
             variant="contained"
             disableElevation
-            onClick={handleSearch}
+            onClick={() => void handleSearch()}
+            disabled={searchPending || createPending}
             startIcon={<SearchIcon />}
             sx={{
               borderRadius: 2,
@@ -147,8 +228,7 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
           </Button>
         </Stack>
 
-        {/* Found OP result */}
-        {foundOp && (
+        {foundOrder && (
           <>
             <Paper
               variant="outlined"
@@ -162,10 +242,13 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
             >
               <Grid container spacing={1.5}>
                 {[
-                  { label: "رقم العملية", value: foundOp.op, accent: true },
-                  { label: "رقم الطلب", value: `#${foundOp.order}` },
-                  { label: "كود المنتج", value: foundOp.code, mono: true },
-                  { label: "البائع", value: foundOp.seller },
+                  { label: "رقم العملية", value: foundOrder.operationNumber || "—", accent: true },
+                  { label: "رقم الطلب", value: `#${foundOrder.orderNumber}` },
+                  ...(foundOrder.customerName
+                    ? [{ label: "العميل", value: foundOrder.customerName } as const]
+                    : []),
+                  { label: "كود المنتج", value: foundOrder.code, mono: true },
+                  { label: "البائع", value: foundOrder.seller },
                 ].map((item) => (
                   <Grid item xs={6} key={item.label}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.25}>
@@ -188,33 +271,53 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
             </Paper>
 
             <Stack spacing={2}>
-              <FormControl size="small" fullWidth>
+              <FormControl size="small" fullWidth disabled={!typeOptions.length || createPending}>
                 <InputLabel>نوع التذكرة</InputLabel>
                 <Select
-                  value={type}
+                  value={typeKey || (firstTypeKey != null ? String(firstTypeKey) : "")}
                   label="نوع التذكرة"
-                  onChange={(e) => setType(e.target.value)}
+                  onChange={(e) => setTypeKey(String(e.target.value))}
                   sx={{ borderRadius: 2 }}
                 >
-                  {ticketTypes.map((t) => (
-                    <MenuItem key={t} value={t}>{t}</MenuItem>
+                  {typeOptions.map((t) => (
+                    <MenuItem key={t.key} value={String(t.key)}>
+                      {t.label}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              <FormControl size="small" fullWidth>
-                <InputLabel>المسئول</InputLabel>
-                <Select
-                  value={resp}
-                  label="المسئول"
-                  onChange={(e) => setResp(e.target.value)}
-                  sx={{ borderRadius: 2 }}
-                >
-                  {RESPONSIBLE_OPTIONS.map((r) => (
-                    <MenuItem key={r} value={r}>{r}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete<TicketMetaAssignee, false, false, false>
+                options={assignees}
+                value={assignees.find((a) => String(a.id) === assigneeId) ?? null}
+                onChange={(_, v) => setAssigneeId(v ? String(v.id) : "")}
+                getOptionLabel={(a) => formatTicketMetaAssigneeName(a)}
+                isOptionEqualToValue={(a, b) => a.id === b.id}
+                disabled={createPending || assignees.length === 0}
+                noOptionsText="لا نتائج"
+                openOnFocus
+                clearOnEscape
+                ListboxProps={{ style: { maxHeight: 280, overflow: "auto" } }}
+                componentsProps={{
+                  popper: {
+                    sx: { zIndex: (t: Theme) => t.zIndex.modal + 2 },
+                  },
+                  paper: {
+                    elevation: 8,
+                    sx: { borderRadius: 2, mt: 0.5 },
+                  },
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="المسئول"
+                    required
+                    placeholder={assignees.length ? "ابحث بالاسم…" : "لا يوجد مسئولين"}
+                    InputLabelProps={{ ...params.InputLabelProps, required: true }}
+                  />
+                )}
+                sx={assigneeAutocompleteSx}
+              />
 
               <TextField
                 multiline
@@ -222,9 +325,10 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
                 fullWidth
                 size="small"
                 label="ملاحظات"
-                placeholder="أضف ملاحظاتك هنا..."
+                placeholder="أضف ملاحظاتك هنا…"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                disabled={createPending}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               />
             </Stack>
@@ -234,17 +338,18 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
 
       <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, gap: 1, borderTop: "1px solid", borderColor: "divider" }}>
         <Button
-          onClick={handleClose}
+          onClick={handleDialogClose}
           variant="outlined"
+          disabled={createPending}
           sx={{ borderRadius: 2, fontWeight: 600, textTransform: "none" }}
         >
           إلغاء
         </Button>
         <Button
-          onClick={handleCreate}
+          onClick={() => void handleCreate()}
           variant="contained"
           disableElevation
-          disabled={!foundOp}
+          disabled={!canSubmit || !typeOptions.length || assignees.length === 0}
           sx={{
             borderRadius: 2,
             fontWeight: 700,
@@ -253,7 +358,7 @@ export default function NewTicketModal({ open, onClose, ticketTypes, onCreateTic
             "&:hover": { bgcolor: "#5254e0" },
           }}
         >
-          إنشاء التذكرة
+          {createPending ? "جارٍ الإنشاء…" : "إنشاء التذكرة"}
         </Button>
       </DialogActions>
     </Dialog>

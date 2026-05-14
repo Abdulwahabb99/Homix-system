@@ -18,6 +18,7 @@ import AttachmentIcon from "@mui/icons-material/Attachment";
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
@@ -80,6 +81,9 @@ type Props = {
   /** PATCH /tickets/{ticketId} — تغيير الحالة فقط: مفتوحة → 2، مغلقة → 1 (الجسم: status فقط) */
   onCommitTicketStatusChange?: (payload: TicketUpdatePayload) => Promise<void>;
   commitTicketStatusPending?: boolean;
+  /** فتح مودال التعديل الكامل (حالة + مسئول + ملاحظات) */
+  onOpenTicketEdit?: () => void;
+  ticketEditPatchPending?: boolean;
 };
 
 function InfoItem({
@@ -371,6 +375,8 @@ export default function TicketDetailView({
   deleteAttachmentPending = false,
   onCommitTicketStatusChange,
   commitTicketStatusPending = false,
+  onOpenTicketEdit,
+  ticketEditPatchPending = false,
 }: Props) {
   const [chatInput, setChatInput] = useState("");
   /** ملفات اختيرت من الجهاز ولم تُرفَع بعد — الرفع يحدث عند الضغط على «إضافة الملفات» */
@@ -540,6 +546,27 @@ export default function TicketDetailView({
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <TicketStatusChip status={ticket.status} />
+                  {onOpenTicketEdit ? (
+                    <Tooltip title="تعديل التذكرة (الحالة، المسئول، الملاحظات)">
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label="تعديل التذكرة"
+                          onClick={onOpenTicketEdit}
+                          disabled={Boolean(ticketEditPatchPending)}
+                          sx={{
+                            color: BRAND,
+                            border: `1px solid ${alpha(BRAND, 0.45)}`,
+                            borderRadius: 1.5,
+                            p: 0.35,
+                            "&:hover": { bgcolor: alpha(BRAND, 0.08) },
+                          }}
+                        >
+                          <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : null}
                   <Button
                     size="small"
                     variant="outlined"

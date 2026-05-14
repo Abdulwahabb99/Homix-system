@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
@@ -21,22 +21,28 @@ import {
   TicketsKpiRowSkeleton,
 } from "layouts/Tickets/components/TicketsHomixSkeletons";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import NewTicketModal from "layouts/Tickets/components/NewTicketModal";
 import TicketSettingsModal from "layouts/Tickets/components/TicketSettingsModal";
 import {
   DEFAULT_QUICK_REPLIES,
   DEFAULT_TICKET_TYPES,
   MOCK_TICKETS,
-  MockOp,
   Ticket,
 } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 import {
+  type TicketMetaOption,
   type TicketsListFilters,
   formatTicketMetaAssigneeName,
   useTicketsList,
   useTicketsMeta,
 } from "query/ticketsList.api";
+import {
+  createTicket,
+  resolveOrderForNewTicket,
+  type CreateTicketPayload,
+} from "query/ticketCreate.api";
 import { usePatchTicketFromList, type TicketPatchPayload } from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
@@ -252,15 +258,6 @@ export default function Tickets() {
 
   const metaQuery = useTicketsMeta();
 
-  /** تسميات الأنواع للنماذج: من الـ meta إن وُجدت وإلا من الإعدادات المحلية */
-  const typeLabelsForForms = useMemo(
-    () =>
-      metaQuery.data?.types?.length
-        ? metaQuery.data.types.map((o) => o.label)
-        : ticketTypes,
-    [metaQuery.data?.types, ticketTypes]
-  );
-
   // views
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -405,6 +402,28 @@ export default function Tickets() {
     [metaQuery.data?.assignees]
   );
 
+  const typeOptionsForModal = useMemo((): TicketMetaOption[] => {
+    if (metaQuery.data?.types?.length) return metaQuery.data.types;
+    return ticketTypes.map((label, i) => ({ key: i + 1, label }));
+  }, [metaQuery.data?.types, ticketTypes]);
+
+  const createTicketMutation = useMutation({
+    mutationFn: (payload: CreateTicketPayload) => createTicket(navigate, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
+      NotificationMeassage("success", "تم إنشاء التذكرة");
+      setNewTicketOpen(false);
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر إنشاء التذكرة");
+    },
+  });
+
+  const handleLookupOrder = useCallback(
+    (input: string) => resolveOrderForNewTicket(navigate, input),
+    [navigate]
+  );
+
   const openTicket = useCallback(
     (ticketId: string) => {
       navigate(`/tickets/${encodeURIComponent(ticketId)}`);
@@ -443,11 +462,10 @@ export default function Tickets() {
   }
 
   const handleCreateTicket = useCallback(
-    (_data: { op: MockOp; type: string; resp: string; notes: string }) => {
-      void _data;
-      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
+    async (payload: CreateTicketPayload) => {
+      await createTicketMutation.mutateAsync(payload);
     },
-    [queryClient]
+    [createTicketMutation]
   );
 
   function handleDeleteConfirm() {
@@ -503,6 +521,7 @@ export default function Tickets() {
   const showTableSkeleton = ticketsQuery.isLoading;
 
   return (
+    <>
     <DashboardLayout
       pageTitle="التذاكر"
       pageSubtitle="متابعة وإدارة تذاكر الدعم والشكاوى"
@@ -725,21 +744,37 @@ export default function Tickets() {
               onEdit={(t) => setEditTicket(t)}
               isLoading={false}
               headerActions={
-                <Button size="small" sx={BTN_G}>
-                  تصدير Excel
-                </Button>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Button
+                    size="small"
+                    variant="contained"
+                    disableElevation
+                    startIcon={<AddIcon sx={{ fontSize: "13px !important" }} />}
+                    onClick={() => setNewTicketOpen(true)}
+                    sx={BTN_P}
+                  >
+                    تذكرة جديدة
+                  </Button>
+                  <Button size="small" sx={BTN_G}>
+                    تصدير Excel
+                  </Button>
+                </Stack>
               }
             />
             )}
           </>
         </Box>
+    </DashboardLayout>
 
-      {/* ── Modals ── */}
+      {/* مودالات خارج غلاف الصفحة لتفادي أي stacking / overflow من المحتوى */}
       <NewTicketModal
         open={newTicketOpen}
         onClose={() => setNewTicketOpen(false)}
-        ticketTypes={typeLabelsForForms}
+        typeOptions={typeOptionsForModal}
+        assignees={filterAssigneeOptions}
+        onLookupOrder={handleLookupOrder}
         onCreateTicket={handleCreateTicket}
+        createPending={createTicketMutation.isPending}
       />
 
       <TicketSettingsModal
@@ -768,6 +803,6 @@ export default function Tickets() {
         onSubmit={handleSaveEditTicket}
         isSubmitting={patchTicketListMutation.isPending}
       />
-    </DashboardLayout>
+    </>
   );
 }

@@ -1,17 +1,18 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import Spinner from "components/Spinner/Spinner";
 import TicketDetailView from "layouts/Tickets/components/TicketDetailView";
+import EditTicketModal from "layouts/Tickets/components/EditTicketModal";
 import type { Ticket } from "layouts/Tickets/utils/constants";
 import { DEFAULT_QUICK_REPLIES } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
-import { useTicketDetail } from "query/ticketsList.api";
+import { useTicketDetail, useTicketsMeta } from "query/ticketsList.api";
 import { useDeleteTicketNote, usePostTicketNote, usePutTicketNote } from "query/ticketNotes.api";
 import { useDeleteTicketAttachment, useUploadTicketAttachments } from "query/ticketAttachments.api";
-import { useUpdateTicket, type TicketUpdatePayload } from "query/ticketUpdate.api";
+import { useUpdateTicket, usePatchTicketFromList, type TicketUpdatePayload, type TicketPatchPayload } from "query/ticketUpdate.api";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,12 +20,20 @@ export default function TicketDetailPage() {
   const queryClient = useQueryClient();
 
   const ticketQuery = useTicketDetail(id ?? "", Boolean(id));
+  const metaQuery = useTicketsMeta(Boolean(id));
+  const assigneesForEdit = useMemo(
+    () => metaQuery.data?.assignees ?? [],
+    [metaQuery.data?.assignees]
+  );
   const postNoteMutation = usePostTicketNote(id ?? "");
   const putNoteMutation = usePutTicketNote(id ?? "");
   const deleteNoteMutation = useDeleteTicketNote(id ?? "");
   const uploadAttachmentsMutation = useUploadTicketAttachments(id ?? "");
   const deleteAttachmentMutation = useDeleteTicketAttachment(id ?? "");
   const updateTicketMutation = useUpdateTicket(id ?? "");
+  const patchTicketFromDetailMutation = usePatchTicketFromList();
+
+  const [ticketEditModalOpen, setTicketEditModalOpen] = useState(false);
 
   const handleBack = useCallback(() => {
     navigate("/tickets");
@@ -68,6 +77,19 @@ export default function TicketDetailPage() {
       await updateTicketMutation.mutateAsync(payload);
     },
     [updateTicketMutation]
+  );
+
+  const handleSaveTicketEditFromModal = useCallback(
+    async (payload: Required<Pick<TicketPatchPayload, "status" | "assignedToUserId" | "notes">>) => {
+      if (!id) return;
+      try {
+        await patchTicketFromDetailMutation.mutateAsync({ ticketId: id, patch: payload });
+        setTicketEditModalOpen(false);
+      } catch {
+        /* الإشعار من usePatchTicketFromList */
+      }
+    },
+    [id, patchTicketFromDetailMutation]
   );
 
   if (!id) {
@@ -124,8 +146,19 @@ export default function TicketDetailPage() {
           deleteAttachmentPending={deleteAttachmentMutation.isPending}
           onCommitTicketStatusChange={handleCommitTicketStatus}
           commitTicketStatusPending={updateTicketMutation.isPending}
+          onOpenTicketEdit={() => setTicketEditModalOpen(true)}
+          ticketEditPatchPending={patchTicketFromDetailMutation.isPending}
         />
       </Box>
+
+      <EditTicketModal
+        open={ticketEditModalOpen}
+        onClose={() => setTicketEditModalOpen(false)}
+        ticket={t}
+        assignees={assigneesForEdit}
+        onSubmit={handleSaveTicketEditFromModal}
+        isSubmitting={patchTicketFromDetailMutation.isPending}
+      />
     </DashboardLayout>
   );
 }

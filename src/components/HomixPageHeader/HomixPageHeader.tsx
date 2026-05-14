@@ -139,7 +139,12 @@ export default function HomixPageHeader({ title, subtitle, actions, sx: sxOuter 
         </Box>
 
         {hasActions && (
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ flexShrink: 0, position: "relative", zIndex: 3 }}
+          >
             {actions}
           </Stack>
         )}
