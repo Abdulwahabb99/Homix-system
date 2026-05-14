@@ -12,7 +12,9 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
+  PriorityBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
+import type { PriorityLevel } from "layouts/Orders/components/OrdersHomixBadges";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -36,6 +38,18 @@ function avColor(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AV_COLORS.length;
   return AV_COLORS[h];
+}
+
+function mapDeliveryPriorityToLevel(dp: string | null | undefined): PriorityLevel | null {
+  if (dp == null || dp === "") return null;
+  const s = String(dp).toLowerCase();
+  if (s.includes("very") || s.includes("مستعجل جدا")) return "very-urgent";
+  if (s.includes("urgent") || s.includes("مستعجل")) return "urgent";
+  return "normal";
+}
+
+function rowKey(order: Order) {
+  return order.rowId ?? order.orderId;
 }
 
 function AvatarCircle({ name, size = 22 }: { name: string; size?: number }) {
@@ -129,6 +143,7 @@ function ActionBtn({
 }
 
 interface Order {
+  rowId?: string | number;
   orderId: string | number;
   code?: string;
   orderNumber?: string;
@@ -143,6 +158,10 @@ interface Order {
   userId?: string | number;
   shippedFromInventory?: boolean;
   vendorId?: string | number;
+  vendorName?: string;
+  userNameFromApi?: string;
+  daysSinceOrder?: number | null;
+  deliveryPriority?: string | null;
   createdAt?: string;
 }
 interface User {
@@ -232,27 +251,38 @@ export default function OrdersHomixMobileList({
   return (
     <Stack spacing={1} sx={{ p: "10px 12px 12px", fontFamily: FONT }}>
       {orders.map((order) => {
-        const isSelected = selectionModel.includes(order.orderId);
+        const rk = rowKey(order);
+        const isSelected = selectionModel.includes(rk);
         const compCost = (order.items ?? []).reduce(
           (s, it) => s + Number(it.unitCost ?? 0) * Number(it.quantity ?? 1),
           0
         );
         const vendorName =
-          vendors.find((v) => String(v.value) === String(order.vendorId))?.label ?? "—";
+          order.vendorName ??
+          vendors.find((v) => String(v.value) === String(order.vendorId))?.label ??
+          "—";
         const usr = users.find((u) => String(u.id) === String(order.userId));
-        const userName = usr ? `${usr.firstName ?? ""} ${usr.lastName ?? ""}`.trim() : "";
+        const userName = usr
+          ? `${usr.firstName ?? ""} ${usr.lastName ?? ""}`.trim()
+          : (order.userNameFromApi?.trim() || "");
         const poDateFmt = order.PoDate
           ? moment.utc(order.PoDate).tz("Africa/Cairo").format("YY/MM/DD")
           : "—";
         const createdFmt = order.createdAt
           ? moment.utc(order.createdAt).tz("Africa/Cairo").format("YY/MM/DD")
           : "—";
-        const daysLabel = order.PoDate ? calculateDaysFromPoDate(order.PoDate) : null;
+        const daysLabel =
+          order.daysSinceOrder != null
+            ? String(order.daysSinceOrder)
+            : order.PoDate
+              ? calculateDaysFromPoDate(order.PoDate)
+              : null;
         const productCode = order.items?.[0]?.code ?? "—";
+        const priorityLevel = mapDeliveryPriorityToLevel(order.deliveryPriority ?? undefined);
 
         return (
           <Box
-            key={order.orderId}
+            key={rk}
             sx={{
               borderRadius: "10px",
               border: `0.5px solid ${HX.border}`,
@@ -268,7 +298,7 @@ export default function OrdersHomixMobileList({
                 <Checkbox
                   size="small"
                   checked={isSelected}
-                  onChange={() => toggleRow(order.orderId)}
+                  onChange={() => toggleRow(rk)}
                   sx={{ p: 0.25, mr: 0.25 }}
                 />
               )}
@@ -364,6 +394,7 @@ export default function OrdersHomixMobileList({
               <PaymentBadge status={order.paymentStatus} />
               <DeliveryByBadge fromInventory={order.shippedFromInventory} />
               <DeliveryStatusBadge status={order.deliveryStatus} />
+              {priorityLevel ? <PriorityBadge level={priorityLevel} /> : null}
               <DaysCounterBadge days={daysLabel} active={order.status === 2} />
             </Box>
 
@@ -460,11 +491,11 @@ export default function OrdersHomixMobileList({
                 >
                   المسئول
                 </Box>
-                {usr ? (
+                {usr || userName ? (
                   <>
-                    <AvatarCircle name={userName} size={20} />
+                    {userName ? <AvatarCircle name={userName} size={20} /> : null}
                     <Box component="span" sx={{ fontSize: "11px", color: HX.tx, fontWeight: 600 }}>
-                      {userName}
+                      {userName || "—"}
                     </Box>
                   </>
                 ) : (

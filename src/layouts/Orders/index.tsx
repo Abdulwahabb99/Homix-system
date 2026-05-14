@@ -147,6 +147,7 @@ function Orders() {
 
   const orders          = ordersListData?.orders ?? [];
   const totalPages      = ordersListData?.totalPages ?? 0;
+  const totalCountApi   = ordersListData?.totalCount;
   /** true only on the very first load (no cached data yet) */
   const isInitialLoad   = ordersFetching && !ordersListData;
 
@@ -279,12 +280,12 @@ function Orders() {
   };
 
   const selectedRows = useMemo(
-    () => orders.filter((o: any) => selectionModel.includes(o.orderId)),
+    () => orders.filter((o: any) => selectionModel.includes(o.rowId ?? o.orderId)),
     [orders, selectionModel]
   );
 
   const bulkEdit = (orderSt: any, pay: any, shippedFromInventory: any) => {
-    const orderIds = selectedRows.map((o: any) => o.orderId);
+    const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
     axiosRequest
       .put(`${baseURI}/orders/bulk-update`, {
         orderIds,
@@ -303,7 +304,7 @@ function Orders() {
   };
 
   const bulkDelete = () => {
-    const orderIds = selectedRows.map((o: any) => o.orderId);
+    const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
     if (!orderIds.length) return;
     axiosRequest
       .delete(`${baseURI}/orders/bulk-delete`, { data: { orderIds } })
@@ -403,7 +404,7 @@ function Orders() {
           ) : (
             /* ── Loaded: real KPI + Search + Filters ── */
             <>
-              <OrdersHomixKpiRow totalOrders={totalPages > 0 ? totalPages * ITEMS_PER_PAGE : undefined} />
+              <OrdersHomixKpiRow totalOrders={totalCountApi} />
 
               <OrdersHomixSearchCard
                 orderNumber={orderNumber}
@@ -470,6 +471,7 @@ function Orders() {
               page={gridPage0}
               totalPages={totalPages}
               pageSize={ITEMS_PER_PAGE}
+              totalCount={totalCountApi}
               onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
               calculateDaysFromPoDate={calculateDaysFromPoDate}
               isFetching={ordersFetching}

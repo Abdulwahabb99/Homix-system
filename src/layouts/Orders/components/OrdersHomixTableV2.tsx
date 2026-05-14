@@ -13,7 +13,9 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
+  PriorityBadge,
 } from "./OrdersHomixBadges";
+import type { PriorityLevel } from "./OrdersHomixBadges";
 import OrdersHomixMobileList from "./OrdersHomixMobileList";
 
 /* ─────────────────────────────────────────
@@ -41,6 +43,14 @@ function avColor(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % AV_COLORS.length;
   return AV_COLORS[h];
+}
+
+function mapDeliveryPriorityToLevel(dp: string | null | undefined): PriorityLevel | null {
+  if (dp == null || dp === "") return null;
+  const s = String(dp).toLowerCase();
+  if (s.includes("very") || s.includes("مستعجل جدا")) return "very-urgent";
+  if (s.includes("urgent") || s.includes("مستعجل")) return "urgent";
+  return "normal";
 }
 
 /* ─────────────────────────────────────────
@@ -173,6 +183,7 @@ function ActionBtn({ onClick, bg, hoverBg, color, children }: {
    Types
 ───────────────────────────────────────── */
 interface Order {
+  rowId?: string | number;
   orderId: string | number;
   code?: string;
   orderNumber?: string;
@@ -187,6 +198,10 @@ interface Order {
   userId?: string | number;
   shippedFromInventory?: boolean;
   vendorId?: string | number;
+  vendorName?: string;
+  userNameFromApi?: string;
+  daysSinceOrder?: number | null;
+  deliveryPriority?: string | null;
   createdAt?: string;
 }
 interface User   { id: string | number; firstName?: string; lastName?: string }
@@ -210,6 +225,8 @@ interface OrdersHomixTableV2Props {
   onPageChange: (page: number) => void;
   calculateDaysFromPoDate: (date: string) => string;
   isFetching?: boolean;
+  /** إجمالي السجلات من الـ API (للترقيم والعنوان) */
+  totalCount?: number;
 }
 
 /* ─────────────────────────────────────────
@@ -221,30 +238,39 @@ export default function OrdersHomixTableV2({
   onEdit, onDelete, onView, onBulkEdit, onBulkDelete,
   page, totalPages, pageSize, onPageChange,
   calculateDaysFromPoDate, isFetching,
+  totalCount: totalCountFromApi,
 }: OrdersHomixTableV2Props) {
-  const totalCount = totalPages * pageSize;
+  const totalCount =
+    totalCountFromApi != null ? totalCountFromApi : totalPages * pageSize;
+
+  const rowKey = (o: Order) => o.rowId ?? o.orderId;
 
   const isAllSelected =
-    orders.length > 0 && orders.every((o) => selectionModel.includes(o.orderId));
+    orders.length > 0 && orders.every((o) => selectionModel.includes(rowKey(o)));
   const isIndeterminate =
-    orders.some((o) => selectionModel.includes(o.orderId)) && !isAllSelected;
+    orders.some((o) => selectionModel.includes(rowKey(o))) && !isAllSelected;
 
   const toggleAll = useCallback(() => {
     if (isAllSelected) {
-      onSelectionModelChange(selectionModel.filter((id) => !orders.some((o) => o.orderId === id)));
+      onSelectionModelChange(
+        selectionModel.filter((id) => !orders.some((o) => rowKey(o) === id))
+      );
     } else {
-      const add = orders.map((o) => o.orderId).filter((id) => !selectionModel.includes(id));
+      const add = orders.map((o) => rowKey(o)).filter((id) => !selectionModel.includes(id));
       onSelectionModelChange([...selectionModel, ...add]);
     }
   }, [isAllSelected, orders, selectionModel, onSelectionModelChange]);
 
-  const toggleRow = useCallback((id: string | number) => {
-    onSelectionModelChange(
-      selectionModel.includes(id)
-        ? selectionModel.filter((x) => x !== id)
-        : [...selectionModel, id]
-    );
-  }, [selectionModel, onSelectionModelChange]);
+  const toggleRow = useCallback(
+    (id: string | number) => {
+      onSelectionModelChange(
+        selectionModel.includes(id)
+          ? selectionModel.filter((x) => x !== id)
+          : [...selectionModel, id]
+      );
+    },
+    [selectionModel, onSelectionModelChange]
+  );
 
   const extraCols  = isVendor ? [] : [...ADMIN_COLS];
   const allCols    = [...BASE_COLS, ...extraCols, ACTIONS_COL];
@@ -448,27 +474,39 @@ export default function OrdersHomixTableV2({
             )}
 
             {orders.map((order) => {
-              const isSelected = selectionModel.includes(order.orderId);
+              const rk = rowKey(order);
+              const isSelected = selectionModel.includes(rk);
 
               const compCost = (order.items ?? []).reduce(
                 (s, it) => s + Number(it.unitCost ?? 0) * Number(it.quantity ?? 1), 0
               );
-              const vendorName =
-                vendors.find((v) => String(v.value) === String(order.vendorId))?.label ?? "—";
+              const factoryName =
+                order.vendorName ??
+                vendors.find((v) => String(v.value) === String(order.vendorId))?.label ??
+                "—";
               const user = users.find((u) => String(u.id) === String(order.userId));
               const userName = user
-                ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() : "";
-              const poDateFmt  = order.PoDate
-                ? moment.utc(order.PoDate).tz("Africa/Cairo").format("YY/MM/DD") : "—";
+                ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+                : (order.userNameFromApi?.trim() || "");
+              const poDateFmt = order.PoDate
+                ? moment.utc(order.PoDate).tz("Africa/Cairo").format("YY/MM/DD")
+                : "—";
               const createdFmt = order.createdAt
-                ? moment.utc(order.createdAt).tz("Africa/Cairo").format("YY/MM/DD") : "—";
-              const daysLabel  = order.PoDate ? calculateDaysFromPoDate(order.PoDate) : null;
+                ? moment.utc(order.createdAt).tz("Africa/Cairo").format("YY/MM/DD")
+                : "—";
+              const daysLabel =
+                order.daysSinceOrder != null
+                  ? String(order.daysSinceOrder)
+                  : order.PoDate
+                    ? calculateDaysFromPoDate(order.PoDate)
+                    : null;
               const productCode = order.items?.[0]?.code ?? "—";
+              const priorityLevel = mapDeliveryPriorityToLevel(order.deliveryPriority ?? undefined);
 
               const rowBg = isSelected ? "#f5f3ff" : undefined;
 
               return (
-                <tr key={order.orderId}
+                <tr key={rk}
                   onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = "#fafbff"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = rowBg ?? ""; }}
                   style={{ background: rowBg }}
@@ -477,7 +515,7 @@ export default function OrdersHomixTableV2({
                   {!isVendor && (
                     <td style={{ ...TD, textAlign: "center" }}>
                       <Checkbox size="small" checked={isSelected}
-                        onChange={() => toggleRow(order.orderId)} sx={{ p: 0 }} />
+                        onChange={() => toggleRow(rk)} sx={{ p: 0 }} />
                     </td>
                   )}
 
@@ -520,7 +558,7 @@ export default function OrdersHomixTableV2({
                   <td style={TD}><OrderStatusBadge status={order.status} /></td>
 
                   {/* اسم المصنع */}
-                  <td style={TD}><FactoryCell name={vendorName} /></td>
+                  <td style={TD}><FactoryCell name={factoryName} /></td>
 
                   {/* سعر التكلفة */}
                   <td style={{ ...TD, color: HX.tx2 }}>
@@ -542,7 +580,9 @@ export default function OrdersHomixTableV2({
                   <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
 
                   {/* الأولوية — no API field */}
-                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>—</td>
+                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
+                    {priorityLevel ? <PriorityBadge level={priorityLevel} /> : "—"}
+                  </td>
 
                   {/* حالة التصنيع */}
                   <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>
@@ -561,10 +601,10 @@ export default function OrdersHomixTableV2({
                   {/* المسئول */}
                   {!isVendor && (
                     <td style={TD}>
-                      {user ? (
+                      {user || userName ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          <AvatarCircle name={userName} size={22} />
-                          <span style={{ fontSize: 12, fontFamily: FONT }}>{userName}</span>
+                          {userName ? <AvatarCircle name={userName} size={22} /> : null}
+                          <span style={{ fontSize: 12, fontFamily: FONT }}>{userName || "—"}</span>
                         </span>
                       ) : (
                         <span style={{ color: HX.tx3, fontSize: "11.5px" }}>—</span>
