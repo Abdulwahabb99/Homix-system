@@ -6,7 +6,7 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "./order.constants";
-import type { OrderEvent, OrderPriorityKey } from "./order.types";
+import type { OrderPriorityKey } from "./order.types";
 
 type PlainRecord = Record<string, unknown>;
 type Plainable = PlainRecord | { toJSON: () => PlainRecord };
@@ -152,8 +152,4 @@ export const buildLogMessage = (log: PlainRecord): string => {
   }
 
   return nextValue ? `تم تحديث ${field} إلى ${nextValue}` : `تم تحديث ${field}`;
-};
-
-export const sortEventsDescending = (items: OrderEvent[]): OrderEvent[] => {
-  return [...items].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 };

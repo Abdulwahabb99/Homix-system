@@ -148,15 +148,6 @@ export type OrderNote = {
   userName: string;
 };
 
-export type OrderEvent = {
-  action: string;
-  createdAt: string;
-  field: string;
-  id: number;
-  message: string;
-  userName: string;
-};
-
 export type OrderStatusHistoryItem = {
   changedAt: string;
   fromStatus: number | null;
@@ -209,7 +200,6 @@ export type OrderDetailsView = {
     vendorName: string;
   }>;
   statusHistory: OrderStatusHistoryItem[];
-  timeline: OrderEvent[];
 };
 
 export type OrderDetailsResponse = OrderDetailsView;

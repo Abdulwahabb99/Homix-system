@@ -12,7 +12,6 @@ import {
 } from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
-  buildLogMessage,
   getDaysSince,
   getDeliveryPriorityLabel,
   getOrderPriority,
@@ -20,7 +19,6 @@ import {
   getStatusLabel,
   getManufactureLabel,
   getPaymentLabel,
-  sortEventsDescending,
   toIsoString,
   toNumber,
   toPlain,
@@ -216,7 +214,6 @@ export class OrderRepository {
     const logs = await logModel.findAll({ order: [["createdAt", "DESC"]], where: { entityId: orderId, entityType: "order" } });
     const users = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
     const userNames = new Map(users.map((user: unknown) => { const plainUser = toPlain(user); return [toNumber(plainUser.id), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()]; }));
-    const timeline = sortEventsDescending(logs.map((log: unknown) => { const plainLog = toPlain(log); return { action: toText(plainLog.action), createdAt: toIsoString(plainLog.createdAt) ?? "", field: toText(plainLog.field), id: toNumber(plainLog.id), message: buildLogMessage(plainLog), userName: userNames.get(toNumber(plainLog.userId)) ?? "" }; }));
     const statusHistory: OrderStatusHistoryItem[] = logs
       .map((log: unknown): Record<string, unknown> => toPlain(log))
       .filter((log: Record<string, unknown>) => toText(log.field) === "status")
@@ -271,7 +268,6 @@ export class OrderRepository {
         };
       }),
       statusHistory,
-      timeline,
     };
 
     return view;

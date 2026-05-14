@@ -681,18 +681,6 @@ const swaggerOptions = {
           },
           required: ["id", "text", "userName", "createdAt", "attachments"],
         },
-        OrderEvent: {
-          type: "object",
-          properties: {
-            action: { example: "update", type: "string" },
-            createdAt: { example: "2026-05-04T01:00:00.000Z", format: "date-time", type: "string" },
-            field: { example: "status", type: "string" },
-            id: { example: 8, type: "integer" },
-            message: { example: "Status changed to in progress", type: "string" },
-            userName: { example: "Ahmed Hesham", type: "string" },
-          },
-          required: ["id", "action", "field", "message", "createdAt"],
-        },
         OrderStatusHistoryItem: {
           type: "object",
           properties: {
@@ -775,9 +763,8 @@ const swaggerOptions = {
               },
             },
             statusHistory: { items: { $ref: "#/components/schemas/OrderStatusHistoryItem" }, type: "array" },
-            timeline: { items: { $ref: "#/components/schemas/OrderEvent" }, type: "array" },
           },
-          required: ["customer", "financial", "notes", "order", "items", "statusHistory", "timeline"],
+          required: ["customer", "financial", "notes", "order", "items", "statusHistory"],
         },
         OrderDetailsResponse: {
           type: "object",
