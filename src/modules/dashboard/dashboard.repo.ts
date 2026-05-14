@@ -253,7 +253,7 @@ export class DashboardRepository {
     input: DashboardMetricsInput,
   ): Promise<DashboardLeaderboardEntry[]> {
     const aggregateEntries = await this.dashboardAggregateService.getLeaderboard(input);
-    if (aggregateEntries) {
+    if (aggregateEntries && aggregateEntries.length > 0) {
       return aggregateEntries;
     }
 
@@ -289,7 +289,7 @@ export class DashboardRepository {
     input: DashboardMetricsInput,
   ): Promise<DashboardSalesDistributionItem[]> {
     const aggregateDistribution = await this.dashboardAggregateService.getSalesDistribution(input);
-    if (aggregateDistribution) {
+    if (aggregateDistribution && aggregateDistribution.length > 0) {
       const groupedSales = new Map<string, number>();
       for (const item of aggregateDistribution) {
         groupedSales.set(item.label, item.value);
