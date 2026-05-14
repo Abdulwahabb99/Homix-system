@@ -693,6 +693,19 @@ const swaggerOptions = {
           },
           required: ["id", "action", "field", "message", "createdAt"],
         },
+        OrderStatusHistoryItem: {
+          type: "object",
+          properties: {
+            changedAt: { example: "2026-05-04T01:00:00.000Z", format: "date-time", type: "string" },
+            fromStatus: { example: 1, nullable: true, type: "integer" },
+            fromStatusLabel: { example: "معلق", type: "string" },
+            id: { example: 8, type: "integer" },
+            toStatus: { example: 2, nullable: true, type: "integer" },
+            toStatusLabel: { example: "قيد التصنيع", type: "string" },
+            userName: { example: "Sara Mohamed", type: "string" },
+          },
+          required: ["id", "changedAt", "fromStatusLabel", "toStatusLabel", "userName"],
+        },
         OrderDetailsView: {
           type: "object",
           properties: {
@@ -761,9 +774,10 @@ const swaggerOptions = {
                 required: ["id", "productName", "quantity", "sku"],
               },
             },
+            statusHistory: { items: { $ref: "#/components/schemas/OrderStatusHistoryItem" }, type: "array" },
             timeline: { items: { $ref: "#/components/schemas/OrderEvent" }, type: "array" },
           },
-          required: ["customer", "financial", "notes", "order", "items", "timeline"],
+          required: ["customer", "financial", "notes", "order", "items", "statusHistory", "timeline"],
         },
         OrderDetailsResponse: {
           type: "object",

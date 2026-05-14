@@ -71,6 +71,7 @@ jest.mock("../../../app/modules/logs/log.model", () => ({
       action: "update",
       createdAt: "2026-05-04T01:00:00.000Z",
       field: "status",
+      from: "1",
       id: 8,
       to: "2",
       userId: 1,
@@ -245,6 +246,11 @@ describe("orderRouter", () => {
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
     expect(response.body.data.order.itemsCount).toBe(1);
     expect(response.body.data.financial.fine).toBe(0);
+    expect(response.body.data.statusHistory[0].fromStatus).toBe(1);
+    expect(response.body.data.statusHistory[0].fromStatusLabel).toBe("معلق");
+    expect(response.body.data.statusHistory[0].toStatus).toBe(2);
+    expect(response.body.data.statusHistory[0].toStatusLabel).toBe("قيد التصنيع");
+    expect(response.body.data.statusHistory[0].userName).toBe("Sara Mohamed");
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.timeline[0].field).toBe("status");

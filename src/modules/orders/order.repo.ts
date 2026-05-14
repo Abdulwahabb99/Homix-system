@@ -26,7 +26,7 @@ import {
   toPlain,
   toText,
 } from "./order.helpers";
-import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderSummaryResponse } from "./order.types";
+import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse } from "./order.types";
 
 const { sequelize } = require("../../infrastructure/database");
 const orderModel = require("../../../app/modules/order/order.model");
@@ -217,6 +217,18 @@ export class OrderRepository {
     const users = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
     const userNames = new Map(users.map((user: unknown) => { const plainUser = toPlain(user); return [toNumber(plainUser.id), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()]; }));
     const timeline = sortEventsDescending(logs.map((log: unknown) => { const plainLog = toPlain(log); return { action: toText(plainLog.action), createdAt: toIsoString(plainLog.createdAt) ?? "", field: toText(plainLog.field), id: toNumber(plainLog.id), message: buildLogMessage(plainLog), userName: userNames.get(toNumber(plainLog.userId)) ?? "" }; }));
+    const statusHistory: OrderStatusHistoryItem[] = logs
+      .map((log: unknown): Record<string, unknown> => toPlain(log))
+      .filter((log: Record<string, unknown>) => toText(log.field) === "status")
+      .map((log: Record<string, unknown>) => ({
+        changedAt: toIsoString(log.createdAt) ?? "",
+        fromStatus: toNumber(log.from) || null,
+        fromStatusLabel: getStatusLabel(log.from),
+        id: toNumber(log.id),
+        toStatus: toNumber(log.to) || null,
+        toStatusLabel: getStatusLabel(log.to),
+        userName: userNames.get(toNumber(log.userId)) ?? "",
+      }));
 
     const view: OrderDetailsView = {
       assigneeName: `${toText(toPlain(plainOrder.user).firstName)} ${toText(toPlain(plainOrder.user).lastName)}`.trim(),
@@ -258,6 +270,7 @@ export class OrderRepository {
           vendorName: toText(vendor.name),
         };
       }),
+      statusHistory,
       timeline,
     };
 
