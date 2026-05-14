@@ -18,7 +18,6 @@ import { vendorsRoutes } from "routes";
 import AddEditUser from "layouts/Users/AddEditUser";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
-import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import OrderEdit from "layouts/Orders/OrderEdit/OrderEdit";
@@ -30,6 +29,10 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import { addNotification } from "store/slices/notificationsSlice";
 import { setNotifications } from "store/slices/notificationsSlice";
 import axiosRequest from "shared/functions/axiosRequest";
+import {
+  isJwtExpired,
+  redirectToSignIn,
+} from "shared/functions/sessionGuard";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
@@ -107,14 +110,11 @@ export default function App() {
 
   useEffect(() => {
     const token = user?.token;
-    if (token) {
-      const tokenExpiration = JSON.parse(atob(token.split(".")[1])).exp * 1000;
-      if (Date.now() > tokenExpiration) {
-        localStorage.removeItem("user");
-        reduxDispatch(clearUser());
-      }
+    if (!token) return;
+    if (isJwtExpired(token)) {
+      redirectToSignIn();
     }
-  }, [user?.token, reduxDispatch]);
+  }, [user?.token]);
 
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
@@ -205,7 +205,6 @@ export default function App() {
               index
               element={<Navigate to={isAdmin || isVendor ? "/home" : "/products"} />}
             />
-            <Route path="*" element={<NotFound />} />
             <Route path="/authentication/sign-in" element={<SignIn />} />
             <Route
               path="/tickets/:id"
@@ -303,6 +302,7 @@ export default function App() {
                 </ProtectedRoutes>
               }
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </ThemeProvider>

@@ -1,13 +1,24 @@
 /* eslint-disable react/prop-types */
 import React from "react";
 import { Navigate } from "react-router-dom";
-function ProtectedRoutes({ children }) {
-  const userData = JSON.parse(localStorage.getItem("user"));
-  if (!userData) {
-    return <Navigate to="/authentication/sign-in" />;
+import {
+  getStoredUserParsed,
+  isStoredSessionValid,
+  redirectToSignIn,
+  SIGN_IN_PATH,
+} from "shared/functions/sessionGuard";
+
+function ProtectedRoutes({ children }: { children: React.ReactNode }) {
+  if (!isStoredSessionValid()) {
+    const stored = getStoredUserParsed();
+    if (stored) {
+      redirectToSignIn();
+      return null;
+    }
+    return <Navigate to={SIGN_IN_PATH} replace />;
   }
 
-  return <div>{children}</div>;
+  return <>{children}</>;
 }
 
 export default ProtectedRoutes;
