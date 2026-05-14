@@ -2,6 +2,8 @@ import { ConflictError, NotFoundError, UnauthorizedError } from "../../shared/er
 import type { Result } from "../../shared/result";
 import { success } from "../../shared/result";
 import { USER_TYPES } from "../../../config/constants";
+import { DashboardAggregateService } from "../dashboard/dashboard-aggregate.service";
+import type { DashboardMetricSnapshot } from "../dashboard/dashboard.types";
 import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gateway";
 import { toText } from "./order.helpers";
 import { OrderRepository } from "./order.repo";
@@ -19,6 +21,17 @@ const ensureLegacySuccess = <TData>(response: LegacyOrderResponse<TData>): Legac
 };
 
 export class OrderService {
+  private readonly dashboardAggregateService = new DashboardAggregateService({
+    getDeliveredOrdersCountFromOrders: async () => 0,
+    getSnapshotFromOrders: async (): Promise<DashboardMetricSnapshot> => ({
+      activeMakers: 0,
+      activeProducts: 0,
+      pendingOrders: 0,
+      totalOrders: 0,
+      totalSales: 0,
+    }),
+  });
+
   public constructor(
     private readonly orderRepository: OrderRepository,
     private readonly legacyGateway: LegacyOrderGateway = orderLegacyGateway,
@@ -44,6 +57,7 @@ export class OrderService {
 
   public async createOrder(payload: OrderMutationPayload, user?: OrderRequestUser): Promise<Result<{ message: string }>> {
     await this.legacyGateway.saveImportedOrders([payload], false, user);
+    await this.refreshAggregateForDates([payload.orderDate]);
     return success({ message: "Order created successfully" });
   }
 
@@ -57,7 +71,9 @@ export class OrderService {
   }
 
   public async updateOrder(orderId: number, payload: OrderMutationPayload, user: OrderRequestUser): Promise<Result<unknown>> {
+    const existingOrder = await this.orderRepository.findOrderEntity(orderId);
     const response = ensureLegacySuccess(await this.legacyGateway.updateOrder(orderId, payload, user));
+    await this.refreshAggregateForDates([existingOrder ? this.getOrderDate(existingOrder) : null, payload.orderDate, this.getOrderDate(response.data)]);
     return success(response.data ?? {});
   }
 
@@ -65,7 +81,14 @@ export class OrderService {
     payload: OrderMutationPayload,
     user: OrderRequestUser,
   ): Promise<Result<{ message: string }>> {
+    const orderIds = Array.isArray(payload.orderIds) ? payload.orderIds.map(Number).filter(Boolean) : [];
+    const existingOrders = await this.orderRepository.findOrderEntities(orderIds);
     const response = ensureLegacySuccess(await this.legacyGateway.bulkUpdate(payload, user));
+    const nextOrderDate = this.getBulkOrderDate(payload);
+    await this.refreshAggregateForDates([
+      ...existingOrders.map((order) => this.getOrderDate(order)),
+      nextOrderDate,
+    ]);
     return success({ message: response.message ?? "Orders updated successfully" });
   }
 
@@ -79,12 +102,15 @@ export class OrderService {
       userId: Number(user.id),
     });
     await this.orderRepository.deleteOrder(orderId);
+    await this.refreshAggregateForDates([this.getOrderDate(order)]);
     return success({ message: "Order deleted successfully" });
   }
 
   public async bulkDelete(payload: OrderMutationPayload): Promise<Result<{ message: string }>> {
     const orderIds = Array.isArray(payload.orderIds) ? payload.orderIds.map(Number).filter(Boolean) : [];
+    const existingOrders = await this.orderRepository.findOrderEntities(orderIds);
     await this.orderRepository.bulkDelete(orderIds);
+    await this.refreshAggregateForDates(existingOrders.map((order) => this.getOrderDate(order)));
     return success({ message: "Orders deleted successfully" });
   }
 
@@ -150,5 +176,44 @@ export class OrderService {
 
   public async exportOrders(response: unknown, payload: OrderMutationPayload): Promise<void> {
     await this.legacyGateway.exportOrders(response, payload);
+  }
+
+  private getBulkOrderDate(payload: OrderMutationPayload): unknown {
+    const orderData = payload.orderData as Record<string, unknown> | undefined;
+    return orderData?.orderDate;
+  }
+
+  private getOrderDate(order: unknown): unknown {
+    if (!order || typeof order !== "object") {
+      return null;
+    }
+
+    return (order as { orderDate?: unknown }).orderDate ?? null;
+  }
+
+  private normalizeDateOnly(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const parsedDate = value instanceof Date ? new Date(value) : new Date(String(value));
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    return parsedDate.toISOString().slice(0, 10);
+  }
+
+  private async refreshAggregateForDates(values: unknown[]): Promise<void> {
+    const dates = values
+      .map((value) => this.normalizeDateOnly(value))
+      .filter((value): value is string => Boolean(value));
+
+    if (dates.length === 0) {
+      return;
+    }
+
+    const uniqueDates = [...new Set(dates)].sort((left, right) => left.localeCompare(right));
+    await this.dashboardAggregateService.refreshRange(uniqueDates[0] ?? "", uniqueDates[uniqueDates.length - 1] ?? "");
   }
 }

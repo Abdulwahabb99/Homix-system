@@ -20,9 +20,19 @@ const DashboardDailyMetric = sequelize.define(
       defaultValue: 0,
       type: DataTypes.INTEGER,
     },
+    inProgressOrders: {
+      allowNull: false,
+      defaultValue: 0,
+      type: DataTypes.INTEGER,
+    },
     metricDate: {
       allowNull: false,
       type: DataTypes.DATEONLY,
+    },
+    canceledOrRefundedOrders: {
+      allowNull: false,
+      defaultValue: 0,
+      type: DataTypes.INTEGER,
     },
     pendingOrders: {
       allowNull: false,

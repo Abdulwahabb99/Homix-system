@@ -54,6 +54,18 @@ async function main() {
       type: DataTypes.INTEGER,
     });
 
+    await ensureColumn(queryInterface, "dashboardDailyMetrics", "inProgressOrders", {
+      allowNull: false,
+      defaultValue: 0,
+      type: DataTypes.INTEGER,
+    });
+
+    await ensureColumn(queryInterface, "dashboardDailyMetrics", "canceledOrRefundedOrders", {
+      allowNull: false,
+      defaultValue: 0,
+      type: DataTypes.INTEGER,
+    });
+
     await queryInterface.changeColumn("orders", "deliveryBy", {
       allowNull: true,
       type: DataTypes.INTEGER,

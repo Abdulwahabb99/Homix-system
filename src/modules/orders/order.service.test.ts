@@ -1,6 +1,12 @@
 import { NotFoundError, UnauthorizedError } from "../../shared/errors";
 import { OrderService } from "./order.service";
 
+jest.mock("../dashboard/dashboard-aggregate.service", () => ({
+  DashboardAggregateService: jest.fn().mockImplementation(() => ({
+    refreshRange: jest.fn(),
+  })),
+}));
+
 describe("OrderService", () => {
   it("throws not found when an order details request misses", async () => {
     const repository = {

@@ -13,7 +13,9 @@ import type {
 type AggregateRecord = {
   activeMakers: number;
   activeProducts: number;
+  canceledOrRefundedOrders: number;
   deliveredOrders: number;
+  inProgressOrders: number;
   metricDate: string;
   pendingOrders: number;
   role: "admin" | "vendor";
@@ -120,7 +122,9 @@ const AGGREGATE_LOG_OPERATION = "dashboard-aggregate";
 const BULK_UPDATE_FIELDS = [
   "activeMakers",
   "activeProducts",
+  "canceledOrRefundedOrders",
   "deliveredOrders",
+  "inProgressOrders",
   "pendingOrders",
   "totalOrders",
   "totalSales",
@@ -140,7 +144,10 @@ const BULK_CATEGORY_UPDATE_FIELDS = [
   "vendorId",
 ] as const;
 const OPEN_STATUS_SQL = "1,2,3";
+const PENDING_STATUS_SQL = "1";
+const IN_PROGRESS_STATUS_SQL = "2";
 const DELIVERED_STATUS_SQL = "5";
+const CANCELED_OR_REFUNDED_STATUS_SQL = "4,6,7";
 const UNCATEGORIZED_CATEGORY_ID = 0;
 const UNCATEGORIZED_CATEGORY_TITLE = "أخرى";
 const MAX_LEADERBOARD_ITEMS = 10;
@@ -183,6 +190,8 @@ const toAggregateRecord = (
   activeMakers: snapshot.activeMakers,
   activeProducts: snapshot.activeProducts,
   deliveredOrders,
+  canceledOrRefundedOrders: 0,
+  inProgressOrders: 0,
   metricDate,
   pendingOrders: snapshot.pendingOrders,
   role: input.role,
@@ -191,6 +200,14 @@ const toAggregateRecord = (
   totalSales: snapshot.totalSales,
   vendorId: input.vendorId ?? null,
 });
+
+export type OrderSummaryAggregate = {
+  canceledOrRefundedOrders: number;
+  deliveredOrders: number;
+  inProgressOrders: number;
+  pendingOrders: number;
+  totalOrders: number;
+};
 
 export class DashboardAggregateService {
   public constructor(private readonly dashboardSource: DashboardAggregateSource) {}
@@ -394,6 +411,10 @@ export class DashboardAggregateService {
     ]);
   }
 
+  public async refreshRange(startDate: string, endDate: string): Promise<void> {
+    await this.backfill(startDate, endDate);
+  }
+
   private async getBackfillBounds(
     startDate?: string,
     endDate?: string,
@@ -454,8 +475,10 @@ export class DashboardAggregateService {
           SELECT
             DATE("orderDate")::text AS "metricDate",
             COUNT(*)::int AS "totalOrders",
-            COUNT(*) FILTER (WHERE "status" IN (${OPEN_STATUS_SQL}))::int AS "pendingOrders",
+            COUNT(*) FILTER (WHERE "status" IN (${PENDING_STATUS_SQL}))::int AS "pendingOrders",
+            COUNT(*) FILTER (WHERE "status" IN (${IN_PROGRESS_STATUS_SQL}))::int AS "inProgressOrders",
             COUNT(*) FILTER (WHERE "status" IN (${DELIVERED_STATUS_SQL}))::int AS "deliveredOrders",
+            COUNT(*) FILTER (WHERE "status" IN (${CANCELED_OR_REFUNDED_STATUS_SQL}))::int AS "canceledOrRefundedOrders",
             COALESCE(SUM("totalPrice"), 0)::numeric AS "totalSales"
           FROM "orders"
           WHERE "deletedAt" IS NULL
@@ -480,7 +503,9 @@ export class DashboardAggregateService {
           d."metricDate",
           d."totalOrders",
           d."pendingOrders",
+          d."inProgressOrders",
           d."deliveredOrders",
+          d."canceledOrRefundedOrders",
           d."totalSales",
           COALESCE(m."activeMakers", 0)::int AS "activeMakers"
         FROM daily_orders d
@@ -499,7 +524,9 @@ export class DashboardAggregateService {
     return rows.map((row: DailyAdminRow) => ({
       activeMakers: Number(row.activeMakers ?? 0),
       activeProducts: 0,
+      canceledOrRefundedOrders: Number((row as DailyAdminRow & { canceledOrRefundedOrders?: number | string | null }).canceledOrRefundedOrders ?? 0),
       deliveredOrders: Number(row.deliveredOrders ?? 0),
+      inProgressOrders: Number((row as DailyAdminRow & { inProgressOrders?: number | string | null }).inProgressOrders ?? 0),
       metricDate: row.metricDate,
       pendingOrders: Number(row.pendingOrders ?? 0),
       role: "admin",
@@ -517,8 +544,10 @@ export class DashboardAggregateService {
           DATE(o."orderDate")::text AS "metricDate",
           p."vendorId" AS "vendorId",
           COUNT(DISTINCT o."id")::int AS "totalOrders",
-          COUNT(DISTINCT CASE WHEN o."status" IN (${OPEN_STATUS_SQL}) THEN o."id" END)::int AS "pendingOrders",
+          COUNT(DISTINCT CASE WHEN o."status" IN (${PENDING_STATUS_SQL}) THEN o."id" END)::int AS "pendingOrders",
+          COUNT(DISTINCT CASE WHEN o."status" IN (${IN_PROGRESS_STATUS_SQL}) THEN o."id" END)::int AS "inProgressOrders",
           COUNT(DISTINCT CASE WHEN o."status" IN (${DELIVERED_STATUS_SQL}) THEN o."id" END)::int AS "deliveredOrders",
+          COUNT(DISTINCT CASE WHEN o."status" IN (${CANCELED_OR_REFUNDED_STATUS_SQL}) THEN o."id" END)::int AS "canceledOrRefundedOrders",
           COUNT(DISTINCT ol."productId")::int AS "activeProducts",
           COALESCE(SUM((COALESCE(ol."price", 0)::numeric * COALESCE(ol."quantity", 0)::numeric) - COALESCE(ol."discount", 0)::numeric), 0)::numeric AS "totalSales"
         FROM "orderLines" ol
@@ -545,7 +574,9 @@ export class DashboardAggregateService {
       return {
         activeMakers: 0,
         activeProducts: Number(row.activeProducts ?? 0),
+        canceledOrRefundedOrders: Number((row as DailyVendorRow & { canceledOrRefundedOrders?: number | string | null }).canceledOrRefundedOrders ?? 0),
         deliveredOrders: Number(row.deliveredOrders ?? 0),
+        inProgressOrders: Number((row as DailyVendorRow & { inProgressOrders?: number | string | null }).inProgressOrders ?? 0),
         metricDate: row.metricDate,
         pendingOrders: Number(row.pendingOrders ?? 0),
         role: "vendor" as const,

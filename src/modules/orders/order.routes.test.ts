@@ -3,9 +3,14 @@ import { Op } from "sequelize";
 import request from "supertest";
 
 const orderModel = {
+  count: jest.fn(),
   findAll: jest.fn(),
   findAndCountAll: jest.fn(),
   findOne: jest.fn(),
+};
+
+const dashboardDailyMetricModel = {
+  findAll: jest.fn(),
 };
 
 const vendorModel = {
@@ -56,6 +61,12 @@ jest.mock("../../infrastructure/database", () => ({
 }));
 
 jest.mock("../../../app/modules/order/order.model", () => orderModel);
+jest.mock("../dashboard/dashboard-aggregate.service", () => ({
+  DashboardAggregateService: jest.fn().mockImplementation(() => ({
+    refreshRange: jest.fn(),
+  })),
+}));
+jest.mock("../dashboard/dashboard-daily-metric.model", () => dashboardDailyMetricModel);
 jest.mock("../../../app/modules/vendor/vendor.model", () => vendorModel);
 jest.mock("../../../app/modules/user/user.model", () => userModel);
 jest.mock("../../../app/modules/order/order.service", () => legacyOrderService);
@@ -156,6 +167,8 @@ const makeOrder = () => ({
 describe("orderRouter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    dashboardDailyMetricModel.findAll.mockResolvedValue([]);
+    orderModel.count.mockResolvedValue(0);
     orderModel.findAll.mockResolvedValue([makeOrder()]);
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeOrder()] });
     orderModel.findOne.mockResolvedValue(makeOrder());
@@ -182,6 +195,34 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.cards).toEqual(
       expect.arrayContaining([expect.objectContaining({ key: "totalOrders", value: 1 })]),
+    );
+  });
+
+  it("uses aggregate rows for stable summary cards and live count for urgent orders", async () => {
+    dashboardDailyMetricModel.findAll.mockResolvedValue([
+      {
+        canceledOrRefundedOrders: 3,
+        deliveredOrders: 9,
+        inProgressOrders: 4,
+        metricDate: "2026-05-01",
+        pendingOrders: 2,
+        totalOrders: 18,
+      },
+    ]);
+    orderModel.count.mockResolvedValue(5);
+
+    const response = await request(app).get("/orders/summary").query({ startDate: "2026-05-01", endDate: "2026-05-01" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "urgentOrders", value: 5 }),
+        expect.objectContaining({ key: "canceledOrRefundedOrders", value: 3 }),
+        expect.objectContaining({ key: "deliveredOrders", value: 9 }),
+        expect.objectContaining({ key: "inProgressOrders", value: 4 }),
+        expect.objectContaining({ key: "pendingOrders", value: 2 }),
+        expect.objectContaining({ key: "totalOrders", value: 18 }),
+      ]),
     );
   });
 

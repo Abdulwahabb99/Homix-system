@@ -37,6 +37,22 @@ const userModel = require("../../../app/modules/user/user.model");
 const attachmentModel = require("../../../app/modules/attachments/attachment.model");
 const productTypeModel = require("../../../app/modules/product/productType.model");
 const logModel = require("../../../app/modules/logs/log.model");
+const dashboardDailyMetricModel = require("../dashboard/dashboard-daily-metric.model");
+
+const SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS: Array<keyof OrderListQuery> = [
+  "customerName",
+  "deliveryBy",
+  "deliveryStatus",
+  "manufactureStatus",
+  "operationCode",
+  "orderNumber",
+  "paymentStatus",
+  "priority",
+  "productCode",
+  "status",
+  "userId",
+  "vendorName",
+];
 
 const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record<string, unknown> => {
   const andConditions: unknown[] = [];
@@ -120,6 +136,54 @@ const buildIncludes = (): Record<string, unknown>[] => {
   ];
 };
 
+const parseCsvNumbers = (value?: string): number[] => {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0);
+};
+
+const resolveAggregateScope = (
+  filters: OrderListQuery,
+  vendorId?: number | null,
+): { role: "admin" | "vendor"; scopeId: number } | null => {
+  if (vendorId) {
+    const requestedVendorIds = parseCsvNumbers(filters.vendorId);
+    if (requestedVendorIds.length > 0 && (requestedVendorIds.length !== 1 || requestedVendorIds[0] !== vendorId)) {
+      return null;
+    }
+
+    return { role: "vendor", scopeId: vendorId };
+  }
+
+  const requestedVendorIds = parseCsvNumbers(filters.vendorId);
+  if (requestedVendorIds.length === 0) {
+    return { role: "admin", scopeId: 0 };
+  }
+
+  if (requestedVendorIds.length !== 1) {
+    return null;
+  }
+
+  return { role: "vendor", scopeId: requestedVendorIds[0] ?? 0 };
+};
+
+const canUseAggregateSummary = (filters: OrderListQuery, vendorId?: number | null): boolean => {
+  if (!filters.startDate || !filters.endDate) {
+    return false;
+  }
+
+  if (SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS.some((key) => Boolean(filters[key]))) {
+    return false;
+  }
+
+  return Boolean(resolveAggregateScope(filters, vendorId));
+};
+
 const mapOrderSummary = (value: unknown): OrderListItem => {
   const order = toPlain(value);
   const orderLine = Array.isArray(order.orderLines) ? toPlain(order.orderLines[0]) : {};
@@ -161,6 +225,20 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
 export class OrderRepository {
   public async findOrderEntity(orderId: number): Promise<unknown | null> {
     return orderModel.findByPk(orderId);
+  }
+
+  public async findOrderEntities(orderIds: number[]): Promise<unknown[]> {
+    if (orderIds.length === 0) {
+      return [];
+    }
+
+    return orderModel.findAll({
+      where: {
+        id: {
+          [Op.in]: orderIds,
+        },
+      },
+    });
   }
 
   public async listOrders(filters: OrderListQuery, vendorId?: number | null): Promise<OrderListResponse> {
@@ -274,8 +352,99 @@ export class OrderRepository {
   }
 
   public async getSummary(filters: OrderListQuery, vendorId?: number | null): Promise<OrderSummaryResponse> {
-    const orders = await orderModel.findAll({ attributes: ["expectedDeliveryDate", "status"], include: buildIncludes(), subQuery: false, where: buildFilters(filters, vendorId) });
-    const counts = { canceledOrRefundedOrders: 0, deliveredOrders: 0, inProgressOrders: 0, pendingOrders: 0, totalOrders: orders.length, urgentOrders: 0 };
+    const counts = canUseAggregateSummary(filters, vendorId)
+      ? await this.getSummaryCountsFromAggregate(filters, vendorId)
+      : await this.getSummaryCountsFromOrders(filters, vendorId);
+
+    return { cards: [
+      { key: "urgentOrders", label: "مستعجل جدا", value: counts.urgentOrders },
+      { key: "canceledOrRefundedOrders", label: "ملغي / مرتجع", value: counts.canceledOrRefundedOrders },
+      { key: "deliveredOrders", label: "تم التسليم", value: counts.deliveredOrders },
+      { key: "inProgressOrders", label: "قيد التصنيع", value: counts.inProgressOrders },
+      { key: "pendingOrders", label: "معلق", value: counts.pendingOrders },
+      { key: "totalOrders", label: "إجمالي الطلبات", value: counts.totalOrders },
+    ] };
+  }
+
+  private async getSummaryCountsFromAggregate(
+    filters: OrderListQuery,
+    vendorId?: number | null,
+  ): Promise<{ canceledOrRefundedOrders: number; deliveredOrders: number; inProgressOrders: number; pendingOrders: number; totalOrders: number; urgentOrders: number }> {
+    const scope = resolveAggregateScope(filters, vendorId);
+    if (!scope || !filters.startDate || !filters.endDate) {
+      return this.getSummaryCountsFromOrders(filters, vendorId);
+    }
+
+    const rows = await dashboardDailyMetricModel.findAll({
+      where: {
+        metricDate: {
+          [Op.between]: [filters.startDate.slice(0, 10), filters.endDate.slice(0, 10)],
+        },
+        role: scope.role,
+        scopeId: scope.scopeId,
+      },
+    });
+
+    const rowByDate = new Map<string, Record<string, unknown>>(
+      rows.map((row: { toJSON?: () => Record<string, unknown> }) => {
+        const plainRow = toPlain(row);
+        return [toText(plainRow.metricDate), plainRow];
+      }),
+    );
+
+    if (rowByDate.size === 0) {
+      return this.getSummaryCountsFromOrders(filters, vendorId);
+    }
+
+    const aggregateRows = [...rowByDate.values()];
+    const stableCounts = aggregateRows.reduce<{
+      canceledOrRefundedOrders: number;
+      deliveredOrders: number;
+      inProgressOrders: number;
+      pendingOrders: number;
+      totalOrders: number;
+    }>(
+      (summary, row) => ({
+        canceledOrRefundedOrders: summary.canceledOrRefundedOrders + toNumber(row.canceledOrRefundedOrders),
+        deliveredOrders: summary.deliveredOrders + toNumber(row.deliveredOrders),
+        inProgressOrders: summary.inProgressOrders + toNumber(row.inProgressOrders),
+        pendingOrders: summary.pendingOrders + toNumber(row.pendingOrders),
+        totalOrders: summary.totalOrders + toNumber(row.totalOrders),
+      }),
+      {
+        canceledOrRefundedOrders: 0,
+        deliveredOrders: 0,
+        inProgressOrders: 0,
+        pendingOrders: 0,
+        totalOrders: 0,
+      },
+    );
+
+    return {
+      ...stableCounts,
+      urgentOrders: await this.getUrgentOrdersCount(filters, vendorId),
+    };
+  }
+
+  private async getSummaryCountsFromOrders(
+    filters: OrderListQuery,
+    vendorId?: number | null,
+  ): Promise<{ canceledOrRefundedOrders: number; deliveredOrders: number; inProgressOrders: number; pendingOrders: number; totalOrders: number; urgentOrders: number }> {
+    const orders = await orderModel.findAll({
+      attributes: ["expectedDeliveryDate", "status"],
+      include: buildIncludes(),
+      subQuery: false,
+      where: buildFilters(filters, vendorId),
+    });
+    const counts = {
+      canceledOrRefundedOrders: 0,
+      deliveredOrders: 0,
+      inProgressOrders: 0,
+      pendingOrders: 0,
+      totalOrders: orders.length,
+      urgentOrders: 0,
+    };
+
     for (const order of orders) {
       const plainOrder = toPlain(order);
       const status = toNumber(plainOrder.status);
@@ -285,14 +454,28 @@ export class OrderRepository {
       if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += 1;
       if (getOrderPriorityFromDeliveryStatus(plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === 3 && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
     }
-    return { cards: [
-      { key: "urgentOrders", label: "مستعجل جدا", value: counts.urgentOrders },
-      { key: "canceledOrRefundedOrders", label: "ملغي / مرتجع", value: counts.canceledOrRefundedOrders },
-      { key: "deliveredOrders", label: "تم التسليم", value: counts.deliveredOrders },
-      { key: "inProgressOrders", label: "قيد التصنيع", value: counts.inProgressOrders },
-      { key: "pendingOrders", label: "معلق", value: counts.pendingOrders },
-      { key: "totalOrders", label: "إجمالي الطلبات", value: counts.totalOrders },
-    ] };
+
+    return counts;
+  }
+
+  private async getUrgentOrdersCount(filters: OrderListQuery, vendorId?: number | null): Promise<number> {
+    const baseWhere = buildFilters(filters, vendorId) as Record<PropertyKey, unknown>;
+    const andConditions = Array.isArray(baseWhere[Op.and]) ? [...baseWhere[Op.and] as unknown[]] : [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    andConditions.push(sequelize.where(sequelize.col("Order.expectedDeliveryDate"), { [Op.lt]: today }));
+    andConditions.push(sequelize.where(sequelize.col("Order.status"), { [Op.notIn]: FINAL_ORDER_STATUSES }));
+
+    return orderModel.count({
+      col: "id",
+      distinct: true,
+      include: buildIncludes(),
+      subQuery: false,
+      where: {
+        [Op.and]: andConditions,
+      },
+    });
   }
 
   public async getMeta(): Promise<OrderMetaResponse> {
