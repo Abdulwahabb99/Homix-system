@@ -14,7 +14,7 @@ import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
 const status = [
@@ -36,31 +36,15 @@ function AddEditFactory({ type }) {
   const [otherCitiesShipping, setOtherCitiesShipping] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const { id } = useParams();
-  const user = JSON.parse(localStorage.getItem("user"));
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
   useEffect(() => {
     if (type === "edit") {
       setIsLoading(true);
-      axios
-        .get(`${process.env.REACT_APP_API_URL}/factories/${id}`)
+      axiosRequest
+        .get(`/factories/${id}`)
         .then(({ data }) => {
           if (data === null) {
             navigate("/factories");
-          }
-          if (data?.force_logout) {
-            localStorage.removeItem("user");
-            navigate("/authentication/sign-in");
           }
 
           setName(data.name);
@@ -88,8 +72,8 @@ function AddEditFactory({ type }) {
       formData.append("files", selectedFiles[i]);
     }
 
-    axios
-      .post(`${process.env.REACT_APP_API_URL}/factories`, {
+    axiosRequest
+      .post("/factories", {
         name: name,
         status: selectedStatus,
         address: address,
@@ -111,8 +95,8 @@ function AddEditFactory({ type }) {
       });
   };
   const UpdateFactory = () => {
-    axios
-      .put(`${process.env.REACT_APP_API_URL}/factories/${id}`, {
+    axiosRequest
+      .put(`/factories/${id}`, {
         name: name,
         status: selectedStatus,
         address: address,
@@ -143,8 +127,8 @@ function AddEditFactory({ type }) {
     for (let i = 0; i < event.target.files.length; i++) {
       formData.append("files", event.target.files[i]);
     }
-    axios
-      .post(`${process.env.REACT_APP_API_URL}/factories/${id}/upload`, formData)
+    axiosRequest
+      .post(`/factories/${id}/upload`, formData)
       .then(() => {
         NotificationMeassage("success", "تم اضافة الصورة بنجاح");
       })

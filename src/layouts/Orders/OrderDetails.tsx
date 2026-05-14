@@ -1,4 +1,3 @@
-import axios from "axios";
 import PropTypes from "prop-types";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import React, { useEffect, useRef, useState } from "react";
@@ -181,7 +180,7 @@ function OrderDetails() {
   const changeManufactureStatus = (status) => {
     if (status == null) return;
     axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
+      .put(`/orders/${orderDetails.id}`, {
         manufactureStatus: status,
       })
       .then(() => {
@@ -195,7 +194,7 @@ function OrderDetails() {
 
   const onEdit = (notes, cost, id, color, size, material, itemShipping, toBeCollected) => {
     axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
+      .put(`/orderLines/${id}`, {
         notes: notes,
         color: color,
         size: size,
@@ -238,7 +237,7 @@ function OrderDetails() {
 
   const updateComment = (noteId) => {
     axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`, {
+      .put(`/orders/${orderDetails.id}/notes/${noteId}`, {
         text: editedCommentText,
       })
       .then((res) => {
@@ -250,7 +249,7 @@ function OrderDetails() {
   };
   const deleteComment = (noteId) => {
     axiosRequest
-      .delete(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`)
+      .delete(`/orders/${orderDetails.id}/notes/${noteId}`)
       .then(() => {
         const updatedComments = comments.filter((comment) => comment.id !== noteId);
         setComments(updatedComments);
@@ -264,10 +263,9 @@ function OrderDetails() {
 
   const handleAddComment = async () => {
     try {
-      const { data } = await axiosRequest.post(
-        `${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`,
-        { text: commentText }
-      );
+      const { data } = await axiosRequest.post(`/orders/${orderDetails.id}/notes`, {
+        text: commentText,
+      });
 
       const newComment = {
         id: data.data.id,
@@ -286,8 +284,8 @@ function OrderDetails() {
         selectedFiles.forEach((file) => {
           formData.append("files", file.file);
         });
-        await axios.post(
-          `${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${newComment.id}/upload`,
+        await axiosRequest.post(
+          `/orders/${orderDetails.id}/notes/${newComment.id}/upload`,
           formData
         );
         setSelectedFiles([]);
@@ -301,7 +299,7 @@ function OrderDetails() {
   };
 
   const getUser = () => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
+    axiosRequest.get(`/users`).then((res) => {
       const users = res.data.data;
       const user = users?.find((user) => user.id === orderDetails.userId);
       if (user) {
@@ -334,11 +332,7 @@ function OrderDetails() {
     const getOrderDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axiosRequest.get(`${process.env.REACT_APP_API_URL}/orders/${id}`);
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
+        const { data } = await axiosRequest.get(`/orders/${id}`);
         let orderPrice = 0;
         let ordercost = 0;
         let itemShipping = 0;
@@ -371,7 +365,7 @@ function OrderDetails() {
     };
 
     getOrderDetails();
-  }, [id, navigate]);
+  }, [id]);
 
   return (
     <>

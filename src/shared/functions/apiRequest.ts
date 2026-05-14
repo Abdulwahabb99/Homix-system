@@ -1,51 +1,37 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import type { AxiosRequestConfig } from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 
 /**
- * Universal API request function
- * @param {string} url - The API endpoint URL
- * @param {string} method - HTTP method (GET, POST, PUT, DELETE)
- * @param {object} [params={}] - Optional parameters (query/body)
- * @param {function} [navigate] - React Router navigate function (optional)
- * @returns {Promise} - API response or error
+ * طلب API موحّد — يمر عبر `axiosRequest` (نفس الـ interceptors).
+ * @deprecated تفضّل استدعاء `axiosRequest` مباشرةً مع مسار نسبي تحت `baseURL`.
  */
-const apiRequest = async (url, method = "GET", params = {}, navigate) => {
-  try {
-    if (typeof params !== "object") {
-      console.warn("API Request Warning: params should be an object. Received:", params);
-      params = {}; // Ensure params is always an object
-    }
-
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-    const config: AxiosRequestConfig = {
-      method: method.toUpperCase(),
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: user?.token ? `Bearer ${user.token}` : "",
-      },
-    };
-
-    if (["GET", "DELETE"].includes(config.method)) {
-      config.params = params; // Query Params
-    } else {
-      config.data = params; // Request Body
-    }
-
-    const response = await axios(config);
-    return response.data;
-  } catch (error) {
-    console.error("API Request Error:", error.response?.data || error.message);
-
-    if (error.response?.status === 401 && typeof navigate === "function") {
-      console.log("Force logout detected");
-      localStorage.removeItem("user");
-
-      navigate();
-    }
-
-    throw error.response?.data || error.message;
+const apiRequest = async (
+  url: string,
+  method = "GET",
+  params: Record<string, unknown> = {}
+) => {
+  if (typeof params !== "object" || params === null) {
+    console.warn("API Request Warning: params should be an object. Received:", params);
+    params = {};
   }
+
+  const upper = method.toUpperCase();
+  const config: AxiosRequestConfig = {
+    method: upper,
+    url,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  if (["GET", "DELETE"].includes(upper)) {
+    config.params = params;
+  } else {
+    config.data = params;
+  }
+
+  const response = await axiosRequest(config);
+  return response.data;
 };
 
 export default apiRequest;

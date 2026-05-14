@@ -1,3 +1,5 @@
+import type { NavigateFunction } from "react-router-dom";
+
 /** مسار تسجيل الدخول */
 export const SIGN_IN_PATH = "/authentication/sign-in";
 
@@ -11,6 +13,13 @@ export function clearAuthStorage(): void {
     /* ignore */
   }
   window.dispatchEvent(new Event(AUTH_STORAGE_CHANGED));
+}
+
+/** مسح الجلسة + حدث المزامنة + توجيه SPA + إيقاف التنفيذ (لاستجابات `force_logout` من الـ API) */
+export function forceLogoutAndNavigate(navigate: NavigateFunction): never {
+  clearAuthStorage();
+  navigate(SIGN_IN_PATH);
+  throw new Error("FORCE_LOGOUT");
 }
 
 /** قراءة خام لمفتاح `user` من التخزين */

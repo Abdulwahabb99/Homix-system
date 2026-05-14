@@ -18,6 +18,7 @@ import { vendorsRoutes } from "routes";
 import AddEditUser from "layouts/Users/AddEditUser";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
+import { clearUser } from "store/slices/authSlice";
 import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import OrderEdit from "layouts/Orders/OrderEdit/OrderEdit";
@@ -131,6 +132,12 @@ export default function App() {
     });
 
   useEffect(() => {
+    if (!sessionOk) {
+      reduxDispatch(clearUser());
+    }
+  }, [sessionOk, reduxDispatch]);
+
+  useEffect(() => {
     if (userRaw && !sessionOk) {
       clearAuthStorage();
     }
@@ -139,7 +146,8 @@ export default function App() {
   // Setting page scroll to 0 when changing the route
   useEffect(() => {
     document.documentElement.scrollTop = 0;
-    document.scrollingElement.scrollTop = 0;
+    const scrollEl = document.scrollingElement;
+    if (scrollEl) scrollEl.scrollTop = 0;
   }, [pathname]);
 
   useEffect(() => {
@@ -190,7 +198,7 @@ export default function App() {
     if (user && sessionOk) {
       getNotifications();
     }
-  }, [user, sessionOk]);
+  }, [user, sessionOk, reduxDispatch]);
 
   // useEffect(() => {
   //   const saved = JSON.parse(localStorage.getItem("notifications")) || [];

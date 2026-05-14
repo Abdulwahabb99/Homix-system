@@ -1,17 +1,14 @@
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import axios from "axios";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import axiosRequest from "shared/functions/axiosRequest";
 import ReportComponent from "layouts/Financialreports/ReportComponent";
 import Spinner from "components/Spinner/Spinner";
 import { ToastContainer } from "react-toastify";
 
 function Dashboard() {
-  const navigate = useNavigate();
   const [financialreportData, setFinancialreportData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const user = JSON.parse(localStorage.getItem("user"));
   const today = new Date();
   const date =
     today.getFullYear() +
@@ -20,29 +17,12 @@ function Dashboard() {
     "-" +
     String(today.getDate()).padStart(2, "0");
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   const getFinancialreport = () => {
     setIsLoading(true);
-    const url = `${process.env.REACT_APP_API_URL}/orders/financialReport/?endDate=${date}&startDate=${date}`;
-    axios
+    const url = `/orders/financialReport/?endDate=${date}&startDate=${date}`;
+    axiosRequest
       .get(url)
       .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
-
         setFinancialreportData({
           ordersCount: data.data.ordersCount,
           totalCost: data.data.totalCost,

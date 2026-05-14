@@ -1,5 +1,5 @@
 import { IconButton } from "@mui/material";
-import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 import AgGrid from "components/AgGrid/AgGrid";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import Spinner from "components/Spinner/Spinner";
@@ -19,34 +19,17 @@ function Factories() {
   const [factories, setFactories] = useState([]);
   const [selectedFactoryId, setSelectedFactoryId] = useState(null);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
 
   const getStatusValue = (value) => {
     const statusValue = statusOptions[value];
     return statusValue;
   };
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
 
   const getFactories = () => {
     setIsLoading(true);
-    axios
-      .get(`${process.env.REACT_APP_API_URL}/factories`)
+    axiosRequest
+      .get("/factories")
       .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
-
         const newData = data.data.sort((a, b) => a.id - b.id);
         setFactories(newData);
       })
@@ -58,8 +41,8 @@ function Factories() {
       });
   };
   const deleteFactory = () => {
-    axios
-      .delete(`${process.env.REACT_APP_API_URL}/factories/${selectedFactoryId}`)
+    axiosRequest
+      .delete(`/factories/${selectedFactoryId}`)
       .then(() => {
         setIsDeleteModalOpenned(false);
         const newData = factories.filter((factory) => factory.id !== selectedFactoryId);

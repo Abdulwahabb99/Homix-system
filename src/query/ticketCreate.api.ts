@@ -32,11 +32,11 @@ export type ResolvedOrderForTicket = {
   customerName?: string;
 };
 
+import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
+
 function checkLogout(navigate: NavigateFunction, root: ApiEnvelope): void {
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 }
 

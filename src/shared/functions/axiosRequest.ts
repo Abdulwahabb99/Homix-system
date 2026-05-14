@@ -1,4 +1,12 @@
-import axios, { type AxiosError, type AxiosResponse } from "axios";
+/**
+ * عميل HTTP الوحيد للتطبيق (Authorization + 401 / force_logout موحّدان).
+ * استخدم `axiosRequest` في كل الطلبات بدل `axios` الافتراضي.
+ */
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import {
   redirectToSignIn,
   responseBodyRequestsLogout,
@@ -7,6 +15,14 @@ import {
 const axiosRequest = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
 });
+
+/** لا نمسح الجلسة على 401 من صفحة تسجيل الدخول (بيانات الدخول خاطئة) */
+function shouldSkipGlobalUnauthorizedHandling(
+  config: InternalAxiosRequestConfig | undefined
+): boolean {
+  const url = `${config?.baseURL ?? ""}${config?.url ?? ""}`;
+  return /\/users\/login/i.test(url);
+}
 
 axiosRequest.interceptors.request.use(
   (config) => {
@@ -38,7 +54,8 @@ axiosRequest.interceptors.response.use(
     const status = error.response?.status;
     const data = error.response?.data;
 
-    if (status === 401) {
+    /** رفض بيانات الدخول يعيد 401 بدون مسح جلسة قديمة اختياريًا */
+    if (status === 401 && !shouldSkipGlobalUnauthorizedHandling(error.config)) {
       redirectToSignIn();
       return Promise.reject(error);
     }

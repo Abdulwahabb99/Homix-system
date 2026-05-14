@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { Ticket } from "layouts/Tickets/utils/constants";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import axiosRequest from "shared/functions/axiosRequest";
+import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import { ticketKeys } from "query/keys";
 import {
   TICKETS_LIST_PATH,
@@ -65,9 +66,7 @@ export async function patchTicket(
   );
   const root = data as unknown as ApiEnvelope;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
   const inner = root.data;
   if (!inner || typeof inner !== "object") {

@@ -5,7 +5,6 @@ import Typography from "@mui/material/Typography";
 import SignInSplitLayout from "layouts/authentication/components/AuthSplitLayout";
 import { CircularProgress, IconButton, InputAdornment } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ToastContainer } from "react-toastify";
 import { useDispatch } from "react-redux";
@@ -79,8 +78,8 @@ function Basic() {
     e.preventDefault();
     setIsLoading(true);
 
-    axios
-      .post(`${process.env.REACT_APP_API_URL}/users/login`, {
+    axiosRequest
+      .post("/users/login", {
         email: email,
         password: password,
       })
@@ -107,7 +106,7 @@ function Basic() {
 
   const getNotifications = () => {
     axiosRequest
-      .get(`${process.env.REACT_APP_API_URL}/notifications`)
+      .get("/notifications")
       .then(({ data: { notifications } }) => {
         const newsNotifications = notifications.map((notification) => ({
           ...notification,

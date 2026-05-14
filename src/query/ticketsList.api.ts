@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
+import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import type { Attachment, ChatMessage, Ticket } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 
@@ -444,9 +445,7 @@ export async function fetchTicketsMeta(navigate: NavigateFunction): Promise<Tick
 
   const root = data as unknown as ApiMetaResponse;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 
   const inner = root.data;
@@ -474,9 +473,7 @@ export async function fetchTicketById(navigate: NavigateFunction, ticketId: stri
 
   const root = data as unknown as ApiSingleTicketResponse;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 
   const inner = root.data;
@@ -514,9 +511,7 @@ export async function fetchTicketsList(
 
   const root = data as unknown as ApiTicketsListResponse;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 
   const inner = root.data;

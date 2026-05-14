@@ -16,11 +16,9 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
-import axios from "axios";
 import axiosRequest from "shared/functions/axiosRequest";
 
 const AddProductModal = ({ open, onClose, onConfirm, product }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(product);
@@ -32,11 +30,6 @@ const AddProductModal = ({ open, onClose, onConfirm, product }) => {
     axiosRequest
       .get(`/products?searchQuery=${searchText}`)
       .then((response) => {
-        if (response.data.force_logout) {
-          localStorage.removeItem("user");
-          window.location.href = "/authentication/sign-in";
-          return;
-        }
         setProducts(response.data.data.products);
       })
       .catch((error) => {

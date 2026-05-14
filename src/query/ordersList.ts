@@ -1,5 +1,6 @@
 import moment from "moment";
 import axiosRequest from "shared/functions/axiosRequest";
+import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 
 export const ORDERS_LIST_PAGE_SIZE = 30;
 
@@ -70,9 +71,7 @@ export async function fetchOrdersList({ params, navigate }) {
   const qs = buildQueryString(params);
   const { data } = await axiosRequest.get(`/orders?${qs}`);
   if (data.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
   const newOrders = data.data.orders
     .map(mapOrderRow)

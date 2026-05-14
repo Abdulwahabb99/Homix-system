@@ -1,15 +1,13 @@
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ReportComponent from "./ReportComponent";
 import { Box, Button, Grid, MenuItem, Select, TextField, Typography } from "@mui/material";
-import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 function Financialreports() {
-  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const today = new Date();
@@ -25,20 +23,9 @@ function Financialreports() {
   const [selectedVendor, setSelectedVendor] = useState("");
   const [financialreportData, setFinancialreportData] = useState(null);
   const isAdmin = user.userType === "1";
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
   const getVendors = () => {
-    axios
-      .get(`${process.env.REACT_APP_API_URL}/vendors`)
+    axiosRequest
+      .get("/vendors")
       .then(({ data: { data } }) => {
         const newData = data.map((vendor) => ({ label: vendor.name, value: vendor.id }));
         setVendors([{ label: "هومكس", value: "0" }, ...newData]);
@@ -54,15 +41,11 @@ function Financialreports() {
   const getFinancialreport = () => {
     setIsLoading(true);
     if (user.vendorId) {
-      axios
+      axiosRequest
         .get(
-          `${process.env.REACT_APP_API_URL}/orders/financialReport/?vendorId=${user.vendorId}&endDate=${endDate}&startDate=${startDate}`
+          `/orders/financialReport/?vendorId=${user.vendorId}&endDate=${endDate}&startDate=${startDate}`
         )
         .then(({ data }) => {
-          if (data.force_logout) {
-            localStorage.removeItem("user");
-            navigate("/authentication/sign-in");
-          }
           setFinancialreportData({
             ordersCount: data.data.ordersCount,
             totalCost: data.data.totalCost,
@@ -81,17 +64,12 @@ function Financialreports() {
         });
     } else {
       const url = selectedVendor
-        ? `${process.env.REACT_APP_API_URL}/orders/financialReport/?vendorId=${selectedVendor}&endDate=${endDate}&startDate=${startDate}`
-        : `${process.env.REACT_APP_API_URL}/orders/financialReport/?endDate=${endDate}&startDate=${startDate}`;
+        ? `/orders/financialReport/?vendorId=${selectedVendor}&endDate=${endDate}&startDate=${startDate}`
+        : `/orders/financialReport/?endDate=${endDate}&startDate=${startDate}`;
 
-      axios
+      axiosRequest
         .get(url)
         .then(({ data }) => {
-          if (data.force_logout) {
-            localStorage.removeItem("user");
-            navigate("/authentication/sign-in");
-          }
-
           setFinancialreportData({
             ordersCount: data.data.ordersCount,
             totalCost: data.data.totalCost,

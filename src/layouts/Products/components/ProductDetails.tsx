@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 import ProductDetailsSkeleton from "./ProductDetailsSkeleton";
 import { ProductDetailsProductImage } from "./ProductDetailsImageFrame";
 import React, { useEffect, useState } from "react";
@@ -23,34 +23,16 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 
 function ProductDetails() {
   const { id } = useParams();
-  const user = JSON.parse(localStorage.getItem("user"));
   const [isLoading, setIsLoading] = useState(true);
   const [productDetails, setProductDetails] = useState(null);
   const [optionsPricesOpen, setOptionsPricesOpen] = useState(false);
   const navigate = useNavigate();
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   useEffect(() => {
     const getProductDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/products/${id}`);
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
-
+        const { data } = await axiosRequest.get(`/products/${id}`);
         setProductDetails(data.data);
       } catch (error) {
         NotificationMeassage("error", "حدث خطأ");
@@ -60,7 +42,7 @@ function ProductDetails() {
     };
 
     getProductDetails();
-  }, [id, navigate]);
+  }, [id]);
 
   return (
     <DashboardLayout>

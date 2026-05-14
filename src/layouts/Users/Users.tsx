@@ -12,7 +12,6 @@ import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import styles from "./Users.module.css";
 import { LinkRenderer } from "components/LinkRenderer/LinkRenderer";
 import { getUserType } from "shared/utils/constants";
-import apiRequest from "shared/functions/apiRequest";
 import axiosRequest from "shared/functions/axiosRequest";
 
 function Users() {
@@ -26,15 +25,10 @@ function Users() {
   const getUsers = () => {
     setIsLoading(true);
 
-    apiRequest(`${process.env.REACT_APP_API_URL}/users`, "GET", {}, () =>
-      navigate("/authentication/sign-in")
-    )
+    axiosRequest
+      .get("/users")
       .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
-        const newData = data.sort((a, b) => a.id - b.id);
+        const newData = data.data.sort((a, b) => a.id - b.id);
         setUsers(newData);
       })
       .catch(() => {
@@ -46,7 +40,7 @@ function Users() {
   };
   const deleteUser = () => {
     axiosRequest
-      .delete(`${process.env.REACT_APP_API_URL}/users/${selectedUserId}`)
+      .delete(`/users/${selectedUserId}`)
       .then(() => {
         setIsDeleteModalOpenned(false);
         const newData = users.filter((user) => user.id !== selectedUserId);

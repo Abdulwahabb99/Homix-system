@@ -5,7 +5,7 @@ import { ToastContainer } from "react-toastify";
 import ArrowNextIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate, useParams } from "react-router-dom";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import axios from "axios";
+import axiosRequest from "shared/functions/axiosRequest";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
@@ -18,16 +18,15 @@ function FactoryDetails() {
   const [isloading, setIsLoading] = useState(false);
   const [factoryData, setFactoryData] = useState(null);
   const url = process.env.REACT_APP_API_URL;
-  const user = JSON.parse(localStorage.getItem("user"));
 
-  const isImage = (url) => {
-    return /\.(JPG|JPG|JPEG|PNG|jpg|jpeg|png|gif)$/.test(url);
+  const isImage = (fileUrl) => {
+    return /\.(JPG|JPG|JPEG|PNG|jpg|jpeg|png|gif)$/.test(fileUrl);
   };
-  const deleteFile = (id) => {
-    axios
-      .delete(`${url}/factories/${factoryData.id}/attachments/${id}`)
+  const deleteFile = (attachmentId) => {
+    axiosRequest
+      .delete(`/factories/${factoryData.id}/attachments/${attachmentId}`)
       .then(() => {
-        const newData = factoryData.attachments.filter((file) => file.id !== id);
+        const newData = factoryData.attachments.filter((file) => file.id !== attachmentId);
         setFactoryData({ ...factoryData, attachments: newData });
         NotificationMeassage("success", "تم مسح الملف");
       })
@@ -36,27 +35,11 @@ function FactoryDetails() {
       });
   };
 
-  axios.interceptors.request.use(
-    (config) => {
-      if (user.token) {
-        config.headers["Authorization"] = `Bearer ${user.token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   useEffect(() => {
     setIsLoading(true);
-    axios
-      .get(`${url}/factories/${id}`)
+    axiosRequest
+      .get(`/factories/${id}`)
       .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
         setFactoryData(data);
       })
       .catch(() => {

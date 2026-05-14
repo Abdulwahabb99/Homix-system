@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { ChatMessage, Ticket } from "layouts/Tickets/utils/constants";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import axiosRequest from "shared/functions/axiosRequest";
+import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import { ticketKeys } from "query/keys";
 import { TICKETS_LIST_PATH } from "query/ticketsList.api";
 
@@ -65,9 +66,7 @@ export async function postTicketNote(
   });
   const root = data as unknown as ApiEnvelope;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 }
 
@@ -83,9 +82,7 @@ export async function putTicketNote(
   });
   const root = data as unknown as ApiEnvelope;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 }
 
@@ -98,9 +95,7 @@ export async function deleteTicketNote(
   const { data } = await axiosRequest.delete<Record<string, unknown>>(noteDetailPath(ticketId, noteId));
   const root = (data ?? {}) as unknown as ApiEnvelope;
   if (root.force_logout) {
-    localStorage.removeItem("user");
-    navigate("/authentication/sign-in");
-    throw new Error("FORCE_LOGOUT");
+    forceLogoutAndNavigate(navigate);
   }
 }
 
