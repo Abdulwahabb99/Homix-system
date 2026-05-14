@@ -130,6 +130,113 @@ export const statusoptions = [
 
 const PAYMENT_STATUS = { 2: "مدفوع", 1: "دفع عند الاستلام" };
 
+/**
+ * يدعم شكل الاستجابة الجديد (order + items + financial + customer + notes)
+ * والشكل القديم (orderLines وحقول مسطّحة على نفس الكائن).
+ */
+function normalizeOrderDetailPayload(apiResponse) {
+  const root = apiResponse?.data ?? apiResponse;
+  if (!root || typeof root !== "object") return null;
+
+  const hasNewFormat =
+    root.order != null && Array.isArray(root.items) && root.orderLines == null;
+
+  if (!hasNewFormat) {
+    const legacy = { ...root };
+    if (legacy.customer?.name != null && legacy.customer.firstName == null) {
+      const seg = String(legacy.customer.name).trim().split(/\s+/).filter(Boolean);
+      legacy.customer = {
+        ...legacy.customer,
+        firstName: seg[0] ?? "",
+        lastName: seg.slice(1).join(" "),
+      };
+    }
+    if (!Array.isArray(legacy.orderLines)) legacy.orderLines = [];
+    legacy.createdAt = legacy.createdAt ?? legacy.orderDate;
+    legacy.deliveryStatus = legacy.deliveryStatus ?? legacy.manufactureStatus;
+    return legacy;
+  }
+
+  const order = root.order;
+  const financial = root.financial ?? {};
+  const items = Array.isArray(root.items) ? root.items : [];
+  const customerRaw = root.customer;
+
+  const sellTotal = Number(financial.totalPrice ?? order.totalPrice ?? 0);
+  const totalQty = items.reduce((sum, it) => sum + Number(it.quantity ?? 1), 0) || 1;
+
+  const orderLines = items.map((it) => {
+    const qty = Number(it.quantity ?? 1);
+    const explicitSell = Number(it.unitPrice ?? it.price ?? it.sellingPrice ?? 0);
+    const unitSell = explicitSell > 0 ? explicitSell : sellTotal / totalQty;
+    const uc = Number(it.unitCost ?? 0);
+    return {
+      ...it,
+      title: it.productName ?? it.title,
+      price: unitSell,
+      quantity: qty,
+      unitCost: uc,
+      cost: uc,
+      sku: it.sku,
+      product: {
+        image: it.image ?? it.product?.image,
+        variants: [{ price: unitSell, title: it.size || "Default Title" }],
+        type: { name: it.typeName ?? it.product?.type?.name },
+        description: it.product?.description,
+        bodyHtml: it.product?.bodyHtml ?? it.product?.body_html,
+      },
+    };
+  });
+
+  const orderPrice = orderLines.reduce((s, l) => s + Number(l.price) * Number(l.quantity), 0);
+  const orderCost = orderLines.reduce((s, l) => s + Number(l.unitCost) * Number(l.quantity), 0);
+
+  const customer = customerRaw
+    ? {
+        ...customerRaw,
+        firstName:
+          customerRaw.firstName ??
+          (typeof customerRaw.name === "string"
+            ? customerRaw.name.trim().split(/\s+/).filter(Boolean)[0] ?? ""
+            : ""),
+        lastName:
+          customerRaw.lastName ??
+          (typeof customerRaw.name === "string"
+            ? customerRaw.name.trim().split(/\s+/).filter(Boolean).slice(1).join(" ")
+            : ""),
+      }
+    : null;
+
+  const notesRaw = root.notes ?? root.notesList ?? [];
+  const notesList = Array.isArray(notesRaw) ? notesRaw : [];
+
+  const merged = {
+    ...order,
+    name: order.orderNumber != null ? `#${order.orderNumber}` : order.code ?? order.name,
+    code: order.code ?? order.operationNumber,
+    createdAt: order.orderDate ?? order.createdAt,
+    customer,
+    orderLines,
+    notesList,
+    financial,
+    subTotalPrice: Number(financial.totalPrice ?? order.totalPrice ?? orderPrice),
+    shippingFees: Number(financial.shippingFees ?? 0),
+    totalDiscounts: Number(financial.discount ?? 0),
+    totalPrice: Number(financial.totalPrice ?? order.totalPrice ?? orderPrice),
+    totalCost: Number(financial.totalCost ?? order.totalCost ?? orderCost),
+    downPayment: Number(financial.downPayment ?? 0),
+    toBeCollected: Number(financial.amountToCollect ?? 0),
+    commission: Number(financial.commission ?? 0),
+    shippedFromInventory: order.deliveryBy === 1 || order.deliveryBy === "1",
+    userId: order.userId,
+    userName: order.userName,
+    assigneeName: root.assigneeName ?? "",
+    timeline: root.timeline ?? [],
+  };
+
+  return merged;
+}
+
 function OrderDetails() {
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -298,16 +405,6 @@ function OrderDetails() {
     }
   };
 
-  const getUser = () => {
-    axiosRequest.get(`/users`).then((res) => {
-      const users = res.data.data;
-      const user = users?.find((user) => user.id === orderDetails.userId);
-      if (user) {
-        setAdministrator(`${user.firstName} ${user.lastName}`);
-      }
-    });
-  };
-
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files ?? []) as File[];
     const previewFiles = files.map((file) => ({
@@ -323,35 +420,57 @@ function OrderDetails() {
     setSelectedFiles(updatedFiles);
   };
   useEffect(() => {
-    if (orderDetails) {
-      getUser();
-    }
-  }, [orderDetails]);
+    if (!orderDetails?.userId) return;
+    axiosRequest.get(`/users`).then((res) => {
+      const users = res.data.data;
+      const found = users?.find((u) => u.id === orderDetails.userId);
+      if (found) {
+        setAdministrator(`${found.firstName} ${found.lastName}`);
+      }
+    });
+  }, [orderDetails?.userId]);
 
   useEffect(() => {
     const getOrderDetails = async () => {
       setIsLoading(true);
       try {
-        const { data } = await axiosRequest.get(`/orders/${id}`);
+        const { data: res } = await axiosRequest.get(`/orders/${id}`);
+        const normalized = normalizeOrderDetailPayload(res);
+        if (!normalized?.id) {
+          setOrderDetails(null);
+          setOrderlines([]);
+          setComments([]);
+          setAdministrator("");
+          NotificationMeassage("error", "تعذر قراءة بيانات الطلب");
+          return;
+        }
+
         let orderPrice = 0;
         let ordercost = 0;
         let itemShipping = 0;
         let toBeCollected = 0;
-        data.data.orderLines.forEach((item) => {
+        (normalized.orderLines ?? []).forEach((item) => {
           orderPrice += Number(item.price) * Number(item.quantity);
           ordercost += Number(item.unitCost) * Number(item.quantity);
           itemShipping += Number(item.itemShipping);
           toBeCollected += Number(item.toBeCollected);
         });
 
-        setOrderTotalPrice(orderPrice);
-        setOrderTotalCost(ordercost);
-        setOrderTotalShipping(itemShipping);
-        setOrderTotalToBeCollected(toBeCollected);
-        setOrderDetails(data.data);
-        setOrderlines(data.data.orderLines);
-        setManufactureStatus(data.data.manufactureStatus);
-        const list = data.data?.notesList ?? [];
+        setOrderTotalPrice(normalized.subTotalPrice ?? orderPrice);
+        setOrderTotalCost(normalized.totalCost ?? ordercost);
+        setOrderTotalShipping(normalized.shippingFees ?? itemShipping);
+        setOrderTotalToBeCollected(normalized.toBeCollected ?? toBeCollected);
+        setOrderDetails(normalized);
+        setOrderlines(normalized.orderLines ?? []);
+        setManufactureStatus(normalized.manufactureStatus ?? null);
+
+        const adminFromApi =
+          [normalized.assigneeName, normalized.userName].find(
+            (s) => typeof s === "string" && s.trim() !== ""
+          ) ?? "";
+        setAdministrator(typeof adminFromApi === "string" ? adminFromApi.trim() : "");
+
+        const list = normalized.notesList ?? [];
         const orderedComments = list
           .slice()
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -880,7 +999,10 @@ function OrderDetails() {
                     <CustomerDetails
                       customerName={
                         orderDetails?.customer
-                          ? `${orderDetails.customer.firstName} ${orderDetails.customer.lastName}`
+                          ? (
+                              orderDetails.customer.name ??
+                              `${orderDetails.customer.firstName ?? ""} ${orderDetails.customer.lastName ?? ""}`
+                            ).trim()
                           : ""
                       }
                       email={orderDetails?.customer?.email}

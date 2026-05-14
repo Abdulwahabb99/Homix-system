@@ -98,7 +98,9 @@ const PdfDataMobile = React.forwardRef<HTMLDivElement, { orderDetails: any }>(({
             <div className={styles.pdfPartyCard}>
               <p className={styles.pdfPartyKicker}>العميل</p>
               <p className={styles.pdfPartyNameV2}>
-                {customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : "—"}
+                {customer
+                  ? (customer.name ?? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`).trim()
+                  : "—"}
               </p>
               {customer?.address ? <p className={styles.pdfPartyDesc}>{customer.address}</p> : null}
               {customer?.email ? (
@@ -110,7 +112,9 @@ const PdfDataMobile = React.forwardRef<HTMLDivElement, { orderDetails: any }>(({
             <div className={styles.pdfPartyCard}>
               <p className={styles.pdfPartyKicker}>التوصيل والتواصل</p>
               <p className={styles.pdfPartyNameV2}>
-                {customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : "—"}
+                {customer
+                  ? (customer.name ?? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`).trim()
+                  : "—"}
               </p>
               {customer?.phoneNumber ? (
                 <p className={styles.pdfPartyDesc}>

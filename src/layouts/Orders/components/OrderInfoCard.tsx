@@ -6,9 +6,10 @@ function OrderInfoCard({ orderDetails, isShimpentDetails }) {
   const isVendor = user?.userType === "2";
   const theme = useTheme();
 
+  const firstLineCost = orderDetails.orderLines?.[0]?.cost ?? orderDetails.totalCost;
   const rows = [
     { label: "سعر البيع", value: Number(orderDetails.subTotalPrice).toFixed(0) || "" },
-    { label: "سعر التكلفة", value: Number(orderDetails.orderLines[0].cost).toFixed(0) || "" },
+    { label: "سعر التكلفة", value: Number(firstLineCost).toFixed(0) || "" },
   ];
   if (!isVendor) {
     rows.push({ label: "تكلفة الشحن", value: orderDetails.shippingFees || 0 });

@@ -70,7 +70,7 @@ function BasicsInfoCard({ orderDetails }) {
               color="text.primary"
               sx={{ fontSize: "0.88rem" }}
             >
-              {getStatusValue(orderDetails.status)}
+              {getStatusValue(orderDetails.status) ?? orderDetails.statusLabel ?? "—"}
             </Typography>
           </Box>
           <Box sx={rowSx(theme)}>
@@ -88,7 +88,7 @@ function BasicsInfoCard({ orderDetails }) {
               color="text.primary"
               sx={{ fontSize: "0.88rem" }}
             >
-              {getDeliveryStatusValue(orderDetails.deliveryStatus)}
+              {getDeliveryStatusValue(orderDetails.deliveryStatus) ?? "—"}
             </Typography>
           </Box>
           <Box sx={rowSx(theme)}>
