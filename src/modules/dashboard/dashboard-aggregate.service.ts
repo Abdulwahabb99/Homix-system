@@ -42,12 +42,14 @@ type DashboardDailyProductSaleModel = {
   bulkCreate: (payloads: ProductAggregateRecord[], options?: Record<string, unknown>) => Promise<unknown>;
   destroy: (options?: Record<string, unknown>) => Promise<number>;
   sync: (options?: Record<string, unknown>) => Promise<unknown>;
+  upsert: (payload: ProductAggregateRecord) => Promise<unknown>;
 };
 
 type DashboardDailyCategorySaleModel = {
   bulkCreate: (payloads: CategoryAggregateRecord[], options?: Record<string, unknown>) => Promise<unknown>;
   destroy: (options?: Record<string, unknown>) => Promise<number>;
   sync: (options?: Record<string, unknown>) => Promise<unknown>;
+  upsert: (payload: CategoryAggregateRecord) => Promise<unknown>;
 };
 
 type OrderRecord = {
@@ -368,6 +370,8 @@ export class DashboardAggregateService {
       this.getProductAggregateRows(bounds.startDate, bounds.endDate),
       this.getCategoryAggregateRows(bounds.startDate, bounds.endDate),
     ]);
+    const dedupedProductRows = this.dedupeProductAggregateRows(productRows);
+    const dedupedCategoryRows = this.dedupeCategoryAggregateRows(categoryRows);
 
     const destroyRange = {
       where: {
@@ -384,7 +388,7 @@ export class DashboardAggregateService {
     ]);
 
     const aggregateRows = [...adminRows, ...vendorRows];
-    if (aggregateRows.length === 0 && productRows.length === 0 && categoryRows.length === 0) {
+    if (aggregateRows.length === 0 && dedupedProductRows.length === 0 && dedupedCategoryRows.length === 0) {
       logger.info(
         { operationName: AGGREGATE_LOG_OPERATION, startDate: bounds.startDate, endDate: bounds.endDate },
         "No aggregate rows generated for requested range",
@@ -398,15 +402,11 @@ export class DashboardAggregateService {
             updateOnDuplicate: [...BULK_UPDATE_FIELDS],
           })
         : Promise.resolve(),
-      productRows.length > 0
-        ? dashboardDailyProductSaleModel.bulkCreate(productRows, {
-            updateOnDuplicate: [...BULK_PRODUCT_UPDATE_FIELDS],
-          })
+      dedupedProductRows.length > 0
+        ? this.upsertProductRows(dedupedProductRows)
         : Promise.resolve(),
-      categoryRows.length > 0
-        ? dashboardDailyCategorySaleModel.bulkCreate(categoryRows, {
-            updateOnDuplicate: [...BULK_CATEGORY_UPDATE_FIELDS],
-          })
+      dedupedCategoryRows.length > 0
+        ? this.upsertCategoryRows(dedupedCategoryRows)
         : Promise.resolve(),
     ]);
   }
@@ -740,6 +740,80 @@ export class DashboardAggregateService {
     }
 
     return [...productMap.values()];
+  }
+
+  private dedupeProductAggregateRows(rows: ProductAggregateRecord[]): ProductAggregateRecord[] {
+    const productMap = new Map<string, ProductAggregateRecord>();
+
+    for (const row of rows) {
+      const key = `${row.metricDate}:${row.vendorId}:${row.productId}`;
+      const currentRow = productMap.get(key) ?? {
+        metricDate: row.metricDate,
+        productId: row.productId,
+        productTitle: row.productTitle,
+        totalOrders: 0,
+        totalQuantity: 0,
+        totalSales: 0,
+        vendorId: row.vendorId,
+      };
+
+      currentRow.totalOrders += Number(row.totalOrders ?? 0);
+      currentRow.totalQuantity += Number(row.totalQuantity ?? 0);
+      currentRow.totalSales += Number(row.totalSales ?? 0);
+
+      productMap.set(key, currentRow);
+    }
+
+    return [...productMap.values()];
+  }
+
+  private dedupeCategoryAggregateRows(rows: CategoryAggregateRecord[]): CategoryAggregateRecord[] {
+    const categoryMap = new Map<string, CategoryAggregateRecord>();
+
+    for (const row of rows) {
+      const key = `${row.metricDate}:${row.role}:${row.scopeId}:${row.categoryId}`;
+      const currentRow = categoryMap.get(key) ?? {
+        categoryId: row.categoryId,
+        categoryTitle: row.categoryTitle,
+        metricDate: row.metricDate,
+        role: row.role,
+        scopeId: row.scopeId,
+        totalOrders: 0,
+        totalQuantity: 0,
+        totalSales: 0,
+        vendorId: row.vendorId,
+      };
+
+      currentRow.totalOrders += Number(row.totalOrders ?? 0);
+      currentRow.totalQuantity += Number(row.totalQuantity ?? 0);
+      currentRow.totalSales += Number(row.totalSales ?? 0);
+
+      categoryMap.set(key, currentRow);
+    }
+
+    return [...categoryMap.values()];
+  }
+
+  private async upsertProductRows(rows: ProductAggregateRecord[]): Promise<void> {
+    for (const batch of this.chunkRows(rows, 250)) {
+      await Promise.all(batch.map((row) => dashboardDailyProductSaleModel.upsert(row)));
+    }
+  }
+
+  private async upsertCategoryRows(rows: CategoryAggregateRecord[]): Promise<void> {
+    for (const batch of this.chunkRows(rows, 250)) {
+      await Promise.all(batch.map((row) => dashboardDailyCategorySaleModel.upsert(row)));
+    }
+  }
+
+  private chunkRows<TRow>(rows: TRow[], chunkSize: number): TRow[][] {
+    const chunks: TRow[][] = [];
+
+    for (let index = 0; index < rows.length; index += chunkSize) {
+      chunks.push(rows.slice(index, index + chunkSize));
+    }
+
+    return chunks;
   }
 
   private async getCategoryAggregateRows(startDate: Date, endDate: Date): Promise<CategoryAggregateRecord[]> {
