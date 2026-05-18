@@ -68,11 +68,6 @@ function Orders() {
   }, [searchParams]);
   const payment = searchParams.get("paymentStatus") || "";
   const filterUserId = searchParams.get("userId") || "";
-  const deliveryPriorityParam = searchParams.get("deliveryPriority") || "";
-  const deliveryPriorityList = useMemo(() => {
-    if (!deliveryPriorityParam) return [];
-    return deliveryPriorityParam.split(",").map((s) => s.trim()).filter(Boolean);
-  }, [deliveryPriorityParam]);
   const deliveryByList = useMemo(() => {
     const raw = searchParams.get("deliveryBy");
     if (!raw) return [];
@@ -139,13 +134,12 @@ function Orders() {
         p: page, on: orderNumberParam, v: vendorIdParam,
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
         u: filterUserId || null,
-        dp: deliveryPriorityParam || null,
         db: deliveryByParam || null,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryPriorityParam, deliveryByParam, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, startDate, endDate,
     ]
   );
 
@@ -161,7 +155,6 @@ function Orders() {
           page, orderNumberParam, vendorIdParam, orderStatusParam,
           paymentStatusParam, deliveryStatusParam,
           userIdParam: filterUserId || undefined,
-          deliveryPriorityParam: deliveryPriorityParam || undefined,
           deliveryByParam: deliveryByParam || undefined,
           startDate, endDate,
         },
@@ -280,7 +273,6 @@ function Orders() {
     fromDate: string;
     toDate: string;
     userId: string;
-    priorities: string[];
     deliveryBy: number[];
   }) => {
     setParams({
@@ -290,7 +282,6 @@ function Orders() {
       paymentStatus:  d.paymentStatus || "",
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
       userId:         d.userId || "",
-      deliveryPriority: d.priorities?.length ? d.priorities.join(",") : "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
     });
     /* Apply date range via existing hook */
@@ -309,7 +300,6 @@ function Orders() {
       paymentStatus: "",
       deliveryStatus: "",
       userId: "",
-      deliveryPriority: "",
       deliveryBy: "",
     });
     handleDateReset();
@@ -368,7 +358,6 @@ function Orders() {
       ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
       ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
       ...(filterUserId       && { userId:         filterUserId }),
-      ...(deliveryPriorityParam && { deliveryPriority: deliveryPriorityParam }),
       ...(deliveryByParam     && { deliveryBy:     deliveryByParam }),
       ...(startDate          && { startDate:      rangeDateToIso(startDate) }),
       ...(endDate            && { endDate:        rangeDateToIso(endDate) }),
@@ -477,7 +466,6 @@ function Orders() {
                   fromDate:       currentFromDate,
                   toDate:         currentToDate,
                   userId:         filterUserId,
-                  priorities:     deliveryPriorityList,
                   deliveryBy:     deliveryByList,
                 }}
                 onApply={handleApplyFilters}
@@ -487,7 +475,7 @@ function Orders() {
               {/* Global reset — shown when any filter is active */}
               {(orderStatus.length > 0 || selectedVendor.length > 0 || payment ||
                 deliveryStatusList.length > 0 || startDate || endDate ||
-                filterUserId || deliveryPriorityList.length > 0 || deliveryByList.length > 0) && (
+                filterUserId || deliveryByList.length > 0) && (
                 <Stack direction="row" justifyContent="flex-end">
                   <Box component="button" onClick={handleFullReset} sx={{
                     fontSize: "12px", fontWeight: 600, fontFamily: "'Cairo',sans-serif",

@@ -13,7 +13,6 @@ export const ORDERS_LIST_PAGE_SIZE = 30;
  * @param {string} [p.paymentStatusParam]
  * @param {string} [p.deliveryStatusParam]
  * @param {string} [p.userIdParam]
- * @param {string} [p.deliveryPriorityParam] معرفات أولوية مفصولة بفواصل (أرقام أو سلاسل حسب الـ API)
  * @param {string} [p.deliveryByParam] معرفات «التوصيل بواسطة» من الـ meta مفصولة بفواصل
  * @param {import("moment").Moment | null} [p.startDate]
  * @param {import("moment").Moment | null} [p.endDate]
@@ -29,7 +28,6 @@ function buildQueryString(p) {
   if (p.paymentStatusParam) query.set("paymentStatus", p.paymentStatusParam);
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
   if (p.userIdParam) query.set("userId", p.userIdParam);
-  if (p.deliveryPriorityParam) query.set("deliveryPriority", p.deliveryPriorityParam);
   if (p.deliveryByParam) query.set("deliveryBy", p.deliveryByParam);
   if (p.endDate) query.set("endDate", p.endDate.utc().toISOString());
   return query.toString();
@@ -82,7 +80,6 @@ function mapListItemRow(row) {
     userId: row.userId,
     userNameFromApi: row.userName,
     daysSinceOrder: row.daysSinceOrder,
-    deliveryPriority: row.deliveryPriority,
     fine: row.fine,
     type: row.productName,
     orderData: { name: row.orderNumber ? `#${row.orderNumber}` : String(orderId) },

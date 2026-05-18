@@ -12,9 +12,7 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
-  PriorityBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
-import { mapDeliveryPriorityToBadgeLevel } from "layouts/Orders/utils/constants";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -153,7 +151,6 @@ interface Order {
   vendorName?: string;
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
-  deliveryPriority?: string | number | null;
   createdAt?: string;
 }
 interface User {
@@ -270,7 +267,6 @@ export default function OrdersHomixMobileList({
               ? calculateDaysFromPoDate(order.PoDate)
               : null;
         const productCode = order.items?.[0]?.code ?? "—";
-        const priorityLevel = mapDeliveryPriorityToBadgeLevel(order.deliveryPriority ?? undefined);
 
         return (
           <Box
@@ -386,7 +382,6 @@ export default function OrdersHomixMobileList({
               <PaymentBadge status={order.paymentStatus} />
               <DeliveryByBadge fromInventory={order.shippedFromInventory} />
               <DeliveryStatusBadge status={order.deliveryStatus} />
-              {priorityLevel ? <PriorityBadge level={priorityLevel} /> : null}
               <DaysCounterBadge days={daysLabel} active={order.status === 2} />
             </Box>
 
@@ -469,7 +464,7 @@ export default function OrdersHomixMobileList({
                 <>
                   {" · "}
                   <Box component="span" sx={{ color: HX.tx3 }}>
-                    الأولوية — · النوع {order.type || "—"}
+                    النوع {order.type || "—"}
                   </Box>
                 </>
               ) : null}

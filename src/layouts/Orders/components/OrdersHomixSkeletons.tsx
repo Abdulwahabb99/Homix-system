@@ -267,7 +267,6 @@ const COLS = [
   { label: "سعر البيع",    w: 110 },
   { label: "حالة الدفع",   w: 130 },
   { label: "التوصيل",      w: 115 },
-  { label: "الأولوية",     w: 95  },
   { label: "حالة التصنيع", w: 140 },
   { label: "تاريخ الطلب",  w: 90  },
   { label: "تاريخ التصنيع",w: 100 },
@@ -277,7 +276,7 @@ const COLS = [
   { label: "",             w: 90  },
 ];
 
-const SK_WIDTHS = [55, 45, 60, 100, 72, 90, 50, 55, 80, 55, 40, 90, 55, 55, 50, 80, 45, 60];
+const SK_WIDTHS = [55, 45, 60, 100, 72, 90, 50, 55, 80, 55, 90, 55, 55, 50, 80, 45, 60];
 
 export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
   const totalW = CHECKBOX_W_SK + COLS.reduce((s, c) => s + c.w, 0);
@@ -342,9 +341,9 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
                         <Skeleton variant="rounded" animation="wave" width={22} height={22} sx={{ borderRadius: "6px", ...skSx }} />
                         <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci]} height={13} sx={{ borderRadius: "4px", ...skSx }} />
                       </Box>
-                    ) : ci === 4 || ci === 8 || ci === 11 ? (
+                    ) : ci === 4 || ci === 8 || ci === 10 ? (
                       <Skeleton variant="rounded" animation="wave" width={SK_WIDTHS[ci] + 20} height={22} sx={{ borderRadius: "20px", ...skSx }} />
-                    ) : ci === 17 ? (
+                    ) : ci === 16 ? (
                       <Box sx={{ display: "flex", gap: "3px", justifyContent: "center" }}>
                         {[0, 1, 2].map((j) => (
                           <Skeleton key={j} variant="rounded" animation="wave" width={26} height={26} sx={{ borderRadius: "7px", ...skSx }} />

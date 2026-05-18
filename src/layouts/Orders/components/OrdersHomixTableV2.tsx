@@ -13,9 +13,7 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
-  PriorityBadge,
 } from "./OrdersHomixBadges";
-import { mapDeliveryPriorityToBadgeLevel } from "layouts/Orders/utils/constants";
 import OrdersHomixMobileList from "./OrdersHomixMobileList";
 
 /* ─────────────────────────────────────────
@@ -62,7 +60,6 @@ const BASE_COLS = [
   { key: "totalPrice",    label: "سعر البيع",      w: 110 },
   { key: "paymentStatus", label: "حالة الدفع",     w: 130 },
   { key: "delivery",      label: "التوصيل بواسطة", w: 115 },
-  { key: "priority",      label: "الأولوية",       w: 95  },
   { key: "mfgStatus",     label: "حالة التصنيع",   w: 140 },
   { key: "createdAt",     label: "تاريخ الطلب",    w: 90  },
   { key: "poDate",        label: "تاريخ التصنيع",  w: 100 },
@@ -193,7 +190,6 @@ interface Order {
   vendorName?: string;
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
-  deliveryPriority?: string | number | null;
   createdAt?: string;
 }
 interface User   { id: string | number; firstName?: string; lastName?: string }
@@ -493,7 +489,6 @@ export default function OrdersHomixTableV2({
                     ? calculateDaysFromPoDate(order.PoDate)
                     : null;
               const productCode = order.items?.[0]?.code ?? "—";
-              const priorityLevel = mapDeliveryPriorityToBadgeLevel(order.deliveryPriority ?? undefined);
 
               const rowBg = isSelected ? "#f5f3ff" : undefined;
 
@@ -570,11 +565,6 @@ export default function OrdersHomixTableV2({
 
                   {/* التوصيل بواسطة */}
                   <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
-
-                  {/* الأولوية — no API field */}
-                  <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>
-                    {priorityLevel ? <PriorityBadge level={priorityLevel} /> : "—"}
-                  </td>
 
                   {/* حالة التصنيع */}
                   <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>

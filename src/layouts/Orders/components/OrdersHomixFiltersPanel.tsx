@@ -29,8 +29,6 @@ export interface FiltersPanelValue {
   fromDate: string;
   toDate: string;
   userId: string;
-  /** معرفات أولوية من الـ API (أرقام أو سلاسل حسب الـ meta) */
-  priorities: string[];
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
 }
@@ -102,46 +100,10 @@ const MENU_PROPS = {
   },
 };
 
-const FALLBACK_PRIORITY_ROWS: { id: string; label: string }[] = [
-  { id: "1", label: "بالمدة" },
-  { id: "2", label: "مستعجل" },
-  { id: "3", label: "مستعجل جدا" },
-];
-
 const FALLBACK_DELIVERY_BY: { id: number; label: string }[] = [
   { id: 1, label: "هوميكس" },
   { id: 2, label: "بائع" },
 ];
-
-function priorityPillStyle(id: string) {
-  switch (id) {
-    case "3":
-    case "urgent":
-      return {
-        bg: HX.redLight,
-        color: HX.red,
-        dot: HX.red,
-        activeBg: HX.red,
-      };
-    case "2":
-    case "almostDue":
-      return {
-        bg: HX.amberLight,
-        color: HX.amber,
-        dot: HX.amber,
-        activeBg: HX.amber,
-      };
-    case "1":
-    case "onSchedule":
-    default:
-      return {
-        bg: HX.greenLight,
-        color: HX.green,
-        dot: HX.green,
-        activeBg: HX.green,
-      };
-  }
-}
 
 export default function OrdersHomixFiltersPanel({
   isVendor, vendors, users, meta, value, onApply, onReset,
@@ -172,11 +134,6 @@ export default function OrdersHomixFiltersPanel({
     [meta?.paymentStatuses]
   );
 
-  const priorityOpts = useMemo(
-    () => (meta?.priorities?.length ? meta.priorities : FALLBACK_PRIORITY_ROWS),
-    [meta?.priorities]
-  );
-
   const assigneeOpts = useMemo(() => {
     if (meta?.assignees?.length) return meta.assignees;
     return users.map((u) => ({
@@ -199,7 +156,6 @@ export default function OrdersHomixFiltersPanel({
   const [draftUserId,   setDraftUserId]   = useState<string>(value.userId ?? "");
   const [draftFrom,     setDraftFrom]     = useState<string>(value.fromDate ?? "");
   const [draftTo,       setDraftTo]       = useState<string>(value.toDate ?? "");
-  const [draftPriorities, setDraftPriorities] = useState<string[]>(value.priorities ?? []);
   const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
 
   useEffect(() => {
@@ -210,7 +166,6 @@ export default function OrdersHomixFiltersPanel({
     setDraftUserId(value.userId ?? "");
     setDraftFrom(value.fromDate ?? "");
     setDraftTo(value.toDate ?? "");
-    setDraftPriorities(value.priorities ?? []);
     setDraftDeliveryBy(value.deliveryBy ?? []);
   }, [value]);
 
@@ -222,14 +177,7 @@ export default function OrdersHomixFiltersPanel({
     (draftUserId ? 1 : 0) +
     (draftFrom ? 1 : 0) +
     (draftTo ? 1 : 0) +
-    draftPriorities.length +
     draftDeliveryBy.length;
-
-  const handleTogglePriority = (id: string) => {
-    setDraftPriorities((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
 
   const handleApply = () => {
     onApply({
@@ -240,7 +188,6 @@ export default function OrdersHomixFiltersPanel({
       fromDate:       draftFrom,
       toDate:         draftTo,
       userId:         draftUserId,
-      priorities:     draftPriorities,
       deliveryBy:     draftDeliveryBy,
     });
   };
@@ -253,7 +200,6 @@ export default function OrdersHomixFiltersPanel({
     setDraftUserId("");
     setDraftFrom("");
     setDraftTo("");
-    setDraftPriorities([]);
     setDraftDeliveryBy([]);
     onReset();
   };
@@ -280,10 +226,6 @@ export default function OrdersHomixFiltersPanel({
       label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === draftUserId)?.label ?? draftUserId}`,
       onRemove: () => setDraftUserId(""),
     }] : []),
-    ...draftPriorities.map((pid) => ({
-      label: `أولوية: ${priorityOpts.find((p) => String(p.id) === String(pid))?.label ?? pid}`,
-      onRemove: () => setDraftPriorities((p) => p.filter((x) => x !== pid)),
-    })),
     ...draftDeliveryBy.map((id) => ({
       label: `توصيل: ${deliveryByOpts.find((o) => o.id === id)?.label ?? id}`,
       onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
@@ -509,7 +451,7 @@ export default function OrdersHomixFiltersPanel({
           </Grid>
         </Box>
 
-        {/* ── ROW 2 — التفاصيل والأولوية ── */}
+        {/* ── ROW 2 — التفاصيل (مسئول، تواريخ) ── */}
         <Box sx={{ p: "14px 18px", borderBottom: `0.5px solid ${HX.border}` }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: "6px", mb: "12px" }}>
             <Box component="svg" viewBox="0 0 24 24"
@@ -520,15 +462,14 @@ export default function OrdersHomixFiltersPanel({
               <line x1="3"  y1="10" x2="21" y2="10" />
             </Box>
             <Typography sx={{ fontSize: "10px", fontWeight: 700, color: HX.tx3, letterSpacing: "1px", textTransform: "uppercase", fontFamily: "'Cairo',sans-serif" }}>
-              التفاصيل والأولوية
+              التفاصيل
             </Typography>
           </Box>
 
-          {/* Grid: المسئول | من تاريخ | إلى تاريخ | الأولوية pills (2x) */}
           <Grid container spacing="10px" alignItems="flex-end">
 
             {/* المسئول */}
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={4}>
               <FieldBox label="المسئول">
                 <FormControl fullWidth size="small">
                   <Select displayEmpty value={draftUserId}
@@ -558,7 +499,7 @@ export default function OrdersHomixFiltersPanel({
             </Grid>
 
             {/* من تاريخ */}
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={4}>
               <FieldBox label="من تاريخ">
                 <Box
                   component="input"
@@ -575,7 +516,7 @@ export default function OrdersHomixFiltersPanel({
             </Grid>
 
             {/* إلى تاريخ */}
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={4}>
               <FieldBox label="إلى تاريخ">
                 <Box
                   component="input"
@@ -588,41 +529,6 @@ export default function OrdersHomixFiltersPanel({
                     "&:focus": { outline: "none", borderColor: HX.accent, boxShadow: `0 0 0 3px ${HX.accentLight}` },
                   }}
                 />
-              </FieldBox>
-            </Grid>
-
-            {/* الأولوية pills (takes remaining space) */}
-            <Grid item xs={12} sm={12} md={6}>
-              <FieldBox label="الأولوية">
-                <Stack direction="row" flexWrap="wrap" gap="7px" sx={{ minHeight: 34, alignItems: "center" }}>
-                  {priorityOpts.map((p) => {
-                    const active = draftPriorities.includes(p.id);
-                    const sty = priorityPillStyle(p.id);
-                    return (
-                      <Box
-                        key={p.id}
-                        onClick={() => handleTogglePriority(p.id)}
-                        sx={{
-                          display: "inline-flex", alignItems: "center", gap: "6px",
-                          px: "15px", py: "7px", borderRadius: "8px",
-                          fontSize: "12px", fontWeight: 600, fontFamily: "'Cairo',sans-serif",
-                          border: "0.5px solid", cursor: "pointer", transition: ".15s",
-                          userSelect: "none",
-                          bgcolor: active ? sty.activeBg : sty.bg,
-                          color: active ? "#fff" : sty.color,
-                          borderColor: active ? sty.activeBg : `${sty.dot}40`,
-                          "&:hover": { transform: "translateY(-1px)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
-                        }}
-                      >
-                        <Box sx={{
-                          width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
-                          bgcolor: active ? "#fff" : sty.dot,
-                        }} />
-                        {p.label}
-                      </Box>
-                    );
-                  })}
-                </Stack>
               </FieldBox>
             </Grid>
 
