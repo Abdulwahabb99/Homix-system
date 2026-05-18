@@ -1,4 +1,4 @@
-import { DELIVERY_STATUS } from "../../../config/constants";
+import { DELIVERY_STATUS, ORDER_STATUS } from "../../../config/constants";
 import {
   DELIVERY_STATUS_PRIORITY_MAP,
   MANUFACTURE_STATUS_LABELS,
@@ -141,15 +141,32 @@ export const getManufactureLabel = (value: unknown): string => {
 
 export const buildLogMessage = (log: PlainRecord): string => {
   const action = toText(log.action);
+  const field = toText(log.field);
+
+  if (action === "create" && field === "order_received") {
+    return "تم استلام الطلب";
+  }
+
+  if (action === "notify" && field === "order_received_notification") {
+    return "تم إرسال إشعار الطلب";
+  }
+
   if (action === "delete") {
     return "تم حذف الطلب";
   }
 
-  const field = toText(log.field);
+  if (field === "status" && toNumber(log.to) === ORDER_STATUS.IN_PROGRESS) {
+    return "بدأ التصنيع";
+  }
+
   const nextValue = toText(log.to);
   if (!field) {
     return "تم تحديث الطلب";
   }
 
   return nextValue ? `تم تحديث ${field} إلى ${nextValue}` : `تم تحديث ${field}`;
+};
+
+export const getHistoryActorLabel = (userName: string): string => {
+  return userName ? `بواسطة ${userName}` : "بواسطة نظام تلقائي";
 };

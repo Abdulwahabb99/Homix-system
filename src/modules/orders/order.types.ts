@@ -148,13 +148,24 @@ export type OrderNote = {
   userName: string;
 };
 
-export type OrderStatusHistoryItem = {
+export type OrderTimelineItem = {
   changedAt: string;
+  description: string;
+  eventType: string;
   fromStatus: number | null;
   fromStatusLabel: string;
   id: number;
+  message: string;
   toStatus: number | null;
   toStatusLabel: string;
+  userName: string;
+};
+
+export type OrderStatusHistoryItem = {
+  changedAt: string;
+  id: number;
+  status: number | null;
+  statusLabel: string;
   userName: string;
 };
 
@@ -199,6 +210,7 @@ export type OrderDetailsView = {
     vendorId: number | null;
     vendorName: string;
   }>;
+  timeline: OrderTimelineItem[];
   statusHistory: OrderStatusHistoryItem[];
 };
 

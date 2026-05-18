@@ -681,18 +681,32 @@ const swaggerOptions = {
           },
           required: ["id", "text", "userName", "createdAt", "attachments"],
         },
-        OrderStatusHistoryItem: {
+        OrderTimelineItem: {
           type: "object",
           properties: {
             changedAt: { example: "2026-05-04T01:00:00.000Z", format: "date-time", type: "string" },
+            description: { example: "المدة المتوقعة 14 يوم عمل", type: "string" },
+            eventType: { example: "manufacturing_started", type: "string" },
             fromStatus: { example: 1, nullable: true, type: "integer" },
             fromStatusLabel: { example: "معلق", type: "string" },
             id: { example: 8, type: "integer" },
+            message: { example: "بدأ التصنيع", type: "string" },
             toStatus: { example: 2, nullable: true, type: "integer" },
             toStatusLabel: { example: "قيد التصنيع", type: "string" },
             userName: { example: "Sara Mohamed", type: "string" },
           },
-          required: ["id", "changedAt", "fromStatusLabel", "toStatusLabel", "userName"],
+          required: ["id", "changedAt", "description", "eventType", "fromStatusLabel", "message", "toStatusLabel", "userName"],
+        },
+        OrderStatusHistoryItem: {
+          type: "object",
+          properties: {
+            changedAt: { example: "2026-05-01T00:00:00.000Z", format: "date-time", type: "string" },
+            id: { example: 8, type: "integer" },
+            status: { example: 2, nullable: true, type: "integer" },
+            statusLabel: { example: "قيد التصنيع", type: "string" },
+            userName: { example: "Sara Mohamed", type: "string" },
+          },
+          required: ["id", "changedAt", "statusLabel", "userName"],
         },
         OrderDetailsView: {
           type: "object",
@@ -762,9 +776,10 @@ const swaggerOptions = {
                 required: ["id", "productName", "quantity", "sku"],
               },
             },
+            timeline: { items: { $ref: "#/components/schemas/OrderTimelineItem" }, type: "array" },
             statusHistory: { items: { $ref: "#/components/schemas/OrderStatusHistoryItem" }, type: "array" },
           },
-          required: ["customer", "financial", "notes", "order", "items", "statusHistory"],
+          required: ["customer", "financial", "notes", "order", "items", "timeline", "statusHistory"],
         },
         OrderDetailsResponse: {
           type: "object",

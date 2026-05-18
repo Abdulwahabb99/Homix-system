@@ -12,8 +12,10 @@ import {
 } from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
+  buildLogMessage,
   getDaysSince,
   getDeliveryPriorityLabel,
+  getHistoryActorLabel,
   getOrderPriority,
   getOrderPriorityFromDeliveryStatus,
   getStatusLabel,
@@ -24,7 +26,7 @@ import {
   toPlain,
   toText,
 } from "./order.helpers";
-import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse } from "./order.types";
+import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse, OrderTimelineItem } from "./order.types";
 
 const { sequelize } = require("../../infrastructure/database");
 const orderModel = require("../../../app/modules/order/order.model");
@@ -292,18 +294,102 @@ export class OrderRepository {
     const logs = await logModel.findAll({ order: [["createdAt", "DESC"]], where: { entityId: orderId, entityType: "order" } });
     const users = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
     const userNames = new Map(users.map((user: unknown) => { const plainUser = toPlain(user); return [toNumber(plainUser.id), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()]; }));
-    const statusHistory: OrderStatusHistoryItem[] = logs
+    const expectedManufacturingDays = orderLines
+      .map((line) => {
+        const product = toPlain(toPlain(line).product);
+        const vendor = toPlain(product.vendor);
+        return toNumber(vendor.daysToDeliver);
+      })
+      .find((value) => value > 0) ?? 0;
+    const timeline: OrderTimelineItem[] = logs
+      .map((log: unknown): Record<string, unknown> => toPlain(log))
+      .filter((log: Record<string, unknown>) => {
+        const action = toText(log.action);
+        const field = toText(log.field);
+        return field === "status"
+          || (action === "create" && field === "order_received")
+          || (action === "notify" && field === "order_received_notification")
+          || action === "delete";
+      })
+      .map((log: Record<string, unknown>) => {
+        const action = toText(log.action);
+        const field = toText(log.field);
+        const toStatus = toNumber(log.to) || null;
+        const userName = toText(userNames.get(toNumber(log.userId)) ?? "");
+        const isManufacturingStarted = field === "status" && toStatus === ORDER_STATUS.IN_PROGRESS;
+
+        let eventType = "status_updated";
+        if (action === "create" && field === "order_received") {
+          eventType = "order_received";
+        } else if (action === "notify" && field === "order_received_notification") {
+          eventType = "notification_sent";
+        } else if (action === "delete") {
+          eventType = "order_deleted";
+        } else if (isManufacturingStarted) {
+          eventType = "manufacturing_started";
+        }
+
+        return {
+          changedAt: toIsoString(log.createdAt) ?? "",
+          description: isManufacturingStarted && expectedManufacturingDays > 0
+            ? `المدة المتوقعة ${expectedManufacturingDays} يوم عمل`
+            : getHistoryActorLabel(userName),
+          eventType,
+          fromStatus: toNumber(log.from) || null,
+          fromStatusLabel: getStatusLabel(log.from),
+          id: toNumber(log.id),
+          message: buildLogMessage(log),
+          toStatus,
+          toStatusLabel: getStatusLabel(log.to),
+          userName,
+        };
+      });
+    const statusLogsAscending = logs
       .map((log: unknown): Record<string, unknown> => toPlain(log))
       .filter((log: Record<string, unknown>) => toText(log.field) === "status")
-      .map((log: Record<string, unknown>) => ({
-        changedAt: toIsoString(log.createdAt) ?? "",
-        fromStatus: toNumber(log.from) || null,
-        fromStatusLabel: getStatusLabel(log.from),
-        id: toNumber(log.id),
-        toStatus: toNumber(log.to) || null,
-        toStatusLabel: getStatusLabel(log.to),
-        userName: userNames.get(toNumber(log.userId)) ?? "",
-      }));
+      .sort((left: Record<string, unknown>, right: Record<string, unknown>) => {
+        const leftTime = new Date(toIsoString(left.createdAt) ?? 0).getTime();
+        const rightTime = new Date(toIsoString(right.createdAt) ?? 0).getTime();
+        return leftTime - rightTime;
+      });
+    const statusHistory: OrderStatusHistoryItem[] = [];
+    const seenStatuses = new Set<number>();
+    const pushStatusHistoryItem = (status: number | null, changedAt: string, id: number, userName: string): void => {
+      if (!status || seenStatuses.has(status)) return;
+      seenStatuses.add(status);
+      statusHistory.push({
+        changedAt,
+        id,
+        status,
+        statusLabel: getStatusLabel(status),
+        userName,
+      });
+    };
+    if (statusLogsAscending.length > 0) {
+      const firstStatusLog = statusLogsAscending[0];
+      pushStatusHistoryItem(
+        toNumber(firstStatusLog.from) || null,
+        toIsoString(plainOrder.orderDate) ?? toIsoString(firstStatusLog.createdAt) ?? "",
+        toNumber(firstStatusLog.id),
+        toText(userNames.get(toNumber(firstStatusLog.userId)) ?? ""),
+      );
+    }
+    statusLogsAscending.forEach((log: Record<string, unknown>) => {
+      pushStatusHistoryItem(
+        toNumber(log.to) || null,
+        toIsoString(log.createdAt) ?? "",
+        toNumber(log.id),
+        toText(userNames.get(toNumber(log.userId)) ?? ""),
+      );
+    });
+    if (statusHistory.length === 0) {
+      pushStatusHistoryItem(
+        toNumber(plainOrder.status) || null,
+        toIsoString(plainOrder.orderDate) ?? "",
+        toNumber(plainOrder.id),
+        "",
+      );
+    }
 
     const view: OrderDetailsView = {
       assigneeName: `${toText(toPlain(plainOrder.user).firstName)} ${toText(toPlain(plainOrder.user).lastName)}`.trim(),
@@ -345,6 +431,7 @@ export class OrderRepository {
           vendorName: toText(vendor.name),
         };
       }),
+      timeline,
       statusHistory,
     };
 

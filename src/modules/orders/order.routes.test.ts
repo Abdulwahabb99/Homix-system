@@ -79,6 +79,14 @@ jest.mock("../../../app/modules/product/productType.model", () => ({}));
 jest.mock("../../../app/modules/logs/log.model", () => ({
   findAll: jest.fn().mockResolvedValue([
     {
+      action: "notify",
+      createdAt: "2026-05-04T02:00:00.000Z",
+      field: "order_received_notification",
+      id: 9,
+      to: "sent",
+      userId: null,
+    },
+    {
       action: "update",
       createdAt: "2026-05-04T01:00:00.000Z",
       field: "status",
@@ -86,6 +94,13 @@ jest.mock("../../../app/modules/logs/log.model", () => ({
       id: 8,
       to: "2",
       userId: 1,
+    },
+    {
+      action: "create",
+      createdAt: "2026-05-04T00:00:00.000Z",
+      field: "order_received",
+      id: 7,
+      userId: null,
     },
   ]),
 }));
@@ -287,11 +302,25 @@ describe("orderRouter", () => {
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
     expect(response.body.data.order.itemsCount).toBe(1);
     expect(response.body.data.financial.fine).toBe(0);
-    expect(response.body.data.statusHistory[0].fromStatus).toBe(1);
-    expect(response.body.data.statusHistory[0].fromStatusLabel).toBe("معلق");
-    expect(response.body.data.statusHistory[0].toStatus).toBe(2);
-    expect(response.body.data.statusHistory[0].toStatusLabel).toBe("قيد التصنيع");
-    expect(response.body.data.statusHistory[0].userName).toBe("Sara Mohamed");
+    expect(response.body.data.timeline[0].eventType).toBe("notification_sent");
+    expect(response.body.data.timeline[0].message).toBe("تم إرسال إشعار الطلب");
+    expect(response.body.data.timeline[0].description).toBe("بواسطة نظام تلقائي");
+    expect(response.body.data.timeline[1].fromStatus).toBe(1);
+    expect(response.body.data.timeline[1].fromStatusLabel).toBe("معلق");
+    expect(response.body.data.timeline[1].toStatus).toBe(2);
+    expect(response.body.data.timeline[1].toStatusLabel).toBe("قيد التصنيع");
+    expect(response.body.data.timeline[1].eventType).toBe("manufacturing_started");
+    expect(response.body.data.timeline[1].message).toBe("بدأ التصنيع");
+    expect(response.body.data.timeline[1].description).toBe("المدة المتوقعة 5 يوم عمل");
+    expect(response.body.data.timeline[1].userName).toBe("Sara Mohamed");
+    expect(response.body.data.timeline[2].eventType).toBe("order_received");
+    expect(response.body.data.timeline[2].message).toBe("تم استلام الطلب");
+    expect(response.body.data.timeline[2].description).toBe("بواسطة نظام تلقائي");
+    expect(response.body.data.statusHistory[0].status).toBe(1);
+    expect(response.body.data.statusHistory[0].statusLabel).toBe("معلق");
+    expect(response.body.data.statusHistory[1].status).toBe(2);
+    expect(response.body.data.statusHistory[1].statusLabel).toBe("قيد التصنيع");
+    expect(response.body.data.statusHistory[1].userName).toBe("Sara Mohamed");
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.customer.id).toBe(5);

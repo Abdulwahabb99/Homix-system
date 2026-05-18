@@ -348,6 +348,7 @@ class OrderService {
     const result = await Order.bulkCreate(orders);
     const savedOrders = result.map((order) => order.toJSON());
     const orderLines = [];
+    const orderLogs = [];
     for (const { order_id, line_items } of lines) {
       const order = savedOrders.find(
         (order) => order.code === String(order_id),
@@ -373,10 +374,28 @@ class OrderService {
     }
     await OrderLine.bulkCreate(orderLines);
     for (const order of savedOrders) {
+      orderLogs.push({
+        action: "create",
+        entityType: "order",
+        entityId: order.id,
+        field: "order_received",
+        userId: user?.id || null,
+      });
       await OrderService.sendNotification(order.id, order.orderNumber, {
         orderId: order.id,
         type: "orderCreate",
       });
+      orderLogs.push({
+        action: "notify",
+        entityType: "order",
+        entityId: order.id,
+        field: "order_received_notification",
+        to: "sent",
+        userId: user?.id || null,
+      });
+    }
+    if (orderLogs.length) {
+      await Log.bulkCreate(orderLogs);
     }
     return {
       status: true,
