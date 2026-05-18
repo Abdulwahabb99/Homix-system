@@ -354,8 +354,10 @@ export class OrderRepository {
       });
     const statusHistory: OrderStatusHistoryItem[] = [];
     const seenStatuses = new Set<number>();
+    const currentStatus = toNumber(plainOrder.status) || null;
     const pushStatusHistoryItem = (status: number | null, changedAt: string, id: number, userName: string): void => {
       if (!status || seenStatuses.has(status)) return;
+      if (currentStatus && status > currentStatus) return;
       seenStatuses.add(status);
       statusHistory.push({
         changedAt,
@@ -382,9 +384,15 @@ export class OrderRepository {
         toText(userNames.get(toNumber(log.userId)) ?? ""),
       );
     });
+    pushStatusHistoryItem(
+      currentStatus,
+      toIsoString(plainOrder.updatedAt) ?? toIsoString(plainOrder.orderDate) ?? "",
+      toNumber(plainOrder.id),
+      "",
+    );
     if (statusHistory.length === 0) {
       pushStatusHistoryItem(
-        toNumber(plainOrder.status) || null,
+        currentStatus,
         toIsoString(plainOrder.orderDate) ?? "",
         toNumber(plainOrder.id),
         "",

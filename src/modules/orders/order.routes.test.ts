@@ -108,6 +108,10 @@ jest.mock("../../../app/modules/logs/log.model", () => ({
 import { errorMiddleware } from "../../shared/http";
 import { orderRouter } from "./order.routes";
 
+const logModel = jest.requireMock("../../../app/modules/logs/log.model") as {
+  findAll: jest.Mock;
+};
+
 const app = express();
 app.use(express.json());
 app.use("/orders", orderRouter);
@@ -324,5 +328,37 @@ describe("orderRouter", () => {
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.customer.id).toBe(5);
+  });
+
+  it("caps status history at the order current status", async () => {
+    logModel.findAll.mockResolvedValueOnce([
+      {
+        action: "update",
+        createdAt: "2026-05-04T01:00:00.000Z",
+        field: "status",
+        from: "1",
+        id: 8,
+        to: "2",
+        userId: 1,
+      },
+      {
+        action: "update",
+        createdAt: "2026-05-05T01:00:00.000Z",
+        field: "status",
+        from: "2",
+        id: 9,
+        to: "5",
+        userId: 1,
+      },
+    ]);
+    orderModel.findOne.mockResolvedValue({
+      ...makeOrder(),
+      status: 4,
+    });
+
+    const response = await request(app).get("/orders/7");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.statusHistory.map((item: { status: number }) => item.status)).toEqual([1, 2, 4]);
   });
 });
