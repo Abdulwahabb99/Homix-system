@@ -38,12 +38,6 @@ function rangeDateToIso(d: any) {
   return (moment.isMoment(d) ? d : moment.utc(String(d), "DD-MM-YYYY")).toISOString();
 }
 
-/** Convert YYYY-MM-DD string → moment (start of day UTC) */
-function strToMoment(s: string | undefined) {
-  if (!s) return null;
-  return moment.utc(s, "YYYY-MM-DD").startOf("day");
-}
-
 function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -264,14 +258,12 @@ function Orders() {
     setSearchCustomerName("");
   };
 
-  /* ── Apply filters — includes dates ── */
+  /* ── Apply filters (التاريخ يُحدَّث من DateRangePicker مباشرة عبر useDateRange) ── */
   const handleApplyFilters = (d: {
     orderStatus: number[];
     selectedVendor: string[];
     paymentStatus: string;
     deliveryStatus: number[];
-    fromDate: string;
-    toDate: string;
     userId: string;
     deliveryBy: number[];
   }) => {
@@ -284,12 +276,6 @@ function Orders() {
       userId:         d.userId || "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
     });
-    /* Apply date range via existing hook */
-    const from = strToMoment(d.fromDate);
-    const to   = strToMoment(d.toDate);
-    if (from || to) {
-      handleDatesChange(from ?? startDate, to ?? endDate);
-    }
   };
 
   const handleFilterReset = () => {
@@ -369,10 +355,6 @@ function Orders() {
       .catch(() => NotificationMeassage("error", "حدث خطأ"))
       .finally(() => setIsExportLoading(false));
   };
-
-  /* Current date values as YYYY-MM-DD strings for the filter panel */
-  const currentFromDate = startDate ? moment(startDate).format("YYYY-MM-DD") : "";
-  const currentToDate   = endDate   ? moment(endDate).format("YYYY-MM-DD")   : "";
 
   const gridPage0 = page - 1;
 
@@ -463,13 +445,15 @@ function Orders() {
                   selectedVendor: selectedVendor,
                   paymentStatus:  payment,
                   deliveryStatus: deliveryStatusList,
-                  fromDate:       currentFromDate,
-                  toDate:         currentToDate,
                   userId:         filterUserId,
                   deliveryBy:     deliveryByList,
                 }}
                 onApply={handleApplyFilters}
                 onReset={handleFilterReset}
+                dateRangeStart={startDate}
+                dateRangeEnd={endDate}
+                onDateRangeChange={handleDatesChange}
+                onDateRangeClear={handleDateReset}
               />
 
               {/* Global reset — shown when any filter is active */}

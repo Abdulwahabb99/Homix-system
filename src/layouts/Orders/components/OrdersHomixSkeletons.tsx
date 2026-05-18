@@ -180,40 +180,17 @@ export function OrdersHomixFiltersPanelSkeleton() {
 
       <Box sx={{ p: "14px 18px", borderBottom: `0.5px solid ${HX.border}` }}>
         <Box sx={{ mb: "12px" }}>{labelBar(96)}</Box>
-        <Grid container spacing="10px">
-          <Grid item xs={12} sm={6} md={2}>
+        <Grid container spacing="10px" alignItems="flex-end">
+          <Grid item xs={12} sm={6} md={4}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               {labelBar(58)}
               <FieldOutline />
             </Box>
           </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid item xs={12} sm={12} md={8}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-              {labelBar(58)}
-              <FieldOutline />
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-              {labelBar(58)}
-              <FieldOutline />
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={12} md={6}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-              {labelBar(52)}
-              <Box sx={{ display: "flex", gap: "7px", flexWrap: "wrap" }}>
-                {Array.from({ length: 3 }).map((__, i) => (
-                  <Skeleton
-                    key={i}
-                    variant="rounded"
-                    animation="wave"
-                    width={90 + i * 14}
-                    height={34}
-                    sx={{ borderRadius: "8px", ...skSx }}
-                  />
-                ))}
-              </Box>
+              {labelBar(120)}
+              <Skeleton variant="rounded" animation="wave" height={40} sx={{ borderRadius: "8px", width: "100%", ...skSx }} />
             </Box>
           </Grid>
         </Grid>

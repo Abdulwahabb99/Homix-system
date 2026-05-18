@@ -11,7 +11,6 @@ import {
   MenuItem,
   OutlinedInput,
   Select,
-  Stack,
   Typography,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -20,14 +19,14 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { PAYMENT_STATUS, DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
 import type { OrdersMeta } from "query/ordersMeta.api";
+import moment from "moment";
+import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 
 export interface FiltersPanelValue {
   orderStatus: number[];
   selectedVendor: string[];
   paymentStatus: string;
   deliveryStatus: number[];
-  fromDate: string;
-  toDate: string;
   userId: string;
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
@@ -44,6 +43,11 @@ interface OrdersHomixFiltersPanelProps {
   value: FiltersPanelValue;
   onApply: (v: FiltersPanelValue) => void;
   onReset: () => void;
+  /** من `useDateRange` — لعرض المكوّن الموحّد لنطاق التاريخ */
+  dateRangeStart: any;
+  dateRangeEnd: any;
+  onDateRangeChange: (start: string, end: string) => void;
+  onDateRangeClear: () => void;
 }
 
 /* ─── shared select sx ─── */
@@ -58,25 +62,6 @@ const selectSx = {
   "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
     borderColor: HX.accent,
     borderWidth: 1,
-    boxShadow: `0 0 0 3px ${HX.accentLight}`,
-  },
-} as const;
-
-const dateSx = {
-  height: 34,
-  width: "100%",
-  fontFamily: "'Cairo',sans-serif",
-  fontSize: "12.5px",
-  padding: "0 12px",
-  border: `0.5px solid ${HX.border2}`,
-  borderRadius: "8px",
-  background: HX.surface,
-  color: HX.tx,
-  outline: "none",
-  cursor: "pointer",
-  transition: ".15s",
-  "&:focus": {
-    borderColor: HX.accent,
     boxShadow: `0 0 0 3px ${HX.accentLight}`,
   },
 } as const;
@@ -106,7 +91,17 @@ const FALLBACK_DELIVERY_BY: { id: number; label: string }[] = [
 ];
 
 export default function OrdersHomixFiltersPanel({
-  isVendor, vendors, users, meta, value, onApply, onReset,
+  isVendor,
+  vendors,
+  users,
+  meta,
+  value,
+  onApply,
+  onReset,
+  dateRangeStart,
+  dateRangeEnd,
+  onDateRangeChange,
+  onDateRangeClear,
 }: OrdersHomixFiltersPanelProps) {
   const [open, setOpen] = useState(true);
 
@@ -154,9 +149,9 @@ export default function OrdersHomixFiltersPanel({
   const [draftPayment,  setDraftPayment]  = useState<string>(value.paymentStatus ?? "");
   const [draftVendor,   setDraftVendor]   = useState<string[]>((value.selectedVendor ?? []).map(String));
   const [draftUserId,   setDraftUserId]   = useState<string>(value.userId ?? "");
-  const [draftFrom,     setDraftFrom]     = useState<string>(value.fromDate ?? "");
-  const [draftTo,       setDraftTo]       = useState<string>(value.toDate ?? "");
   const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
+
+  const hasDateRange = Boolean(dateRangeStart) && Boolean(dateRangeEnd);
 
   useEffect(() => {
     setDraftStatus(value.orderStatus ?? []);
@@ -164,8 +159,6 @@ export default function OrdersHomixFiltersPanel({
     setDraftPayment(value.paymentStatus ?? "");
     setDraftVendor((value.selectedVendor ?? []).map(String));
     setDraftUserId(value.userId ?? "");
-    setDraftFrom(value.fromDate ?? "");
-    setDraftTo(value.toDate ?? "");
     setDraftDeliveryBy(value.deliveryBy ?? []);
   }, [value]);
 
@@ -175,8 +168,7 @@ export default function OrdersHomixFiltersPanel({
     (draftPayment ? 1 : 0) +
     (isVendor ? 0 : draftVendor.length) +
     (draftUserId ? 1 : 0) +
-    (draftFrom ? 1 : 0) +
-    (draftTo ? 1 : 0) +
+    (hasDateRange ? 1 : 0) +
     draftDeliveryBy.length;
 
   const handleApply = () => {
@@ -185,8 +177,6 @@ export default function OrdersHomixFiltersPanel({
       selectedVendor: draftVendor,
       paymentStatus:  draftPayment,
       deliveryStatus: draftDelivery,
-      fromDate:       draftFrom,
-      toDate:         draftTo,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
     });
@@ -198,8 +188,6 @@ export default function OrdersHomixFiltersPanel({
     setDraftPayment("");
     setDraftVendor([]);
     setDraftUserId("");
-    setDraftFrom("");
-    setDraftTo("");
     setDraftDeliveryBy([]);
     onReset();
   };
@@ -226,14 +214,27 @@ export default function OrdersHomixFiltersPanel({
       label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === draftUserId)?.label ?? draftUserId}`,
       onRemove: () => setDraftUserId(""),
     }] : []),
+    ...(hasDateRange
+      ? [
+          {
+            label: `التاريخ: ${
+              moment.isMoment(dateRangeStart)
+                ? dateRangeStart.clone().locale("ar").format("L")
+                : String(dateRangeStart)
+            } — ${
+              moment.isMoment(dateRangeEnd)
+                ? dateRangeEnd.clone().locale("ar").format("L")
+                : String(dateRangeEnd)
+            }`,
+            onRemove: () => onDateRangeClear(),
+          },
+        ]
+      : []),
     ...draftDeliveryBy.map((id) => ({
       label: `توصيل: ${deliveryByOpts.find((o) => o.id === id)?.label ?? id}`,
       onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
     })),
-    ...(draftFrom  ? [{ label: `من: ${draftFrom}`,   onRemove: () => setDraftFrom("")  }] : []),
-    ...(draftTo    ? [{ label: `إلى: ${draftTo}`,    onRemove: () => setDraftTo("")    }] : []),
   ];
-
   /* ── shared field wrapper ── */
   function FieldBox({ label, children }: { label: string; children: React.ReactNode }) {
     return (
@@ -451,7 +452,7 @@ export default function OrdersHomixFiltersPanel({
           </Grid>
         </Box>
 
-        {/* ── ROW 2 — التفاصيل (مسئول، تواريخ) ── */}
+        {/* ── ROW 2 — التفاصيل (مسئول + نطاق التاريخ) ── */}
         <Box sx={{ p: "14px 18px", borderBottom: `0.5px solid ${HX.border}` }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: "6px", mb: "12px" }}>
             <Box component="svg" viewBox="0 0 24 24"
@@ -498,37 +499,27 @@ export default function OrdersHomixFiltersPanel({
               </FieldBox>
             </Grid>
 
-            {/* من تاريخ */}
-            <Grid item xs={12} sm={6} md={4}>
-              <FieldBox label="من تاريخ">
+            <Grid item xs={12} sm={12} md={8}>
+              <FieldBox label="من تاريخ — إلى تاريخ">
                 <Box
-                  component="input"
-                  type="date"
-                  value={draftFrom}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraftFrom(e.target.value)}
                   sx={{
-                    ...dateSx,
-                    display: "block",
-                    "&:focus": { outline: "none", borderColor: HX.accent, boxShadow: `0 0 0 3px ${HX.accentLight}` },
+                    minHeight: 34,
+                    "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
+                      width: "100% !important",
+                    },
                   }}
-                />
-              </FieldBox>
-            </Grid>
-
-            {/* إلى تاريخ */}
-            <Grid item xs={12} sm={6} md={4}>
-              <FieldBox label="إلى تاريخ">
-                <Box
-                  component="input"
-                  type="date"
-                  value={draftTo}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraftTo(e.target.value)}
-                  sx={{
-                    ...dateSx,
-                    display: "block",
-                    "&:focus": { outline: "none", borderColor: HX.accent, boxShadow: `0 0 0 3px ${HX.accentLight}` },
-                  }}
-                />
+                >
+                  <DateRangePickerWrapper
+                    startDate={dateRangeStart || ""}
+                    endDate={dateRangeEnd || ""}
+                    handleDatesChange={onDateRangeChange}
+                    allowPastDays
+                    allowFutureDays
+                    maxDaysRange={730}
+                    useDefaultPresets
+                    isMeduim
+                  />
+                </Box>
               </FieldBox>
             </Grid>
 
