@@ -164,6 +164,7 @@ export type OrderTimelineItem = {
 export type OrderStatusHistoryItem = {
   changedAt: string;
   id: number;
+  isActive: boolean;
   status: number | null;
   statusLabel: string;
   userName: string;

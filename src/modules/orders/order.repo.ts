@@ -10,7 +10,7 @@ import {
   ORDER_STATUS_Arabic,
   PAYMENT_STATUS_ARABIC,
 } from "../../../config/constants";
-import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
+import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_STATUS_LABELS, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
   buildLogMessage,
   getDaysSince,
@@ -352,16 +352,17 @@ export class OrderRepository {
         const rightTime = new Date(toIsoString(right.createdAt) ?? 0).getTime();
         return leftTime - rightTime;
       });
-    const statusHistory: OrderStatusHistoryItem[] = [];
+    const activeStatusHistory: OrderStatusHistoryItem[] = [];
     const seenStatuses = new Set<number>();
     const currentStatus = toNumber(plainOrder.status) || null;
     const pushStatusHistoryItem = (status: number | null, changedAt: string, id: number, userName: string): void => {
       if (!status || seenStatuses.has(status)) return;
       if (currentStatus && status > currentStatus) return;
       seenStatuses.add(status);
-      statusHistory.push({
+      activeStatusHistory.push({
         changedAt,
         id,
+        isActive: true,
         status,
         statusLabel: getStatusLabel(status),
         userName,
@@ -390,7 +391,7 @@ export class OrderRepository {
       toNumber(plainOrder.id),
       "",
     );
-    if (statusHistory.length === 0) {
+    if (activeStatusHistory.length === 0) {
       pushStatusHistoryItem(
         currentStatus,
         toIsoString(plainOrder.orderDate) ?? "",
@@ -398,6 +399,23 @@ export class OrderRepository {
         "",
       );
     }
+    const activeStatusByCode = new Map(
+      activeStatusHistory.map((item) => [item.status, item]),
+    );
+    const statusHistory: OrderStatusHistoryItem[] = Object.keys(ORDER_STATUS_LABELS)
+      .map(Number)
+      .sort((left, right) => left - right)
+      .map((status) => {
+        const activeItem = activeStatusByCode.get(status);
+        return {
+          changedAt: activeItem?.changedAt ?? "",
+          id: activeItem?.id ?? status,
+          isActive: Boolean(activeItem),
+          status,
+          statusLabel: ORDER_STATUS_LABELS[status] ?? "",
+          userName: activeItem?.userName ?? "",
+        };
+      });
 
     const view: OrderDetailsView = {
       assigneeName: `${toText(toPlain(plainOrder.user).firstName)} ${toText(toPlain(plainOrder.user).lastName)}`.trim(),

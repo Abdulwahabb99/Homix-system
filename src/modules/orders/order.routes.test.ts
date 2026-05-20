@@ -281,7 +281,7 @@ describe("orderRouter", () => {
         {
           ...makeOrder(),
           deliveryStatus: 1,
-          expectedDeliveryDate: "2026-05-20T00:00:00.000Z",
+          expectedDeliveryDate: "2026-06-20T00:00:00.000Z",
           id: 8,
           orderNumber: "31669",
         },
@@ -320,11 +320,16 @@ describe("orderRouter", () => {
     expect(response.body.data.timeline[2].eventType).toBe("order_received");
     expect(response.body.data.timeline[2].message).toBe("تم استلام الطلب");
     expect(response.body.data.timeline[2].description).toBe("بواسطة نظام تلقائي");
+    expect(response.body.data.statusHistory).toHaveLength(8);
     expect(response.body.data.statusHistory[0].status).toBe(1);
     expect(response.body.data.statusHistory[0].statusLabel).toBe("معلق");
+    expect(response.body.data.statusHistory[0].isActive).toBe(true);
     expect(response.body.data.statusHistory[1].status).toBe(2);
     expect(response.body.data.statusHistory[1].statusLabel).toBe("قيد التصنيع");
+    expect(response.body.data.statusHistory[1].isActive).toBe(true);
     expect(response.body.data.statusHistory[1].userName).toBe("Sara Mohamed");
+    expect(response.body.data.statusHistory[2].status).toBe(3);
+    expect(response.body.data.statusHistory[2].isActive).toBe(false);
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.customer.id).toBe(5);
@@ -359,6 +364,18 @@ describe("orderRouter", () => {
     const response = await request(app).get("/orders/7");
 
     expect(response.status).toBe(200);
-    expect(response.body.data.statusHistory.map((item: { status: number }) => item.status)).toEqual([1, 2, 4]);
+    expect(response.body.data.statusHistory.map((item: { isActive: boolean; status: number }) => ({
+      isActive: item.isActive,
+      status: item.status,
+    }))).toEqual([
+      { isActive: true, status: 1 },
+      { isActive: true, status: 2 },
+      { isActive: false, status: 3 },
+      { isActive: true, status: 4 },
+      { isActive: false, status: 5 },
+      { isActive: false, status: 6 },
+      { isActive: false, status: 7 },
+      { isActive: false, status: 8 },
+    ]);
   });
 });

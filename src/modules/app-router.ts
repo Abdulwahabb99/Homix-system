@@ -702,11 +702,12 @@ const swaggerOptions = {
           properties: {
             changedAt: { example: "2026-05-01T00:00:00.000Z", format: "date-time", type: "string" },
             id: { example: 8, type: "integer" },
+            isActive: { example: true, type: "boolean" },
             status: { example: 2, nullable: true, type: "integer" },
             statusLabel: { example: "قيد التصنيع", type: "string" },
             userName: { example: "Sara Mohamed", type: "string" },
           },
-          required: ["id", "changedAt", "statusLabel", "userName"],
+          required: ["id", "changedAt", "isActive", "statusLabel", "userName"],
         },
         OrderDetailsView: {
           type: "object",
