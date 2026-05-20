@@ -3,6 +3,9 @@
  * المتغيرات على :root حتى تُستورد مع appendToBody (النافذة المنبثقة خارج .homix-drp)
  */
 :root {
+  /* فوق MUI modal (1300) والطبقات الشائعة؛ يُطبَّق على الغلاف والمنبثق عند الفتح فقط */
+  --homix-drp-z-elevate: 2147483600;
+  --homix-drp-z-popover: 2147483647;
   --dp-primary: #6366f1;
   --dp-primary-soft: rgba(99, 102, 241, 0.1);
   --dp-primary-mid: rgba(99, 102, 241, 0.16);
@@ -23,6 +26,12 @@
 
 .custom-date-picker.homix-drp {
   width: 100%;
+}
+
+.custom-date-picker.homix-drp.homix-drp--open {
+  position: relative;
+  z-index: var(--homix-drp-z-elevate);
+  isolation: isolate;
 }
 
 /* —— Trigger: input row —— */
@@ -136,10 +145,13 @@
 .homix-drp.DateRangePicker_picker {
   /* عزل النافذة عن dir=rtl للحقل/الصف: شبكة المكتبة LTR + firstDayOfWeek=6 (سبت) */
   direction: ltr !important;
-  z-index: 10000000;
+  z-index: var(--homix-drp-z-popover) !important;
   margin-top: 6px;
   border-radius: 14px !important;
-  overflow: visible !important;
+  /* إن لم يكفِ فتح لأعلى/أسفل (شاشة قصيرة)، حصر الارتفاع + تمرير بدل اختفاء جزء من التقويم */
+  max-height: min(90dvh, calc(100dvh - 48px)) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   width: max-content !important;
   max-width: min(100vw - 16px, 1200px) !important;
   box-shadow: var(--dp-shadow) !important;
