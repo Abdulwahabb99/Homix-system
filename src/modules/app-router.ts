@@ -837,6 +837,356 @@ const swaggerOptions = {
           },
           required: ["data", "status"],
         },
+        ShipmentMetaOption: {
+          type: "object",
+          properties: {
+            id: { oneOf: [{ type: "integer" }, { type: "string" }] },
+            label: { example: "تم التسليم", type: "string" },
+          },
+          required: ["id", "label"],
+        },
+        ShipmentMetaResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                deliveryByOptions: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                paymentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                shipmentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                shipmentTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                tabs: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      count: { example: 156, nullable: true, type: "integer" },
+                      id: { example: "shipments", type: "string" },
+                      label: { example: "الشحنات", type: "string" },
+                    },
+                    required: ["id", "label"],
+                  },
+                  type: "array",
+                },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentSummaryCard: {
+          type: "object",
+          properties: {
+            description: { example: "إجمالي الشحنات ضمن الفلاتر الحالية", type: "string" },
+            key: { example: "totalShipments", type: "string" },
+            label: { example: "الشحنات", type: "string" },
+            value: { example: 156, type: "number" },
+          },
+          required: ["key", "label", "value", "description"],
+        },
+        ShipmentSummaryResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                cards: { items: { $ref: "#/components/schemas/ShipmentSummaryCard" }, type: "array" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentListItem: {
+          type: "object",
+          properties: {
+            amountToCollect: { example: 12999, type: "number" },
+            customerName: { example: "Lamiaa Saeid", type: "string" },
+            customerPhone: { example: "01155559646", type: "string" },
+            daysCounter: { example: 11, nullable: true, type: "integer" },
+            deliveryBy: { example: "J&T", type: "string" },
+            deliveryDate: { example: "2026-05-17T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            governorate: { example: "الجيزة", type: "string" },
+            id: { example: 9802, type: "integer" },
+            operationNumber: { example: "3002", type: "string" },
+            orderNumber: { example: "31667", type: "string" },
+            paymentStatus: { example: 1, nullable: true, type: "integer" },
+            paymentStatusLabel: { example: "الدفع عند الاستلام", type: "string" },
+            receivedInWarehouseDate: { example: "2026-05-12T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            scheduledDeliveryDate: { example: "2026-05-17T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            sellerName: { example: "ركنة للأثاث", type: "string" },
+            shipmentNumber: { example: "SH-9802", type: "string" },
+            shipmentStatus: { example: 2, nullable: true, type: "integer" },
+            shipmentStatusLabel: { example: "في المخزن", type: "string" },
+            shipmentType: { example: "grouped", type: "string" },
+            shipmentTypeLabel: { example: "شحن مجمع", type: "string" },
+            shippingCost: { example: 65, type: "number" },
+          },
+          required: ["id", "operationNumber", "orderNumber", "shipmentNumber", "shipmentStatusLabel"],
+        },
+        ShipmentListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentListItem" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                totalCount: { example: 156, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentDetailsResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                customer: {
+                  type: "object",
+                  properties: {
+                    address: { example: "الهرم, الجيزة", type: "string" },
+                    name: { example: "عبير ابوالمجيد", type: "string" },
+                    phoneNumber: { example: "01155559646", type: "string" },
+                  },
+                },
+                financial: {
+                  type: "object",
+                  properties: {
+                    amountToCollect: { example: 29998, type: "number" },
+                    shippingCost: { example: 65, type: "number" },
+                    totalPrice: { example: 29998, type: "number" },
+                  },
+                },
+                notes: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      createdAt: { example: "2026-05-15T11:00:00.000Z", type: "string", format: "date-time" },
+                      id: { example: 18, type: "integer" },
+                      text: { example: "الشحنة متأخرة عن الموعد المحدد", type: "string" },
+                      userName: { example: "Ahmed Hesham", type: "string" },
+                    },
+                  },
+                },
+                products: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      color: { example: "رمادي", type: "string" },
+                      image: { example: "https://example.com/product.png", type: "string" },
+                      price: { example: 16999, type: "number" },
+                      productCode: { example: "RKA-002", type: "string" },
+                      productName: { example: "كنبة شيب", type: "string" },
+                      quantity: { example: 1, type: "integer" },
+                      size: { example: "200x300", type: "string" },
+                      vendorName: { example: "ركنة للأثاث", type: "string" },
+                    },
+                  },
+                },
+                shipment: {
+                  allOf: [
+                    { $ref: "#/components/schemas/ShipmentListItem" },
+                    {
+                      type: "object",
+                      properties: {
+                        shippingCompany: { example: "J&T Express", type: "string" },
+                      },
+                    },
+                  ],
+                },
+                timeline: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      changedAt: { example: "2026-05-12T09:05:00.000Z", type: "string", format: "date-time" },
+                      id: { example: 401, type: "integer" },
+                      message: { example: "تم استلام الطلب", type: "string" },
+                      userName: { example: "", type: "string" },
+                    },
+                  },
+                },
+                vendor: {
+                  type: "object",
+                  properties: {
+                    name: { example: "ركنة للأثاث", type: "string" },
+                  },
+                },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentReturnItem: {
+          type: "object",
+          properties: {
+            daysCounter: { example: 10, nullable: true, type: "integer" },
+            id: { example: 12, type: "integer" },
+            operationNumber: { example: "3001", type: "string" },
+            orderNumber: { example: "31805", type: "string" },
+            reason: { example: "منتج تالف", type: "string" },
+            returnDate: { example: "2026-05-08T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            sellerName: { example: "ركنة للأثاث", type: "string" },
+            status: { example: "vendorNotified", type: "string" },
+            statusLabel: { example: "تم إبلاغ المورد", type: "string" },
+          },
+        },
+        ShipmentReturnListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentReturnItem" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                totalCount: { example: 11, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        ShipmentInventoryItem: {
+          type: "object",
+          properties: {
+            color: { example: "أبيض", type: "string" },
+            costPrice: { example: 2800, type: "number" },
+            image: { example: "https://example.com/product.png", type: "string" },
+            productCode: { example: "DRS-102", type: "string" },
+            productName: { example: "دريسينج مودرن", type: "string" },
+            quantity: { example: 2, type: "integer" },
+            size: { example: "50x120", type: "string" },
+            status: { example: "inStock", type: "string" },
+            statusLabel: { example: "متوفر بالمخزون", type: "string" },
+            vendorName: { example: "دريسينج هاوس", type: "string" },
+          },
+        },
+        ShipmentInventoryListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentInventoryItem" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                totalCount: { example: 42, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        ShipmentDeliveryAccountItem: {
+          type: "object",
+          properties: {
+            accountingDate: { example: "2026-05-14T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            accountingStatus: { example: "settled", type: "string" },
+            accountingStatusLabel: { example: "تم التصفية", type: "string" },
+            amountToCollect: { example: 12999, type: "number" },
+            deliveryBy: { example: "بوسطة", type: "string" },
+            deliveryDate: { example: "2026-05-13T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            operationNumber: { example: "3001", type: "string" },
+            orderNumber: { example: "31668", type: "string" },
+            paymentMethod: { example: "2", type: "string" },
+            paymentMethodLabel: { example: "مدفوع", type: "string" },
+            productCode: { example: "RKA-001", type: "string" },
+            reference: { example: "TXN-88201", type: "string" },
+            sellerName: { example: "ركنة للأثاث", type: "string" },
+            sellingPrice: { example: 12999, type: "number" },
+            shippingCost: { example: 50, type: "number" },
+          },
+        },
+        ShipmentDeliveryAccountsListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentDeliveryAccountItem" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                totalCount: { example: 89, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        ShipmentExpenseAccountItem: {
+          type: "object",
+          properties: {
+            accountingDate: { example: "2026-05-10T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            accountingStatus: { example: "pending", type: "string" },
+            accountingStatusLabel: { example: "معلق", type: "string" },
+            amount: { example: 330, type: "number" },
+            reason: { example: "شحن شحنات خارج القاهرة", type: "string" },
+            type: { example: "shipping", type: "string" },
+          },
+        },
+        ShipmentExpenseAccountsListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentExpenseAccountItem" }, type: "array" },
+                page: { example: 1, type: "integer" },
+                size: { example: 20, type: "integer" },
+                totalCount: { example: 0, type: "integer" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
+        ShipmentPerformanceResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                chart: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      deliveredOrdersCount: { example: 12, type: "integer" },
+                      label: { example: "2026-05-12", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+                overview: {
+                  type: "object",
+                  properties: {
+                    averageDeliveryDays: { example: 3.2, type: "number" },
+                    deliveredOrdersCount: { example: 98, type: "integer" },
+                    totalGmv: { example: 284500, type: "number" },
+                  },
+                },
+                providers: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      averageDeliveryDays: { example: 2.8, type: "number" },
+                      deliveredOrdersCount: { example: 42, type: "integer" },
+                      deliveryBy: { example: "بوسطة", type: "string" },
+                      returnsCount: { example: 3, type: "integer" },
+                      successRate: { example: 94, type: "number" },
+                      totalGmv: { example: 181400, type: "number" },
+                    },
+                  },
+                  type: "array",
+                },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+        },
         TicketUserSummary: {
           type: "object",
           properties: {
