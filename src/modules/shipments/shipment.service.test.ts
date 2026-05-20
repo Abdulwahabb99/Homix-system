@@ -89,6 +89,49 @@ describe("ShipmentService", () => {
     });
   });
 
+  it("creates vendor returns through the typed repository path", async () => {
+    const repository = {
+      createReturnRecord: jest.fn().mockResolvedValue({ id: 41, status: 2 }),
+    } as never;
+
+    const service = new ShipmentService(repository);
+
+    await expect(
+      service.createVendorReturn({ orderId: 9802, reason: "منتج تالف", status: 2 }),
+    ).resolves.toEqual({
+      data: { id: 41, status: 2 },
+      ok: true,
+    });
+  });
+
+  it("updates vendor returns through the typed repository path", async () => {
+    const repository = {
+      findReturnById: jest.fn().mockResolvedValue({ toJSON: () => ({ status: 2 }) }),
+      updateReturnRecord: jest.fn().mockResolvedValue({ id: 41, status: 3 }),
+    } as never;
+
+    const service = new ShipmentService(repository);
+
+    await expect(
+      service.updateVendorReturn(41, { status: 3 }, { id: 1, userType: "1" } as never),
+    ).resolves.toEqual({
+      data: { id: 41, status: 3 },
+      ok: true,
+    });
+  });
+
+  it("blocks non-admin updates for forfeited vendor returns", async () => {
+    const repository = {
+      findReturnById: jest.fn().mockResolvedValue({ toJSON: () => ({ status: 4 }) }),
+    } as never;
+
+    const service = new ShipmentService(repository);
+
+    await expect(
+      service.updateVendorReturn(41, { status: 3 }, { id: 7, userType: "3" } as never),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+  });
+
   it("creates expenses through the typed repository path", async () => {
     const repository = {
       createExpenseAccount: jest.fn().mockResolvedValue({ amount: 150, id: 9 }),

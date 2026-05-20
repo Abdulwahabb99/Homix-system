@@ -305,9 +305,27 @@ const isFinalReturnStatus = (returnType: number, status: number): boolean => {
     : CUSTOMER_RETURN_FINAL_STATUSES.includes(status as never);
 };
 
+const shouldAutoForfeitVendorReturn = (returnValue: unknown): boolean => {
+  const plainReturn = toPlain(returnValue);
+  if (toNumber(plainReturn.returnType) !== SHIPMENT_RETURN_TYPE.TO_VENDOR) {
+    return false;
+  }
+
+  if (toNumber(plainReturn.status) !== RETURN_TO_VENDOR_STATUS.VENDOR_NOTIFIED) {
+    return false;
+  }
+
+  const daysCounter = getDaysBetween(plainReturn.startedAt ?? plainReturn.returnDate, undefined);
+  return (daysCounter ?? 0) >= 12;
+};
+
 export class ShipmentRepository {
   public async findShipmentEntity(shipmentId: number): Promise<unknown | null> {
     return orderModel.findByPk(shipmentId);
+  }
+
+  public async findReturnById(returnId: number): Promise<unknown | null> {
+    return shipmentReturnModel.findByPk(returnId);
   }
 
   public async getMeta(): Promise<ShipmentMetaResponse> {
@@ -503,6 +521,12 @@ export class ShipmentRepository {
       : [];
     const persistedMap = new Map<number, Record<string, unknown>>();
     for (const row of persistedReturns) {
+      if (shouldAutoForfeitVendorReturn(row)) {
+        await row.update({
+          completedAt: new Date(),
+          status: RETURN_TO_VENDOR_STATUS.FORFEIT,
+        });
+      }
       const plainReturn = toPlain(row);
       persistedMap.set(toNumber(plainReturn.orderId), plainReturn);
     }
@@ -609,6 +633,13 @@ export class ShipmentRepository {
     const returnRecord = await shipmentReturnModel.findByPk(returnId);
     if (!returnRecord) {
       return null;
+    }
+
+    if (shouldAutoForfeitVendorReturn(returnRecord)) {
+      await returnRecord.update({
+        completedAt: new Date(),
+        status: RETURN_TO_VENDOR_STATUS.FORFEIT,
+      });
     }
 
     const plainReturn = toPlain(returnRecord);

@@ -26,6 +26,13 @@ const shipmentExpenseModel = {
   findByPk: jest.fn(),
 };
 
+const shipmentReturnModel = {
+  create: jest.fn(),
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  findOne: jest.fn(),
+};
+
 const legacyShipmentService = {
   exportShipments: jest.fn(async (_res: express.Response, _payload: Record<string, unknown>) => undefined),
 };
@@ -59,6 +66,7 @@ jest.mock("../../../app/modules/orderLines/orderline.model", () => ({}));
 jest.mock("../../../app/modules/product/product.model", () => productModel);
 jest.mock("../../../app/modules/shipments/shipmentInventory.model", () => shipmentInventoryModel);
 jest.mock("../../../app/modules/shipments/shipmentExpense.model", () => shipmentExpenseModel);
+jest.mock("../../../app/modules/shipments/shipmentReturn.model", () => shipmentReturnModel);
 jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
 jest.mock("../../../app/modules/customer/customer.model", () => ({}));
 jest.mock("../../../app/modules/notes/notes.model", () => ({
@@ -151,6 +159,40 @@ describe("shipmentRouter", () => {
     orderModel.findAll.mockResolvedValue([makeShipment()]);
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeShipment()] });
     orderModel.findOne.mockResolvedValue(makeShipment());
+    orderModel.findByPk.mockResolvedValue(makeShipment());
+    shipmentReturnModel.findAll.mockResolvedValue([]);
+    shipmentReturnModel.findOne.mockResolvedValue(null);
+    shipmentReturnModel.create.mockResolvedValue({
+      toJSON: () => ({
+        completedAt: null,
+        id: 41,
+        orderId: 9802,
+        reason: "منتج تالف",
+        returnDate: "2026-05-18T00:00:00.000Z",
+        returnType: 1,
+        startedAt: "2026-05-18T00:00:00.000Z",
+        status: 2,
+      }),
+    });
+    shipmentReturnModel.findByPk.mockImplementation(async () => {
+      const state = {
+        completedAt: null as string | null,
+        id: 41,
+        orderId: 9802,
+        reason: "منتج تالف",
+        returnDate: "2026-05-18T00:00:00.000Z",
+        returnType: 1,
+        startedAt: "2026-05-18T00:00:00.000Z",
+        status: 2,
+      };
+
+      return {
+        toJSON: () => ({ ...state }),
+        update: jest.fn(async (payload: Record<string, unknown>) => {
+          Object.assign(state, payload);
+        }),
+      };
+    });
     shipmentInventoryModel.findAll.mockResolvedValue([
       {
         color: "أبيض",
@@ -276,6 +318,77 @@ describe("shipmentRouter", () => {
         operationNumber: "3002",
         status: 2,
         statusLabel: "تم إبلاغ المورد",
+      }),
+    );
+  });
+
+  it("creates vendor returns through persisted workflow storage", async () => {
+    const response = await request(app).post("/shipments/returns/vendor").send({
+      orderId: 9802,
+      reason: "منتج تالف",
+      status: 2,
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        id: 41,
+        returnType: 1,
+        status: 2,
+        statusLabel: "تم إبلاغ المورد",
+      }),
+    );
+  });
+
+  it("updates vendor returns through persisted workflow storage", async () => {
+    const response = await request(app).put("/shipments/returns/vendor/41").send({
+      status: 3,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        id: 41,
+        returnType: 1,
+        status: 3,
+        statusLabel: "تم التسليم للمورد",
+      }),
+    );
+  });
+
+  it("auto-forfeits overdue vendor returns after 12 days", async () => {
+    const persistedState = {
+      completedAt: null as string | null,
+      id: 77,
+      orderId: 9802,
+      reason: "تأخر المورد في الاستلام",
+      returnDate: "2026-05-01T00:00:00.000Z",
+      returnType: 1,
+      startedAt: "2026-05-01T00:00:00.000Z",
+      status: 2,
+      updatedAt: "2026-05-01T00:00:00.000Z",
+    };
+    const updateMock = jest.fn(async (payload: Record<string, unknown>) => {
+      Object.assign(persistedState, payload);
+    });
+    shipmentReturnModel.findAll.mockResolvedValue([
+      {
+        toJSON: () => ({ ...persistedState }),
+        update: updateMock,
+      },
+    ]);
+
+    const response = await request(app).get("/shipments/returns/vendor").query({ page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 4 }),
+    );
+    expect(response.body.data.items[0]).toEqual(
+      expect.objectContaining({
+        id: 77,
+        status: 4,
+        statusLabel: "فورفيت",
       }),
     );
   });

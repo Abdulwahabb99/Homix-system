@@ -1034,6 +1034,8 @@ const swaggerOptions = {
             reason: { example: "منتج تالف", type: "string" },
             returnDate: { example: "2026-05-08T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             sellerName: { example: "ركنة للأثاث", type: "string" },
+            returnType: { example: 1, type: "integer" },
+            returnTypeLabel: { example: "مرتجعات إلى المورد", type: "string" },
             status: { example: 2, type: "integer" },
             statusLabel: { example: "تم إبلاغ المورد", type: "string" },
           },

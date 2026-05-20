@@ -95,6 +95,32 @@ shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentReturnListResponse'
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a vendor return workflow record
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [orderId, reason]
+ *             properties:
+ *               orderId:
+ *                 type: integer
+ *                 example: 9802
+ *               reason:
+ *                 type: string
+ *                 example: منتج تالف
+ *               returnDate:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-05-18T00:00:00.000Z
+ *               status:
+ *                 type: integer
+ *                 example: 2
  */
 shipmentRouter.get(
   "/returns/vendor",
@@ -129,6 +155,32 @@ shipmentRouter.put(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentReturnListResponse'
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a customer withdrawal workflow record
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [orderId, reason]
+ *             properties:
+ *               orderId:
+ *                 type: integer
+ *                 example: 9802
+ *               reason:
+ *                 type: string
+ *                 example: العميل رفض الاستلام
+ *               returnDate:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-05-18T00:00:00.000Z
+ *               status:
+ *                 type: integer
+ *                 example: 2
  */
 shipmentRouter.get(
   "/returns/customer",

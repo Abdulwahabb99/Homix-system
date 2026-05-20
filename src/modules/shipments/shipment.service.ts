@@ -25,7 +25,7 @@ import type {
   ShipmentSummaryResponse,
 } from "./shipment.types";
 import type { ShipmentMutationPayload, ShipmentRequestUser } from "./shipment.internal-types";
-import { SHIPMENT_RETURN_TYPE } from "./shipment.constants";
+import { RETURN_TO_VENDOR_STATUS, SHIPMENT_RETURN_TYPE } from "./shipment.constants";
 
 export class ShipmentService {
   public constructor(private readonly shipmentRepository: ShipmentRepository) {}
@@ -72,7 +72,24 @@ export class ShipmentService {
     return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.FROM_CUSTOMER, payload));
   }
 
-  public async updateVendorReturn(returnId: number, payload: Partial<ReturnMutationInput>): Promise<Result<ReturnListResponse["items"][number]>> {
+  public async updateVendorReturn(
+    returnId: number,
+    payload: Partial<ReturnMutationInput>,
+    user: ShipmentRequestUser,
+  ): Promise<Result<ReturnListResponse["items"][number]>> {
+    const existingReturn = await this.shipmentRepository.findReturnById(returnId);
+    if (!existingReturn) {
+      throw new NotFoundError("Return not found");
+    }
+
+    const plainReturn = "toJSON" in (existingReturn as Record<string, unknown>) && typeof (existingReturn as { toJSON?: () => Record<string, unknown> }).toJSON === "function"
+      ? (existingReturn as { toJSON: () => Record<string, unknown> }).toJSON()
+      : (existingReturn as Record<string, unknown>);
+
+    if (Number(plainReturn.status ?? 0) === RETURN_TO_VENDOR_STATUS.FORFEIT && user.userType !== "1") {
+      throw new UnauthorizedError("Only admins can modify forfeited vendor returns");
+    }
+
     const returnRecord = await this.shipmentRepository.updateReturnRecord(returnId, SHIPMENT_RETURN_TYPE.TO_VENDOR, payload);
     if (!returnRecord) {
       throw new NotFoundError("Return not found");

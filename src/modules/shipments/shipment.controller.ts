@@ -43,7 +43,10 @@ export class ShipmentController {
   };
 
   public updateVendorReturn = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.shipmentService.updateVendorReturn(Number(request.params.returnId), request.body)), status: true });
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateVendorReturn(Number(request.params.returnId), request.body, request.user ?? { id: 0, userType: "" })),
+      status: true,
+    });
   };
 
   public updateCustomerReturn = async (request: Request, response: Response): Promise<void> => {
