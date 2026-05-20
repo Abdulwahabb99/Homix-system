@@ -38,35 +38,82 @@ export const SHIPMENT_TYPE_LABELS: Record<string, string> = {
   warehouse: "شحن مجمع",
 };
 
-export const RETURN_TO_VENDOR_STATUS_LABELS: Record<string, string> = {
-  pending: "معلق",
-  vendorNotified: "تم إبلاغ المورد",
-  deliveredToVendor: "تم التسليم للمورد",
-  forfeit: "فورفيت",
+export const SHIPMENT_RETURN_TYPE = {
+  TO_VENDOR: 1,
+  FROM_CUSTOMER: 2,
+} as const;
+
+export const SHIPMENT_RETURN_TYPE_LABELS: Record<number, string> = {
+  [SHIPMENT_RETURN_TYPE.TO_VENDOR]: "مرتجعات إلى المورد",
+  [SHIPMENT_RETURN_TYPE.FROM_CUSTOMER]: "مسحوبات من العميل",
 };
 
-export const CUSTOMER_RETURN_STATUS_LABELS: Record<string, string> = {
-  pending: "معلق",
-  pickedUp: "تم السحب",
-  inWarehouse: "في المخزن",
-  canceled: "ملغي",
-  redelivered: "تم التوصيل للعميل",
-  forfeit: "فورفيت",
+export const RETURN_TO_VENDOR_STATUS = {
+  PENDING: 1,
+  VENDOR_NOTIFIED: 2,
+  DELIVERED_TO_VENDOR: 3,
+  FORFEIT: 4,
+} as const;
+
+export const RETURN_TO_VENDOR_STATUS_LABELS: Record<number, string> = {
+  [RETURN_TO_VENDOR_STATUS.PENDING]: "معلق",
+  [RETURN_TO_VENDOR_STATUS.VENDOR_NOTIFIED]: "تم إبلاغ المورد",
+  [RETURN_TO_VENDOR_STATUS.DELIVERED_TO_VENDOR]: "تم التسليم للمورد",
+  [RETURN_TO_VENDOR_STATUS.FORFEIT]: "فورفيت",
 };
 
-export const EXPENSE_STATUS_LABELS: Record<string, string> = {
-  pending: "معلق",
-  settled: "تم التصفية",
+export const RETURN_TO_VENDOR_FINAL_STATUSES = [
+  RETURN_TO_VENDOR_STATUS.DELIVERED_TO_VENDOR,
+  RETURN_TO_VENDOR_STATUS.FORFEIT,
+];
+
+export const CUSTOMER_RETURN_STATUS = {
+  PENDING: 1,
+  PICKED_UP: 2,
+  IN_WAREHOUSE: 3,
+  CANCELED: 4,
+  REDELIVERED: 5,
+  FORFEIT: 6,
+} as const;
+
+export const CUSTOMER_RETURN_STATUS_LABELS: Record<number, string> = {
+  [CUSTOMER_RETURN_STATUS.PENDING]: "معلق",
+  [CUSTOMER_RETURN_STATUS.PICKED_UP]: "تم السحب",
+  [CUSTOMER_RETURN_STATUS.IN_WAREHOUSE]: "في المخزن",
+  [CUSTOMER_RETURN_STATUS.CANCELED]: "ملغي",
+  [CUSTOMER_RETURN_STATUS.REDELIVERED]: "تم التوصيل للعميل",
+  [CUSTOMER_RETURN_STATUS.FORFEIT]: "فورفيت",
 };
 
-export const ACCOUNT_STATUS_LABELS: Record<string, string> = {
-  pending: "معلق",
-  settled: "تم التصفية",
+export const CUSTOMER_RETURN_FINAL_STATUSES = [
+  CUSTOMER_RETURN_STATUS.CANCELED,
+  CUSTOMER_RETURN_STATUS.REDELIVERED,
+  CUSTOMER_RETURN_STATUS.FORFEIT,
+];
+
+export const ACCOUNTING_STATUS = {
+  PENDING: 1,
+  SETTLED: 2,
+} as const;
+
+export const EXPENSE_STATUS_LABELS: Record<number, string> = {
+  [ACCOUNTING_STATUS.PENDING]: "معلق",
+  [ACCOUNTING_STATUS.SETTLED]: "تم التصفية",
 };
 
-export const INVENTORY_STATUS_LABELS: Record<string, string> = {
-  inStock: "متوفر بالمخزون",
-  outOfStock: "نفذ بالمخزون",
+export const ACCOUNT_STATUS_LABELS: Record<number, string> = {
+  [ACCOUNTING_STATUS.PENDING]: "معلق",
+  [ACCOUNTING_STATUS.SETTLED]: "تم التصفية",
+};
+
+export const INVENTORY_STATUS = {
+  IN_STOCK: 1,
+  OUT_OF_STOCK: 2,
+} as const;
+
+export const INVENTORY_STATUS_LABELS: Record<number, string> = {
+  [INVENTORY_STATUS.IN_STOCK]: "متوفر بالمخزون",
+  [INVENTORY_STATUS.OUT_OF_STOCK]: "نفذ بالمخزون",
 };
 
 export const PAYMENT_STATUS_LABELS = PAYMENT_STATUS_ARABIC as Record<number, string>;

@@ -1,18 +1,27 @@
 import { Op, fn, col, where } from "sequelize";
 
 import { sequelize } from "../../infrastructure/database";
+import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
 import {
+  ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
+  CUSTOMER_RETURN_FINAL_STATUSES,
   DEFAULT_PAGE_NUMBER,
   DEFAULT_PAGE_SIZE,
   DELIVERY_BY_LABELS,
+  CUSTOMER_RETURN_STATUS,
   EXPENSE_STATUS_LABELS,
+  INVENTORY_STATUS,
   INVENTORY_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
+  RETURN_TO_VENDOR_FINAL_STATUSES,
+  RETURN_TO_VENDOR_STATUS,
   RETURN_TO_VENDOR_STATUS_LABELS,
   CUSTOMER_RETURN_STATUS_LABELS,
   SHIPMENT_STATUS,
+  SHIPMENT_RETURN_TYPE,
+  SHIPMENT_RETURN_TYPE_LABELS,
   SHIPMENT_STATUS_LABELS,
   SHIPMENT_TYPE_LABELS,
 } from "./shipment.constants";
@@ -35,9 +44,12 @@ import type {
   DeliveryAccountItem,
   DeliveryAccountsListQuery,
   DeliveryAccountsListResponse,
+  ExpenseAccountItem,
+  ExpenseMutationInput,
   ExpenseAccountsListQuery,
   ExpenseAccountsListResponse,
   InventoryItem,
+  InventoryMutationInput,
   InventoryListQuery,
   InventoryListResponse,
   PerformanceQuery,
@@ -45,6 +57,7 @@ import type {
   ReturnItem,
   ReturnListQuery,
   ReturnListResponse,
+  ReturnMutationInput,
   ShipmentDetailsResponse,
   ShipmentListItem,
   ShipmentListQuery,
@@ -63,6 +76,34 @@ const noteModel = require("../../../app/modules/notes/notes.model");
 const userModel = require("../../../app/modules/user/user.model");
 const logModel = require("../../../app/modules/logs/log.model");
 const productTypeModel = require("../../../app/modules/product/productType.model");
+const shipmentInventoryModel = require("../../../app/modules/shipments/shipmentInventory.model");
+const shipmentExpenseModel = require("../../../app/modules/shipments/shipmentExpense.model");
+const shipmentReturnModel = require("../../../app/modules/shipments/shipmentReturn.model");
+
+const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
+  const inventory = toPlain(inventoryValue);
+  const product = toPlain(inventory.product);
+  const vendor = toPlain(product.vendor);
+  const productCode = toText(inventory.productCode);
+  const variant = getVariantBySku(product.variants, productCode);
+  const status = toNumber(inventory.status) || INVENTORY_STATUS.IN_STOCK;
+
+  return {
+    color: toText(inventory.color, toText(variant?.option2)),
+    costPrice: toNumber(inventory.costPrice),
+    id: toNumber(inventory.id),
+    image: toText(product.image),
+    productCode,
+    productId: toNullableNumber(inventory.productId),
+    productName: toText(product.title, toText(inventory.productName)),
+    quantity: toNumber(inventory.quantity),
+    size: toText(inventory.size, toText(variant?.option1)),
+    status,
+    statusLabel: INVENTORY_STATUS_LABELS[status] ?? String(status),
+    vendorId: toNullableNumber(product.vendorId ?? inventory.vendorId),
+    vendorName: toText(vendor.name, toText(inventory.vendorName)),
+  };
+};
 
 const buildShipmentWhereClause = (
   filters: Omit<ShipmentListQuery, "page" | "size">,
@@ -243,6 +284,26 @@ const mapTimeline = (logs: unknown[]) =>
       userName: "",
     };
   });
+
+const getFallbackReturnStatus = (returnType: number): number => {
+  return returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR
+    ? RETURN_TO_VENDOR_STATUS.VENDOR_NOTIFIED
+    : CUSTOMER_RETURN_STATUS.PICKED_UP;
+};
+
+const getReturnStatusLabel = (returnType: number, status: number): string => {
+  if (returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR) {
+    return RETURN_TO_VENDOR_STATUS_LABELS[status] ?? String(status);
+  }
+
+  return CUSTOMER_RETURN_STATUS_LABELS[status] ?? String(status);
+};
+
+const isFinalReturnStatus = (returnType: number, status: number): boolean => {
+  return returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR
+    ? RETURN_TO_VENDOR_FINAL_STATUSES.includes(status as never)
+    : CUSTOMER_RETURN_FINAL_STATUSES.includes(status as never);
+};
 
 export class ShipmentRepository {
   public async findShipmentEntity(shipmentId: number): Promise<unknown | null> {
@@ -428,25 +489,50 @@ export class ShipmentRepository {
       where: whereClause,
     });
 
+    const returnType = shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR
+      ? SHIPMENT_RETURN_TYPE.TO_VENDOR
+      : SHIPMENT_RETURN_TYPE.FROM_CUSTOMER;
+    const orderIds = result.rows.map((row: unknown) => toNumber(toPlain(row).id)).filter((id: number) => id > 0);
+    const persistedReturns = orderIds.length > 0
+      ? await shipmentReturnModel.findAll({
+          where: {
+            orderId: { [Op.in]: orderIds },
+            returnType,
+          },
+        })
+      : [];
+    const persistedMap = new Map<number, Record<string, unknown>>();
+    for (const row of persistedReturns) {
+      const plainReturn = toPlain(row);
+      persistedMap.set(toNumber(plainReturn.orderId), plainReturn);
+    }
+
     const items = result.rows.map((row: unknown) => {
       const order = toPlain(row);
+      const persistedReturn = persistedMap.get(toNumber(order.id));
       const firstLine = Array.isArray(order.orderLines) ? toPlain(order.orderLines[0]) : {};
       const vendor = toPlain(toPlain(firstLine.product).vendor);
       const notes = Array.isArray(order.notesList) ? order.notesList.map((note) => toPlain(note)) : [];
-      const isVendorReturn = shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR;
-      const status = isVendorReturn ? "vendorNotified" : "pickedUp";
+      const status = persistedReturn
+        ? toNumber(persistedReturn.status)
+        : getFallbackReturnStatus(returnType);
+      const startedAt = persistedReturn?.startedAt ?? persistedReturn?.returnDate ?? order.updatedAt;
+      const completedAt = persistedReturn && isFinalReturnStatus(returnType, status)
+        ? (persistedReturn.completedAt ?? persistedReturn.updatedAt ?? persistedReturn.returnDate)
+        : undefined;
+
       return {
-        daysCounter: getDaysBetween(order.updatedAt, undefined),
-        id: toNumber(order.id),
+        daysCounter: getDaysBetween(startedAt, completedAt),
+        id: persistedReturn ? toNumber(persistedReturn.id) : toNumber(order.id),
         operationNumber: normalizeOperationCode(order.code),
         orderNumber: toText(order.orderNumber, toText(order.number, toText(order.name))),
-        reason: toText(notes[0]?.text, toText(order.notes)),
-        returnDate: toIsoString(order.updatedAt),
+        reason: toText(persistedReturn?.reason, toText(notes[0]?.text, toText(order.notes))),
+        returnDate: toIsoString(persistedReturn?.returnDate ?? order.updatedAt),
+        returnType,
+        returnTypeLabel: SHIPMENT_RETURN_TYPE_LABELS[returnType] ?? String(returnType),
         sellerName: toText(vendor.name),
         status,
-        statusLabel: isVendorReturn
-          ? RETURN_TO_VENDOR_STATUS_LABELS[status] ?? status
-          : CUSTOMER_RETURN_STATUS_LABELS[status] ?? status,
+        statusLabel: getReturnStatusLabel(returnType, status),
       };
     });
 
@@ -470,42 +556,129 @@ export class ShipmentRepository {
     return this.listReturnsByStatus(SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER, filters, vendorId);
   }
 
-  public async listInventory(filters: InventoryListQuery, vendorId?: number | null): Promise<InventoryListResponse> {
-    const whereClause: Record<string, unknown> = {};
-    if (vendorId) {
-      whereClause.vendorId = vendorId;
-    }
-    if (filters.vendorName) {
-      whereClause["$vendor.name$"] = { [Op.like]: `%${filters.vendorName}%` };
+  public async createReturnRecord(returnType: number, payload: ReturnMutationInput): Promise<ReturnItem> {
+    const shipment = await orderModel.findByPk(payload.orderId, {
+      include: buildIncludes(),
+    });
+    if (!shipment) {
+      throw new NotFoundError("Shipment not found");
     }
 
-    const products = await productModel.findAll({
-      include: [{ as: "vendor", model: vendorModel, required: false }],
+    const existingRecord = await shipmentReturnModel.findOne({
+      where: {
+        orderId: payload.orderId,
+        returnType,
+      },
+    });
+    if (existingRecord) {
+      throw new ConflictError("Return record already exists");
+    }
+
+    const plainShipment = toPlain(shipment);
+    const firstLine = Array.isArray(plainShipment.orderLines) ? toPlain(plainShipment.orderLines[0]) : {};
+    const vendor = toPlain(toPlain(firstLine.product).vendor);
+    const status = payload.status ?? getFallbackReturnStatus(returnType);
+    const returnDate = payload.returnDate ? new Date(payload.returnDate) : new Date();
+    const createdRecord = await shipmentReturnModel.create({
+      completedAt: isFinalReturnStatus(returnType, status) ? returnDate : null,
+      orderId: payload.orderId,
+      reason: payload.reason,
+      returnDate,
+      returnType,
+      startedAt: returnDate,
+      status,
+    });
+    const record = toPlain(createdRecord);
+
+    return {
+      daysCounter: getDaysBetween(record.startedAt, record.completedAt),
+      id: toNumber(record.id),
+      operationNumber: normalizeOperationCode(plainShipment.code),
+      orderNumber: toText(plainShipment.orderNumber, toText(plainShipment.number, toText(plainShipment.name))),
+      reason: toText(record.reason),
+      returnDate: toIsoString(record.returnDate),
+      returnType,
+      returnTypeLabel: SHIPMENT_RETURN_TYPE_LABELS[returnType] ?? String(returnType),
+      sellerName: toText(vendor.name),
+      status,
+      statusLabel: getReturnStatusLabel(returnType, status),
+    };
+  }
+
+  public async updateReturnRecord(returnId: number, returnType: number, payload: Partial<ReturnMutationInput>): Promise<ReturnItem | null> {
+    const returnRecord = await shipmentReturnModel.findByPk(returnId);
+    if (!returnRecord) {
+      return null;
+    }
+
+    const plainReturn = toPlain(returnRecord);
+    if (toNumber(plainReturn.returnType) !== returnType) {
+      return null;
+    }
+
+    const shipment = await orderModel.findByPk(toNumber(plainReturn.orderId), {
+      include: buildIncludes(),
+    });
+    if (!shipment) {
+      throw new NotFoundError("Shipment not found");
+    }
+
+    const nextStatus = payload.status ?? toNumber(plainReturn.status);
+    const nextReturnDate = payload.returnDate !== undefined
+      ? (payload.returnDate ? new Date(payload.returnDate) : null)
+      : plainReturn.returnDate;
+    await returnRecord.update({
+      ...(payload.reason !== undefined ? { reason: payload.reason } : {}),
+      ...(payload.returnDate !== undefined ? { returnDate: nextReturnDate } : {}),
+      ...(payload.status !== undefined ? { status: payload.status } : {}),
+      completedAt: isFinalReturnStatus(returnType, nextStatus)
+        ? (plainReturn.completedAt ?? nextReturnDate ?? new Date())
+        : null,
+    });
+
+    const updated = toPlain(returnRecord);
+    const plainShipment = toPlain(shipment);
+    const firstLine = Array.isArray(plainShipment.orderLines) ? toPlain(plainShipment.orderLines[0]) : {};
+    const vendor = toPlain(toPlain(firstLine.product).vendor);
+
+    return {
+      daysCounter: getDaysBetween(updated.startedAt, updated.completedAt),
+      id: toNumber(updated.id),
+      operationNumber: normalizeOperationCode(plainShipment.code),
+      orderNumber: toText(plainShipment.orderNumber, toText(plainShipment.number, toText(plainShipment.name))),
+      reason: toText(updated.reason),
+      returnDate: toIsoString(updated.returnDate),
+      returnType,
+      returnTypeLabel: SHIPMENT_RETURN_TYPE_LABELS[returnType] ?? String(returnType),
+      sellerName: toText(vendor.name),
+      status: nextStatus,
+      statusLabel: getReturnStatusLabel(returnType, nextStatus),
+    };
+  }
+
+  public async listInventory(filters: InventoryListQuery, vendorId?: number | null): Promise<InventoryListResponse> {
+    const whereClause: Record<string, unknown> = {};
+
+    const rows = await shipmentInventoryModel.findAll({
+      include: [
+        {
+          as: "product",
+          include: [{ as: "vendor", model: vendorModel, required: false }],
+          model: productModel,
+          required: false,
+        },
+      ],
       order: [["updatedAt", "DESC"]],
       where: whereClause,
     });
 
-    const items: InventoryItem[] = products.flatMap((productValue: unknown) => {
-      const product = toPlain(productValue);
-      const vendor = toPlain(product.vendor);
-      const variants = Array.isArray(product.variants) ? product.variants.map((variant) => toPlain(variant)) : [];
-      return variants.map((variant) => {
-        const quantity = toNumber(variant.inventory_quantity ?? variant.quantity);
-        const status: keyof typeof INVENTORY_STATUS_LABELS = quantity > 0 ? "inStock" : "outOfStock";
-        return {
-          color: toText(variant.option2 || variant.color),
-          costPrice: toNumber(variant.cost ?? variant.price ?? 0),
-          image: toText(product.image),
-          productCode: toText(variant.sku),
-          productName: toText(product.title),
-          quantity,
-          size: toText(variant.option1 || variant.size),
-          status,
-          statusLabel: INVENTORY_STATUS_LABELS[status],
-          vendorName: toText(vendor.name),
-        };
-      });
-    }).filter((item: InventoryItem) => {
+    const items: InventoryItem[] = rows.map((row: unknown) => buildInventoryItem(row)).filter((item: InventoryItem) => {
+      if (vendorId && item.vendorId !== vendorId) {
+        return false;
+      }
+      if (filters.vendorName && !item.vendorName.toLowerCase().includes(filters.vendorName.toLowerCase())) {
+        return false;
+      }
       if (filters.productCode && !item.productCode.toLowerCase().includes(filters.productCode.toLowerCase())) {
         return false;
       }
@@ -524,6 +697,69 @@ export class ShipmentRepository {
       size: filters.size,
       totalCount: items.length,
     };
+  }
+
+  public async createInventoryItem(payload: InventoryMutationInput): Promise<InventoryItem> {
+    const product = await productModel.findByPk(payload.productId, {
+      include: [{ as: "vendor", model: vendorModel, required: false }],
+    });
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    const status = payload.status ?? (payload.quantity > 0 ? INVENTORY_STATUS.IN_STOCK : INVENTORY_STATUS.OUT_OF_STOCK);
+    const createdItem = await shipmentInventoryModel.create({
+      color: payload.color,
+      costPrice: payload.costPrice,
+      productCode: payload.productCode,
+      productId: payload.productId,
+      quantity: payload.quantity,
+      size: payload.size,
+      status,
+    });
+    createdItem.setDataValue("product", product);
+    return buildInventoryItem(createdItem);
+  }
+
+  public async updateInventoryItem(inventoryItemId: number, payload: Partial<InventoryMutationInput>): Promise<InventoryItem | null> {
+    const inventoryItem = await shipmentInventoryModel.findByPk(inventoryItemId);
+    if (!inventoryItem) {
+      return null;
+    }
+
+    let linkedProduct = null;
+    if (payload.productId !== undefined) {
+      linkedProduct = await productModel.findByPk(payload.productId, {
+        include: [{ as: "vendor", model: vendorModel, required: false }],
+      });
+      if (!linkedProduct) {
+        throw new NotFoundError("Product not found");
+      }
+    }
+
+    const nextPayload = { ...payload };
+    if (nextPayload.quantity !== undefined && nextPayload.status === undefined) {
+      nextPayload.status = nextPayload.quantity > 0 ? INVENTORY_STATUS.IN_STOCK : INVENTORY_STATUS.OUT_OF_STOCK;
+    }
+
+    await inventoryItem.update(nextPayload);
+    if (!linkedProduct) {
+      linkedProduct = await productModel.findByPk(toNumber(inventoryItem.getDataValue("productId")), {
+        include: [{ as: "vendor", model: vendorModel, required: false }],
+      });
+    }
+    inventoryItem.setDataValue("product", linkedProduct);
+    return buildInventoryItem(inventoryItem);
+  }
+
+  public async deleteInventoryItem(inventoryItemId: number): Promise<boolean> {
+    const inventoryItem = await shipmentInventoryModel.findByPk(inventoryItemId);
+    if (!inventoryItem) {
+      return false;
+    }
+
+    await inventoryItem.destroy();
+    return true;
   }
 
   public async listDeliveryAccounts(filters: DeliveryAccountsListQuery, vendorId?: number | null): Promise<DeliveryAccountsListResponse> {
@@ -550,13 +786,13 @@ export class ShipmentRepository {
       const product = toPlain(firstLine.product);
       const vendor = toPlain(product.vendor);
       const paymentStatus = toNumber(order.paymentStatus);
-      const accountingStatus: "pending" | "settled" = paymentStatus === 2 ? "settled" : "pending";
+      const accountingStatus = paymentStatus === 2 ? ACCOUNTING_STATUS.SETTLED : ACCOUNTING_STATUS.PENDING;
       const deliveryBy = toNullableNumber(order.deliveryBy);
 
       return {
         accountingDate: toIsoString(order.updatedAt),
         accountingStatus,
-        accountingStatusLabel: ACCOUNT_STATUS_LABELS[accountingStatus] ?? accountingStatus,
+        accountingStatusLabel: ACCOUNT_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
         amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
         deliveryBy: toText(order.shippingCompany) || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
         deliveryDate: toIsoString(order.deliveryDate),
@@ -592,8 +828,23 @@ export class ShipmentRepository {
   }
 
   public async listExpenseAccounts(filters: ExpenseAccountsListQuery): Promise<ExpenseAccountsListResponse> {
-    const items: ExpenseAccountsListResponse["items"] = [];
-    const filteredItems = items.filter((item: ExpenseAccountsListResponse["items"][number]) => {
+    const rows = await shipmentExpenseModel.findAll({
+      order: [["accountingDate", "DESC"], ["createdAt", "DESC"]],
+    });
+    const items: ExpenseAccountItem[] = rows.map((row: unknown) => {
+      const item = toPlain(row);
+      const accountingStatus = toNumber(item.accountingStatus) || ACCOUNTING_STATUS.PENDING;
+      return {
+        accountingDate: toIsoString(item.accountingDate),
+        accountingStatus,
+        accountingStatusLabel: EXPENSE_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
+        amount: toNumber(item.amount),
+        id: toNumber(item.id),
+        reason: toText(item.reason),
+        type: toText(item.type),
+      };
+    });
+    const filteredItems = items.filter((item: ExpenseAccountItem) => {
       if (filters.type && item.type !== filters.type) {
         return false;
       }
@@ -609,6 +860,60 @@ export class ShipmentRepository {
       size: filters.size,
       totalCount: filteredItems.length,
     };
+  }
+
+  public async createExpenseAccount(payload: ExpenseMutationInput): Promise<ExpenseAccountItem> {
+    const createdExpense = await shipmentExpenseModel.create({
+      accountingDate: payload.accountingDate || null,
+      accountingStatus: payload.accountingStatus ?? ACCOUNTING_STATUS.PENDING,
+      amount: payload.amount,
+      reason: payload.reason,
+      type: payload.type,
+    });
+    const expense = toPlain(createdExpense);
+    const accountingStatus = toNumber(expense.accountingStatus) || ACCOUNTING_STATUS.PENDING;
+    return {
+      accountingDate: toIsoString(expense.accountingDate),
+      accountingStatus,
+      accountingStatusLabel: EXPENSE_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
+      amount: toNumber(expense.amount),
+      id: toNumber(expense.id),
+      reason: toText(expense.reason),
+      type: toText(expense.type),
+    };
+  }
+
+  public async updateExpenseAccount(expenseId: number, payload: Partial<ExpenseMutationInput>): Promise<ExpenseAccountItem | null> {
+    const expenseRecord = await shipmentExpenseModel.findByPk(expenseId);
+    if (!expenseRecord) {
+      return null;
+    }
+
+    await expenseRecord.update({
+      ...payload,
+      ...(payload.accountingDate !== undefined ? { accountingDate: payload.accountingDate || null } : {}),
+    });
+    const expense = toPlain(expenseRecord);
+    const accountingStatus = toNumber(expense.accountingStatus) || ACCOUNTING_STATUS.PENDING;
+    return {
+      accountingDate: toIsoString(expense.accountingDate),
+      accountingStatus,
+      accountingStatusLabel: EXPENSE_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
+      amount: toNumber(expense.amount),
+      id: toNumber(expense.id),
+      reason: toText(expense.reason),
+      type: toText(expense.type),
+    };
+  }
+
+  public async deleteExpenseAccount(expenseId: number): Promise<boolean> {
+    const expenseRecord = await shipmentExpenseModel.findByPk(expenseId);
+    if (!expenseRecord) {
+      return false;
+    }
+
+    await expenseRecord.destroy();
+    return true;
   }
 
   public async getPerformance(filters: PerformanceQuery, vendorId?: number | null): Promise<PerformanceResponse> {

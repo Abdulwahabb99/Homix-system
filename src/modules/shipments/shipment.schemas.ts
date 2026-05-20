@@ -8,6 +8,18 @@ export const shipmentIdParamsSchema = z.object({
   shipmentId: z.coerce.number().int().positive(),
 });
 
+export const shipmentInventoryItemParamsSchema = z.object({
+  inventoryItemId: z.coerce.number().int().positive(),
+});
+
+export const shipmentExpenseParamsSchema = z.object({
+  expenseId: z.coerce.number().int().positive(),
+});
+
+export const shipmentReturnParamsSchema = z.object({
+  returnId: z.coerce.number().int().positive(),
+});
+
 export const shipmentNoteParamsSchema = shipmentIdParamsSchema.extend({
   noteId: z.coerce.number().int().positive(),
 });
@@ -48,19 +60,36 @@ export const shipmentReturnsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   sellerName: z.string().trim().optional(),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
-  status: z.string().trim().optional(),
+  status: z.coerce.number().int().positive().optional(),
+});
+
+export const shipmentReturnMutationSchema = z.object({
+  orderId: z.coerce.number().int().positive(),
+  reason: z.string().trim().min(1),
+  returnDate: z.string().trim().optional().nullable(),
+  status: z.coerce.number().int().positive().optional(),
 });
 
 export const shipmentInventoryQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   productCode: z.string().trim().optional(),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
-  status: z.string().trim().optional(),
+  status: z.coerce.number().int().positive().optional(),
   vendorName: z.string().trim().optional(),
 });
 
+export const shipmentInventoryMutationSchema = z.object({
+  color: z.string().trim().optional(),
+  costPrice: z.coerce.number().min(0),
+  productId: z.coerce.number().int().positive(),
+  productCode: z.string().trim().min(1),
+  quantity: z.coerce.number().int().min(0),
+  size: z.string().trim().optional(),
+  status: z.coerce.number().int().positive().optional(),
+});
+
 export const shipmentDeliveryAccountsQuerySchema = z.object({
-  accountingStatus: z.string().trim().optional(),
+  accountingStatus: z.coerce.number().int().positive().optional(),
   orderNumber: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   paymentMethod: z.string().trim().optional(),
@@ -69,10 +98,18 @@ export const shipmentDeliveryAccountsQuerySchema = z.object({
 });
 
 export const shipmentExpenseAccountsQuerySchema = z.object({
-  accountingStatus: z.string().trim().optional(),
+  accountingStatus: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   type: z.string().trim().optional(),
+});
+
+export const shipmentExpenseMutationSchema = z.object({
+  accountingDate: z.string().trim().optional().nullable(),
+  accountingStatus: z.coerce.number().int().positive().optional(),
+  amount: z.coerce.number().min(0),
+  reason: z.string().trim().min(1),
+  type: z.string().trim().min(1),
 });
 
 export const shipmentPerformanceQuerySchema = z.object({

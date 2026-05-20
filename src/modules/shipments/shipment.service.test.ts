@@ -68,4 +68,39 @@ describe("ShipmentService", () => {
       ok: true,
     });
   });
+
+  it("creates inventory items through the typed repository path", async () => {
+    const repository = {
+      createInventoryItem: jest.fn().mockResolvedValue({ id: 6, productCode: "NEW-1" }),
+    } as never;
+
+    const service = new ShipmentService(repository);
+
+    await expect(
+      service.createInventoryItem({
+        costPrice: 2800,
+        productId: 555,
+        productCode: "NEW-1",
+        quantity: 1,
+      }),
+    ).resolves.toEqual({
+      data: { id: 6, productCode: "NEW-1" },
+      ok: true,
+    });
+  });
+
+  it("creates expenses through the typed repository path", async () => {
+    const repository = {
+      createExpenseAccount: jest.fn().mockResolvedValue({ amount: 150, id: 9 }),
+    } as never;
+
+    const service = new ShipmentService(repository);
+
+    await expect(
+      service.createExpenseAccount({ amount: 150, reason: "مواد تغليف", type: "packaging" }),
+    ).resolves.toEqual({
+      data: { amount: 150, id: 9 },
+      ok: true,
+    });
+  });
 });

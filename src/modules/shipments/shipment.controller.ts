@@ -6,6 +6,10 @@ import type { ShipmentService } from "./shipment.service";
 export class ShipmentController {
   public constructor(private readonly shipmentService: ShipmentService) {}
 
+  public createShipment = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ ...unwrap(await this.shipmentService.createShipment(request.body)), status: true });
+  };
+
   public getMeta = async (_request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.getMeta()), status: true });
   };
@@ -30,8 +34,39 @@ export class ShipmentController {
     response.status(200).json({ data: unwrap(await this.shipmentService.listCustomerReturns(request.query as never, request.vendorId)), status: true });
   };
 
+  public createVendorReturn = async (request: Request, response: Response): Promise<void> => {
+    response.status(201).json({ data: unwrap(await this.shipmentService.createVendorReturn(request.body)), status: true });
+  };
+
+  public createCustomerReturn = async (request: Request, response: Response): Promise<void> => {
+    response.status(201).json({ data: unwrap(await this.shipmentService.createCustomerReturn(request.body)), status: true });
+  };
+
+  public updateVendorReturn = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ data: unwrap(await this.shipmentService.updateVendorReturn(Number(request.params.returnId), request.body)), status: true });
+  };
+
+  public updateCustomerReturn = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ data: unwrap(await this.shipmentService.updateCustomerReturn(Number(request.params.returnId), request.body)), status: true });
+  };
+
   public listInventory = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.listInventory(request.query as never, request.vendorId)), status: true });
+  };
+
+  public createInventoryItem = async (request: Request, response: Response): Promise<void> => {
+    response.status(201).json({ data: unwrap(await this.shipmentService.createInventoryItem(request.body)), status: true });
+  };
+
+  public updateInventoryItem = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateInventoryItem(Number(request.params.inventoryItemId), request.body)),
+      status: true,
+    });
+  };
+
+  public deleteInventoryItem = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ ...unwrap(await this.shipmentService.deleteInventoryItem(Number(request.params.inventoryItemId))), status: true });
   };
 
   public listDeliveryAccounts = async (request: Request, response: Response): Promise<void> => {
@@ -42,8 +77,30 @@ export class ShipmentController {
     response.status(200).json({ data: unwrap(await this.shipmentService.listExpenseAccounts(request.query as never)), status: true });
   };
 
+  public createExpenseAccount = async (request: Request, response: Response): Promise<void> => {
+    response.status(201).json({ data: unwrap(await this.shipmentService.createExpenseAccount(request.body)), status: true });
+  };
+
+  public updateExpenseAccount = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateExpenseAccount(Number(request.params.expenseId), request.body)),
+      status: true,
+    });
+  };
+
+  public deleteExpenseAccount = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ ...unwrap(await this.shipmentService.deleteExpenseAccount(Number(request.params.expenseId))), status: true });
+  };
+
   public getPerformance = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.getPerformance(request.query as never, request.vendorId)), status: true });
+  };
+
+  public exportShipments = async (request: Request, response: Response): Promise<void> => {
+    await this.shipmentService.exportShipments(
+      response,
+      request.vendorId ? { ...request.query, vendorId: String(request.vendorId), vendorUser: true } : request.query,
+    );
   };
 
   public updateShipment = async (request: Request, response: Response): Promise<void> => {

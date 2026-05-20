@@ -14,8 +14,8 @@
     "dashboard:backfill-aggregates": "tsx src/scripts/backfill-dashboard-aggregates.ts",
     "monitor": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand",
-    "test:coverage": "jest --coverage --runInBand"
+    "test": "jest --config jest.config.cjs --runInBand",
+    "test:coverage": "jest --config jest.config.cjs --coverage --runInBand"
   },
   "author": "",
   "license": "ISC",

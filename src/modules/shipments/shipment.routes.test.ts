@@ -11,11 +11,27 @@ const orderModel = {
 
 const productModel = {
   findAll: jest.fn(),
+  findByPk: jest.fn(),
 };
 
-const legacyShipmentController = {
-  createShipment: jest.fn((_req: express.Request, res: express.Response) => res.status(200).json({ status: true })),
-  exportShipments: jest.fn((_req: express.Request, res: express.Response) => res.status(200).end()),
+const shipmentInventoryModel = {
+  create: jest.fn(),
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+};
+
+const shipmentExpenseModel = {
+  create: jest.fn(),
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+};
+
+const legacyShipmentService = {
+  exportShipments: jest.fn(async (_res: express.Response, _payload: Record<string, unknown>) => undefined),
+};
+
+const legacyOrderService = {
+  saveImportedOrders: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock("../../../app/middlewares/protectApi", () => {
@@ -41,6 +57,8 @@ jest.mock("../../infrastructure/database", () => ({
 jest.mock("../../../app/modules/order/order.model", () => orderModel);
 jest.mock("../../../app/modules/orderLines/orderline.model", () => ({}));
 jest.mock("../../../app/modules/product/product.model", () => productModel);
+jest.mock("../../../app/modules/shipments/shipmentInventory.model", () => shipmentInventoryModel);
+jest.mock("../../../app/modules/shipments/shipmentExpense.model", () => shipmentExpenseModel);
 jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
 jest.mock("../../../app/modules/customer/customer.model", () => ({}));
 jest.mock("../../../app/modules/notes/notes.model", () => ({
@@ -61,7 +79,8 @@ jest.mock("../../../app/modules/logs/log.model", () => ({
   ]),
 }));
 jest.mock("../../../app/modules/product/productType.model", () => ({}));
-jest.mock("../../../app/modules/shipments/shipment.controller", () => legacyShipmentController);
+jest.mock("../../../app/modules/shipments/shipment.service", () => legacyShipmentService);
+jest.mock("../../../app/modules/order/order.service", () => legacyOrderService);
 
 import { errorMiddleware } from "../../shared/http";
 import { shipmentRouter } from "./shipment.routes";
@@ -132,14 +151,71 @@ describe("shipmentRouter", () => {
     orderModel.findAll.mockResolvedValue([makeShipment()]);
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeShipment()] });
     orderModel.findOne.mockResolvedValue(makeShipment());
-    productModel.findAll.mockResolvedValue([
+    shipmentInventoryModel.findAll.mockResolvedValue([
       {
-        image: "https://example.com/product.png",
-        title: "دريسينج مودرن",
-        variants: [{ cost: "2800", inventory_quantity: 2, option1: "50x120", option2: "أبيض", sku: "DRS-102" }],
-        vendor: { name: "دريسينج هاوس" },
+        color: "أبيض",
+        costPrice: "2800",
+        id: 5,
+        product: {
+          image: "https://example.com/product.png",
+          title: "دريسينج مودرن",
+          variants: [{ option1: "50x120", option2: "أبيض", sku: "DRS-102" }],
+          vendor: { name: "دريسينج هاوس" },
+          vendorId: 22,
+        },
+        productId: 321,
+        productCode: "DRS-102",
+        quantity: 2,
+        status: 1,
       },
     ]);
+    shipmentInventoryModel.create.mockResolvedValue({
+      setDataValue: jest.fn(),
+      toJSON: () => ({
+        color: "أبيض",
+        costPrice: "2800",
+        id: 6,
+        product: {
+          image: "https://example.com/new-product.png",
+          title: "منتج جديد",
+          variants: [{ option1: "100x100", option2: "أبيض", sku: "NEW-1" }],
+          vendor: { name: "بائع جديد" },
+          vendorId: 12,
+        },
+        productCode: "NEW-1",
+        productId: 555,
+        quantity: 1,
+        status: 1,
+      }),
+    });
+    productModel.findByPk.mockResolvedValue({
+      toJSON: () => ({
+        id: 555,
+        image: "https://example.com/new-product.png",
+        title: "منتج جديد",
+        variants: [{ option1: "100x100", option2: "أبيض", sku: "NEW-1" }],
+        vendor: { name: "بائع جديد" },
+        vendorId: 12,
+      }),
+    });
+    shipmentExpenseModel.findAll.mockResolvedValue([
+      {
+        accountingDate: "2026-05-10T00:00:00.000Z",
+        accountingStatus: 1,
+        amount: "330",
+        id: 8,
+        reason: "شحن شحنات خارج القاهرة",
+        type: "shipping",
+      },
+    ]);
+    shipmentExpenseModel.create.mockResolvedValue({
+      accountingDate: "2026-05-11T00:00:00.000Z",
+      accountingStatus: 1,
+      amount: "150",
+      id: 9,
+      reason: "مواد تغليف",
+      type: "packaging",
+    });
   });
 
   it("returns shipments metadata", async () => {
@@ -154,6 +230,14 @@ describe("shipmentRouter", () => {
       { id: "grouped", label: "شحن مجمع" },
       { id: "separate", label: "شحن منفصل" },
     ]);
+  });
+
+  it("creates shipments through the TS service boundary", async () => {
+    const response = await request(app).post("/shipments").send({ shipmentNumber: "SH-9802" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: "Shipment created successfully", status: true });
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([{ shipmentNumber: "SH-9802" }], true);
   });
 
   it("returns the shipments list", async () => {
@@ -190,7 +274,7 @@ describe("shipmentRouter", () => {
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
         operationNumber: "3002",
-        status: "vendorNotified",
+        status: 2,
         statusLabel: "تم إبلاغ المورد",
       }),
     );
@@ -202,10 +286,32 @@ describe("shipmentRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
+        productId: 321,
         productCode: "DRS-102",
+        productName: "دريسينج مودرن",
         quantity: 2,
-        status: "inStock",
+        status: 1,
         statusLabel: "متوفر بالمخزون",
+        vendorName: "دريسينج هاوس",
+      }),
+    );
+  });
+
+  it("creates manual inventory items", async () => {
+    const response = await request(app).post("/shipments/inventory").send({
+      costPrice: 2800,
+      productId: 555,
+      productCode: "NEW-1",
+      quantity: 1,
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        id: 6,
+        productId: 555,
+        productCode: "NEW-1",
+        quantity: 1,
       }),
     );
   });
@@ -221,5 +327,35 @@ describe("shipmentRouter", () => {
       }),
     );
     expect(response.body.data.providers[0].deliveryBy).toBe("J&T");
+  });
+
+  it("returns shipment expenses", async () => {
+    const response = await request(app).get("/shipments/accounts/expenses").query({ page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items[0]).toEqual(
+      expect.objectContaining({
+        accountingStatus: 1,
+        amount: 330,
+        type: "shipping",
+      }),
+    );
+  });
+
+  it("creates shipment expenses", async () => {
+    const response = await request(app).post("/shipments/accounts/expenses").send({
+      amount: 150,
+      reason: "مواد تغليف",
+      type: "packaging",
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        amount: 150,
+        id: 9,
+        reason: "مواد تغليف",
+      }),
+    );
   });
 });

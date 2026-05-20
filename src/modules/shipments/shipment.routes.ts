@@ -5,14 +5,20 @@ import { ShipmentController } from "./shipment.controller";
 import { ShipmentRepository } from "./shipment.repo";
 import {
   shipmentDeliveryAccountsQuerySchema,
+  shipmentExpenseMutationSchema,
+  shipmentExpenseParamsSchema,
   shipmentExpenseAccountsQuerySchema,
   shipmentIdParamsSchema,
+  shipmentInventoryItemParamsSchema,
+  shipmentInventoryMutationSchema,
   shipmentInventoryQuerySchema,
   shipmentListQuerySchema,
   shipmentMutationSchema,
   shipmentNoteParamsSchema,
   shipmentNoteSchema,
   shipmentPerformanceQuerySchema,
+  shipmentReturnMutationSchema,
+  shipmentReturnParamsSchema,
   shipmentReturnsQuerySchema,
   shipmentSummaryQuerySchema,
 } from "./shipment.schemas";
@@ -20,7 +26,6 @@ import { ShipmentService } from "./shipment.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
 const isNotVendor = require("../../../app/middlewares/isNotVendor");
-const legacyShipmentController = require("../../../app/modules/shipments/shipment.controller");
 
 const shipmentRepository = new ShipmentRepository();
 const shipmentService = new ShipmentService(shipmentRepository);
@@ -71,9 +76,9 @@ shipmentRouter.get(
   asyncHandler(shipmentController.getSummary),
 );
 
-shipmentRouter.post("/", validateRequest({ body: shipmentMutationSchema }), legacyShipmentController.createShipment);
+shipmentRouter.post("/", validateRequest({ body: shipmentMutationSchema }), asyncHandler(shipmentController.createShipment));
 
-shipmentRouter.get("/export", legacyShipmentController.exportShipments);
+shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
 
 /**
  * @swagger
@@ -95,6 +100,18 @@ shipmentRouter.get(
   "/returns/vendor",
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listVendorReturns),
+);
+
+shipmentRouter.post(
+  "/returns/vendor",
+  validateRequest({ body: shipmentReturnMutationSchema }),
+  asyncHandler(shipmentController.createVendorReturn),
+);
+
+shipmentRouter.put(
+  "/returns/vendor/:returnId",
+  validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
+  asyncHandler(shipmentController.updateVendorReturn),
 );
 
 /**
@@ -119,6 +136,18 @@ shipmentRouter.get(
   asyncHandler(shipmentController.listCustomerReturns),
 );
 
+shipmentRouter.post(
+  "/returns/customer",
+  validateRequest({ body: shipmentReturnMutationSchema }),
+  asyncHandler(shipmentController.createCustomerReturn),
+);
+
+shipmentRouter.put(
+  "/returns/customer/:returnId",
+  validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
+  asyncHandler(shipmentController.updateCustomerReturn),
+);
+
 /**
  * @swagger
  * /shipments/inventory:
@@ -134,11 +163,136 @@ shipmentRouter.get(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentInventoryListResponse'
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a manual inventory row linked to an existing product
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [productId, productCode, quantity, costPrice]
+ *             properties:
+ *               productId:
+ *                 type: integer
+ *                 example: 321
+ *               productCode:
+ *                 type: string
+ *                 example: DRS-102
+ *               quantity:
+ *                 type: integer
+ *                 example: 2
+ *               costPrice:
+ *                 type: number
+ *                 example: 2800
+ *               size:
+ *                 type: string
+ *                 example: 50x120
+ *               color:
+ *                 type: string
+ *                 example: أبيض
+ *               status:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       201:
+ *         description: Inventory row created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/ShipmentInventoryItem'
+ *                 status:
+ *                   type: boolean
+ *                   example: true
  */
 shipmentRouter.get(
   "/inventory",
   validateRequest({ query: shipmentInventoryQuerySchema }),
   asyncHandler(shipmentController.listInventory),
+);
+
+shipmentRouter.post(
+  "/inventory",
+  validateRequest({ body: shipmentInventoryMutationSchema }),
+  asyncHandler(shipmentController.createInventoryItem),
+);
+
+/**
+ * @swagger
+ * /shipments/inventory/{inventoryItemId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a manual inventory row
+ *     parameters:
+ *       - in: path
+ *         name: inventoryItemId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               productId:
+ *                 type: integer
+ *                 example: 321
+ *               productCode:
+ *                 type: string
+ *                 example: DRS-102
+ *               quantity:
+ *                 type: integer
+ *                 example: 0
+ *               costPrice:
+ *                 type: number
+ *                 example: 2800
+ *               size:
+ *                 type: string
+ *                 example: 50x120
+ *               color:
+ *                 type: string
+ *                 example: أبيض
+ *               status:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: Inventory row updated
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Delete a manual inventory row
+ *     parameters:
+ *       - in: path
+ *         name: inventoryItemId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Inventory row deleted
+ */
+shipmentRouter.put(
+  "/inventory/:inventoryItemId",
+  validateRequest({ body: shipmentInventoryMutationSchema.partial(), params: shipmentInventoryItemParamsSchema }),
+  asyncHandler(shipmentController.updateInventoryItem),
+);
+
+shipmentRouter.delete(
+  "/inventory/:inventoryItemId",
+  validateRequest({ params: shipmentInventoryItemParamsSchema }),
+  asyncHandler(shipmentController.deleteInventoryItem),
 );
 
 /**
@@ -183,6 +337,24 @@ shipmentRouter.get(
   "/accounts/expenses",
   validateRequest({ query: shipmentExpenseAccountsQuerySchema }),
   asyncHandler(shipmentController.listExpenseAccounts),
+);
+
+shipmentRouter.post(
+  "/accounts/expenses",
+  validateRequest({ body: shipmentExpenseMutationSchema }),
+  asyncHandler(shipmentController.createExpenseAccount),
+);
+
+shipmentRouter.put(
+  "/accounts/expenses/:expenseId",
+  validateRequest({ body: shipmentExpenseMutationSchema.partial(), params: shipmentExpenseParamsSchema }),
+  asyncHandler(shipmentController.updateExpenseAccount),
+);
+
+shipmentRouter.delete(
+  "/accounts/expenses/:expenseId",
+  validateRequest({ params: shipmentExpenseParamsSchema }),
+  asyncHandler(shipmentController.deleteExpenseAccount),
 );
 
 /**

@@ -29,19 +29,36 @@ export type ReturnListQuery = {
   page: number;
   sellerName?: string;
   size: number;
-  status?: string;
+  status?: number;
+};
+
+export type ReturnMutationInput = {
+  orderId: number;
+  reason: string;
+  returnDate?: string | null;
+  status?: number;
 };
 
 export type InventoryListQuery = {
   page: number;
   productCode?: string;
   size: number;
-  status?: string;
+  status?: number;
   vendorName?: string;
 };
 
+export type InventoryMutationInput = {
+  color?: string;
+  costPrice: number;
+  productId: number;
+  productCode: string;
+  quantity: number;
+  size?: string;
+  status?: number;
+};
+
 export type DeliveryAccountsListQuery = {
-  accountingStatus?: string;
+  accountingStatus?: number;
   orderNumber?: string;
   page: number;
   paymentMethod?: string;
@@ -50,10 +67,18 @@ export type DeliveryAccountsListQuery = {
 };
 
 export type ExpenseAccountsListQuery = {
-  accountingStatus?: string;
+  accountingStatus?: number;
   page: number;
   size: number;
   type?: string;
+};
+
+export type ExpenseMutationInput = {
+  accountingDate?: string | null;
+  accountingStatus?: number;
+  amount: number;
+  reason: string;
+  type: string;
 };
 
 export type PerformanceQuery = {
@@ -170,8 +195,10 @@ export type ReturnItem = {
   reason: string;
   returnDate: string | null;
   sellerName: string;
-  status: string;
+  status: number;
   statusLabel: string;
+  returnType: number;
+  returnTypeLabel: string;
 };
 
 export type ReturnListResponse = {
@@ -184,13 +211,16 @@ export type ReturnListResponse = {
 export type InventoryItem = {
   color: string;
   costPrice: number;
+  id: number;
   image: string;
+  productId: number | null;
   productCode: string;
   productName: string;
   quantity: number;
   size: string;
-  status: string;
+  status: number;
   statusLabel: string;
+  vendorId: number | null;
   vendorName: string;
 };
 
@@ -203,7 +233,7 @@ export type InventoryListResponse = {
 
 export type DeliveryAccountItem = {
   accountingDate: string | null;
-  accountingStatus: string;
+  accountingStatus: number;
   accountingStatusLabel: string;
   amountToCollect: number;
   deliveryBy: string;
@@ -227,8 +257,9 @@ export type DeliveryAccountsListResponse = {
 };
 
 export type ExpenseAccountItem = {
+  id: number;
   accountingDate: string | null;
-  accountingStatus: string;
+  accountingStatus: number;
   accountingStatusLabel: string;
   amount: number;
   reason: string;
