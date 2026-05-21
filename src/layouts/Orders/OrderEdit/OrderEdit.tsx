@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
-  Autocomplete,
   Button,
-  Checkbox,
   CircularProgress,
   FormControl,
-  FormControlLabel,
   Grid,
   IconButton,
   InputLabel,
@@ -14,10 +11,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  getUserSelectAutocompleteConfig,
-  getUserSelectValue,
-} from "layouts/Orders/components/userSelectAutocompleteConfig";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -26,114 +19,95 @@ import Spinner from "components/Spinner/Spinner";
 import moment from "moment";
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import axiosRequest from "shared/functions/axiosRequest";
-
-const baseURI = `${process.env.REACT_APP_API_URL}`;
+import { manufactureStatusOptions } from "shared/utils/constants";
+import {
+  useOrderDetailQuery,
+  useUpdateOrderMutation,
+  type UpdateOrderPayload,
+} from "query/orderEdit.api";
 
 function OrderEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [orderStatus, setOrderStatus] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("");
-  const [selectedVendor, setSelectedVendor] = useState("");
-  const [deliveryStatus, setDeliveryStatus] = useState("");
-  const [administrator, setAdministrator] = useState("");
-  const [downPayment, setDownPayment] = useState("");
-  const [shippingFees, setShippingFees] = useState("");
-  const [toBeCollected, setToBeCollected] = useState("");
-  const [commission, setCommission] = useState("");
-  const [totalVendorDue, setTotalVendorDue] = useState("");
-  const [totalCompanyDue, setTotalCompanyDue] = useState("");
+  const orderId = id ?? "";
+
+  const { data: order, isLoading, isError, error } = useOrderDetailQuery(orderId || undefined);
+  const updateMutation = useUpdateOrderMutation(orderId || undefined);
+
+  const [orderStatus, setOrderStatus] = useState<number | "">("");
+  const [paymentStatus, setPaymentStatus] = useState<number | "">("");
+  const [manufactureStatus, setManufactureStatus] = useState<number | "">("");
+  const [customerId, setCustomerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [totalPrice, setTotalPrice] = useState("");
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
-  const [shippedFromInventory, setShippedFromInventory] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isError) {
+      NotificationMeassage("error", "تعذر تحميل بيانات الطلب");
+      // eslint-disable-next-line no-console
+      console.error(error);
+    }
+  }, [isError, error]);
+
+  useEffect(() => {
+    if (!order?.id) return;
+    setOrderStatus(order.status != null ? Number(order.status) : "");
+    setPaymentStatus(order.paymentStatus != null ? Number(order.paymentStatus) : "");
+    setManufactureStatus(
+      order.manufactureStatus != null && order.manufactureStatus !== ""
+        ? Number(order.manufactureStatus)
+        : ""
+    );
+    const cid = order.customer?.id;
+    setCustomerId(cid != null ? String(cid) : "");
+    const cn =
+      order.customer?.name ??
+      [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ");
+    setCustomerName(typeof cn === "string" ? cn : "");
+    const tp = order.totalPrice ?? order.subTotalPrice;
+    setTotalPrice(tp != null ? String(tp) : "");
+    const exp = order.expectedDeliveryDate;
+    setExpectedDeliveryDate(
+      exp ? moment(exp).locale("en").format("YYYY-MM-DD") : ""
+    );
+  }, [order?.id]);
+
+  const saveDisabled = (() => {
+    if (updateMutation.isPending) return true;
+    if (
+      orderStatus === "" ||
+      paymentStatus === "" ||
+      manufactureStatus === "" ||
+      !customerId ||
+      !expectedDeliveryDate ||
+      totalPrice === ""
+    ) {
+      return true;
+    }
+    const tp = Number(totalPrice);
+    if (!Number.isFinite(tp)) return true;
+    return false;
+  })();
 
   const editOrder = () => {
-    setIsSubmitting(true);
-    axiosRequest
-      .put(`${baseURI}/orders/${id}`, {
-        ...(orderStatus && { status: orderStatus }),
-        ...(commission && { commission: commission }),
-        ...(paymentStatus && { paymentStatus: paymentStatus }),
-        ...(downPayment && { downPayment: downPayment }),
-        ...(shippingFees && { shippingFees: shippingFees }),
-        ...(toBeCollected && { toBeCollected: toBeCollected }),
-        ...(deliveryStatus && { deliveryStatus: deliveryStatus }),
-        ...(selectedVendor && { vendorId: selectedVendor }),
-        ...(deliveryStatus && { deliveryStatus: deliveryStatus }),
-        ...(administrator && { userId: administrator }),
-        ...(totalVendorDue && { totalVendorDue: totalVendorDue }),
-        ...(totalCompanyDue && { totalCompanyDue: totalCompanyDue }),
-        ...(expectedDeliveryDate && { expectedDeliveryDate: expectedDeliveryDate }),
-        shippedFromInventory: shippedFromInventory,
-      })
-      .then(() => {
-        NotificationMeassage("success", "تم تعديل الطلب ");
-        navigate(`/orders/${id}`);
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
-  };
-
-  const getVendors = () => {
-    axiosRequest
-      .get("/vendors")
-      .then(({ data: { data } }) => {
-        const newData = data?.map((vendor) => ({ label: vendor.name, value: vendor.id }));
-        setVendors(newData);
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
-  useEffect(() => {
-    setIsLoading(true);
-    axiosRequest
-      .get(`${baseURI}/orders/${id}`)
-      .then(({ data: { data } }) => {
-        setOrderStatus(data.status);
-        setPaymentStatus(data.paymentStatus);
-        setDownPayment(data.downPayment);
-        setShippingFees(data.shippingFees);
-        setToBeCollected(data.toBeCollected);
-        setCommission(data.commission);
-        setTotalCompanyDue(data.totalCompanyDue);
-        setTotalVendorDue(data.totalVendorDue);
-        setExpectedDeliveryDate(
-          moment(data.expectedDeliveryDate).locale("en").format("YYYY-MM-DD")
-        );
-        setShippedFromInventory(data.shippedFromInventory);
-        setAdministrator(data.userId);
-        setSelectedVendor(data.orderLines[0].product.vendorId);
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    axiosRequest.get("/users").then(({ data: { data } }) => {
-      const newUsers = data?.map((user) => ({
-        label: `${user.firstName} ${user.lastName}`,
-        value: user.id,
-      }));
-      setUsers(newUsers);
+    if (saveDisabled || !orderId) return;
+    const payload: UpdateOrderPayload = {
+      customerId: Number(customerId),
+      expectedDeliveryDate,
+      manufactureStatus: Number(manufactureStatus),
+      paymentStatus: Number(paymentStatus),
+      status: Number(orderStatus),
+      totalPrice: Number(totalPrice),
+    };
+    if (!Number.isFinite(payload.customerId) || payload.customerId < 1) {
+      NotificationMeassage("error", "بيانات العميل غير صالحة");
+      return;
+    }
+    updateMutation.mutate(payload, {
+      onSuccess: () => navigate(`/orders/${orderId}`),
     });
-    getVendors();
-  }, []);
-
-  const administratorAutocompleteProps = getUserSelectAutocompleteConfig(43);
+  };
 
   return (
     <DashboardLayout>
@@ -145,18 +119,27 @@ function OrderEdit() {
       </div>
       {isLoading ? (
         <Spinner />
+      ) : isError || !order?.id ? (
+        <Typography color="error">تعذر عرض الطلب.</Typography>
       ) : (
         <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Typography variant="body2" color="text.secondary">
+              العميل: <strong>{customerName || "—"}</strong>{" "}
+              {customerId ? `(#${customerId})` : ""}
+            </Typography>
+          </Grid>
+
           <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
               <InputLabel id="orderStatus">حالة الطلب</InputLabel>
-              <Select
+              <Select<number>
                 fullWidth
                 labelId="orderStatus"
                 id="orderStatus-select"
-                value={orderStatus}
+                value={orderStatus === "" ? "" : Number(orderStatus)}
                 label="حالة الطلب"
-                onChange={(e) => setOrderStatus(e.target.value)}
+                onChange={(e) => setOrderStatus(e.target.value as number)}
                 sx={{ height: 43 }}
               >
                 {statusoptions?.map((option) => (
@@ -171,13 +154,13 @@ function OrderEdit() {
           <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
               <InputLabel id="paymentStatus">حالة الدفع</InputLabel>
-              <Select
+              <Select<number>
                 fullWidth
                 labelId="paymentStatus"
                 id="paymentStatus-select"
-                value={paymentStatus}
+                value={paymentStatus === "" ? "" : Number(paymentStatus)}
                 label="حالة الدفع"
-                onChange={(e) => setPaymentStatus(e.target.value)}
+                onChange={(e) => setPaymentStatus(e.target.value as number)}
                 sx={{ height: 43 }}
               >
                 {PAYMENT_STATUS?.map((option) => (
@@ -190,112 +173,18 @@ function OrderEdit() {
           </Grid>
 
           <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="جدية شراء"
-              value={downPayment}
-              onChange={(e) => setDownPayment(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="تكلفة الشحن"
-              value={shippingFees}
-              onChange={(e) => setShippingFees(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="المبلغ المطلوب تحصيله"
-              value={toBeCollected}
-              onChange={(e) => setToBeCollected(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="العمولة"
-              value={commission}
-              onChange={(e) => setCommission(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid>
-
-          {/* <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="إجمالي المستحق للبائع"
-              value={totalVendorDue}
-              onChange={(e) => setTotalVendorDue(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid> */}
-
-          {/* <Grid item xs={12} md={6} lg={6}>
-            <TextField
-              fullWidth
-              label="إجمالي المستحق للشركة"
-              value={totalCompanyDue}
-              onChange={(e) => setTotalCompanyDue(e.target.value)}
-              type="number"
-              style={{ margin: "5px 0" }}
-            />
-          </Grid> */}
-
-          <Grid item xs={12} md={6} lg={6}>
-            <Autocomplete
-              id="administratorSelect-autocomplete"
-              fullWidth
-              options={users}
-              disabled={!users?.length}
-              value={getUserSelectValue(users, administrator)}
-              onChange={(_, v) => setAdministrator(v != null ? v.value : "")}
-              renderInput={(params) =>
-                React.createElement(TextField, {
-                  ...params,
-                  label: "المسؤول",
-                  InputLabelProps: { ...params.InputLabelProps, shrink: true },
-                  placeholder: getUserSelectValue(users, administrator) ? "" : "ابحث عن مسؤول…",
-                  inputProps: { ...params.inputProps, autoComplete: "off" },
-                })
-              }
-              noOptionsText={administratorAutocompleteProps.noOptionsText}
-              openOnFocus={administratorAutocompleteProps.openOnFocus}
-              ListboxProps={administratorAutocompleteProps.ListboxProps}
-              componentsProps={administratorAutocompleteProps.componentsProps}
-              isOptionEqualToValue={administratorAutocompleteProps.isOptionEqualToValue}
-              getOptionLabel={administratorAutocompleteProps.getOptionLabel}
-              sx={administratorAutocompleteProps.sx}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
-              <InputLabel id="vendorSelect">المورد</InputLabel>
-              <Select
+              <InputLabel id="mfgStatus">حالة التصنيع</InputLabel>
+              <Select<number>
                 fullWidth
-                labelId="vendorSelect"
-                id="vendorSelect-select"
-                value={selectedVendor}
-                label="المورد"
-                onChange={(e) => setSelectedVendor(e.target.value)}
+                labelId="mfgStatus"
+                id="mfgStatus-select"
+                value={manufactureStatus === "" ? "" : Number(manufactureStatus)}
+                label="حالة التصنيع"
+                onChange={(e) => setManufactureStatus(e.target.value as number)}
                 sx={{ height: 43 }}
-                disabled={!(vendors && vendors.length > 0)}
               >
-                {vendors?.map((option) => (
+                {manufactureStatusOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
@@ -304,37 +193,25 @@ function OrderEdit() {
             </FormControl>
           </Grid>
 
-          {/* <Grid item xs={12} md={6} lg={6}>
+          <Grid item xs={12} md={6} lg={6}>
+            <TextField
+              fullWidth
+              label="إجمالي السعر"
+              value={totalPrice}
+              onChange={(e) => setTotalPrice(e.target.value)}
+              type="number"
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
             <TextField
               fullWidth
               label="تاريخ التسليم المتوقع"
               type="date"
               value={expectedDeliveryDate}
               onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-              InputProps={{
-                inputProps: {
-                  min: moment().locale("en").format("YYYY-MM-DD"),
-                },
-              }}
               InputLabelProps={{ shrink: true }}
-            />
-          </Grid> */}
-
-          <Grid item xs={12}>
-            <FormControlLabel
-              sx={{ display: "flex", alignItems: "center" }}
-              control={
-                <Checkbox
-                  checked={shippedFromInventory}
-                  onChange={(e) => setShippedFromInventory(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={
-                <Typography color="#000" fontSize="13px" fontWeight="bold">
-                  شحن للمخزن
-                </Typography>
-              }
             />
           </Grid>
 
@@ -350,9 +227,13 @@ function OrderEdit() {
               onClick={editOrder}
               variant="contained"
               style={{ color: "#fff" }}
-              disabled={!orderStatus || !paymentStatus}
+              disabled={saveDisabled}
             >
-              {isSubmitting ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : "حفظ"}{" "}
+              {updateMutation.isPending ? (
+                <CircularProgress size={20} sx={{ color: "#fff" }} />
+              ) : (
+                "حفظ"
+              )}
             </Button>
           </Grid>
         </Grid>

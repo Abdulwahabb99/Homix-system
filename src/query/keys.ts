@@ -9,6 +9,9 @@ export const orderKeys = {
    * @param {string} filtersKey سلسلة JSON ثابتة من واجهة الطلبات (فلاتر + صفحة + تواريخ)
    */
   list: (filtersKey: string) => [...orderKeys.lists(), filtersKey] as const,
+  /** تفاصيل طلب واحد (للعرض / التعديل) */
+  details: () => [...orderKeys.all(), "detail"] as const,
+  detail: (orderId: string) => [...orderKeys.details(), orderId] as const,
 };
 
 export const vendorKeys = {
