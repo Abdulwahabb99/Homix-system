@@ -28,7 +28,8 @@ import {
   formatOrderDetailDateTime,
   getOrderFlowSteps,
   getOrderLineProductDescriptionPlainText,
-  getStatusHistoryEntryMessage,
+  getOrderEventLogEntries,
+  getTimelineEntryTitle,
 } from "./orderDetailNormalize";
 import { getOrderDetailPaymentLabel } from "./orderDetailPayment";
 
@@ -91,6 +92,8 @@ export default function OrderDetailsView({
   setPendingDeleteNoteId,
   handleDownloadInvoice,
 }: OrderDetailsViewProps) {
+  const eventLog = getOrderEventLogEntries(orderDetails);
+
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
                 {/* ——— order strip ——— */}
@@ -1177,18 +1180,18 @@ export default function OrderDetailsView({
                           </Stack>
                         </Box>
                         <Box sx={{ px: 2, py: 1.5 }}>
-                          {Array.isArray(orderDetails.statusHistory) && orderDetails.statusHistory.length > 0 ? (
+                          {eventLog.length > 0 ? (
                             <Stack spacing={0}>
-                              {orderDetails.statusHistory.map((ev: any, ti: number) => (
+                              {eventLog.map((ev: any, ti: number) => (
                                 <Stack
-                                  key={ev.id ?? ti}
+                                  key={ev.id ?? `ev-${ti}`}
                                   direction="row"
                                   spacing={1.5}
                                   alignItems="flex-start"
                                   sx={{
                                     py: 1.25,
                                     borderRight: `2px solid ${
-                                      ti === orderDetails.statusHistory.length - 1 ? "transparent" : OD.brd
+                                      ti === eventLog.length - 1 ? "transparent" : OD.brd
                                     }`,
                                     pr: 1.75,
                                     mr: 1.75,
@@ -1213,8 +1216,14 @@ export default function OrderDetailsView({
                                   </Box>
                                   <Box sx={{ mr: 3, flex: 1 }}>
                                     <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: OD.tx }}>
-                                      {getStatusHistoryEntryMessage(ev)}
+                                      {getTimelineEntryTitle(ev)}
                                     </Typography>
+                                    {String(ev?.description ?? "").trim() &&
+                                    String(ev.description).trim() !== String(ev?.message ?? "").trim() ? (
+                                      <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
+                                        {ev.description}
+                                      </Typography>
+                                    ) : null}
                                     {ev.userName ? (
                                       <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
                                         بواسطة {ev.userName}

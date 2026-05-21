@@ -107,6 +107,23 @@ export function getStatusHistoryEntryMessage(ev: any): string {
   return "—";
 }
 
+/** نص عنوان لبند `timeline` (رسالة الحدث). */
+export function getTimelineEntryTitle(ev: any): string {
+  const msg = String(ev?.message ?? "").trim();
+  if (msg) return msg;
+  return getStatusHistoryEntryMessage(ev);
+}
+
+/** مصفوفة الأحداث للعرض: `timeline` من الـ API إن وُجدت (بما فيها الفارغة)، وإلا `statusHistory`. */
+export function getOrderEventLogEntries(orderDetails: any): any[] {
+  const tl = orderDetails?.timeline;
+  if (Array.isArray(tl)) {
+    return tl;
+  }
+  const sh = orderDetails?.statusHistory;
+  return Array.isArray(sh) ? sh : [];
+}
+
 export function getOrderLineProductDescriptionPlainText(line: any): string {
   const p = line?.product;
   if (!p) return "";
@@ -207,7 +224,12 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
   const rawHistory = Array.isArray(root.statusHistory) ? root.statusHistory : [];
   const statusHistory = rawHistory
     .slice()
-    .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
+    .sort((a: any, b: any) => new Date(b.changedAt || 0).getTime() - new Date(a.changedAt || 0).getTime());
+
+  const rawTimeline = Array.isArray(root.timeline) ? root.timeline : [];
+  const timeline = rawTimeline
+    .slice()
+    .sort((a: any, b: any) => new Date(b.changedAt || 0).getTime() - new Date(a.changedAt || 0).getTime());
 
   const merged = {
     ...order,
@@ -231,6 +253,7 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     userName: order.userName,
     assigneeName: root.assigneeName ?? "",
     statusHistory,
+    timeline,
   };
 
   return merged;
