@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useReducer, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import AddShoppingCartOutlinedIcon from "@mui/icons-material/AddShoppingCartOutlined";
@@ -18,17 +18,18 @@ import CloseIcon from "@mui/icons-material/Close";
 import MDTypography from "components/MDTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { ToastContainer } from "react-toastify";
-import MDBox from "components/MDBox";
 import ProductPayment from "./ProductPayment";
 import CustomerDetails from "./CustomerDetails";
 import AddProductModal from "./AddProductModal";
 import { customerDetailsReducer } from "layouts/Orders/utils/reducers";
 import { customerInitialState } from "layouts/Orders/utils/constants";
 import AddOrderDetails from "./AddOrderDetails";
-import axiosRequest from "shared/functions/axiosRequest";
-import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { addOrderPageCardSx } from "./addOrderFormStyles";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
+import { useCreateOrderMutation, type CreateOrderPayload } from "query/orderCreate.api";
+import { useQuery } from "@tanstack/react-query";
+import { userKeys } from "query/keys";
+import axiosRequest from "shared/functions/axiosRequest";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
@@ -39,9 +40,17 @@ function AddOrderModal() {
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
-  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
+  const createOrderMutation = useCreateOrderMutation();
+
+  const { data: users = [] } = useQuery({
+    queryKey: userKeys.list(),
+    queryFn: async () => {
+      const { data: body } = await axiosRequest.get(`${baseURI}/users`);
+      return body.data;
+    },
+  });
 
   const changeCustomerChange = (e) => {
     dispatch({ field: e.target.name, value: e.target.value });
@@ -57,63 +66,56 @@ function AddOrderModal() {
   };
 
   const addNewOrder = () => {
-    axiosRequest
-      .post(`${baseURI}/orders`, {
-        total_discounts: 0,
-        total_line_items_price: selectedProduct.variants[0].price,
-        total_price: selectedProduct.variants[0].price,
-        total_tax: 0,
-        customer: {
-          firstName: state.firstName,
-          lastName: state.lastName,
-          country: state.country,
-          province: state.province,
-          city: state.city,
-          phone: state.phone,
-          address: state.address,
-          email: state.email,
+    if (!selectedProduct || !orderDetails) return;
+    const payload: CreateOrderPayload = {
+      total_discounts: 0,
+      total_line_items_price: selectedProduct.variants[0].price,
+      total_price: selectedProduct.variants[0].price,
+      total_tax: 0,
+      customer: {
+        firstName: state.firstName,
+        lastName: state.lastName,
+        country: state.country,
+        province: state.province,
+        city: state.city,
+        phone: state.phone,
+        address: state.address,
+        email: state.email,
+      },
+      line_items: [
+        {
+          title: selectedProduct.title,
+          name: selectedProduct.title,
+          price: selectedProduct.variants[0].price,
+          product_id: selectedProduct.shopifyId,
+          quantity: 1,
+          variant_id: selectedProduct.variants[0].shopifyId,
+          sku: selectedProduct.variants[0].sku,
+          total_discount: "",
+          discount_allocations: [],
+          shipping_lines: [
+            {
+              price: orderDetails.shippingCost,
+            },
+          ],
         },
-        line_items: [
-          {
-            title: selectedProduct.title,
-            name: selectedProduct.title,
-            price: selectedProduct.variants[0].price,
-            product_id: selectedProduct.shopifyId,
-            quantity: 1,
-            variant_id: selectedProduct.variants[0].shopifyId,
-            sku: selectedProduct.variants[0].sku,
-            total_discount: "",
-            discount_allocations: [],
-            shipping_lines: [
-              {
-                price: orderDetails.shippingCost,
-              },
-            ],
-          },
-        ],
-        userType: orderDetails.administrator,
-        commission: orderDetails.commission,
-        downPayment: orderDetails.downPayment,
-        shippingFees: orderDetails.shippingCost,
-        toBeCollected: orderDetails.toBeCollected,
-        status: orderDetails.orderStatus,
-        paymentStatus: orderDetails.paymentStatus,
-        userId: orderDetails.administrator,
-      })
-      .then(() => {
-        NotificationMeassage("success", "تم اضافه الطلب بنجاح");
+      ],
+      userType: orderDetails.administrator,
+      commission: orderDetails.commission,
+      downPayment: orderDetails.downPayment,
+      shippingFees: orderDetails.shippingCost,
+      toBeCollected: orderDetails.toBeCollected,
+      status: orderDetails.orderStatus,
+      paymentStatus: orderDetails.paymentStatus,
+      userId: orderDetails.administrator,
+    };
+    createOrderMutation.mutate(payload, {
+      onSuccess: () => {
+        setIsConfirmAddOpen(false);
         navigate("/orders");
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
-  useEffect(() => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then(({ data: { data } }) => {
-      setUsers(data);
+      },
     });
-  }, []);
+  };
 
   return (
     <DashboardLayout>
@@ -138,15 +140,13 @@ function AddOrderModal() {
       <ConfirmDeleteModal
         open={isConfirmAddOpen}
         onClose={() => setIsConfirmAddOpen(false)}
-        handleConfirmDelete={() => {
-          setIsConfirmAddOpen(false);
-          addNewOrder();
-        }}
+        handleConfirmDelete={() => addNewOrder()}
         title="تأكيد حفظ الطلب"
         message="سيتم إنشاء طلب جديد ببيانات العميل والمنتج والشحن. هل تريد المتابعة؟"
         tone="primary"
         confirmButtonText="نعم، حفظ الطلب"
         cancelButtonText="رجوع"
+        confirmLoading={createOrderMutation.isPending}
       />
       <Box
         sx={{
@@ -444,6 +444,7 @@ function AddOrderModal() {
             color="primary"
             size="large"
             disabled={
+              createOrderMutation.isPending ||
               !selectedProduct ||
               !orderDetails ||
               !String(state.firstName ?? "").trim() ||
