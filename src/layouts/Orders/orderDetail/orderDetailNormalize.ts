@@ -24,9 +24,40 @@ function orderStatusesImplyDelivered(codes: Iterable<number>): boolean {
   return false;
 }
 
+/** شكل الـ API الحالي: صفوف قالب بـ isActive / status — بدون fromStatus / toStatus */
+export function isPipelineStatusHistoryTemplate(rows: any[] | null | undefined): boolean {
+  if (!Array.isArray(rows) || rows.length === 0) return false;
+  return rows.some((h) => h != null && Object.prototype.hasOwnProperty.call(h, "isActive"));
+}
+
 /**
- * شريط التقدّم الخمسي: يدمج الحالة الحالية مع أقصى مرحلة ظهرت في `statusHistory`
- * (من `fromStatus` / `toStatus`) حتى يعكس الرحلة الفعلية مع بقاء نفس الشكل البصري.
+ * شريط التقدّم من قالب `statusHistory`: كل خطوة = `statusLabel`، السابقة للـ isActive خضراء،
+ * صف `isActive === true` بنفسجي (active)، الباقي pending.
+ */
+export function getPipelineTemplateProgressSteps(
+  orderDetails: any,
+  statusHistory?: any[] | null
+): { label: string; state: FlowStepState }[] | null {
+  const hist = statusHistory ?? orderDetails?.statusHistory;
+  if (!isPipelineStatusHistoryTemplate(hist) || !Array.isArray(hist)) return null;
+
+  const rows = hist.slice().sort((a: any, b: any) => Number(a.status) - Number(b.status));
+
+  let activeIdx = rows.findIndex((r) => r?.isActive === true);
+  if (activeIdx < 0) {
+    const st = Number(orderDetails?.status ?? 0);
+    activeIdx = rows.findIndex((r) => Number(r?.status) === st);
+  }
+  if (activeIdx < 0) activeIdx = 0;
+
+  return rows.map((r: any, i: number) => ({
+    label: String(r?.statusLabel ?? "").trim() || "—",
+    state: (i < activeIdx ? "done" : i === activeIdx ? "active" : "pending") as FlowStepState,
+  }));
+}
+
+/**
+ * شريط التقدّم الخمسي (الطلب / المخزن / …): للبيانات القديمة — عندما لا يكون `statusHistory` قالبًا بـ isActive.
  */
 export function getOrderFlowSteps(
   orderDetails: any,
@@ -34,12 +65,19 @@ export function getOrderFlowSteps(
   statusHistory?: any[] | null
 ): { label: string; state: FlowStepState }[] {
   const labels = [...FLOW_STEP_LABELS];
-  const st = Number(orderDetails?.status ?? 0);
   const mfg = manufactureStatus == null ? null : Number(manufactureStatus);
+  const hist = statusHistory ?? orderDetails?.statusHistory;
+
+  if (isPipelineStatusHistoryTemplate(hist)) {
+    const fallback = getPipelineTemplateProgressSteps(orderDetails, hist);
+    return fallback ?? labels.map((label) => ({ label, state: "pending" as const }));
+  }
+
+  const st = Number(orderDetails?.status ?? 0);
 
   const codes: number[] = [st];
-  if (Array.isArray(statusHistory)) {
-    for (const h of statusHistory) {
+  if (Array.isArray(hist)) {
+    for (const h of hist) {
       if (h?.fromStatus != null && h.fromStatus !== "") codes.push(Number(h.fromStatus));
       if (h?.toStatus != null && h.toStatus !== "") codes.push(Number(h.toStatus));
     }
@@ -51,8 +89,8 @@ export function getOrderFlowSteps(
 
   let activeIdx = computeActiveIndexFromStatus(st, mfg);
 
-  if (Array.isArray(statusHistory) && statusHistory.length > 0) {
-    for (const h of statusHistory) {
+  if (Array.isArray(hist) && hist.length > 0) {
+    for (const h of hist) {
       const pairs = [h?.fromStatus, h?.toStatus];
       for (const raw of pairs) {
         if (raw == null || raw === "") continue;
@@ -222,9 +260,14 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
   const notesList = Array.isArray(notesRaw) ? notesRaw : [];
 
   const rawHistory = Array.isArray(root.statusHistory) ? root.statusHistory : [];
-  const statusHistory = rawHistory
-    .slice()
-    .sort((a: any, b: any) => new Date(b.changedAt || 0).getTime() - new Date(a.changedAt || 0).getTime());
+  const isPipelineTemplate = rawHistory.some(
+    (x: any) => x != null && Object.prototype.hasOwnProperty.call(x, "isActive")
+  );
+  const statusHistory = isPipelineTemplate
+    ? rawHistory.slice().sort((a: any, b: any) => Number(a.status) - Number(b.status))
+    : rawHistory
+        .slice()
+        .sort((a: any, b: any) => new Date(b.changedAt || 0).getTime() - new Date(a.changedAt || 0).getTime());
 
   const rawTimeline = Array.isArray(root.timeline) ? root.timeline : [];
   const timeline = rawTimeline

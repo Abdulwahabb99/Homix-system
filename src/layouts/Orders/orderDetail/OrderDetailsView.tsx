@@ -27,6 +27,7 @@ import {
   formatOrderDetailDate,
   formatOrderDetailDateTime,
   getOrderFlowSteps,
+  getPipelineTemplateProgressSteps,
   getOrderLineProductDescriptionPlainText,
   getOrderEventLogEntries,
   getTimelineEntryTitle,
@@ -93,6 +94,9 @@ export default function OrderDetailsView({
   handleDownloadInvoice,
 }: OrderDetailsViewProps) {
   const eventLog = getOrderEventLogEntries(orderDetails);
+  const progressSteps =
+    getPipelineTemplateProgressSteps(orderDetails, orderDetails.statusHistory) ??
+    getOrderFlowSteps(orderDetails, manufactureStatus, orderDetails.statusHistory);
 
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
@@ -192,10 +196,8 @@ export default function OrderDetailsView({
                         flexWrap: { xs: "nowrap", md: "wrap" },
                       }}
                     >
-                      {(() => {
-                        const flowSteps = getOrderFlowSteps(orderDetails, manufactureStatus, orderDetails.statusHistory);
-                        return flowSteps.map((step, si) => (
-                          <React.Fragment key={step.label}>
+                      {progressSteps.map((step, si) => (
+                          <React.Fragment key={`flow-${si}-${step.label}`}>
                             <Stack alignItems="center" spacing={0.5} sx={{ minWidth: 36 }}>
                               <Box
                                 sx={{
@@ -249,7 +251,7 @@ export default function OrderDetailsView({
                                 {step.label}
                               </Typography>
                             </Stack>
-                            {si < flowSteps.length - 1 ? (
+                            {si < progressSteps.length - 1 ? (
                               <Box
                                 sx={{
                                   width: 32,
@@ -258,8 +260,8 @@ export default function OrderDetailsView({
                                   mb: 2.25,
                                   borderRadius: 1,
                                   ...(() => {
-                                    const a = flowSteps[si].state;
-                                    const b = flowSteps[si + 1].state;
+                                    const a = progressSteps[si].state;
+                                    const b = progressSteps[si + 1].state;
                                     if (a === "done" && b === "done")
                                       return { background: OD.green };
                                     if (a === "done" && b === "active")
@@ -273,8 +275,7 @@ export default function OrderDetailsView({
                               />
                             ) : null}
                           </React.Fragment>
-                        ));
-                      })()}
+                        ))}
                     </Box>
                     <Typography
                       component="span"
