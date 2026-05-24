@@ -26,6 +26,100 @@ import {
   type UpdateOrderPayload,
 } from "query/orderEdit.api";
 
+/** الـ API يضع أحيانًا معرّف العميل في أكثر من مسار. */
+function resolveCustomerIdFromOrder(order: any): string {
+  const candidates = [
+    order?.customer?.id,
+    order?.customerId,
+    order?.customer?.customerId,
+    order?.clientId,
+    order?.financial?.customerId,
+    order?.userCustomerId,
+  ];
+  for (const raw of candidates) {
+    if (raw == null || raw === "") continue;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 1) return String(n);
+    const s = String(raw).trim();
+    if (s !== "") return s;
+  }
+  return "";
+}
+
+function resolveManufactureStatusFromOrder(order: any): number | "" {
+  const hasMfg = order?.manufactureStatus != null && order.manufactureStatus !== "";
+  const raw = hasMfg ? order.manufactureStatus : order?.deliveryStatus;
+  if (raw == null || raw === "") return "";
+  return Number(raw);
+}
+
+function toYmdFromOrderDate(raw: unknown): string {
+  if (raw == null || raw === "") return "";
+  const m = moment(raw).locale("en");
+  return m.isValid() ? m.format("YYYY-MM-DD") : "";
+}
+
+function buildUpdatePayload(
+  order: any,
+  fields: {
+    orderStatus: number | "";
+    paymentStatus: number | "";
+    manufactureStatus: number | "";
+    customerId: string;
+    totalPrice: string;
+    expectedDeliveryDate: string;
+  }
+): UpdateOrderPayload | null {
+  const cidStr = String(fields.customerId).trim() || resolveCustomerIdFromOrder(order);
+  const customerId = Number(cidStr);
+  if (!Number.isFinite(customerId) || customerId < 1) {
+    NotificationMeassage("error", "تعذّر تحديد معرّف العميل من الطلب. أعد تحميل الصفحة.");
+    return null;
+  }
+
+  const status =
+    fields.orderStatus !== "" ? Number(fields.orderStatus) : Number(order?.status ?? 0);
+  const paymentStatus =
+    fields.paymentStatus !== ""
+      ? Number(fields.paymentStatus)
+      : Number(order?.paymentStatus ?? 0);
+
+  let manufactureStatusNum: number;
+  if (fields.manufactureStatus !== "") {
+    manufactureStatusNum = Number(fields.manufactureStatus);
+  } else {
+    const fromOrder = resolveManufactureStatusFromOrder(order);
+    manufactureStatusNum =
+      fromOrder !== "" && Number.isFinite(Number(fromOrder)) ? Number(fromOrder) : 1;
+  }
+  if (!Number.isFinite(manufactureStatusNum)) {
+    manufactureStatusNum = 1;
+  }
+
+  const dateTrim = fields.expectedDeliveryDate.trim();
+  const expectedDeliveryDate =
+    dateTrim || toYmdFromOrderDate(order?.expectedDeliveryDate) || toYmdFromOrderDate(order?.orderDate);
+  if (!expectedDeliveryDate) {
+    NotificationMeassage("error", "حدّد تاريخ التسليم المتوقع");
+    return null;
+  }
+
+  const tp = Number(fields.totalPrice);
+  if (fields.totalPrice.trim() === "" || !Number.isFinite(tp)) {
+    NotificationMeassage("error", "أدخل إجمالي السعر بشكل صالح");
+    return null;
+  }
+
+  return {
+    customerId,
+    expectedDeliveryDate,
+    manufactureStatus: manufactureStatusNum,
+    paymentStatus: Number.isFinite(paymentStatus) ? paymentStatus : 0,
+    status: Number.isFinite(status) ? status : 0,
+    totalPrice: tp,
+  };
+}
+
 function OrderEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -54,60 +148,38 @@ function OrderEdit() {
     if (!order?.id) return;
     setOrderStatus(order.status != null ? Number(order.status) : "");
     setPaymentStatus(order.paymentStatus != null ? Number(order.paymentStatus) : "");
-    setManufactureStatus(
-      order.manufactureStatus != null && order.manufactureStatus !== ""
-        ? Number(order.manufactureStatus)
-        : ""
-    );
-    const cid = order.customer?.id;
-    setCustomerId(cid != null ? String(cid) : "");
+    setManufactureStatus(resolveManufactureStatusFromOrder(order));
+    setCustomerId(resolveCustomerIdFromOrder(order));
     const cn =
       order.customer?.name ??
       [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(" ");
     setCustomerName(typeof cn === "string" ? cn : "");
     const tp = order.totalPrice ?? order.subTotalPrice;
     setTotalPrice(tp != null ? String(tp) : "");
-    const exp = order.expectedDeliveryDate;
-    setExpectedDeliveryDate(
-      exp ? moment(exp).locale("en").format("YYYY-MM-DD") : ""
-    );
+    const exp = order.expectedDeliveryDate ?? order.orderDate;
+    setExpectedDeliveryDate(exp ? toYmdFromOrderDate(exp) : "");
   }, [order?.id]);
 
-  const saveDisabled = (() => {
-    if (updateMutation.isPending) return true;
-    if (
-      orderStatus === "" ||
-      paymentStatus === "" ||
-      manufactureStatus === "" ||
-      !customerId ||
-      !expectedDeliveryDate ||
-      totalPrice === ""
-    ) {
-      return true;
-    }
-    const tp = Number(totalPrice);
-    if (!Number.isFinite(tp)) return true;
-    return false;
-  })();
+  /* تعطيل الزر فقط أثناء الحفظ — التحقق من الحقول عند الضغط (مع قيم احتياطية من الطلب المحمّل). */
+  const saveDisabled = updateMutation.isPending;
 
   const editOrder = () => {
-    if (saveDisabled || !orderId) return;
-    const payload: UpdateOrderPayload = {
-      customerId: Number(customerId),
+    if (updateMutation.isPending || !orderId || !order) return;
+    const payload = buildUpdatePayload(order, {
+      orderStatus,
+      paymentStatus,
+      manufactureStatus,
+      customerId,
+      totalPrice,
       expectedDeliveryDate,
-      manufactureStatus: Number(manufactureStatus),
-      paymentStatus: Number(paymentStatus),
-      status: Number(orderStatus),
-      totalPrice: Number(totalPrice),
-    };
-    if (!Number.isFinite(payload.customerId) || payload.customerId < 1) {
-      NotificationMeassage("error", "بيانات العميل غير صالحة");
-      return;
-    }
+    });
+    if (!payload) return;
     updateMutation.mutate(payload, {
       onSuccess: () => navigate(`/orders/${orderId}`),
     });
   };
+
+  const displayCustomerId = customerId || resolveCustomerIdFromOrder(order);
 
   return (
     <DashboardLayout>
@@ -126,7 +198,7 @@ function OrderEdit() {
           <Grid item xs={12}>
             <Typography variant="body2" color="text.secondary">
               العميل: <strong>{customerName || "—"}</strong>{" "}
-              {customerId ? `(#${customerId})` : ""}
+              {displayCustomerId ? `(#${displayCustomerId})` : ""}
             </Typography>
           </Grid>
 
@@ -139,7 +211,7 @@ function OrderEdit() {
                 id="orderStatus-select"
                 value={orderStatus === "" ? "" : Number(orderStatus)}
                 label="حالة الطلب"
-                onChange={(e) => setOrderStatus(e.target.value as number)}
+                onChange={(e) => setOrderStatus(Number(e.target.value))}
                 sx={{ height: 43 }}
               >
                 {statusoptions?.map((option) => (
@@ -160,7 +232,7 @@ function OrderEdit() {
                 id="paymentStatus-select"
                 value={paymentStatus === "" ? "" : Number(paymentStatus)}
                 label="حالة الدفع"
-                onChange={(e) => setPaymentStatus(e.target.value as number)}
+                onChange={(e) => setPaymentStatus(Number(e.target.value))}
                 sx={{ height: 43 }}
               >
                 {PAYMENT_STATUS?.map((option) => (
@@ -181,7 +253,7 @@ function OrderEdit() {
                 id="mfgStatus-select"
                 value={manufactureStatus === "" ? "" : Number(manufactureStatus)}
                 label="حالة التصنيع"
-                onChange={(e) => setManufactureStatus(e.target.value as number)}
+                onChange={(e) => setManufactureStatus(Number(e.target.value))}
                 sx={{ height: 43 }}
               >
                 {manufactureStatusOptions.map((option) => (

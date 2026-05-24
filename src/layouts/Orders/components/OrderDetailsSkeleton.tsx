@@ -23,7 +23,7 @@ function CardHeaderBar() {
 }
 
 /**
- * هيكل تحميل يطابق صفحة تفاصيل الطلب: شريط علوي بعرض الصفحة، شبكة عمودين (منتج + حالة + ملاحظات | عميل + مالية + إجراءات + سجل).
+ * هيكل تحميل يطابق صفحة تفاصيل الطلب: شريط علوي، شبكة عمودين (منتج + حالة + ملاحظات | عميل + مالية + إجراءات).
  */
 export default function OrderDetailsSkeleton() {
   return (
@@ -62,11 +62,6 @@ export default function OrderDetailsSkeleton() {
           useFlexGap
           sx={{ ml: "auto", flexShrink: 0, flexWrap: "wrap", rowGap: 1 }}
         >
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flexWrap: "wrap" }}>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} variant="circular" width={28} height={28} />
-            ))}
-          </Stack>
           <Skeleton width={120} height={18} />
         </Stack>
       </Box>
@@ -299,35 +294,6 @@ export default function OrderDetailsSkeleton() {
               </Box>
             </Box>
 
-            <Box
-              sx={{
-                bgcolor: OD.sur,
-                borderRadius: `${OD.radius}px`,
-                border: `0.5px solid ${OD.brd}`,
-                overflow: "hidden",
-              }}
-            >
-              <Box sx={{ px: 2, py: 1.6, borderBottom: `0.5px solid ${OD.brd}` }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Skeleton variant="rounded" width={18} height={18} />
-                  <Skeleton width={88} height={18} />
-                </Stack>
-              </Box>
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <Stack spacing={1.25}>
-                  {[0, 1, 2].map((i) => (
-                    <Stack key={i} direction="row" spacing={1.5} alignItems="flex-start">
-                      <Skeleton variant="circular" width={28} height={28} />
-                      <Box sx={{ flex: 1 }}>
-                        <Skeleton width="85%" height={16} />
-                        <Skeleton width="60%" height={14} sx={{ mt: 0.5 }} />
-                        <Skeleton width={100} height={12} sx={{ mt: 0.5 }} />
-                      </Box>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-            </Box>
           </Stack>
         </Box>
       </Box>

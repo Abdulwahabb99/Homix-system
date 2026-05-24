@@ -2,8 +2,6 @@ import React from "react";
 import type { NavigateFunction } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -25,12 +23,7 @@ import { OrderStatusChip } from "../components/OrderStatusChips";
 import { OD } from "./odTheme";
 import {
   formatOrderDetailDate,
-  formatOrderDetailDateTime,
-  getOrderFlowSteps,
-  getPipelineTemplateProgressSteps,
   getOrderLineProductDescriptionPlainText,
-  getOrderEventLogEntries,
-  getTimelineEntryTitle,
 } from "./orderDetailNormalize";
 import { getOrderDetailPaymentLabel } from "./orderDetailPayment";
 
@@ -93,11 +86,6 @@ export default function OrderDetailsView({
   setPendingDeleteNoteId,
   handleDownloadInvoice,
 }: OrderDetailsViewProps) {
-  const eventLog = getOrderEventLogEntries(orderDetails);
-  const progressSteps =
-    getPipelineTemplateProgressSteps(orderDetails, orderDetails.statusHistory) ??
-    getOrderFlowSteps(orderDetails, manufactureStatus, orderDetails.statusHistory);
-
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
                 {/* ——— order strip ——— */}
@@ -186,97 +174,6 @@ export default function OrderDetailsView({
                       columnGap: 1.25,
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0,
-                        overflowX: "auto",
-                        pb: 0.25,
-                        flexWrap: { xs: "nowrap", md: "wrap" },
-                      }}
-                    >
-                      {progressSteps.map((step, si) => (
-                          <React.Fragment key={`flow-${si}-${step.label}`}>
-                            <Stack alignItems="center" spacing={0.5} sx={{ minWidth: 36 }}>
-                              <Box
-                                sx={{
-                                  width: 28,
-                                  height: 28,
-                                  borderRadius: "50%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  border: "2px solid",
-                                  ...(step.state === "done"
-                                    ? {
-                                        bgcolor: OD.gl,
-                                        color: OD.green,
-                                        borderColor: OD.green,
-                                      }
-                                    : step.state === "active"
-                                      ? {
-                                          bgcolor: OD.al,
-                                          color: OD.accent,
-                                          borderColor: OD.accent,
-                                        }
-                                      : {
-                                          bgcolor: OD.sur2,
-                                          color: OD.tx3,
-                                          borderColor: OD.brd,
-                                        }),
-                                }}
-                              >
-                                {step.state === "done" ? (
-                                  <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />
-                                ) : step.state === "active" ? (
-                                  <ScheduleIcon sx={{ fontSize: 14 }} />
-                                ) : (
-                                  <RadioButtonUncheckedIcon sx={{ fontSize: 14 }} />
-                                )}
-                              </Box>
-                              <Typography
-                                sx={{
-                                  fontSize: "0.625rem",
-                                  fontWeight: step.state === "active" ? 700 : 600,
-                                  color:
-                                    step.state === "done"
-                                      ? OD.green
-                                      : step.state === "active"
-                                        ? OD.accent
-                                        : OD.tx3,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {step.label}
-                              </Typography>
-                            </Stack>
-                            {si < progressSteps.length - 1 ? (
-                              <Box
-                                sx={{
-                                  width: 32,
-                                  height: 2,
-                                  alignSelf: "center",
-                                  mb: 2.25,
-                                  borderRadius: 1,
-                                  ...(() => {
-                                    const a = progressSteps[si].state;
-                                    const b = progressSteps[si + 1].state;
-                                    if (a === "done" && b === "done")
-                                      return { background: OD.green };
-                                    if (a === "done" && b === "active")
-                                      return { background: `linear-gradient(90deg,${OD.green},${OD.accent})` };
-                                    if (a === "active")
-                                      return { background: `linear-gradient(90deg,${OD.green},${OD.accent})` };
-                                    if (a === "done" && b === "pending") return { background: OD.brd };
-                                    return { bgcolor: OD.brd };
-                                  })(),
-                                }}
-                              />
-                            ) : null}
-                          </React.Fragment>
-                        ))}
-                    </Box>
                     <Typography
                       component="span"
                       sx={{
@@ -1162,86 +1059,6 @@ export default function OrderDetailsView({
                               </Box>
                             ))}
                           </Box>
-                        </Box>
-                      </Box>
-
-                      {/* Timeline */}
-                      <Box
-                        sx={{
-                          bgcolor: OD.sur,
-                          borderRadius: `${OD.radius}px`,
-                          border: `0.5px solid ${OD.brd}`,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <Box sx={{ px: 2, py: 1.6, borderBottom: `0.5px solid ${OD.brd}` }}>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <ScheduleIcon sx={{ fontSize: 18, color: OD.tx2 }} />
-                            <Typography sx={{ fontSize: "0.81rem", fontWeight: 700, color: OD.tx }}>سجل الأحداث</Typography>
-                          </Stack>
-                        </Box>
-                        <Box sx={{ px: 2, py: 1.5 }}>
-                          {eventLog.length > 0 ? (
-                            <Stack spacing={0}>
-                              {eventLog.map((ev: any, ti: number) => (
-                                <Stack
-                                  key={ev.id ?? `ev-${ti}`}
-                                  direction="row"
-                                  spacing={1.5}
-                                  alignItems="flex-start"
-                                  sx={{
-                                    py: 1.25,
-                                    borderRight: `2px solid ${
-                                      ti === eventLog.length - 1 ? "transparent" : OD.brd
-                                    }`,
-                                    pr: 1.75,
-                                    mr: 1.75,
-                                    position: "relative",
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      position: "absolute",
-                                      right: -15,
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: "50%",
-                                      bgcolor: OD.gl,
-                                      color: OD.green,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                  >
-                                    <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />
-                                  </Box>
-                                  <Box sx={{ mr: 3, flex: 1 }}>
-                                    <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: OD.tx }}>
-                                      {getTimelineEntryTitle(ev)}
-                                    </Typography>
-                                    {String(ev?.description ?? "").trim() &&
-                                    String(ev.description).trim() !== String(ev?.message ?? "").trim() ? (
-                                      <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
-                                        {ev.description}
-                                      </Typography>
-                                    ) : null}
-                                    {ev.userName ? (
-                                      <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
-                                        بواسطة {ev.userName}
-                                      </Typography>
-                                    ) : null}
-                                    <Typography sx={{ fontSize: "0.65rem", color: OD.tx3, mt: 0.5 }}>
-                                      {ev.changedAt ? formatOrderDetailDateTime(ev.changedAt) : "—"}
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                              ))}
-                            </Stack>
-                          ) : (
-                            <Typography sx={{ fontSize: "0.78rem", color: OD.tx3, textAlign: "center", py: 2 }}>
-                              لا أحداث مسجّلة بعد
-                            </Typography>
-                          )}
                         </Box>
                       </Box>
                     </Stack>
