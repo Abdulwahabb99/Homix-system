@@ -12,6 +12,8 @@ export const orderKeys = {
   /** تفاصيل طلب واحد (للعرض / التعديل) */
   details: () => [...orderKeys.all(), "detail"] as const,
   detail: (orderId: string) => [...orderKeys.details(), orderId] as const,
+  /** ملخص البطاقات العلوية — سلسلة مفاتيح الفلاتر (مثل قائمة الطلبات + حقول البحث المحلي) */
+  summary: (filtersKey: string) => [...orderKeys.all(), "summary", filtersKey] as const,
 };
 
 export const vendorKeys = {

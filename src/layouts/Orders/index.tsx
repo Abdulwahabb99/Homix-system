@@ -17,6 +17,7 @@ import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
+import { useOrdersSummaryQuery } from "query/ordersSummary.api";
 
 /* ── New UI components ── */
 import OrdersHomixListingHeader from "layouts/Orders/components/OrdersHomixListingHeader";
@@ -136,6 +137,71 @@ function Orders() {
       deliveryStatusParam, filterUserId, deliveryByParam, startDate, endDate,
     ]
   );
+
+  const ordersSummaryFiltersKey = useMemo(
+    () =>
+      JSON.stringify({
+        on: orderNumberParam || null,
+        oc: searchOperationCode || null,
+        cn: searchCustomerName || null,
+        pc: searchProductCode || null,
+        v: vendorIdParam || null,
+        s: orderStatusParam || null,
+        ps: paymentStatusParam || null,
+        ds: deliveryStatusParam || null,
+        u: filterUserId || null,
+        db: deliveryByParam || null,
+        sd: rangeDateToIso(startDate),
+        ed: rangeDateToIso(endDate),
+      }),
+    [
+      orderNumberParam,
+      searchOperationCode,
+      searchCustomerName,
+      searchProductCode,
+      vendorIdParam,
+      orderStatusParam,
+      paymentStatusParam,
+      deliveryStatusParam,
+      filterUserId,
+      deliveryByParam,
+      startDate,
+      endDate,
+    ]
+  );
+
+  const ordersSummaryParams = useMemo(
+    () => ({
+      orderNumber: orderNumberParam || undefined,
+      operationCode: searchOperationCode || undefined,
+      customerName: searchCustomerName || undefined,
+      productCode: searchProductCode || undefined,
+      vendorId: vendorIdParam || undefined,
+      status: orderStatusParam || undefined,
+      paymentStatus: paymentStatusParam || undefined,
+      deliveryStatus: deliveryStatusParam || undefined,
+      deliveryBy: deliveryByParam || undefined,
+      userId: filterUserId || undefined,
+      startDate: rangeDateToIso(startDate) ?? undefined,
+      endDate: rangeDateToIso(endDate) ?? undefined,
+    }),
+    [
+      orderNumberParam,
+      searchOperationCode,
+      searchCustomerName,
+      searchProductCode,
+      vendorIdParam,
+      orderStatusParam,
+      paymentStatusParam,
+      deliveryStatusParam,
+      filterUserId,
+      deliveryByParam,
+      startDate,
+      endDate,
+    ]
+  );
+
+  const ordersSummaryQuery = useOrdersSummaryQuery(ordersSummaryFiltersKey, ordersSummaryParams, Boolean(token));
 
   const {
     data: ordersListData,
@@ -422,7 +488,10 @@ function Orders() {
           ) : (
             /* ── Loaded: real KPI + Search + Filters ── */
             <>
-              <OrdersHomixKpiRow totalOrders={totalCountApi} />
+              <OrdersHomixKpiRow
+                summaryCards={ordersSummaryQuery.data}
+                isSummaryLoading={ordersSummaryQuery.isPending}
+              />
 
               <OrdersHomixSearchCard
                 orderNumber={orderNumber}
