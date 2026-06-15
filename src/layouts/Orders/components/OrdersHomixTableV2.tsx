@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { Box, Button, Checkbox, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
@@ -201,6 +201,28 @@ function HomixPaginationBar({
   const from    = totalCount === 0 ? 0 : page * pageSize + 1;
   const to      = Math.min(current * pageSize, totalCount);
   const pages   = getPageNumbers(current, totalPages);
+  const rafRef  = useRef<number | null>(null);
+
+  // Take manual control of scroll restoration so the browser
+  // doesn't auto-scroll to top when the URL search params change.
+  useEffect(() => {
+    const prev = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => { window.history.scrollRestoration = prev; };
+  }, []);
+
+  const handlePageChange = (p: number) => {
+    const savedY = window.scrollY;
+    onPageChange(p);
+    // Two rAF frames: first lets React flush + Router push the new URL,
+    // second lets the browser finish any native scroll handling.
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(() => {
+        window.scrollTo({ top: savedY, behavior: "instant" as ScrollBehavior });
+      });
+    });
+  };
 
   const btnBase: React.CSSProperties = {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -238,19 +260,19 @@ function HomixPaginationBar({
       gap: "8px",
     }}>
       {/* label — right side in RTL */}
-      <Box sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx2, order: 1 }}>
+      <Box sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx2, order: 0 }}>
         {totalCount === 0
           ? "لا توجد نتائج"
           : `عرض ${from}–${to} من ${totalCount.toLocaleString("ar-EG")} طلب`}
       </Box>
 
       {/* page buttons — left side in RTL */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: "5px", order: 0, flexWrap: "wrap" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: "5px", order: 1, flexWrap: "wrap" }}>
         {/* prev */}
         <button
           style={current <= 1 ? btnDisabled : btnBase}
           disabled={current <= 1}
-          onClick={() => onPageChange(page - 1)}
+          onClick={() => handlePageChange(page - 1)}
         >
           ‹
         </button>
@@ -264,7 +286,7 @@ function HomixPaginationBar({
             <button
               key={p}
               style={p === current ? btnActive : btnBase}
-              onClick={() => p !== current && onPageChange((p as number) - 1)}
+              onClick={() => p !== current && handlePageChange((p as number) - 1)}
             >
               {p}
             </button>
@@ -275,7 +297,7 @@ function HomixPaginationBar({
         <button
           style={current >= totalPages ? btnDisabled : btnBase}
           disabled={current >= totalPages}
-          onClick={() => onPageChange(page + 1)}
+          onClick={() => handlePageChange(page + 1)}
         >
           ›
         </button>
