@@ -7,6 +7,7 @@ import { useMaterialUIController, setMiniSidenav } from "context";
 import HomixNotificationsButton from "components/HomixPageHeader/HomixNotificationsButton";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import SearchModal from "claude/dashboard/components/SearchModal/SearchModal";
+import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -16,14 +17,21 @@ interface Props {
   todayAr: string;
   isVendor: boolean;
   onAddOrder: () => void;
+  pickerStart: string;
+  pickerEnd: string;
+  onDatesChange: (start: string, end: string) => void;
+  onDateReset: () => void;
 }
 
 export default function HomixDashboardHeader({
   greeting,
   firstName,
-  todayAr,
   isVendor,
   onAddOrder,
+  pickerStart,
+  pickerEnd,
+  onDatesChange,
+  onDateReset,
 }: Props) {
   const theme = useTheme();
   const [muiController, dispatch] = useMaterialUIController();
@@ -95,26 +103,40 @@ export default function HomixDashboardHeader({
 
         {/* Left side — actions */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-          {/* Date pill */}
-          <Box
-            sx={{
-              display: { xs: "none", sm: "flex" },
-              alignItems: "center",
-              height: 34,
-              px: "12px",
-              border: `0.5px solid rgba(0,0,0,0.1)`,
-              borderRadius: "9px",
-              bgcolor: HX.surface,
-              boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
-              fontFamily: FONT,
-              fontSize: "12px",
-              fontWeight: 600,
-              color: HX.tx2,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {todayAr}
+
+          {/* Date range picker */}
+          <Box sx={{ display: { xs: "none", sm: "block" }, minWidth: 240 }}>
+            <DateRangePickerWrapper
+              startDate={pickerStart}
+              endDate={pickerEnd}
+              handleDatesChange={onDatesChange}
+              isMeduim
+              maxDaysRange={365}
+              allowFutureDays={false}
+            />
           </Box>
+
+          {/* Reset dates — only when a range is selected */}
+          {(pickerStart || pickerEnd) && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={onDateReset}
+              sx={{
+                fontFamily: FONT,
+                fontSize: "11px",
+                fontWeight: 600,
+                borderRadius: "8px",
+                height: 30,
+                px: "8px",
+                color: HX.tx3,
+                whiteSpace: "nowrap",
+                "&:hover": { color: HX.accent, bgcolor: HX.accentLight },
+              }}
+            >
+              إعادة تعيين
+            </Button>
+          )}
 
           {/* Search icon */}
           <IconButton

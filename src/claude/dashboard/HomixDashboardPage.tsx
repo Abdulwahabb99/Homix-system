@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo } from "react";
-import { Box, Button, TextField, Typography } from "@mui/material";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import moment from "moment";
 import "claude/dashboard/homixDashboard.css";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import KpiSection from "claude/dashboard/components/KpiSection";
@@ -11,10 +10,10 @@ import RecentOrdersTable from "claude/dashboard/components/RecentOrdersTable";
 import TopSellersCard from "claude/dashboard/components/TopSellersCard";
 import QuickActionsCard from "claude/dashboard/components/QuickActionsCard";
 import CategoryDonutChart from "claude/dashboard/components/CategoryDonutChart";
-import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { useDashboardCards } from "claude/dashboard/api/dashboardCards.api";
 import { useDashboardSalesDistribution } from "claude/dashboard/api/dashboardSalesDistribution.api";
 import HomixDashboardHeader from "claude/dashboard/components/HomixDashboardHeader";
+import { useDateRange } from "hooks/useDateRange";
 
 /* ── helpers ── */
 function getGreeting() {
@@ -33,36 +32,24 @@ function getArabicDate() {
   }).format(new Date());
 }
 
-function toIsoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+/** Convert a moment object or DD-MM-YYYY string to YYYY-MM-DD for the API, fallback to today */
+function toApiDate(d: any): string {
+  if (!d) return moment().format("YYYY-MM-DD");
+  return moment.isMoment(d)
+    ? d.format("YYYY-MM-DD")
+    : moment(d, "DD-MM-YYYY").format("YYYY-MM-DD");
 }
 
-/* ── shared sx for MUI date TextField ── */
-const DATE_FIELD_SX = {
-  "& .MuiInputBase-root": {
-    height: 36,
-    borderRadius: "8px",
-    fontFamily: "'Cairo',sans-serif",
-    fontSize: "12.5px",
-    bgcolor: HX.surface,
-  },
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-    borderColor: HX.accent,
-    boxShadow: `0 0 0 3px ${HX.accentLight}`,
-  },
-  "& .MuiInputLabel-root": {
-    fontFamily: "'Cairo',sans-serif",
-    fontSize: "12px",
-  },
-} as const;
+/** Convert a moment object or DD-MM-YYYY string to DD-MM-YYYY for DateRangePickerWrapper */
+function toPickerStr(d: any): string {
+  if (!d) return "";
+  return moment.isMoment(d) ? d.format("DD-MM-YYYY") : String(d);
+}
 
 /* ─────────────────────────────────────────── */
 
 export default function HomixDashboardPage() {
-  const navigate      = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const { isVendor, firstName } = useMemo(() => {
     try {
@@ -76,25 +63,29 @@ export default function HomixDashboardPage() {
   const greeting = useMemo(getGreeting, []);
   const todayAr  = useMemo(getArabicDate, []);
 
-  const today = useMemo(() => toIsoDate(new Date()), []);
+  /* ── date range — same hook as Orders page ── */
+  const {
+    startDate,
+    endDate,
+    handleDatesChange,
+    handleReset: handleDateReset,
+  } = useDateRange({ defaultDays: 0, queryParams: true });
 
-  /* ── dates driven by URL params — fallback to today ── */
-  const startDate = searchParams.get("startDate") || today;
-  const endDate   = searchParams.get("endDate")   || today;
+  /* ISO strings for API calls (fallback to today if empty) */
+  const apiStartDate = toApiDate(startDate);
+  const apiEndDate   = toApiDate(endDate);
 
-  function setStartDate(val: string) {
-    setSearchParams((prev) => { prev.set("startDate", val); return prev; }, { replace: true });
-  }
-  function setEndDate(val: string) {
-    setSearchParams((prev) => { prev.set("endDate", val); return prev; }, { replace: true });
-  }
+  /* DD-MM-YYYY strings for DateRangePickerWrapper — default to today if no range selected */
+  const todayDMY    = moment().format("DD-MM-YYYY");
+  const pickerStart = toPickerStr(startDate) || todayDMY;
+  const pickerEnd   = toPickerStr(endDate)   || todayDMY;
 
   /* ── API ── */
   const { data: cardsData, isLoading: cardsLoading, isError: cardsError, error } =
-    useDashboardCards(startDate, endDate);
+    useDashboardCards(apiStartDate, apiEndDate);
 
   const { data: distData, isLoading: distLoading, isError: distError } =
-    useDashboardSalesDistribution(startDate, endDate);
+    useDashboardSalesDistribution(apiStartDate, apiEndDate);
 
   useEffect(() => {
     console.log("[Dashboard Cards]", { cardsData, cardsLoading, cardsError, error });
@@ -106,81 +97,27 @@ export default function HomixDashboardPage() {
         <HomixDashboardHeader
           greeting={greeting}
           firstName={firstName}
-          todayAr={todayAr}
           isVendor={isVendor}
           onAddOrder={() => navigate("/orders/add")}
+          pickerStart={pickerStart}
+          pickerEnd={pickerEnd}
+          onDatesChange={handleDatesChange}
+          onDateReset={handleDateReset}
+          todayAr={todayAr}
         />
       }
     >
       <div className="homixDashPage">
         <div className="h-content">
-
-          {/* ── Date range bar ── */}
-          <Box sx={{ ...cardSx, p: "14px 16px", mb: "4px" }}>
-            {/* header row */}
-            <Box sx={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              mb: "12px",
-            }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <CalendarTodayIcon sx={{ fontSize: 15, color: HX.accent }} />
-                <Typography sx={{
-                  fontSize: "13px", fontWeight: 700,
-                  color: HX.tx, fontFamily: "'Cairo',sans-serif",
-                }}>
-                  الفترة الزمنية
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                variant="text"
-                onClick={() => setSearchParams({ startDate: today, endDate: today }, { replace: true })}
-                sx={{
-                  fontFamily: "'Cairo',sans-serif", fontSize: "11.5px",
-                  fontWeight: 600, borderRadius: "7px", height: 28, px: "10px",
-                  color: HX.tx3,
-                  "&:hover": { color: HX.accent, bgcolor: HX.accentLight },
-                }}
-              >
-                إعادة تعيين
-              </Button>
-            </Box>
-
-            {/* inputs row */}
-            <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <TextField
-                type="date"
-                label="من تاريخ"
-                size="small"
-                value={startDate}
-                inputProps={{ max: endDate }}
-                onChange={(e) => setStartDate(e.target.value)}
-                sx={{ flex: "1 1 160px", ...DATE_FIELD_SX }}
-                InputLabelProps={{ shrink: true }}
-              />
-
-              <TextField
-                type="date"
-                label="إلى تاريخ"
-                size="small"
-                value={endDate}
-                inputProps={{ min: startDate, max: today }}
-                onChange={(e) => setEndDate(e.target.value)}
-                sx={{ flex: "1 1 160px", ...DATE_FIELD_SX }}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-          </Box>
-
           <KpiSection cards={cardsData?.data?.cards} isLoading={cardsLoading} />
           <div className="h-grid-3-1">
             <SalesChartCard />
-            <ActivityFeedCard startDate={startDate} endDate={endDate} />
+            <ActivityFeedCard startDate={apiStartDate} endDate={apiEndDate} />
           </div>
           <div className="h-grid-3-1">
-            <RecentOrdersTable startDate={startDate} endDate={endDate} />
+            <RecentOrdersTable startDate={apiStartDate} endDate={apiEndDate} />
             <div className="h-right-col">
-              <TopSellersCard startDate={startDate} endDate={endDate} />
+              <TopSellersCard startDate={apiStartDate} endDate={apiEndDate} />
               <QuickActionsCard isVendor={isVendor} />
             </div>
           </div>
@@ -200,7 +137,6 @@ export default function HomixDashboardPage() {
                 />
               </div>
             </div>
-            {/* <TargetsProgressCard /> */}
           </div>
         </div>
       </div>

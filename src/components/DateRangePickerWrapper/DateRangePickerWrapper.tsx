@@ -364,6 +364,7 @@ const DateRangePickerWrapper = ({
         numberOfMonths={isDesktopTwoMonths ? 2 : 1}
         readOnly
         customCloseIcon={<span>&times;</span>}
+        minimumNights={0}
         keepOpenOnDateSelect
         onClose={cancel}
         isDayHighlighted={(day) => isSameDay(day, moment().locale("en"))}
