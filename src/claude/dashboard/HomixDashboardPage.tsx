@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { Box, Button, TextField, Typography } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import { Box, TextField, Typography } from "@mui/material";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "claude/dashboard/homixDashboard.css";
@@ -12,10 +11,10 @@ import RecentOrdersTable from "claude/dashboard/components/RecentOrdersTable";
 import TopSellersCard from "claude/dashboard/components/TopSellersCard";
 import QuickActionsCard from "claude/dashboard/components/QuickActionsCard";
 import CategoryDonutChart from "claude/dashboard/components/CategoryDonutChart";
-import TargetsProgressCard from "claude/dashboard/components/TargetsProgressCard";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { useDashboardCards } from "claude/dashboard/api/dashboardCards.api";
 import { useDashboardSalesDistribution } from "claude/dashboard/api/dashboardSalesDistribution.api";
+import HomixDashboardHeader from "claude/dashboard/components/HomixDashboardHeader";
 
 /* ── helpers ── */
 function getGreeting() {
@@ -101,52 +100,17 @@ export default function HomixDashboardPage() {
     console.log("[Dashboard Cards]", { cardsData, cardsLoading, cardsError, error });
   }, [cardsData, cardsLoading, cardsError, error]);
 
-  /* ── header ── */
-  const pageTitle = (
-    <Box>
-      <Typography sx={{
-        fontSize: "16px", fontWeight: 800, color: HX.tx,
-        fontFamily: "'Cairo',sans-serif", lineHeight: 1.3,
-      }}>
-        {greeting}، {firstName}
-      </Typography>
-    </Box>
-  );
-
-  const pageActions = (
-    <>
-      <Typography sx={{
-        fontSize: "12.5px", fontWeight: 600, color: HX.tx2,
-        fontFamily: "'Cairo',sans-serif",
-        display: { xs: "none", sm: "block" },
-      }}>
-        {todayAr}
-      </Typography>
-
-      {!isVendor && (
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddIcon sx={{ fontSize: "15px !important" }} />}
-          onClick={() => navigate("/orders/add")}
-          sx={{
-            fontFamily: "'Cairo',sans-serif", fontWeight: 700,
-            fontSize: "12.5px", borderRadius: "9px",
-            px: "14px", py: "7px", textTransform: "none",
-            boxShadow: "none", "&:hover": { boxShadow: "none" },
-          }}
-        >
-          طلب جديد
-        </Button>
-      )}
-    </>
-  );
-
   return (
     <DashboardLayout
-      pageTitle={pageTitle}
-      pageSubtitle="إليك ملخص أداء اليوم"
-      pageActions={pageActions}
+      header={
+        <HomixDashboardHeader
+          greeting={greeting}
+          firstName={firstName}
+          todayAr={todayAr}
+          isVendor={isVendor}
+          onAddOrder={() => navigate("/orders/add")}
+        />
+      }
     >
       <div className="homixDashPage">
         <div className="h-content">
