@@ -200,17 +200,6 @@ export default function App() {
     }
   }, [user, sessionOk, reduxDispatch]);
 
-  // useEffect(() => {
-  //   const saved = JSON.parse(localStorage.getItem("notifications")) || [];
-  //   if (saved.length > 0) {
-  //     saved.forEach((notification) => {
-  //       if (!notification?.orderId) {
-  //         notification.orderId = notification.entityId;
-  //       }
-  //     });
-  //     reduxDispatch(setNotifications(saved));
-  //   }
-  // }, []);
 
   return (
     <CacheProvider value={rtlCache}>
