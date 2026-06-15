@@ -75,7 +75,7 @@ const KPI_ICON_STYLES: { iconBg: string; iconColor: string; iconPath: React.Reac
 
 function formatKpiValue(value: number | string): string {
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value.toLocaleString("ar-EG");
+    return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
   }
   return String(value ?? "—");
 }

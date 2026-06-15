@@ -277,7 +277,7 @@ export default function OrderDetailsView({
                                     {order?.title}
                                   </Typography>
                                   <Typography sx={{ fontSize: "1.125rem", fontWeight: 900, color: OD.accent, mb: 1 }}>
-                                    {unitPrice != null ? Number(unitPrice).toLocaleString("en-US") : "—"}{" "}
+                                    {unitPrice != null ? Number(unitPrice).toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}{" "}
                                     <Box component="span" sx={{ fontSize: "0.75rem", fontWeight: 500, color: OD.tx3 }}>
                                       ج.م
                                     </Box>
@@ -906,7 +906,7 @@ export default function OrderDetailsView({
                             const collect = Number(orderDetails.toBeCollected ?? orderTotalToBeCollected ?? 0);
                             const fmt = (n, zeroMuted) => (
                               <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.81rem", color: n === 0 && zeroMuted ? OD.tx3 : OD.tx }}>
-                                {Number(n).toLocaleString("en-US")} ج.م
+                                {Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
                               </Typography>
                             );
                             const row = (label, node, isTotal = false) => (
@@ -944,7 +944,7 @@ export default function OrderDetailsView({
                                     sx={{ fontWeight: 700, fontSize: "0.81rem", color: margin >= 0 ? OD.green : OD.red }}
                                   >
                                     {margin >= 0 ? "+" : ""}
-                                    {Number(margin).toLocaleString("en-US")} ج.م
+                                    {Number(margin).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
                                   </Typography>
                                 )}
                                 {row("تكلفة الشحن", fmt(ship, true))}
@@ -953,7 +953,7 @@ export default function OrderDetailsView({
                                 {row(
                                   "المبلغ المطلوب تحصيله",
                                   <Typography component="span" sx={{ fontWeight: 900, fontSize: "0.94rem", color: OD.accent }}>
-                                    {Number(collect).toLocaleString("en-US")} ج.م
+                                    {Number(collect).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
                                   </Typography>,
                                   true
                                 )}

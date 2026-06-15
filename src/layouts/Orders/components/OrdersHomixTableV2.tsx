@@ -263,7 +263,7 @@ function HomixPaginationBar({
       <Box sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx2, order: 0 }}>
         {totalCount === 0
           ? "لا توجد نتائج"
-          : `عرض ${from}–${to} من ${totalCount.toLocaleString("ar-EG")} طلب`}
+          : `عرض ${from}–${to} من ${totalCount.toLocaleString("en-US", { maximumFractionDigits: 0 })} طلب`}
       </Box>
 
       {/* page buttons — left side in RTL */}
@@ -442,7 +442,7 @@ export default function OrdersHomixTableV2({
                   letterSpacing: "-0.02em",
                 }}
               >
-                {`${totalCount.toLocaleString("ar-EG")} طلب`}
+                {`${totalCount.toLocaleString("en-US", { maximumFractionDigits: 0 })} طلب`}
               </Box>
             </>
           )}
@@ -687,14 +687,14 @@ export default function OrdersHomixTableV2({
 
                   {/* سعر التكلفة */}
                   <td style={{ ...TD, color: HX.tx2 }}>
-                    {Number(compCost).toLocaleString("ar-EG")}
+                    {Number(compCost).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                     <span style={{ fontSize: 10, marginRight: 2 }}>ج.م</span>
                   </td>
 
                   {/* سعر البيع */}
                   <td style={{ ...TD, fontWeight: 700 }}>
                     {order.totalPrice != null
-                      ? Number(order.totalPrice).toLocaleString("ar-EG") : "—"}
+                      ? Number(order.totalPrice).toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}
                     <span style={{ fontSize: 10, marginRight: 2 }}>ج.م</span>
                   </td>
 

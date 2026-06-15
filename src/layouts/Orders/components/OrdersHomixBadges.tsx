@@ -174,7 +174,7 @@ export function FineBadge({ amount }: { amount: number | null | undefined }) {
         bgcolor: HX.redLight, color: HX.red,
       }}
     >
-      {Number(amount).toLocaleString("ar-EG")} ج.م
+      {Number(amount).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
     </Box>
   );
 }

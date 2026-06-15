@@ -431,7 +431,7 @@ export default function OrdersHomixMobileList({
               <Box>
                 <FieldLabel>سعر التكلفة</FieldLabel>
                 <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2, fontWeight: 600 }}>
-                  {Number(compCost).toLocaleString("ar-EG")}
+                  {Number(compCost).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                   <Box component="span" sx={{ fontSize: "9px", mr: 0.35 }}>
                     ج.م
                   </Box>
@@ -440,7 +440,7 @@ export default function OrdersHomixMobileList({
               <Box>
                 <FieldLabel>سعر البيع</FieldLabel>
                 <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx, fontWeight: 800 }}>
-                  {order.totalPrice != null ? Number(order.totalPrice).toLocaleString("ar-EG") : "—"}
+                  {order.totalPrice != null ? Number(order.totalPrice).toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}
                   {order.totalPrice != null && (
                     <Box component="span" sx={{ fontSize: "9px", mr: 0.35, fontWeight: 600 }}>
                       ج.م

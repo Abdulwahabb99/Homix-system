@@ -243,7 +243,7 @@ export function OrdersMobileList({
                       البيع:{" "}
                       <Box component="span" color="text.primary" fontWeight={600}>
                         {row.totalPrice != null
-                          ? `${Number(row.totalPrice).toLocaleString("ar-EG")}`
+                          ? `${Number(row.totalPrice).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
                           : "—"}
                       </Box>
                     </Typography>
