@@ -1,15 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import SalesPerformanceChart from "claude/dashboard/components/SalesPerformanceChart";
-import {
-  getPeriodDates,
-  useDashboardPerformance,
-  type PeriodKey,
-} from "claude/dashboard/api/dashboardPerformance.api";
+import { useDashboardPerformance } from "claude/dashboard/api/dashboardPerformance.api";
 import { formatMoneyCompact } from "shared/formatMoney";
 
 /* ── helpers ── */
-function periodLabel(period: PeriodKey) {
-  const { startDate, endDate } = getPeriodDates(period);
+function formatDateRange(startDate: string, endDate: string) {
   const fmtD = (iso: string) =>
     new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long" }).format(
       new Date(iso + "T00:00:00")
@@ -35,11 +30,7 @@ function StatBox({
 }
 
 /* ── component ── */
-export default function SalesChartCard() {
-  const [period, setPeriod] = useState<PeriodKey>("thisMonth");
-
-  const { startDate, endDate } = getPeriodDates(period);
-
+export default function SalesChartCard({ startDate, endDate }: { startDate: string; endDate: string }) {
   const { data: perfData, isLoading, isError } = useDashboardPerformance(startDate, endDate);
 
   const summary = perfData?.data?.summary;
@@ -50,7 +41,7 @@ export default function SalesChartCard() {
 
   const pct     = summary ? Math.abs(summary.changePercentage).toFixed(1) : null;
   const isUp    = summary?.trend === "up";
-  const subLine = periodLabel(period);
+  const subLine = formatDateRange(startDate, endDate);
 
   return (
     <div className="h-card">
@@ -70,16 +61,6 @@ export default function SalesChartCard() {
             <span className="i" style={{ background: "var(--green)" }} />
             الطلبات
           </div>
-
-          <select
-            className="h-month-select"
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as PeriodKey)}
-            aria-label="الفترة"
-          >
-            <option value="thisMonth">هذا الشهر</option>
-            <option value="lastMonth">الشهر الماضي</option>
-          </select>
         </div>
       </div>
 
@@ -94,7 +75,7 @@ export default function SalesChartCard() {
                 <span className="h-sales-stat-currency"> ج.م</span>
               </>
             }
-            label={period === "thisMonth" ? "إجمالي هذا الشهر" : "إجمالي الشهر الماضي"}
+            label="إجمالي المبيعات"
           />
 
           <div className="h-sales-stat h-sales-stat-border">

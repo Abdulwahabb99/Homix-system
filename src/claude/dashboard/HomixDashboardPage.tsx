@@ -111,7 +111,7 @@ export default function HomixDashboardPage() {
         <div className="h-content">
           <KpiSection cards={cardsData?.data?.cards} isLoading={cardsLoading} />
           <div className="h-grid-3-1">
-            <SalesChartCard />
+            <SalesChartCard startDate={apiStartDate} endDate={apiEndDate} />
             <ActivityFeedCard startDate={apiStartDate} endDate={apiEndDate} />
           </div>
           <div className="h-grid-3-1">

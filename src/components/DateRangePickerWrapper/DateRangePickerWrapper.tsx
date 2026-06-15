@@ -224,24 +224,11 @@ const DateRangePickerWrapper = ({
   }, [focusedInput, computeOpenDirection]);
 
   const presets = [
-    { text: "اليوم", start: moment().locale("en"), end: moment().locale("en"), disabled: maxDaysRange < 1 },
     {
-      text: "أمس",
-      start: moment().locale("en").subtract(1, "day"),
-      end: moment().locale("en").subtract(1, "day"),
-      disabled: maxDaysRange < 1,
-    },
-    {
-      text: "آخر ٧ أيام",
-      start: moment().locale("en").subtract(6, "days"),
-      end: moment().locale("en"),
-      disabled: maxDaysRange < 7,
-    },
-    {
-      text: "آخر ٣٠ يوم",
-      start: moment().locale("en").subtract(29, "days"),
-      end: moment().locale("en"),
-      disabled: maxDaysRange < 30,
+      text: "الشهر السابق",
+      start: moment().locale("en").subtract(1, "months").startOf("month"),
+      end: moment().locale("en").subtract(1, "months").endOf("month"),
+      disabled: maxDaysRange < 31,
     },
     {
       text: "هذا الشهر",
@@ -250,11 +237,24 @@ const DateRangePickerWrapper = ({
       disabled: maxDaysRange < 31,
     },
     {
-      text: "الشهر السابق",
-      start: moment().locale("en").subtract(1, "months").startOf("month"),
-      end: moment().locale("en").subtract(1, "months").endOf("month"),
-      disabled: maxDaysRange < 31,
+      text: "آخر ٣٠ يوم",
+      start: moment().locale("en").subtract(29, "days"),
+      end: moment().locale("en"),
+      disabled: maxDaysRange < 30,
     },
+    {
+      text: "آخر ٧ أيام",
+      start: moment().locale("en").subtract(6, "days"),
+      end: moment().locale("en"),
+      disabled: maxDaysRange < 7,
+    },
+    {
+      text: "أمس",
+      start: moment().locale("en").subtract(1, "day"),
+      end: moment().locale("en").subtract(1, "day"),
+      disabled: maxDaysRange < 1,
+    },
+    { text: "اليوم", start: moment().locale("en"), end: moment().locale("en"), disabled: maxDaysRange < 1 },
   ];
 
   const onDatesChange = ({ startDate, endDate }) => {
