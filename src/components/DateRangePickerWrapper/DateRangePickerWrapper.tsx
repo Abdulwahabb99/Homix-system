@@ -114,6 +114,7 @@ const DateRangePickerWrapper = ({
   isMeduim = false,
   allowPastDays: _allowPastDays = true,
   useDefaultPresets: _useDefaultPresets = true,
+  onReset,
 }: {
   startDate: any;
   endDate: any;
@@ -124,6 +125,7 @@ const DateRangePickerWrapper = ({
   isMeduim?: boolean;
   allowPastDays?: boolean;
   useDefaultPresets?: boolean;
+  onReset?: () => void;
 }) => {
   const [focusedInput, setFocusedInput] = useState(null);
   const [openDirection, setOpenDirection] = useState(OPEN_DOWN);
@@ -286,6 +288,16 @@ const DateRangePickerWrapper = ({
     setFocusedInput(null);
   };
 
+  const reset = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setPrevStartDate(null);
+    setPrevEndDate(null);
+    setFocusedInput(null);
+    handleDatesChange("", "");
+    onReset?.();
+  };
+
   const isSameDay = (a, b) =>
     a?.date() === b?.date() && a?.month() === b?.month() && a?.year() === b?.year();
 
@@ -331,6 +343,13 @@ const DateRangePickerWrapper = ({
           onClick={cancel}
         >
           إلغاء
+        </button>
+        <button
+          type="button"
+          className={`${styles.PresetDateRangePicker_button} ${styles.resetButton}`}
+          onClick={reset}
+        >
+          إعادة تعيين
         </button>
       </div>
     </div>

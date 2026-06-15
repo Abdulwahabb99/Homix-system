@@ -110,33 +110,12 @@ export default function HomixDashboardHeader({
               startDate={pickerStart}
               endDate={pickerEnd}
               handleDatesChange={onDatesChange}
+              onReset={onDateReset}
               isMeduim
               maxDaysRange={365}
               allowFutureDays={false}
             />
           </Box>
-
-          {/* Reset dates — only when a range is selected */}
-          {(pickerStart || pickerEnd) && (
-            <Button
-              size="small"
-              variant="text"
-              onClick={onDateReset}
-              sx={{
-                fontFamily: FONT,
-                fontSize: "11px",
-                fontWeight: 600,
-                borderRadius: "8px",
-                height: 30,
-                px: "8px",
-                color: HX.tx3,
-                whiteSpace: "nowrap",
-                "&:hover": { color: HX.accent, bgcolor: HX.accentLight },
-              }}
-            >
-              إعادة تعيين
-            </Button>
-          )}
 
           {/* Search icon */}
           <IconButton
