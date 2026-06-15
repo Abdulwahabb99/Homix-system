@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import { useMaterialUIController, setMiniSidenav } from "context";
 import HomixNotificationsButton from "components/HomixPageHeader/HomixNotificationsButton";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import SearchWithModal from "shared/components/SearchWithModal/SearchWithModal";
+import SearchModal from "claude/dashboard/components/SearchModal/SearchModal";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -167,8 +167,8 @@ export default function HomixDashboardHeader({
         </Stack>
       </Box>
 
-      {/* ── Search modal (controlled) ── */}
-      <SearchWithModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {/* ── Search modal ── */}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
