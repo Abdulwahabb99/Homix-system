@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Stack } from "@mui/material";
+import { Box } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -539,22 +539,6 @@ function Orders() {
                 onDateRangeClear={handleDateReset}
               />
 
-              {/* Global reset — shown when any filter is active */}
-              {(orderStatus.length > 0 || selectedVendor.length > 0 || payment ||
-                deliveryStatusList.length > 0 || startDate || endDate ||
-                filterUserId || deliveryByList.length > 0) && (
-                <Stack direction="row" justifyContent="flex-end">
-                  <Box component="button" onClick={handleFullReset} sx={{
-                    fontSize: "12px", fontWeight: 600, fontFamily: "'Cairo',sans-serif",
-                    color: HX.tx2, bgcolor: "transparent",
-                    border: `0.5px solid ${HX.border}`,
-                    borderRadius: "8px", px: 2, py: "6px", cursor: "pointer",
-                    "&:hover": { borderColor: HX.accent, color: HX.accent },
-                  }}>
-                    إعادة ضبط جميع الفلاتر
-                  </Box>
-                </Stack>
-              )}
             </>
           )}
 

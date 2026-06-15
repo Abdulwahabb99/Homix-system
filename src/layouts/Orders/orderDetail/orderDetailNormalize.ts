@@ -2,7 +2,7 @@ export function formatOrderDetailDate(iso: string | null | undefined): string {
   if (iso == null || iso === "") return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("ar-EG", {
+  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
     day: "numeric",
     month: "long",
     year: "numeric",
