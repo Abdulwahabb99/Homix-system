@@ -91,7 +91,7 @@ export default function SalesPerformanceChart({ series, isLoading, isError }: Sa
   return (
     <div className="h-chart-area">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 14, bottom: 14, left: 14 }}>
           <defs>
             <linearGradient id="homixAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%"   stopColor="#6366f1" stopOpacity={0.15} />
