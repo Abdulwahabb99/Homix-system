@@ -22,13 +22,16 @@ function buildQueryString(p) {
     page: String(p.page),
     size: String(ORDERS_LIST_PAGE_SIZE),
   });
-  if (p.orderNumberParam) query.set("orderNumber", p.orderNumberParam);
-  if (p.vendorIdParam) query.set("vendorId", p.vendorIdParam);
-  if (p.orderStatusParam) query.set("status", p.orderStatusParam);
+  if (p.orderNumberParam)  query.set("orderNumber",    p.orderNumberParam);
+  if (p.vendorIdParam)     query.set("vendorId",       p.vendorIdParam);
+  if (p.orderStatusParam)  query.set("status",         p.orderStatusParam);
   if (p.paymentStatusParam) query.set("paymentStatus", p.paymentStatusParam);
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
-  if (p.userIdParam) query.set("userId", p.userIdParam);
-  if (p.deliveryByParam) query.set("deliveryBy", p.deliveryByParam);
+  if (p.userIdParam)       query.set("userId",         p.userIdParam);
+  if (p.deliveryByParam)   query.set("deliveryBy",     p.deliveryByParam);
+  if (p.operationCode)     query.set("operationCode",  p.operationCode);
+  if (p.customerName)      query.set("customerName",   p.customerName);
+  if (p.productCode)       query.set("productCode",    p.productCode);
   if (p.endDate) query.set("endDate", p.endDate.utc().toISOString());
   return query.toString();
 }

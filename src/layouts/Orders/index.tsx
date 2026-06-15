@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Stack } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -99,6 +99,26 @@ function Orders() {
   const [searchProductCode,   setSearchProductCode]   = useState("");
   const [searchCustomerName,  setSearchCustomerName]  = useState("");
 
+  /* ── Debounced API values — 500 ms after user stops typing ── */
+  const [apiOperationCode, setApiOperationCode] = useState("");
+  const [apiProductCode,   setApiProductCode]   = useState("");
+  const [apiCustomerName,  setApiCustomerName]  = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setApiOperationCode(searchOperationCode), 500);
+    return () => clearTimeout(t);
+  }, [searchOperationCode]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setApiProductCode(searchProductCode), 500);
+    return () => clearTimeout(t);
+  }, [searchProductCode]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setApiCustomerName(searchCustomerName), 500);
+    return () => clearTimeout(t);
+  }, [searchCustomerName]);
+
   /* ── Modal state ── */
   const [isEditModalOpen,       setIsEditModalOpen]       = useState(false);
   const [isDeleteModalOpen,     setIsDeleteModalOpen]     = useState(false);
@@ -131,10 +151,14 @@ function Orders() {
         u: filterUserId || null,
         db: deliveryByParam || null,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
+        oc: apiOperationCode || null,
+        cn: apiCustomerName || null,
+        pc: apiProductCode || null,
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
       deliveryStatusParam, filterUserId, deliveryByParam, startDate, endDate,
+      apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
 
@@ -209,6 +233,7 @@ function Orders() {
     isError: ordersQueryError,
   } = useQuery({
     queryKey: orderKeys.list(ordersListFiltersKey),
+    placeholderData: keepPreviousData,
     queryFn: () =>
       fetchOrdersList({
         params: {
@@ -217,6 +242,9 @@ function Orders() {
           userIdParam: filterUserId || undefined,
           deliveryByParam: deliveryByParam || undefined,
           startDate, endDate,
+          operationCode: apiOperationCode || undefined,
+          customerName: apiCustomerName || undefined,
+          productCode: apiProductCode || undefined,
         },
         navigate,
       }),
@@ -262,23 +290,6 @@ function Orders() {
     if (ordersQueryError) NotificationMeassage("error", "حدث خطأ");
   }, [ordersQueryError]);
 
-  /* ── Client-side filter ── */
-  const filteredOrders = useMemo(() => {
-    if (!searchOperationCode && !searchProductCode && !searchCustomerName) return orders;
-    const lcCode     = searchOperationCode.toLowerCase();
-    const lcProduct  = searchProductCode.toLowerCase();
-    const lcCustomer = searchCustomerName.toLowerCase();
-    return orders.filter((o: any) => {
-      if (lcCode     && !String(o.code ?? "").toLowerCase().includes(lcCode))         return false;
-      if (lcCustomer && !String(o.customerName ?? "").toLowerCase().includes(lcCustomer)) return false;
-      if (lcProduct) {
-        const itemCode = String(o.items?.[0]?.code ?? "").toLowerCase();
-        if (!itemCode.includes(lcProduct)) return false;
-      }
-      return true;
-    });
-  }, [orders, searchOperationCode, searchProductCode, searchCustomerName]);
-
   /* ── calculateDaysFromPoDate (unchanged) ── */
   const calculateDaysFromPoDate = useCallback((date: string) => {
     if (!date) return "";
@@ -322,6 +333,9 @@ function Orders() {
     setSearchOperationCode("");
     setSearchProductCode("");
     setSearchCustomerName("");
+    setApiOperationCode("");
+    setApiProductCode("");
+    setApiCustomerName("");
   };
 
   /* ── Apply filters (التاريخ يُحدَّث من DateRangePicker مباشرة عبر useDateRange) ── */
@@ -549,7 +563,7 @@ function Orders() {
             <OrdersHomixTableSkeleton rows={10} />
           ) : (
             <OrdersHomixTableV2
-              orders={filteredOrders}
+              orders={orders}
               isVendor={isVendor}
               users={users}
               vendors={vendors}
