@@ -1,23 +1,12 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  IconButton,
-  InputAdornment,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, IconButton, Icon, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
-import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import { useMaterialUIController, setMiniSidenav } from "context";
-import { Icon } from "@mui/material";
 import HomixNotificationsButton from "components/HomixPageHeader/HomixNotificationsButton";
 import { HX } from "layouts/Orders/ordersHomixTheme";
+import SearchWithModal from "shared/components/SearchWithModal/SearchWithModal";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -40,7 +29,6 @@ export default function HomixDashboardHeader({
   const [muiController, dispatch] = useMaterialUIController();
   const { miniSidenav } = muiController;
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const iconBtnSx = {
     width: 34,
@@ -179,71 +167,8 @@ export default function HomixDashboardHeader({
         </Stack>
       </Box>
 
-      {/* ── Search dialog ── */}
-      <Dialog
-        open={searchOpen}
-        onClose={() => { setSearchOpen(false); setSearchQuery(""); }}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: "14px",
-            overflow: "hidden",
-            fontFamily: FONT,
-          },
-        }}
-      >
-        <DialogContent sx={{ p: "20px 20px 24px", direction: "rtl" }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontSize: "15px", fontWeight: 800, color: HX.tx, fontFamily: FONT }}>
-              البحث
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-              sx={{ color: HX.tx3, "&:hover": { color: HX.tx } }}
-            >
-              <CloseIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Box>
-
-          <TextField
-            autoFocus
-            fullWidth
-            placeholder="ابحث عن طلب، منتج، عميل..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 18, color: HX.tx3 }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiInputBase-root": {
-                fontFamily: FONT,
-                fontSize: "13.5px",
-                borderRadius: "10px",
-                bgcolor: HX.surface2,
-              },
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-              "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: HX.accent,
-                boxShadow: `0 0 0 3px ${HX.accentLight}`,
-              },
-            }}
-          />
-
-          {!searchQuery && (
-            <Typography sx={{ mt: 3, fontSize: "12px", color: HX.tx3, fontFamily: FONT, textAlign: "center" }}>
-              اكتب للبدء في البحث
-            </Typography>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* ── Search modal (controlled) ── */}
+      <SearchWithModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
