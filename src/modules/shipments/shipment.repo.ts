@@ -291,6 +291,12 @@ const getFallbackReturnStatus = (returnType: number): number => {
     : CUSTOMER_RETURN_STATUS.PICKED_UP;
 };
 
+const getShipmentStatusForReturnType = (returnType: number): number => {
+  return returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR
+    ? SHIPMENT_STATUS.RETURNED_TO_VENDOR
+    : SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER;
+};
+
 const getReturnStatusLabel = (returnType: number, status: number): string => {
   if (returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR) {
     return RETURN_TO_VENDOR_STATUS_LABELS[status] ?? String(status);
@@ -603,6 +609,9 @@ export class ShipmentRepository {
     const vendor = toPlain(toPlain(firstLine.product).vendor);
     const status = payload.status ?? getFallbackReturnStatus(returnType);
     const returnDate = payload.returnDate ? new Date(payload.returnDate) : new Date();
+    await shipment.update({
+      shipmentStatus: getShipmentStatusForReturnType(returnType),
+    });
     const createdRecord = await shipmentReturnModel.create({
       completedAt: isFinalReturnStatus(returnType, status) ? returnDate : null,
       orderId: payload.orderId,
@@ -652,6 +661,12 @@ export class ShipmentRepository {
     });
     if (!shipment) {
       throw new NotFoundError("Shipment not found");
+    }
+
+    const shipmentStatus = getShipmentStatusForReturnType(returnType);
+    const plainShipmentBeforeSync = toPlain(shipment);
+    if (toNumber(plainShipmentBeforeSync.shipmentStatus) !== shipmentStatus) {
+      await shipment.update({ shipmentStatus });
     }
 
     const nextStatus = payload.status ?? toNumber(plainReturn.status);

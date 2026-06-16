@@ -149,6 +149,17 @@ const makeShipment = () => ({
   updatedAt: "2026-05-15T12:00:00.000Z",
 });
 
+const makeShipmentRecord = (overrides: Record<string, unknown> = {}) => {
+  const state = { ...makeShipment(), ...overrides };
+
+  return {
+    toJSON: () => ({ ...state }),
+    update: jest.fn(async (payload: Record<string, unknown>) => {
+      Object.assign(state, payload);
+    }),
+  };
+};
+
 describe("shipmentRouter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -159,7 +170,7 @@ describe("shipmentRouter", () => {
     orderModel.findAll.mockResolvedValue([makeShipment()]);
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeShipment()] });
     orderModel.findOne.mockResolvedValue(makeShipment());
-    orderModel.findByPk.mockResolvedValue(makeShipment());
+    orderModel.findByPk.mockImplementation(async (id: number) => makeShipmentRecord({ id }));
     shipmentReturnModel.findAll.mockResolvedValue([]);
     shipmentReturnModel.findOne.mockResolvedValue(null);
     shipmentReturnModel.create.mockResolvedValue({
@@ -338,9 +349,18 @@ describe("shipmentRouter", () => {
         statusLabel: "تم إبلاغ المورد",
       }),
     );
+    expect(orderModel.findByPk).toHaveBeenCalledWith(9802, expect.any(Object));
+    const firstFindByPkCall = orderModel.findByPk.mock.results[0];
+    expect(firstFindByPkCall).toBeDefined();
+    const shipmentRecord = await firstFindByPkCall!.value;
+    expect(shipmentRecord.update).toHaveBeenCalledWith(
+      expect.objectContaining({ shipmentStatus: 8 }),
+    );
   });
 
   it("updates vendor returns through persisted workflow storage", async () => {
+    const shipmentRecord = makeShipmentRecord({ id: 9802, shipmentStatus: 2 });
+    orderModel.findByPk.mockImplementation(async () => shipmentRecord);
     const response = await request(app).put("/shipments/returns/vendor/41").send({
       status: 3,
     });
@@ -353,6 +373,9 @@ describe("shipmentRouter", () => {
         status: 3,
         statusLabel: "تم التسليم للمورد",
       }),
+    );
+    expect(shipmentRecord.update).toHaveBeenCalledWith(
+      expect.objectContaining({ shipmentStatus: 8 }),
     );
   });
 
