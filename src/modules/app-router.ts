@@ -1170,7 +1170,8 @@ const swaggerOptions = {
             accountingStatusLabel: { example: "معلق", type: "string" },
             amount: { example: 330, type: "number" },
             reason: { example: "شحن شحنات خارج القاهرة", type: "string" },
-            type: { example: "shipping", type: "string" },
+            type: { example: 1, type: "integer" },
+            typeLabel: { example: "شحن", type: "string" },
           },
         },
         ShipmentExpenseMutationRequest: {
@@ -1180,7 +1181,7 @@ const swaggerOptions = {
             accountingStatus: { example: 1, type: "integer" },
             amount: { example: 150, type: "number" },
             reason: { example: "مواد تغليف", type: "string" },
-            type: { example: "packaging", type: "string" },
+            type: { example: 2, type: "integer" },
           },
           required: ["amount", "reason", "type"],
         },

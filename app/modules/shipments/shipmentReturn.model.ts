@@ -11,10 +11,16 @@ const ShipmentReturn = sequelize.define(
     returnType: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      validate: {
+        isIn: [[1, 2]],
+      },
     },
     status: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      validate: {
+        isIn: [[1, 2, 3, 4, 5, 6]],
+      },
     },
     reason: {
       type: DataTypes.TEXT,

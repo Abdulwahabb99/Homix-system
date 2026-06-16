@@ -4,6 +4,7 @@ const {
   ORDER_STATUS,
   PAYMENT_STATUS,
   DELIVERY_STATUS,
+  DELIVERY_BY,
   SHIPMENTS_STATUS,
 } = require("../../../config/constants");
 const OrderLine = require("../orderLines/orderline.model");
@@ -83,6 +84,9 @@ const Order = sequelize.define(
     paymentStatus: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        isIn: [Object.values(PAYMENT_STATUS)],
+      },
     },
     commission: {
       type: DataTypes.DECIMAL,
@@ -125,6 +129,9 @@ const Order = sequelize.define(
     deliveryStatus: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        isIn: [Object.values(DELIVERY_STATUS)],
+      },
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -168,14 +175,23 @@ const Order = sequelize.define(
     shipmentStatus: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        isIn: [Object.values(SHIPMENTS_STATUS)],
+      },
     },
     shipmentType: {
       type: DataTypes.STRING,
       allowNull: true,
+      validate: {
+        isIn: [["collected", "grouped", "separate", "single", "warehouse"]],
+      },
     },
     deliveryBy: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      validate: {
+        isIn: [Object.values(DELIVERY_BY)],
+      },
     },
     totalVendorDue: {
       type: DataTypes.DECIMAL,

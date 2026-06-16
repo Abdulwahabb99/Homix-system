@@ -57,7 +57,7 @@ const run = async (): Promise<void> => {
 
   await ensureTable("shipmentExpenses", {
     id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
-    type: { allowNull: false, type: DataTypes.STRING },
+    type: { allowNull: false, type: DataTypes.INTEGER },
     amount: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL },
     reason: { allowNull: false, type: DataTypes.TEXT },
     accountingStatus: { allowNull: false, defaultValue: 1, type: DataTypes.INTEGER },
@@ -97,6 +97,34 @@ const run = async (): Promise<void> => {
   await sequelize.query(`
     ALTER TABLE "shipmentInventoryItems"
     ALTER COLUMN "status" SET DEFAULT 1;
+  `);
+
+  await sequelize.query(`
+    ALTER TABLE "shipmentExpenses"
+    ALTER COLUMN "type" TYPE INTEGER
+    USING (
+      CASE
+        WHEN "type"::text IN ('1', '2', '3', '4', '5', '6') THEN "type"::integer
+        WHEN COALESCE("type"::text, '') = 'شحن' THEN 1
+        WHEN COALESCE("type"::text, '') = 'تغليف' THEN 2
+        WHEN COALESCE("type"::text, '') = 'صيانة' THEN 3
+        WHEN COALESCE("type"::text, '') = 'إيجار مخزن' THEN 4
+        WHEN COALESCE("type"::text, '') = 'رواتب' THEN 5
+        WHEN COALESCE("type"::text, '') = 'أخرى' THEN 6
+        WHEN LOWER(COALESCE("type"::text, '')) = 'shipping' THEN 1
+        WHEN LOWER(COALESCE("type"::text, '')) = 'packaging' THEN 2
+        WHEN LOWER(COALESCE("type"::text, '')) = 'maintenance' THEN 3
+        WHEN LOWER(COALESCE("type"::text, '')) IN ('warehouse_rent', 'warehouse rent') THEN 4
+        WHEN LOWER(COALESCE("type"::text, '')) = 'salaries' THEN 5
+        WHEN LOWER(COALESCE("type"::text, '')) = 'other' THEN 6
+        ELSE 6
+      END
+    );
+  `);
+
+  await sequelize.query(`
+    ALTER TABLE "shipmentExpenses"
+    ALTER COLUMN "type" SET DEFAULT 6;
   `);
 
   await sequelize.query(`

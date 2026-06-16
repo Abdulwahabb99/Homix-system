@@ -5,8 +5,11 @@ const ShipmentExpense = sequelize.define(
   "ShipmentExpense",
   {
     type: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
+      validate: {
+        isIn: [[1, 2, 3, 4, 5, 6]],
+      },
     },
     amount: {
       type: DataTypes.DECIMAL,
@@ -21,6 +24,9 @@ const ShipmentExpense = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1,
+      validate: {
+        isIn: [[1, 2]],
+      },
     },
     accountingDate: {
       type: DataTypes.DATE,

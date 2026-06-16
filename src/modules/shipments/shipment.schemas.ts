@@ -101,7 +101,7 @@ export const shipmentExpenseAccountsQuerySchema = z.object({
   accountingStatus: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
-  type: z.string().trim().optional(),
+  type: z.coerce.number().int().positive().optional(),
 });
 
 export const shipmentExpenseMutationSchema = z.object({
@@ -109,7 +109,7 @@ export const shipmentExpenseMutationSchema = z.object({
   accountingStatus: z.coerce.number().int().positive().optional(),
   amount: z.coerce.number().min(0),
   reason: z.string().trim().min(1),
-  type: z.string().trim().min(1),
+  type: z.coerce.number().int().positive(),
 });
 
 export const shipmentPerformanceQuerySchema = z.object({

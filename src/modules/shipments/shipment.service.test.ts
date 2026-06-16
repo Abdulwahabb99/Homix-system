@@ -140,7 +140,7 @@ describe("ShipmentService", () => {
     const service = new ShipmentService(repository);
 
     await expect(
-      service.createExpenseAccount({ amount: 150, reason: "مواد تغليف", type: "packaging" }),
+      service.createExpenseAccount({ amount: 150, reason: "مواد تغليف", type: 2 }),
     ).resolves.toEqual({
       data: { amount: 150, id: 9 },
       ok: true,

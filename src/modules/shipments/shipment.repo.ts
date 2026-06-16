@@ -11,7 +11,9 @@ import {
   DEFAULT_PAGE_SIZE,
   DELIVERY_BY_LABELS,
   CUSTOMER_RETURN_STATUS,
+  EXPENSE_TYPE_LABELS,
   EXPENSE_STATUS_LABELS,
+  GOVERNORATE_LABELS,
   INVENTORY_STATUS,
   INVENTORY_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -351,6 +353,11 @@ export class ShipmentRepository {
 
     return {
       deliveryByOptions: Object.entries(DELIVERY_BY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      accountingStatuses: Object.entries(ACCOUNT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      customerReturnStatuses: Object.entries(CUSTOMER_RETURN_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      expenseTypes: Object.entries(EXPENSE_TYPE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      governorates: Object.entries(GOVERNORATE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      inventoryStatuses: Object.entries(INVENTORY_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       paymentStatuses: Object.entries(PAYMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shipmentStatuses: Object.entries(SHIPMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shipmentTypes: [
@@ -364,6 +371,7 @@ export class ShipmentRepository {
         { id: "accounts", label: "الحسابات" },
         { id: "performance", label: "تقارير الأداء" },
       ],
+      vendorReturnStatuses: Object.entries(RETURN_TO_VENDOR_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
     };
   }
 
@@ -376,7 +384,13 @@ export class ShipmentRepository {
     });
     const items: ShipmentListItem[] = orders.map((order: unknown) => mapShipmentListItem(order));
     const deliveredCount = items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length;
-    const inDeliveryCount = items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.READY_FOR_SHIPPING).length;
+    const inDeliveryStatuses = [
+      SHIPMENT_STATUS.READY_FOR_SHIPPING,
+      SHIPMENT_STATUS.SCHEDULED,
+      SHIPMENT_STATUS.OUT_FOR_DELIVERY,
+    ];
+    const inDeliveryCount = items.filter((item: ShipmentListItem) =>
+      inDeliveryStatuses.some((status) => status === (item.shipmentStatus ?? 0))).length;
     const failedStatuses = [
       SHIPMENT_STATUS.CANCELED,
       SHIPMENT_STATUS.REJECTED,
@@ -880,6 +894,7 @@ export class ShipmentRepository {
     const items: ExpenseAccountItem[] = rows.map((row: unknown) => {
       const item = toPlain(row);
       const accountingStatus = toNumber(item.accountingStatus) || ACCOUNTING_STATUS.PENDING;
+      const type = toNumber(item.type);
       return {
         accountingDate: toIsoString(item.accountingDate),
         accountingStatus,
@@ -887,7 +902,8 @@ export class ShipmentRepository {
         amount: toNumber(item.amount),
         id: toNumber(item.id),
         reason: toText(item.reason),
-        type: toText(item.type),
+        type,
+        typeLabel: EXPENSE_TYPE_LABELS[type] ?? String(type),
       };
     });
     const filteredItems = items.filter((item: ExpenseAccountItem) => {
@@ -925,7 +941,8 @@ export class ShipmentRepository {
       amount: toNumber(expense.amount),
       id: toNumber(expense.id),
       reason: toText(expense.reason),
-      type: toText(expense.type),
+      type: toNumber(expense.type),
+      typeLabel: EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
     };
   }
 
@@ -948,7 +965,8 @@ export class ShipmentRepository {
       amount: toNumber(expense.amount),
       id: toNumber(expense.id),
       reason: toText(expense.reason),
-      type: toText(expense.type),
+      type: toNumber(expense.type),
+      typeLabel: EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
     };
   }
 

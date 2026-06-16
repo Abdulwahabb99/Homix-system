@@ -70,7 +70,7 @@ export type ExpenseAccountsListQuery = {
   accountingStatus?: number;
   page: number;
   size: number;
-  type?: string;
+  type?: number;
 };
 
 export type ExpenseMutationInput = {
@@ -78,7 +78,7 @@ export type ExpenseMutationInput = {
   accountingStatus?: number;
   amount: number;
   reason: string;
-  type: string;
+  type: number;
 };
 
 export type PerformanceQuery = {
@@ -93,11 +93,17 @@ export type ShipmentMetaOption = {
 };
 
 export type ShipmentMetaResponse = {
+  accountingStatuses: ShipmentMetaOption[];
+  customerReturnStatuses: ShipmentMetaOption[];
   deliveryByOptions: ShipmentMetaOption[];
+  expenseTypes: ShipmentMetaOption[];
+  governorates: ShipmentMetaOption[];
+  inventoryStatuses: ShipmentMetaOption[];
   paymentStatuses: ShipmentMetaOption[];
   shipmentStatuses: ShipmentMetaOption[];
   shipmentTypes: ShipmentMetaOption[];
   tabs: Array<{ count?: number; id: string; label: string }>;
+  vendorReturnStatuses: ShipmentMetaOption[];
 };
 
 export type ShipmentSummaryCard = {
@@ -263,7 +269,8 @@ export type ExpenseAccountItem = {
   accountingStatusLabel: string;
   amount: number;
   reason: string;
-  type: string;
+  type: number;
+  typeLabel: string;
 };
 
 export type ExpenseAccountsListResponse = {

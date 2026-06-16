@@ -258,7 +258,7 @@ describe("shipmentRouter", () => {
         amount: "330",
         id: 8,
         reason: "شحن شحنات خارج القاهرة",
-        type: "shipping",
+        type: 1,
       },
     ]);
     shipmentExpenseModel.create.mockResolvedValue({
@@ -267,7 +267,7 @@ describe("shipmentRouter", () => {
       amount: "150",
       id: 9,
       reason: "مواد تغليف",
-      type: "packaging",
+      type: 2,
     });
   });
 
@@ -283,6 +283,30 @@ describe("shipmentRouter", () => {
       { id: "grouped", label: "شحن مجمع" },
       { id: "separate", label: "شحن منفصل" },
     ]);
+    expect(response.body.data.shipmentStatuses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 11, label: "شحنة مجدولة" }),
+        expect.objectContaining({ id: 12, label: "خرجت للتوصيل" }),
+      ]),
+    );
+    expect(response.body.data.inventoryStatuses).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "متوفر بالمخزون" })]),
+    );
+    expect(response.body.data.vendorReturnStatuses).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "تم إبلاغ المورد" })]),
+    );
+    expect(response.body.data.customerReturnStatuses).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "تم السحب" })]),
+    );
+    expect(response.body.data.accountingStatuses).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "تم التصفية" })]),
+    );
+    expect(response.body.data.expenseTypes).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "إيجار مخزن" })]),
+    );
+    expect(response.body.data.governorates).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "الجيزة" })]),
+    );
   });
 
   it("creates shipments through the TS service boundary", async () => {
@@ -473,7 +497,8 @@ describe("shipmentRouter", () => {
       expect.objectContaining({
         accountingStatus: 1,
         amount: 330,
-        type: "shipping",
+        type: 1,
+        typeLabel: "شحن",
       }),
     );
   });
@@ -482,7 +507,7 @@ describe("shipmentRouter", () => {
     const response = await request(app).post("/shipments/accounts/expenses").send({
       amount: 150,
       reason: "مواد تغليف",
-      type: "packaging",
+      type: 2,
     });
 
     expect(response.status).toBe(201);
@@ -491,6 +516,8 @@ describe("shipmentRouter", () => {
         amount: 150,
         id: 9,
         reason: "مواد تغليف",
+        type: 2,
+        typeLabel: "تغليف",
       }),
     );
   });

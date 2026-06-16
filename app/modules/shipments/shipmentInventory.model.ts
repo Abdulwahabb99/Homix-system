@@ -37,6 +37,9 @@ const ShipmentInventoryItem = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1,
+      validate: {
+        isIn: [[1, 2]],
+      },
     },
   },
   {
