@@ -76,8 +76,48 @@ shipmentRouter.get(
   asyncHandler(shipmentController.getSummary),
 );
 
+/**
+ * @swagger
+ * /shipments:
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a shipment through the current shipment creation bridge
+ *     description: Accepts the legacy shipment payload and runs it through the new TypeScript service boundary.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
+ *             example:
+ *               shipmentNumber: SH-9802
+ *               orderId: 9802
+ *     responses:
+ *       200:
+ *         description: Shipment created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
+ */
 shipmentRouter.post("/", validateRequest({ body: shipmentMutationSchema }), asyncHandler(shipmentController.createShipment));
 
+/**
+ * @swagger
+ * /shipments/export:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Export shipments
+ *     description: Uses the legacy export flow and returns a file stream rather than a JSON body.
+ *     responses:
+ *       200:
+ *         description: Export stream
+ */
 shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
 
 /**
@@ -121,6 +161,13 @@ shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
  *               status:
  *                 type: integer
  *                 example: 2
+ *     responses:
+ *       201:
+ *         description: Vendor return created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentReturnItemResponse'
  */
 shipmentRouter.get(
   "/returns/vendor",
@@ -139,6 +186,35 @@ shipmentRouter.put(
   validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateVendorReturn),
 );
+
+/**
+ * @swagger
+ * /shipments/returns/vendor/{returnId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a vendor return workflow record
+ *     parameters:
+ *       - in: path
+ *         name: returnId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentReturnMutationRequest'
+ *     responses:
+ *       200:
+ *         description: Vendor return updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentReturnItemResponse'
+ */
 
 /**
  * @swagger
@@ -181,6 +257,13 @@ shipmentRouter.put(
  *               status:
  *                 type: integer
  *                 example: 2
+ *     responses:
+ *       201:
+ *         description: Customer withdrawal created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentReturnItemResponse'
  */
 shipmentRouter.get(
   "/returns/customer",
@@ -199,6 +282,35 @@ shipmentRouter.put(
   validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateCustomerReturn),
 );
+
+/**
+ * @swagger
+ * /shipments/returns/customer/{returnId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a customer withdrawal workflow record
+ *     parameters:
+ *       - in: path
+ *         name: returnId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentReturnMutationRequest'
+ *     responses:
+ *       200:
+ *         description: Customer withdrawal updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentReturnItemResponse'
+ */
 
 /**
  * @swagger
@@ -255,13 +367,7 @@ shipmentRouter.put(
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   $ref: '#/components/schemas/ShipmentInventoryItem'
- *                 status:
- *                   type: boolean
- *                   example: true
+ *               $ref: '#/components/schemas/ShipmentInventoryItemResponse'
  */
 shipmentRouter.get(
   "/inventory",
@@ -294,32 +400,14 @@ shipmentRouter.post(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               productId:
- *                 type: integer
- *                 example: 321
- *               productCode:
- *                 type: string
- *                 example: DRS-102
- *               quantity:
- *                 type: integer
- *                 example: 0
- *               costPrice:
- *                 type: number
- *                 example: 2800
- *               size:
- *                 type: string
- *                 example: 50x120
- *               color:
- *                 type: string
- *                 example: أبيض
- *               status:
- *                 type: integer
- *                 example: 2
+ *             $ref: '#/components/schemas/ShipmentInventoryMutationRequest'
  *     responses:
  *       200:
  *         description: Inventory row updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentInventoryItemResponse'
  *   delete:
  *     security:
  *       - bearerAuth: []
@@ -334,6 +422,10 @@ shipmentRouter.post(
  *     responses:
  *       200:
  *         description: Inventory row deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
  */
 shipmentRouter.put(
   "/inventory/:inventoryItemId",
@@ -384,6 +476,24 @@ shipmentRouter.get(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentExpenseAccountsListResponse'
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a shipment expense row
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentExpenseMutationRequest'
+ *     responses:
+ *       201:
+ *         description: Expense row created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentExpenseAccountItemResponse'
  */
 shipmentRouter.get(
   "/accounts/expenses",
@@ -402,6 +512,53 @@ shipmentRouter.put(
   validateRequest({ body: shipmentExpenseMutationSchema.partial(), params: shipmentExpenseParamsSchema }),
   asyncHandler(shipmentController.updateExpenseAccount),
 );
+
+/**
+ * @swagger
+ * /shipments/accounts/expenses/{expenseId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a shipment expense row
+ *     parameters:
+ *       - in: path
+ *         name: expenseId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentExpenseMutationRequest'
+ *     responses:
+ *       200:
+ *         description: Expense row updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentExpenseAccountItemResponse'
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Delete a shipment expense row
+ *     parameters:
+ *       - in: path
+ *         name: expenseId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Expense row deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
+ */
 
 shipmentRouter.delete(
   "/accounts/expenses/:expenseId",
@@ -446,6 +603,54 @@ shipmentRouter.get(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentListResponse'
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: operationCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orderNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: customerName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: customerPhone
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: shipmentStatus
+ *         description: CSV of numeric shipment statuses
+ *         schema:
+ *           type: string
+ *           example: 2,3,4
+ *       - in: query
+ *         name: paymentStatus
+ *         description: CSV of numeric payment statuses
+ *         schema:
+ *           type: string
+ *           example: 1,2
+ *       - in: query
+ *         name: shipmentType
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: deliveryBy
+ *         description: CSV of delivery provider ids or a shipping company text match
+ *         schema:
+ *           type: string
  */
 shipmentRouter.get(
   "/",
@@ -474,6 +679,45 @@ shipmentRouter.get(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentDetailsResponse'
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a shipment
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             additionalProperties: true
+ *     responses:
+ *       200:
+ *         description: Shipment updated
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Delete a shipment
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Shipment deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
  */
 shipmentRouter.get(
   "/:shipmentId",
@@ -499,11 +743,97 @@ shipmentRouter.post(
   asyncHandler(shipmentController.addNote),
 );
 
+/**
+ * @swagger
+ * /shipments/{shipmentId}/notes:
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Add a shipment note
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentNoteRequest'
+ *     responses:
+ *       200:
+ *         description: Note created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentNoteResponse'
+ */
+
 shipmentRouter.put(
   "/:shipmentId/notes/:noteId",
   validateRequest({ body: shipmentNoteSchema, params: shipmentNoteParamsSchema }),
   asyncHandler(shipmentController.updateNote),
 );
+
+/**
+ * @swagger
+ * /shipments/{shipmentId}/notes/{noteId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a shipment note
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: noteId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentNoteRequest'
+ *     responses:
+ *       200:
+ *         description: Note updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentNoteResponse'
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Delete a shipment note
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: noteId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Note deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
+ */
 
 shipmentRouter.delete(
   "/:shipmentId/notes/:noteId",

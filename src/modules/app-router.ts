@@ -1055,6 +1055,24 @@ const swaggerOptions = {
             status: { example: true, type: "boolean" },
           },
         },
+        ShipmentReturnMutationRequest: {
+          type: "object",
+          properties: {
+            orderId: { example: 9802, type: "integer" },
+            reason: { example: "منتج تالف", type: "string" },
+            returnDate: { example: "2026-05-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            status: { example: 2, type: "integer" },
+          },
+          required: ["orderId", "reason"],
+        },
+        ShipmentReturnItemResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/ShipmentReturnItem" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
         ShipmentInventoryItem: {
           type: "object",
           properties: {
@@ -1073,6 +1091,19 @@ const swaggerOptions = {
             vendorName: { example: "دريسينج هاوس", type: "string" },
           },
         },
+        ShipmentInventoryMutationRequest: {
+          type: "object",
+          properties: {
+            color: { example: "أبيض", type: "string" },
+            costPrice: { example: 2800, type: "number" },
+            productId: { example: 321, type: "integer" },
+            productCode: { example: "DRS-102", type: "string" },
+            quantity: { example: 2, type: "integer" },
+            size: { example: "50x120", type: "string" },
+            status: { example: 1, type: "integer" },
+          },
+          required: ["costPrice", "productId", "productCode", "quantity"],
+        },
         ShipmentInventoryListResponse: {
           type: "object",
           properties: {
@@ -1087,6 +1118,14 @@ const swaggerOptions = {
             },
             status: { example: true, type: "boolean" },
           },
+        },
+        ShipmentInventoryItemResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/ShipmentInventoryItem" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
         },
         ShipmentDeliveryAccountItem: {
           type: "object",
@@ -1134,6 +1173,17 @@ const swaggerOptions = {
             type: { example: "shipping", type: "string" },
           },
         },
+        ShipmentExpenseMutationRequest: {
+          type: "object",
+          properties: {
+            accountingDate: { example: "2026-05-11T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            accountingStatus: { example: 1, type: "integer" },
+            amount: { example: 150, type: "number" },
+            reason: { example: "مواد تغليف", type: "string" },
+            type: { example: "packaging", type: "string" },
+          },
+          required: ["amount", "reason", "type"],
+        },
         ShipmentExpenseAccountsListResponse: {
           type: "object",
           properties: {
@@ -1148,6 +1198,47 @@ const swaggerOptions = {
             },
             status: { example: true, type: "boolean" },
           },
+        },
+        ShipmentExpenseAccountItemResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/ShipmentExpenseAccountItem" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentNote: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-05-15T11:00:00.000Z", type: "string", format: "date-time" },
+            id: { example: 18, type: "integer" },
+            text: { example: "الشحنة متأخرة عن الموعد المحدد", type: "string" },
+            userName: { example: "Ahmed Hesham", type: "string" },
+          },
+          required: ["createdAt", "id", "text", "userName"],
+        },
+        ShipmentNoteRequest: {
+          type: "object",
+          properties: {
+            text: { example: "تم التواصل مع شركة الشحن", type: "string" },
+          },
+          required: ["text"],
+        },
+        ShipmentNoteResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/ShipmentNote" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentMessageResponse: {
+          type: "object",
+          properties: {
+            message: { example: "Shipment deleted successfully", type: "string" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["message", "status"],
         },
         ShipmentPerformanceResponse: {
           type: "object",
