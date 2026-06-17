@@ -9,12 +9,11 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import { useDateRange } from "hooks/useDateRange";
 import EditShipmentModal from "./components/EditShipmentModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import ShipmentsKpiRow from "./components/ShipmentsKpiRow";
-import ShipmentsFiltersBar from "./components/ShipmentsFiltersBar";
+import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFiltersBar";
 import ShipmentsTable from "./components/ShipmentsTable";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
@@ -94,6 +93,12 @@ function toIso(v: any): string | undefined {
   return m.isValid() ? m.toISOString() : undefined;
 }
 
+function dateFromUrl(str: string): any {
+  if (!str) return null;
+  const m = moment(str, "DD-MM-YYYY");
+  return m.isValid() ? m : null;
+}
+
 export default function Shipments() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -101,57 +106,52 @@ export default function Shipments() {
   const { user } = useSelector((state: any) => state.auth);
   const isVendor = user.userType === "2";
 
-  const { startDate, endDate, handleDatesChange, handleReset: resetDates } = useDateRange({ defaultDays: 0 });
-  const {
-    startDate: deliveryDateFrom,
-    endDate: deliveryDateTo,
-    handleDatesChange: handleDeliveryDatesChange,
-    handleReset: resetDeliveryDates,
-  } = useDateRange({ defaultDays: 0 });
-
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState("shipments");
 
-  // URL-driven filter state
-  const shipmentStatus  = searchParams.get("shipmentStatus")  || "";
-  const shipmentType    = searchParams.get("shipmentType")    || "";
-  const governorate     = searchParams.get("governorate")     || "";
-  const orderNumber     = searchParams.get("orderNumber")     || "";
-  const shippingCompany = searchParams.get("shippingCompany") || "";
-  const operationCode   = searchParams.get("operationCode")   || "";
-  const customerName    = searchParams.get("customerName")    || "";
-  const deliveryBy      = searchParams.get("deliveryBy")      || "";
-  const vendorId        = searchParams.get("vendorId")        || "";
+  // All filter values come from URL
+  const operationCode  = searchParams.get("operationCode")  || "";
+  const customerName   = searchParams.get("customerName")   || "";
+  const customerPhone  = searchParams.get("customerPhone")  || "";
+  const shipmentStatus = searchParams.get("shipmentStatus") || "";
+  const paymentStatus  = searchParams.get("paymentStatus")  || "";
+  const shipmentType   = searchParams.get("shipmentType")   || "";
+  const deliveryBy     = searchParams.get("deliveryBy")     || "";
+  const vendorName     = searchParams.get("vendorName")     || "";
+  const startDate      = dateFromUrl(searchParams.get("startDate") || "");
+  const endDate        = dateFromUrl(searchParams.get("endDate")   || "");
 
   // Modal state
   const [isModalOpen, setIsModalOpen]             = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment]   = useState<ShipmentItem | null>(null);
   const [vendors, setVendors] = useState<{ label: string; value: any }[]>([]);
-  const [isExportLoading, setIsExportLoading] = useState(false);
+  const [isExportLoading, setIsExportLoading]     = useState(false);
 
   // React Query
   const queryParams = {
-    page, shipmentStatus, shipmentType, governorate, orderNumber, shippingCompany,
-    operationCode, customerName, deliveryBy, vendorId,
-    startDate, endDate, deliveryDateFrom, deliveryDateTo,
+    page, operationCode, customerName, customerPhone,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, vendorName,
+    startDate, endDate,
   };
 
-  const { data, isLoading, isFetching } = useShipmentsListQuery(queryParams);
-  const summaryParams = { ...queryParams, page: 1 };
-  const { data: summaryData, isLoading: isSummaryLoading } = useShipmentsSummaryQuery(summaryParams);
-  const { data: metaData } = useShipmentsMetaQuery();
+  const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams);
+  const { data: summaryData, isLoading: isSummaryLoading }    = useShipmentsSummaryQuery({ ...queryParams, page: 1 });
+  const { data: metaData }                                    = useShipmentsMetaQuery();
 
   const shipments  = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / SHIPMENTS_LIST_PAGE_SIZE);
 
+  const tabCountMap = Object.fromEntries(
+    (metaData?.tabs ?? []).map((t) => [t.id, t.count ?? 0])
+  );
   const tabCounts = {
-    shipments: totalCount,
-    returns:   metaData?.tabCounts?.returns   ?? 0,
-    inventory: metaData?.tabCounts?.inventory ?? 0,
-    accounts:  metaData?.tabCounts?.accounts  ?? 0,
-    reports:   0,
+    shipments: tabCountMap["shipments"] ?? totalCount,
+    returns:   tabCountMap["returns"]   ?? 0,
+    inventory: tabCountMap["inventory"] ?? 0,
+    accounts:  tabCountMap["accounts"]  ?? 0,
+    reports:   tabCountMap["performance"] ?? 0,
   };
 
   // Fetch vendors for EditShipmentModal
@@ -161,50 +161,56 @@ export default function Shipments() {
       .then(({ data: { data: d } }) => setVendors(d.map((v: any) => ({ label: v.name, value: v.id }))));
   }, []);
 
-  // URL helpers
-  const updateParams = (params: Record<string, any> = {}) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") urlParams.set(key, String(value));
-      else urlParams.delete(key);
-    });
-    navigate(`?${urlParams.toString()}`);
-  };
-
-  const setFilterParam = (paramKey: string) => (value: string) => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (value) urlParams.set(paramKey, value);
-    else urlParams.delete(paramKey);
+  // Apply all filter values to URL at once
+  const handleApply = (values: FilterValues) => {
+    const urlParams = new URLSearchParams();
+    if (values.operationCode)  urlParams.set("operationCode",  values.operationCode);
+    if (values.customerName)   urlParams.set("customerName",   values.customerName);
+    if (values.customerPhone)  urlParams.set("customerPhone",  values.customerPhone);
+    if (values.shipmentStatus) urlParams.set("shipmentStatus", values.shipmentStatus);
+    if (values.paymentStatus)  urlParams.set("paymentStatus",  values.paymentStatus);
+    if (values.shipmentType)   urlParams.set("shipmentType",   values.shipmentType);
+    if (values.deliveryBy)     urlParams.set("deliveryBy",     values.deliveryBy);
+    if (values.vendorName)     urlParams.set("vendorName",     values.vendorName);
+    if (values.startDate) {
+      const m = moment.isMoment(values.startDate)
+        ? values.startDate
+        : moment(values.startDate, "DD-MM-YYYY");
+      if (m.isValid()) urlParams.set("startDate", m.format("DD-MM-YYYY"));
+    }
+    if (values.endDate) {
+      const m = moment.isMoment(values.endDate)
+        ? values.endDate
+        : moment(values.endDate, "DD-MM-YYYY");
+      if (m.isValid()) urlParams.set("endDate", m.format("DD-MM-YYYY"));
+    }
     urlParams.set("page", "1");
     navigate(`?${urlParams.toString()}`);
   };
 
-  const handleReset = () => {
-    resetDates?.();
-    resetDeliveryDates?.();
-    navigate("?");
+  const handleReset = () => navigate("?");
+
+  const updatePageParam = (value: number) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("page", String(value));
+    navigate(`?${urlParams.toString()}`);
   };
 
   // Export
   const handleExport = () => {
     const q = new URLSearchParams();
-    if (shipmentStatus)  q.set("shipmentStatus",  shipmentStatus);
-    if (shipmentType)    q.set("shipmentType",    shipmentType);
-    if (governorate)     q.set("governorate",     governorate);
-    if (orderNumber)     q.set("orderNumber",     orderNumber);
-    if (shippingCompany) q.set("shippingCompany", shippingCompany);
-    if (operationCode)   q.set("operationCode",   operationCode);
-    if (customerName)    q.set("customerName",    customerName);
-    if (deliveryBy)      q.set("deliveryBy",      deliveryBy);
-    if (vendorId)        q.set("vendorId",        vendorId);
+    if (operationCode)  q.set("operationCode",  operationCode);
+    if (customerName)   q.set("customerName",   customerName);
+    if (customerPhone)  q.set("customerPhone",  customerPhone);
+    if (shipmentStatus) q.set("shipmentStatus", shipmentStatus);
+    if (paymentStatus)  q.set("paymentStatus",  paymentStatus);
+    if (shipmentType)   q.set("shipmentType",   shipmentType);
+    if (deliveryBy)     q.set("deliveryBy",     deliveryBy);
+    if (vendorName)     q.set("vendorName",     vendorName);
     const sIso = toIso(startDate);
     const eIso = toIso(endDate);
-    const dFromIso = toIso(deliveryDateFrom);
-    const dToIso   = toIso(deliveryDateTo);
-    if (sIso)     q.set("startDate",        sIso);
-    if (eIso)     q.set("endDate",          eIso);
-    if (dFromIso) q.set("deliveryDateFrom", dFromIso);
-    if (dToIso)   q.set("deliveryDateTo",   dToIso);
+    if (sIso) q.set("startDate", sIso);
+    if (eIso) q.set("endDate",   eIso);
 
     setIsExportLoading(true);
     axiosRequest
@@ -238,6 +244,13 @@ export default function Shipments() {
         setIsDeleteModalOpen(false);
         queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
       });
+  };
+
+  // Default values snapshot for filter bar (from current URL)
+  const filterDefaults: FilterValues = {
+    operationCode, customerName, customerPhone,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, vendorName,
+    startDate, endDate,
   };
 
   return (
@@ -363,17 +376,9 @@ export default function Shipments() {
                 <Box
                   component="span"
                   sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: "20px",
-                    height: "18px",
-                    px: "5px",
-                    borderRadius: "100px",
-                    fontSize: "10.5px",
-                    fontWeight: 700,
-                    fontFamily: FONT,
-                    flexShrink: 0,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    minWidth: "20px", height: "18px", px: "5px", borderRadius: "100px",
+                    fontSize: "10.5px", fontWeight: 700, fontFamily: FONT, flexShrink: 0,
                     bgcolor: active ? "rgba(255,255,255,0.22)" : HX.surface3,
                     color: active ? "#fff" : HX.tx2,
                   }}
@@ -388,40 +393,14 @@ export default function Shipments() {
         {/* Shipments tab */}
         {activeTab === "shipments" && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <ShipmentsKpiRow
-              cards={summaryData}
-              isLoading={isSummaryLoading}
-            />
+            <ShipmentsKpiRow cards={summaryData} isLoading={isSummaryLoading} />
 
             <ShipmentsFiltersBar
-              selectedShipmentStatus={shipmentStatus}
-              selectedShipmentType={shipmentType}
-              selectedGovernorate={governorate}
-              orderNumber={orderNumber}
-              shippingCompany={shippingCompany}
-              operationCode={operationCode}
-              customerName={customerName}
-              deliveryBy={deliveryBy}
-              vendorId={vendorId}
-              startDate={startDate}
-              endDate={endDate}
-              deliveryDateFrom={deliveryDateFrom}
-              deliveryDateTo={deliveryDateTo}
+              key={`${operationCode}|${customerName}|${shipmentStatus}|${vendorName}`}
+              defaultValues={filterDefaults}
               meta={metaData}
               isVendor={isVendor}
-              onStatusChange={setFilterParam("shipmentStatus")}
-              onTypeChange={setFilterParam("shipmentType")}
-              onGovernorateChange={setFilterParam("governorate")}
-              onOrderNumberChange={(v) => updateParams({ orderNumber: v || undefined, page: 1 })}
-              onShippingCompanyChange={(v) => updateParams({ shippingCompany: v || undefined, page: 1 })}
-              onOperationCodeChange={(v) => updateParams({ operationCode: v || undefined, page: 1 })}
-              onCustomerNameChange={(v) => updateParams({ customerName: v || undefined, page: 1 })}
-              onDeliveryByChange={setFilterParam("deliveryBy")}
-              onVendorIdChange={setFilterParam("vendorId")}
-              onDatesChange={handleDatesChange}
-              onDateReset={resetDates}
-              onDeliveryDatesChange={handleDeliveryDatesChange}
-              onDeliveryDateReset={resetDeliveryDates}
+              onApply={handleApply}
               onReset={handleReset}
             />
 
@@ -433,7 +412,7 @@ export default function Shipments() {
               page={page}
               totalPages={totalPages}
               totalCount={totalCount}
-              onPageChange={(value) => updateParams({ page: value })}
+              onPageChange={updatePageParam}
               onEdit={(s) => { setSelectedShipment(s); setIsModalOpen(true); }}
               onDelete={(s) => { setSelectedShipment(s); setIsDeleteModalOpen(true); }}
             />

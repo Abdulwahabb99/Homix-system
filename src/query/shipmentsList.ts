@@ -45,20 +45,24 @@ export interface ShipmentsListResponse {
 
 export interface ShipmentsListParams {
   page: number;
-  shipmentStatus?: string;
-  shipmentType?: string;
-  governorate?: string;
-  orderNumber?: string;
-  shippingCompany?: string;
-  startDate?: any;
-  endDate?: any;
   operationCode?: string;
   customerName?: string;
   customerPhone?: string;
+  shipmentStatus?: string;
+  paymentStatus?: string;
+  shipmentType?: string;
   deliveryBy?: string;
-  vendorId?: string;
+  vendorName?: string;
+  startDate?: any;
+  endDate?: any;
   deliveryDateFrom?: any;
   deliveryDateTo?: any;
+}
+
+function toDateString(v: any): string | undefined {
+  if (!v) return undefined;
+  const m = moment.isMoment(v) ? v : moment(String(v), "DD-MM-YYYY");
+  return m.isValid() ? m.toISOString() : undefined;
 }
 
 function buildQuery(p: ShipmentsListParams): string {
@@ -66,40 +70,22 @@ function buildQuery(p: ShipmentsListParams): string {
     page: String(p.page),
     size: String(SHIPMENTS_LIST_PAGE_SIZE),
   });
+  if (p.operationCode)  q.set("operationCode",  p.operationCode);
+  if (p.customerName)   q.set("customerName",   p.customerName);
+  if (p.customerPhone)  q.set("customerPhone",  p.customerPhone);
   if (p.shipmentStatus) q.set("shipmentStatus", p.shipmentStatus);
+  if (p.paymentStatus)  q.set("paymentStatus",  p.paymentStatus);
   if (p.shipmentType)   q.set("shipmentType",   p.shipmentType);
-  if (p.governorate)    q.set("governorate",    p.governorate);
-  if (p.orderNumber)    q.set("orderNumber",    p.orderNumber);
-  if (p.shippingCompany) q.set("shippingCompany", p.shippingCompany);
-  if (p.operationCode)   q.set("operationCode",   p.operationCode);
-  if (p.customerName)    q.set("customerName",    p.customerName);
-  if (p.customerPhone)   q.set("customerPhone",   p.customerPhone);
-  if (p.deliveryBy)      q.set("deliveryBy",      p.deliveryBy);
-  if (p.vendorId)        q.set("vendorId",        p.vendorId);
-  if (p.deliveryDateFrom) {
-    const d = moment.isMoment(p.deliveryDateFrom)
-      ? p.deliveryDateFrom
-      : moment.utc(String(p.deliveryDateFrom), "DD-MM-YYYY");
-    q.set("deliveryDateFrom", d.toISOString());
-  }
-  if (p.deliveryDateTo) {
-    const d = moment.isMoment(p.deliveryDateTo)
-      ? p.deliveryDateTo
-      : moment.utc(String(p.deliveryDateTo), "DD-MM-YYYY");
-    q.set("deliveryDateTo", d.toISOString());
-  }
-  if (p.startDate) {
-    const d = moment.isMoment(p.startDate)
-      ? p.startDate
-      : moment.utc(String(p.startDate), "DD-MM-YYYY");
-    q.set("shipmentStartDate", d.toISOString());
-  }
-  if (p.endDate) {
-    const d = moment.isMoment(p.endDate)
-      ? p.endDate
-      : moment.utc(String(p.endDate), "DD-MM-YYYY");
-    q.set("shipmentEndDate", d.toISOString());
-  }
+  if (p.deliveryBy)     q.set("deliveryBy",     p.deliveryBy);
+  if (p.vendorName)     q.set("vendorName",     p.vendorName);
+  const sd = toDateString(p.startDate);
+  const ed = toDateString(p.endDate);
+  const df = toDateString(p.deliveryDateFrom);
+  const dt = toDateString(p.deliveryDateTo);
+  if (sd) q.set("startDate",       sd);
+  if (ed) q.set("endDate",         ed);
+  if (df) q.set("deliveryDateFrom", df);
+  if (dt) q.set("deliveryDateTo",   dt);
   return q.toString();
 }
 

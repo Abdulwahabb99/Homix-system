@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { shipmentKeys } from "./keys";
-import {
-  SHIPMENT_STATUS_VALUES,
-  SHIPMENT_TYPE_VALUES,
-  GOVERNORATES_VALUES,
-} from "shared/utils/constants";
+import { SHIPMENT_STATUS_VALUES, SHIPMENT_TYPE_VALUES } from "shared/utils/constants";
 
 export interface ShipmentsMetaOption {
   value: string | number;
   label: string;
+}
+
+export interface ShipmentsTabCount {
+  id: string;
+  label: string;
+  count?: number;
 }
 
 export interface ShipmentsMeta {
@@ -18,12 +20,40 @@ export interface ShipmentsMeta {
   paymentStatuses: ShipmentsMetaOption[];
   governorates: ShipmentsMetaOption[];
   deliveryByOptions: ShipmentsMetaOption[];
-  vendors: ShipmentsMetaOption[];
-  tabCounts: {
-    shipments: number;
-    returns: number;
-    inventory: number;
-    accounts: number;
+  accountingStatuses: ShipmentsMetaOption[];
+  vendorReturnStatuses: ShipmentsMetaOption[];
+  customerReturnStatuses: ShipmentsMetaOption[];
+  inventoryStatuses: ShipmentsMetaOption[];
+  expenseTypes: ShipmentsMetaOption[];
+  tabs: ShipmentsTabCount[];
+}
+
+function toOptions(arr: any[]): ShipmentsMetaOption[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((item) => ({ value: item.id, label: item.label }));
+}
+
+function normalizeMeta(raw: any): ShipmentsMeta {
+  if (!raw || typeof raw !== "object") return FALLBACK;
+
+  const pick = (field: string, fallback: ShipmentsMetaOption[]) => {
+    const arr = raw[field];
+    const opts = toOptions(arr);
+    return opts.length > 0 ? opts : fallback;
+  };
+
+  return {
+    shipmentStatuses:       pick("shipmentStatuses",       SHIPMENT_STATUS_VALUES),
+    shipmentTypes:          pick("shipmentTypes",          SHIPMENT_TYPE_VALUES),
+    paymentStatuses:        pick("paymentStatuses",        FALLBACK.paymentStatuses),
+    governorates:           pick("governorates",           FALLBACK.governorates),
+    deliveryByOptions:      pick("deliveryByOptions",      []),
+    accountingStatuses:     pick("accountingStatuses",     []),
+    vendorReturnStatuses:   pick("vendorReturnStatuses",   []),
+    customerReturnStatuses: pick("customerReturnStatuses", []),
+    inventoryStatuses:      pick("inventoryStatuses",      []),
+    expenseTypes:           pick("expenseTypes",           []),
+    tabs: Array.isArray(raw.tabs) ? raw.tabs : [],
   };
 }
 
@@ -34,35 +64,15 @@ const FALLBACK: ShipmentsMeta = {
     { value: 1, label: "الدفع عند الاستلام" },
     { value: 2, label: "مدفوع" },
   ],
-  governorates: GOVERNORATES_VALUES,
+  governorates: [],
   deliveryByOptions: [],
-  vendors: [],
-  tabCounts: { shipments: 0, returns: 0, inventory: 0, accounts: 0 },
+  accountingStatuses: [],
+  vendorReturnStatuses: [],
+  customerReturnStatuses: [],
+  inventoryStatuses: [],
+  expenseTypes: [],
+  tabs: [],
 };
-
-function normalizeMeta(raw: any): ShipmentsMeta {
-  if (!raw || typeof raw !== "object") return FALLBACK;
-
-  const pick = (field: string, fallback: ShipmentsMetaOption[]) => {
-    const arr = raw[field];
-    return Array.isArray(arr) && arr.length > 0 ? arr : fallback;
-  };
-
-  return {
-    shipmentStatuses: pick("shipmentStatuses", FALLBACK.shipmentStatuses),
-    shipmentTypes:    pick("shipmentTypes",    FALLBACK.shipmentTypes),
-    paymentStatuses:  pick("paymentStatuses",  FALLBACK.paymentStatuses),
-    governorates:     pick("governorates",     FALLBACK.governorates),
-    deliveryByOptions: pick("deliveryByOptions", FALLBACK.deliveryByOptions),
-    vendors:          pick("vendors",          FALLBACK.vendors),
-    tabCounts: {
-      shipments: raw.tabCounts?.shipments ?? 0,
-      returns:   raw.tabCounts?.returns   ?? 0,
-      inventory: raw.tabCounts?.inventory ?? 0,
-      accounts:  raw.tabCounts?.accounts  ?? 0,
-    },
-  };
-}
 
 export async function fetchShipmentsMeta(): Promise<ShipmentsMeta> {
   const { data } = await axiosRequest.get("/shipments/meta");
