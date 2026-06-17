@@ -4,6 +4,7 @@ import { asyncHandler, validateRequest } from "../../shared/http";
 import { ShipmentController } from "./shipment.controller";
 import { ShipmentRepository } from "./shipment.repo";
 import {
+  shipmentCreateSchema,
   shipmentDeliveryAccountsQuerySchema,
   shipmentExpenseMutationSchema,
   shipmentExpenseParamsSchema,
@@ -153,19 +154,51 @@ shipmentRouter.get(
  *         application/json:
  *           schema:
  *             type: object
- *             additionalProperties: true
+ *             required: [customer, line_items]
+ *             properties:
+ *               customer:
+ *                 type: object
+ *                 description: Legacy customer payload used by the order importer.
+ *               line_items:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required: [title, price, quantity, variant_id]
+ *                   properties:
+ *                     title:
+ *                       type: string
+ *                       example: كنبة شيب
+ *                     price:
+ *                       type: number
+ *                       example: 16999
+ *                     quantity:
+ *                       type: integer
+ *                       example: 1
+ *                     variant_id:
+ *                       oneOf:
+ *                         - type: integer
+ *                         - type: string
+ *                       example: 445566
  *             example:
- *               shipmentNumber: SH-9802
- *               orderId: 9802
+ *               customer:
+ *                 first_name: عبير
+ *                 last_name: ابوالمجيد
+ *                 phone: "01155559646"
+ *               line_items:
+ *                 - title: كنبة شيب
+ *                   price: 16999
+ *                   quantity: 1
+ *                   variant_id: 445566
  *     responses:
  *       200:
- *         description: Shipment created
+ *         description: Shipment imported through the legacy bridge
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ShipmentMessageResponse'
  */
-shipmentRouter.post("/", validateRequest({ body: shipmentMutationSchema }), asyncHandler(shipmentController.createShipment));
+shipmentRouter.post("/", validateRequest({ body: shipmentCreateSchema }), asyncHandler(shipmentController.createShipment));
 
 /**
  * @swagger

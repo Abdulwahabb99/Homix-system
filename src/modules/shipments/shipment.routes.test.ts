@@ -310,11 +310,44 @@ describe("shipmentRouter", () => {
   });
 
   it("creates shipments through the TS service boundary", async () => {
-    const response = await request(app).post("/shipments").send({ shipmentNumber: "SH-9802" });
+    const payload = {
+      customer: {
+        firstName: "عبير",
+        lastName: "ابوالمجيد",
+      },
+      line_items: [
+        {
+          price: 16999,
+          product_id: "shopify-product-1",
+          quantity: 1,
+          title: "كنبة شيب",
+          variant_id: 445566,
+        },
+      ],
+      name: "#H9802",
+    };
+    const response = await request(app).post("/shipments").send(payload);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ message: "Shipment created successfully", status: true });
-    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([{ shipmentNumber: "SH-9802" }], true);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([payload], true);
+  });
+
+  it("rejects shipment creation payloads without line items", async () => {
+    const response = await request(app).post("/shipments").send({ shipmentNumber: "SH-9802" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects shipment creation payloads without usable customer data", async () => {
+    const response = await request(app).post("/shipments").send({
+      customer: {},
+      line_items: [{ price: 16999, quantity: 1, title: "كنبة شيب", variant_id: 445566 }],
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns the shipments list", async () => {

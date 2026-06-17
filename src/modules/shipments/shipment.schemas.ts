@@ -52,6 +52,34 @@ export const shipmentSummaryQuerySchema = shipmentListQuerySchema.omit({
   size: true,
 });
 
+const shipmentCreateLineItemSchema = z.object({
+  price: z.coerce.number().nonnegative(),
+  quantity: z.coerce.number().int().positive(),
+  title: z.string().trim().min(1),
+  variant_id: z.union([z.string().trim().min(1), z.coerce.number().int().positive()]),
+}).passthrough();
+
+export const shipmentCreateSchema = z.object({
+  customer: z.object({}).passthrough(),
+  line_items: z.array(shipmentCreateLineItemSchema).min(1, "line_items must contain at least one item"),
+}).passthrough().superRefine((value, context) => {
+  const customer = value.customer as Record<string, unknown>;
+  const hasCustomerIdentity = Boolean(
+    customer.id
+    || customer.firstName
+    || customer.first_name
+    || customer.default_address,
+  );
+
+  if (!hasCustomerIdentity) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "customer must include id, name fields, or default_address",
+      path: ["customer"],
+    });
+  }
+});
+
 export const shipmentMutationSchema = z.record(z.string(), z.unknown());
 
 export const shipmentNoteSchema = z.object({
