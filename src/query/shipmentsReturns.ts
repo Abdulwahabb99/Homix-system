@@ -25,21 +25,30 @@ export const RETURNS_PAGE_SIZE = 20;
 
 export interface ReturnsParams {
   page: number;
+  orderNumber?: string;
+  operationCode?: string;
+  status?: string;
+  sellerName?: string;
 }
 
 function buildQuery(p: ReturnsParams): string {
-  return new URLSearchParams({
+  const q = new URLSearchParams({
     page: String(p.page),
     size: String(RETURNS_PAGE_SIZE),
-  }).toString();
+  });
+  if (p.orderNumber)   q.set("orderNumber",   p.orderNumber);
+  if (p.operationCode) q.set("operationCode", p.operationCode);
+  if (p.status)        q.set("status",        p.status);
+  if (p.sellerName)    q.set("sellerName",     p.sellerName);
+  return q.toString();
 }
 
 function normalizeResponse(data: any): ReturnsListResponse {
   const raw = data?.data ?? data ?? {};
   return {
-    items: Array.isArray(raw.items) ? raw.items : [],
-    page:  raw.page ?? 1,
-    size:  raw.size ?? RETURNS_PAGE_SIZE,
+    items:      Array.isArray(raw.items) ? raw.items : [],
+    page:       raw.page ?? 1,
+    size:       raw.size ?? RETURNS_PAGE_SIZE,
     totalCount: raw.totalCount ?? 0,
   };
 }
@@ -57,7 +66,7 @@ export async function fetchCustomerReturns(params: ReturnsParams): Promise<Retur
 export function useVendorReturnsQuery(params: ReturnsParams) {
   return useQuery({
     queryKey: shipmentKeys.returns("vendor", JSON.stringify(params)),
-    queryFn: () => fetchVendorReturns(params),
+    queryFn:  () => fetchVendorReturns(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
@@ -66,7 +75,7 @@ export function useVendorReturnsQuery(params: ReturnsParams) {
 export function useCustomerReturnsQuery(params: ReturnsParams) {
   return useQuery({
     queryKey: shipmentKeys.returns("customer", JSON.stringify(params)),
-    queryFn: () => fetchCustomerReturns(params),
+    queryFn:  () => fetchCustomerReturns(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
