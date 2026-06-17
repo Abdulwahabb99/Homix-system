@@ -1,13 +1,14 @@
 import React from "react";
-import { Box, Pagination } from "@mui/material";
+import { Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import moment from "moment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
-import type { ShipmentItem } from "query/shipmentsList";
+import { SHIPMENTS_LIST_PAGE_SIZE, type ShipmentItem } from "query/shipmentsList";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -90,6 +91,7 @@ interface ShipmentsTableProps {
   isFetching: boolean;
   page: number;
   totalPages: number;
+  totalCount: number;
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
@@ -102,6 +104,7 @@ export default function ShipmentsTable({
   isFetching,
   page,
   totalPages,
+  totalCount,
   onPageChange,
   onEdit,
   onDelete,
@@ -320,20 +323,14 @@ export default function ShipmentsTable({
         </table>
       </Box>
 
-      {totalPages > 1 && (
-        <Box sx={{ display: "flex", justifyContent: "center", p: "12px 16px", borderTop: `0.5px solid ${HX.border}` }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, value) => onPageChange(value)}
-            color="primary"
-            shape="rounded"
-            size="small"
-            siblingCount={1}
-            boundaryCount={1}
-          />
-        </Box>
-      )}
+      <HomixPaginationBar
+        page={page - 1}
+        totalPages={totalPages}
+        pageSize={SHIPMENTS_LIST_PAGE_SIZE}
+        totalCount={totalCount}
+        onPageChange={(p) => onPageChange(p + 1)}
+        itemLabel="شحنة"
+      />
     </Box>
   );
 }

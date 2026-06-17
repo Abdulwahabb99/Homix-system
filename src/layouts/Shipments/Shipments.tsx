@@ -355,6 +355,7 @@ export default function Shipments() {
               isFetching={isFetching}
               page={page}
               totalPages={totalPages}
+              totalCount={totalCount}
               onPageChange={(value) => updateParams({ page: value })}
               onEdit={(s) => { setSelectedShipment(s); setIsModalOpen(true); }}
               onDelete={(s) => { setSelectedShipment(s); setIsDeleteModalOpen(true); }}
