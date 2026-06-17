@@ -31,7 +31,10 @@ export class ShipmentService {
   public constructor(private readonly shipmentRepository: ShipmentRepository) {}
 
   public async createShipment(payload: ShipmentMutationPayload): Promise<Result<{ message: string }>> {
-    await shipmentLegacyGateway.createShipment(payload);
+    await shipmentLegacyGateway.createShipment({
+      ...payload,
+      shippedFromInventory: true,
+    });
     return success({ message: "Shipment created successfully" });
   }
 

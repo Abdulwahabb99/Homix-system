@@ -146,8 +146,8 @@ shipmentRouter.get(
  *     security:
  *       - bearerAuth: []
  *     tags: [Shipments]
- *     summary: Create a shipment through the current shipment creation bridge
- *     description: Accepts the legacy shipment payload and runs it through the new TypeScript service boundary.
+ *     summary: Create a shipment
+ *     description: Accepts the same legacy-compatible order-style payload used for manual order creation, with shipment-specific fields. The backend always forces `shippedFromInventory = true`.
  *     requestBody:
  *       required: true
  *       content:
@@ -156,9 +156,22 @@ shipmentRouter.get(
  *             type: object
  *             required: [customer, line_items]
  *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "#H9802"
+ *               number:
+ *                 oneOf:
+ *                   - type: integer
+ *                   - type: string
+ *                 example: "9802"
+ *               order_number:
+ *                 oneOf:
+ *                   - type: integer
+ *                   - type: string
+ *                 example: "31667"
  *               customer:
  *                 type: object
- *                 description: Legacy customer payload used by the order importer.
+ *                 description: Legacy customer payload used by manual order creation.
  *               line_items:
  *                 type: array
  *                 minItems: 1
@@ -180,7 +193,37 @@ shipmentRouter.get(
  *                         - type: integer
  *                         - type: string
  *                       example: 445566
+ *               shippingCompany:
+ *                 type: string
+ *                 example: J&T
+ *               governorate:
+ *                 type: string
+ *                 example: الجيزة
+ *               shipmentStatus:
+ *                 type: integer
+ *                 example: 2
+ *               shipmentType:
+ *                 type: string
+ *                 example: grouped
+ *               shippingReceiveDate:
+ *                 type: string
+ *                 format: date-time
+ *               deliveryDate:
+ *                 type: string
+ *                 format: date-time
+ *               deliveryBy:
+ *                 type: integer
+ *                 example: 1
+ *               shippingFees:
+ *                 type: number
+ *                 example: 65
+ *               toBeCollected:
+ *                 type: number
+ *                 example: 29998
  *             example:
+ *               name: "#H9802"
+ *               number: "9802"
+ *               order_number: "31667"
  *               customer:
  *                 first_name: عبير
  *                 last_name: ابوالمجيد
@@ -190,9 +233,18 @@ shipmentRouter.get(
  *                   price: 16999
  *                   quantity: 1
  *                   variant_id: 445566
+ *               shippingCompany: J&T
+ *               governorate: الجيزة
+ *               shipmentStatus: 2
+ *               shipmentType: grouped
+ *               shippingReceiveDate: 2026-06-18T00:00:00.000Z
+ *               deliveryDate: 2026-06-20T00:00:00.000Z
+ *               deliveryBy: 1
+ *               shippingFees: 65
+ *               toBeCollected: 29998
  *     responses:
  *       200:
- *         description: Shipment imported through the legacy bridge
+ *         description: Shipment created successfully
  *         content:
  *           application/json:
  *             schema:

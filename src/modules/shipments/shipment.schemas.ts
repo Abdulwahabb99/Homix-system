@@ -60,8 +60,31 @@ const shipmentCreateLineItemSchema = z.object({
 }).passthrough();
 
 export const shipmentCreateSchema = z.object({
+  code: z.union([z.string().trim().min(1), z.coerce.number().int().positive()]).optional(),
   customer: z.object({}).passthrough(),
+  deliveryBy: z.coerce.number().int().positive().optional().nullable(),
+  deliveryDate: dateString.optional().nullable(),
+  downPayment: z.coerce.number().min(0).optional(),
+  expectedDate: dateString.optional().nullable(),
+  expectedDeliveryDate: dateString.optional().nullable(),
+  governorate: z.string().trim().min(1).optional().nullable(),
+  itemShipping: z.coerce.number().min(0).optional(),
   line_items: z.array(shipmentCreateLineItemSchema).min(1, "line_items must contain at least one item"),
+  name: z.string().trim().min(1).optional(),
+  notes: z.string().trim().optional().nullable(),
+  number: z.union([z.string().trim().min(1), z.coerce.number().int().positive()]).optional(),
+  order_number: z.union([z.string().trim().min(1), z.coerce.number().int().positive()]).optional(),
+  orderDate: dateString.optional().nullable(),
+  paymentStatus: z.coerce.number().int().positive().optional().nullable(),
+  PoDate: dateString.optional().nullable(),
+  receivedAmount: z.coerce.number().min(0).optional(),
+  shipmentStatus: z.coerce.number().int().positive().optional().nullable(),
+  shipmentType: z.string().trim().min(1).optional().nullable(),
+  shippedFromInventory: z.boolean().optional(),
+  shippingCompany: z.string().trim().min(1).optional().nullable(),
+  shippingFees: z.coerce.number().min(0).optional(),
+  shippingReceiveDate: dateString.optional().nullable(),
+  toBeCollected: z.coerce.number().min(0).optional(),
 }).passthrough().superRefine((value, context) => {
   const customer = value.customer as Record<string, unknown>;
   const hasCustomerIdentity = Boolean(

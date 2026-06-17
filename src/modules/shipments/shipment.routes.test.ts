@@ -315,6 +315,9 @@ describe("shipmentRouter", () => {
         firstName: "عبير",
         lastName: "ابوالمجيد",
       },
+      deliveryBy: 1,
+      deliveryDate: "2026-06-20T00:00:00.000Z",
+      governorate: "الجيزة",
       line_items: [
         {
           price: 16999,
@@ -325,12 +328,23 @@ describe("shipmentRouter", () => {
         },
       ],
       name: "#H9802",
+      shipmentStatus: 2,
+      shipmentType: "grouped",
+      shippingCompany: "J&T",
+      shippingFees: 65,
+      shippingReceiveDate: "2026-06-18T00:00:00.000Z",
+      toBeCollected: 29998,
     };
     const response = await request(app).post("/shipments").send(payload);
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ message: "Shipment created successfully", status: true });
-    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([payload], true);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        ...payload,
+        shippedFromInventory: true,
+      }),
+    ], true);
   });
 
   it("rejects shipment creation payloads without line items", async () => {
