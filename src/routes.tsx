@@ -67,7 +67,7 @@ export const adminRoutes = [
   },
   {
     type: "collapse",
-    name: "الشحنات",
+    name: "الشحن والتوصيل",
     key: "shipments",
     icon: <Icon fontSize="small">local_shipping</Icon>,
     route: "/shipments",
@@ -263,7 +263,7 @@ export const logisticsRoutes = [
   },
   {
     type: "collapse",
-    name: "الشحنات",
+    name: "الشحن والتوصيل",
     key: "shipments",
     icon: <Icon fontSize="small">local_shipping</Icon>,
     route: "/shipments",
@@ -355,7 +355,7 @@ export const operationRoutes = [
   },
   {
     type: "collapse",
-    name: "الشحنات",
+    name: "الشحن والتوصيل",
     key: "shipments",
     icon: <Icon fontSize="small">local_shipping</Icon>,
     route: "/shipments",

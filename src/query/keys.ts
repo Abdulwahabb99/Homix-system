@@ -31,6 +31,11 @@ export const shipmentKeys = {
   lists: () => [...shipmentKeys.all(), "list"] as const,
   list: (filtersKey: string) => [...shipmentKeys.lists(), filtersKey] as const,
   summary: (filtersKey: string) => [...shipmentKeys.all(), "summary", filtersKey] as const,
+  meta: () => [...shipmentKeys.all(), "meta"] as const,
+  returns: (tab: string, filtersKey: string) => [...shipmentKeys.all(), "returns", tab, filtersKey] as const,
+  inventory: (filtersKey: string) => [...shipmentKeys.all(), "inventory", filtersKey] as const,
+  accounts: (tab: string, filtersKey: string) => [...shipmentKeys.all(), "accounts", tab, filtersKey] as const,
+  performance: (filtersKey: string) => [...shipmentKeys.all(), "performance", filtersKey] as const,
 };
 
 export const ticketKeys = {

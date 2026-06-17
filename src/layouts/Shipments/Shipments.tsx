@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
 import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import CircularProgress from "@mui/material/CircularProgress";
 import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDateRange } from "hooks/useDateRange";
@@ -25,7 +26,9 @@ import {
   SHIPMENTS_LIST_PAGE_SIZE,
   type ShipmentItem,
 } from "query/shipmentsList";
+import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 import { shipmentKeys } from "query/keys";
+import moment from "moment";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -85,6 +88,12 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
+function toIso(v: any): string | undefined {
+  if (!v) return undefined;
+  const m = moment.isMoment(v) ? v : moment.utc(String(v), "DD-MM-YYYY");
+  return m.isValid() ? m.toISOString() : undefined;
+}
+
 export default function Shipments() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -93,43 +102,66 @@ export default function Shipments() {
   const isVendor = user.userType === "2";
 
   const { startDate, endDate, handleDatesChange, handleReset: resetDates } = useDateRange({ defaultDays: 0 });
+  const {
+    startDate: deliveryDateFrom,
+    endDate: deliveryDateTo,
+    handleDatesChange: handleDeliveryDatesChange,
+    handleReset: resetDeliveryDates,
+  } = useDateRange({ defaultDays: 0 });
 
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState("shipments");
 
-  // --- Filter state (URL-driven) ---
+  // URL-driven filter state
   const shipmentStatus  = searchParams.get("shipmentStatus")  || "";
   const shipmentType    = searchParams.get("shipmentType")    || "";
   const governorate     = searchParams.get("governorate")     || "";
   const orderNumber     = searchParams.get("orderNumber")     || "";
   const shippingCompany = searchParams.get("shippingCompany") || "";
+  const operationCode   = searchParams.get("operationCode")   || "";
+  const customerName    = searchParams.get("customerName")    || "";
+  const deliveryBy      = searchParams.get("deliveryBy")      || "";
+  const vendorId        = searchParams.get("vendorId")        || "";
 
-  // --- Modal state ---
-  const [isModalOpen, setIsModalOpen]       = useState(false);
+  // Modal state
+  const [isModalOpen, setIsModalOpen]             = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment]   = useState<ShipmentItem | null>(null);
   const [vendors, setVendors] = useState<{ label: string; value: any }[]>([]);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
-  // --- React Query ---
-  const queryParams = { page, shipmentStatus, shipmentType, governorate, orderNumber, shippingCompany, startDate, endDate };
+  // React Query
+  const queryParams = {
+    page, shipmentStatus, shipmentType, governorate, orderNumber, shippingCompany,
+    operationCode, customerName, deliveryBy, vendorId,
+    startDate, endDate, deliveryDateFrom, deliveryDateTo,
+  };
 
   const { data, isLoading, isFetching } = useShipmentsListQuery(queryParams);
-
   const summaryParams = { ...queryParams, page: 1 };
   const { data: summaryData, isLoading: isSummaryLoading } = useShipmentsSummaryQuery(summaryParams);
+  const { data: metaData } = useShipmentsMetaQuery();
 
-  const shipments   = data?.items      ?? [];
-  const totalCount  = data?.totalCount ?? 0;
-  const totalPages  = Math.ceil(totalCount / SHIPMENTS_LIST_PAGE_SIZE);
+  const shipments  = data?.items      ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / SHIPMENTS_LIST_PAGE_SIZE);
 
-  // Fetch vendors once
+  const tabCounts = {
+    shipments: totalCount,
+    returns:   metaData?.tabCounts?.returns   ?? 0,
+    inventory: metaData?.tabCounts?.inventory ?? 0,
+    accounts:  metaData?.tabCounts?.accounts  ?? 0,
+    reports:   0,
+  };
+
+  // Fetch vendors for EditShipmentModal
   React.useEffect(() => {
     axiosRequest
       .get(`${process.env.REACT_APP_API_URL}/vendors`)
       .then(({ data: { data: d } }) => setVendors(d.map((v: any) => ({ label: v.name, value: v.id }))));
   }, []);
 
-  // --- URL helpers ---
+  // URL helpers
   const updateParams = (params: Record<string, any> = {}) => {
     const urlParams = new URLSearchParams(window.location.search);
     Object.entries(params).forEach(([key, value]) => {
@@ -148,11 +180,41 @@ export default function Shipments() {
   };
 
   const handleReset = () => {
-    if (resetDates) resetDates();
+    resetDates?.();
+    resetDeliveryDates?.();
     navigate("?");
   };
 
-  // --- Mutations ---
+  // Export
+  const handleExport = () => {
+    const q = new URLSearchParams();
+    if (shipmentStatus)  q.set("shipmentStatus",  shipmentStatus);
+    if (shipmentType)    q.set("shipmentType",    shipmentType);
+    if (governorate)     q.set("governorate",     governorate);
+    if (orderNumber)     q.set("orderNumber",     orderNumber);
+    if (shippingCompany) q.set("shippingCompany", shippingCompany);
+    if (operationCode)   q.set("operationCode",   operationCode);
+    if (customerName)    q.set("customerName",    customerName);
+    if (deliveryBy)      q.set("deliveryBy",      deliveryBy);
+    if (vendorId)        q.set("vendorId",        vendorId);
+    const sIso = toIso(startDate);
+    const eIso = toIso(endDate);
+    const dFromIso = toIso(deliveryDateFrom);
+    const dToIso   = toIso(deliveryDateTo);
+    if (sIso)     q.set("startDate",        sIso);
+    if (eIso)     q.set("endDate",          eIso);
+    if (dFromIso) q.set("deliveryDateFrom", dFromIso);
+    if (dToIso)   q.set("deliveryDateTo",   dToIso);
+
+    setIsExportLoading(true);
+    axiosRequest
+      .get(`/shipments/export?${q}`)
+      .then(({ request: { responseURL } }: any) => { window.location.href = responseURL; })
+      .catch(() => toast.error("حدث خطأ أثناء التصدير"))
+      .finally(() => setIsExportLoading(false));
+  };
+
+  // Mutations
   const handleEditShipment = (
     id: any, shipmentStatusVal: any, shipmentTypeVal: any, governorateVal: any,
     shippingCompanyVal: any, shippingFees: any, shippingReceiveDate: any, deliveryDate: any
@@ -188,16 +250,22 @@ export default function Shipments() {
             component="button"
             type="button"
             title="تصدير"
+            onClick={handleExport}
+            disabled={isExportLoading}
             sx={{
               display: "flex", alignItems: "center", gap: "5px",
               px: "13px", height: 36, borderRadius: "9px",
               border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
-              color: HX.tx2, cursor: "pointer", fontSize: "13px",
-              fontFamily: FONT, fontWeight: 600, flexShrink: 0,
+              color: HX.tx2, cursor: isExportLoading ? "default" : "pointer",
+              fontSize: "13px", fontFamily: FONT, fontWeight: 600, flexShrink: 0,
+              opacity: isExportLoading ? 0.6 : 1,
               transition: ".15s", "&:hover": { bgcolor: HX.surface3, color: HX.tx },
             }}
           >
-            <FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />
+            {isExportLoading
+              ? <CircularProgress size={14} sx={{ color: HX.tx2 }} />
+              : <FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />
+            }
             تصدير
           </Box>
           {!isVendor && (
@@ -241,7 +309,7 @@ export default function Shipments() {
         />
       )}
 
-      <Box sx={{ fontFamily: FONT , mt : '16px' }}>
+      <Box sx={{ fontFamily: FONT, mt: "16px" }}>
         {/* Main tabs */}
         <Box
           sx={{
@@ -259,7 +327,7 @@ export default function Shipments() {
         >
           {MAIN_TABS.map((tab) => {
             const active = activeTab === tab.id;
-            const count = tab.id === "shipments" ? totalCount : 0;
+            const count = tabCounts[tab.id as keyof typeof tabCounts] ?? 0;
             return (
               <Box
                 key={tab.id}
@@ -279,7 +347,7 @@ export default function Shipments() {
                   cursor: "pointer",
                   minWidth: 0,
                   whiteSpace: "nowrap",
-                  bgcolor: active ? HX.accent : "transparent",
+                  bgcolor: active ? HX.accent : "#FFFFFF",
                   color: active ? "#fff" : HX.tx2,
                   boxShadow: active ? "0 2px 10px rgba(99,102,241,0.28)" : "none",
                   transition: "background .15s, box-shadow .15s, color .15s",
@@ -331,16 +399,29 @@ export default function Shipments() {
               selectedGovernorate={governorate}
               orderNumber={orderNumber}
               shippingCompany={shippingCompany}
-              isVendor={isVendor}
+              operationCode={operationCode}
+              customerName={customerName}
+              deliveryBy={deliveryBy}
+              vendorId={vendorId}
               startDate={startDate}
               endDate={endDate}
+              deliveryDateFrom={deliveryDateFrom}
+              deliveryDateTo={deliveryDateTo}
+              meta={metaData}
+              isVendor={isVendor}
               onStatusChange={setFilterParam("shipmentStatus")}
               onTypeChange={setFilterParam("shipmentType")}
               onGovernorateChange={setFilterParam("governorate")}
               onOrderNumberChange={(v) => updateParams({ orderNumber: v || undefined, page: 1 })}
               onShippingCompanyChange={(v) => updateParams({ shippingCompany: v || undefined, page: 1 })}
+              onOperationCodeChange={(v) => updateParams({ operationCode: v || undefined, page: 1 })}
+              onCustomerNameChange={(v) => updateParams({ customerName: v || undefined, page: 1 })}
+              onDeliveryByChange={setFilterParam("deliveryBy")}
+              onVendorIdChange={setFilterParam("vendorId")}
               onDatesChange={handleDatesChange}
               onDateReset={resetDates}
+              onDeliveryDatesChange={handleDeliveryDatesChange}
+              onDeliveryDateReset={resetDeliveryDates}
               onReset={handleReset}
             />
 

@@ -52,6 +52,13 @@ export interface ShipmentsListParams {
   shippingCompany?: string;
   startDate?: any;
   endDate?: any;
+  operationCode?: string;
+  customerName?: string;
+  customerPhone?: string;
+  deliveryBy?: string;
+  vendorId?: string;
+  deliveryDateFrom?: any;
+  deliveryDateTo?: any;
 }
 
 function buildQuery(p: ShipmentsListParams): string {
@@ -64,6 +71,23 @@ function buildQuery(p: ShipmentsListParams): string {
   if (p.governorate)    q.set("governorate",    p.governorate);
   if (p.orderNumber)    q.set("orderNumber",    p.orderNumber);
   if (p.shippingCompany) q.set("shippingCompany", p.shippingCompany);
+  if (p.operationCode)   q.set("operationCode",   p.operationCode);
+  if (p.customerName)    q.set("customerName",    p.customerName);
+  if (p.customerPhone)   q.set("customerPhone",   p.customerPhone);
+  if (p.deliveryBy)      q.set("deliveryBy",      p.deliveryBy);
+  if (p.vendorId)        q.set("vendorId",        p.vendorId);
+  if (p.deliveryDateFrom) {
+    const d = moment.isMoment(p.deliveryDateFrom)
+      ? p.deliveryDateFrom
+      : moment.utc(String(p.deliveryDateFrom), "DD-MM-YYYY");
+    q.set("deliveryDateFrom", d.toISOString());
+  }
+  if (p.deliveryDateTo) {
+    const d = moment.isMoment(p.deliveryDateTo)
+      ? p.deliveryDateTo
+      : moment.utc(String(p.deliveryDateTo), "DD-MM-YYYY");
+    q.set("deliveryDateTo", d.toISOString());
+  }
   if (p.startDate) {
     const d = moment.isMoment(p.startDate)
       ? p.startDate
