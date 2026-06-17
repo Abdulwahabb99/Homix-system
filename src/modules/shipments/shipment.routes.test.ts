@@ -333,6 +333,29 @@ describe("shipmentRouter", () => {
     );
   });
 
+  it("accepts ISO date filters for shipments list", async () => {
+    const response = await request(app)
+      .get("/shipments")
+      .query({
+        endDate: "2026-06-17T21:00:00.000Z",
+        page: 1,
+        size: 20,
+        startDate: "2026-06-17T21:00:00.000Z",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+  });
+
+  it("rejects invalid shipment date filters with validation error", async () => {
+    const response = await request(app)
+      .get("/shipments")
+      .query({ page: 1, size: 20, startDate: "not-a-date" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+  });
+
   it("returns shipment details in the new frontend shape", async () => {
     const response = await request(app).get("/shipments/9802");
 
@@ -487,6 +510,28 @@ describe("shipmentRouter", () => {
       }),
     );
     expect(response.body.data.providers[0].deliveryBy).toBe("J&T");
+  });
+
+  it("accepts ISO date filters for shipment performance", async () => {
+    const response = await request(app)
+      .get("/shipments/performance")
+      .query({
+        endDate: "2026-06-17T21:00:00.000Z",
+        period: "daily",
+        startDate: "2026-06-17T21:00:00.000Z",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+  });
+
+  it("rejects invalid shipment performance dates with validation error", async () => {
+    const response = await request(app)
+      .get("/shipments/performance")
+      .query({ period: "daily", startDate: "not-a-date" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns shipment expenses", async () => {

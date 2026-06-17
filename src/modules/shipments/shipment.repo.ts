@@ -36,6 +36,7 @@ import {
   getShipmentTypeLabel,
   getVariantBySku,
   normalizeOperationCode,
+  toDateRangeBoundary,
   toIsoString,
   toNullableNumber,
   toNumber,
@@ -171,19 +172,31 @@ const buildShipmentWhereClause = (
   }
 
   if (filters.startDate) {
-    andConditions.push(where(col("Order.shippingReceiveDate"), { [Op.gte]: new Date(`${filters.startDate}T00:00:00.000Z`) }));
+    const startDate = toDateRangeBoundary(filters.startDate, "start");
+    if (startDate) {
+      andConditions.push(where(col("Order.shippingReceiveDate"), { [Op.gte]: startDate }));
+    }
   }
 
   if (filters.endDate) {
-    andConditions.push(where(col("Order.shippingReceiveDate"), { [Op.lte]: new Date(`${filters.endDate}T23:59:59.999Z`) }));
+    const endDate = toDateRangeBoundary(filters.endDate, "end");
+    if (endDate) {
+      andConditions.push(where(col("Order.shippingReceiveDate"), { [Op.lte]: endDate }));
+    }
   }
 
   if (filters.deliveryDateFrom) {
-    andConditions.push(where(col("Order.deliveryDate"), { [Op.gte]: new Date(`${filters.deliveryDateFrom}T00:00:00.000Z`) }));
+    const deliveryDateFrom = toDateRangeBoundary(filters.deliveryDateFrom, "start");
+    if (deliveryDateFrom) {
+      andConditions.push(where(col("Order.deliveryDate"), { [Op.gte]: deliveryDateFrom }));
+    }
   }
 
   if (filters.deliveryDateTo) {
-    andConditions.push(where(col("Order.deliveryDate"), { [Op.lte]: new Date(`${filters.deliveryDateTo}T23:59:59.999Z`) }));
+    const deliveryDateTo = toDateRangeBoundary(filters.deliveryDateTo, "end");
+    if (deliveryDateTo) {
+      andConditions.push(where(col("Order.deliveryDate"), { [Op.lte]: deliveryDateTo }));
+    }
   }
 
   return andConditions.length > 0 ? { [Op.and]: andConditions } : {};
@@ -989,10 +1002,16 @@ export class ShipmentRepository {
     };
 
     if (filters.startDate) {
-      whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.gte]: new Date(`${filters.startDate}T00:00:00.000Z`) };
+      const startDate = toDateRangeBoundary(filters.startDate, "start");
+      if (startDate) {
+        whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.gte]: startDate };
+      }
     }
     if (filters.endDate) {
-      whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.lte]: new Date(`${filters.endDate}T23:59:59.999Z`) };
+      const endDate = toDateRangeBoundary(filters.endDate, "end");
+      if (endDate) {
+        whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.lte]: endDate };
+      }
     }
 
     const orders = await orderModel.findAll({

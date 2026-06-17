@@ -47,6 +47,43 @@ export const toIsoString = (value: unknown): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+export const isValidDateInput = (value: unknown): boolean => {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return false;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+    return !Number.isNaN(new Date(`${normalizedValue}T00:00:00.000Z`).getTime());
+  }
+
+  return !Number.isNaN(new Date(normalizedValue).getTime());
+};
+
+export const toDateRangeBoundary = (value: unknown, boundary: "start" | "end"): Date | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+    const timeSuffix = boundary === "start" ? "T00:00:00.000Z" : "T23:59:59.999Z";
+    const date = new Date(`${normalizedValue}${timeSuffix}`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(normalizedValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export const getShipmentStatusLabel = (value: unknown): string => {
   return SHIPMENT_STATUS_LABELS[toNumber(value)] ?? "";
 };
