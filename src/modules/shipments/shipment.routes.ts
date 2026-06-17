@@ -62,6 +62,68 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: Get shipments summary cards
+ *     parameters:
+ *       - in: query
+ *         name: operationCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orderNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: customerName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: customerPhone
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: vendorName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: shipmentStatus
+ *         description: CSV of numeric shipment statuses.
+ *         schema:
+ *           type: string
+ *           example: 2,3,4
+ *       - in: query
+ *         name: paymentStatus
+ *         description: CSV of numeric payment statuses.
+ *         schema:
+ *           type: string
+ *           example: 1,2
+ *       - in: query
+ *         name: shipmentType
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: deliveryBy
+ *         description: CSV of delivery provider ids or a shipping company text match.
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: deliveryDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: deliveryDateTo
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Shipment summary cards
@@ -114,6 +176,23 @@ shipmentRouter.post("/", validateRequest({ body: shipmentMutationSchema }), asyn
  *     tags: [Shipments]
  *     summary: Export shipments
  *     description: Uses the legacy export flow and returns a file stream rather than a JSON body.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: shipmentNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Export stream
@@ -128,6 +207,33 @@ shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: List vendor returns
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: operationCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orderNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sellerName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Vendor returns
@@ -224,6 +330,33 @@ shipmentRouter.put(
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: List customer returns
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: operationCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orderNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sellerName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Customer returns
@@ -320,6 +453,29 @@ shipmentRouter.put(
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: List shipping inventory items
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: vendorName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Inventory list
@@ -447,6 +603,34 @@ shipmentRouter.delete(
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: List shipment delivery accounting rows
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: orderNumber
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: accountingStatus
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: paymentMethod
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: settledDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Delivery accounting rows
@@ -469,6 +653,26 @@ shipmentRouter.get(
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: List shipment expenses rows
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: accountingStatus
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: type
+ *         description: Numeric expense type id.
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Expenses accounting rows
@@ -574,6 +778,23 @@ shipmentRouter.delete(
  *       - bearerAuth: []
  *     tags: [Shipments]
  *     summary: Get shipment performance report
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [daily, weekly, monthly, custom]
+ *           default: daily
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Shipment performance report
@@ -651,6 +872,30 @@ shipmentRouter.get(
  *         description: CSV of delivery provider ids or a shipping company text match
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: vendorName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: deliveryDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: deliveryDateTo
+ *         schema:
+ *           type: string
+ *           format: date
  */
 shipmentRouter.get(
   "/",
@@ -700,6 +945,16 @@ shipmentRouter.get(
  *     responses:
  *       200:
  *         description: Shipment updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   additionalProperties: true
+ *                 status:
+ *                   type: boolean
  *   delete:
  *     security:
  *       - bearerAuth: []

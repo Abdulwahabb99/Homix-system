@@ -851,7 +851,12 @@ const swaggerOptions = {
             data: {
               type: "object",
               properties: {
+                accountingStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                customerReturnStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 deliveryByOptions: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                expenseTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                governorates: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                inventoryStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 paymentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
@@ -867,6 +872,7 @@ const swaggerOptions = {
                   },
                   type: "array",
                 },
+                vendorReturnStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
               },
             },
             status: { example: true, type: "boolean" },
