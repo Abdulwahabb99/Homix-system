@@ -21,6 +21,7 @@ import AccountsPanel from "./components/panels/AccountsPanel";
 import ReportsPanel from "./components/panels/ReportsPanel";
 import {
   useShipmentsListQuery,
+  useShipmentsSummaryQuery,
   SHIPMENTS_LIST_PAGE_SIZE,
   type ShipmentItem,
 } from "query/shipmentsList";
@@ -110,16 +111,12 @@ export default function Shipments() {
   const [vendors, setVendors] = useState<{ label: string; value: any }[]>([]);
 
   // --- React Query ---
-  const { data, isLoading, isFetching } = useShipmentsListQuery({
-    page,
-    shipmentStatus,
-    shipmentType,
-    governorate,
-    orderNumber,
-    shippingCompany,
-    startDate,
-    endDate,
-  });
+  const queryParams = { page, shipmentStatus, shipmentType, governorate, orderNumber, shippingCompany, startDate, endDate };
+
+  const { data, isLoading, isFetching } = useShipmentsListQuery(queryParams);
+
+  const summaryParams = { ...queryParams, page: 1 };
+  const { data: summaryData, isLoading: isSummaryLoading } = useShipmentsSummaryQuery(summaryParams);
 
   const shipments   = data?.items      ?? [];
   const totalCount  = data?.totalCount ?? 0;
@@ -324,9 +321,8 @@ export default function Shipments() {
         {activeTab === "shipments" && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <ShipmentsKpiRow
-              shipments={shipments}
-              totalCount={totalCount}
-              isLoading={isLoading}
+              cards={summaryData}
+              isLoading={isSummaryLoading}
             />
 
             <ShipmentsFiltersBar

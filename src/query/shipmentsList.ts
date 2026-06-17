@@ -3,6 +3,13 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { shipmentKeys } from "./keys";
 
+export interface ShipmentSummaryCard {
+  key: string;
+  label: string;
+  value: number | string;
+  description?: string;
+}
+
 export const SHIPMENTS_LIST_PAGE_SIZE = 20;
 
 export interface ShipmentItem {
@@ -84,6 +91,25 @@ export function useShipmentsListQuery(params: ShipmentsListParams) {
     queryKey: shipmentKeys.list(JSON.stringify(params)),
     queryFn: () => fetchShipmentsList(params),
     placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
+export async function fetchShipmentsSummary(
+  params: ShipmentsListParams
+): Promise<ShipmentSummaryCard[]> {
+  const { data } = await axiosRequest.get(`/shipments/summary?${buildQuery(params)}`);
+  const cards = data?.data?.cards;
+  if (!Array.isArray(cards)) return [];
+  return cards.filter(
+    (c: any) => c && typeof c === "object" && c.key && c.label
+  ) as ShipmentSummaryCard[];
+}
+
+export function useShipmentsSummaryQuery(params: ShipmentsListParams) {
+  return useQuery({
+    queryKey: shipmentKeys.summary(JSON.stringify(params)),
+    queryFn: () => fetchShipmentsSummary(params),
     staleTime: 30_000,
   });
 }
