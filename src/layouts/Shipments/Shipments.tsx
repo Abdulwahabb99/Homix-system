@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
 import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { useSelector } from "react-redux";
 import { useDateRange } from "hooks/useDateRange";
 import moment from "moment";
@@ -28,10 +29,10 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
     label: "الشحنات",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="3" width="15" height="13" rx="1"/>
-        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-        <circle cx="5.5" cy="18.5" r="2.5"/>
-        <circle cx="18.5" cy="18.5" r="2.5"/>
+        <rect x="1" y="3" width="15" height="13" rx="1" />
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+        <circle cx="5.5" cy="18.5" r="2.5" />
+        <circle cx="18.5" cy="18.5" r="2.5" />
       </svg>
     ),
   },
@@ -40,8 +41,8 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
     label: "المرتجعات",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="1 4 1 10 7 10"/>
-        <path d="M3.51 15a9 9 0 1 0 .49-3.1"/>
+        <polyline points="1 4 1 10 7 10" />
+        <path d="M3.51 15a9 9 0 1 0 .49-3.1" />
       </svg>
     ),
   },
@@ -50,8 +51,8 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
     label: "المخزن",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
@@ -60,8 +61,8 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
     label: "الحسابات",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23"/>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },
@@ -70,9 +71,9 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
     label: "تقارير الأداء",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
   },
@@ -298,7 +299,68 @@ export default function Shipments() {
   const { shipments, isLoading, vendors, totalPages } = state;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      pageTitle="الشحن والتوصيل"
+      pageSubtitle="إدارة الشحنات، المرتجعات، المخزون، الحسابات، وتقارير الأداء"
+      pageActions={
+        <>
+          <Box
+            component="button"
+            type="button"
+            title="تصدير"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              px: "13px",
+              height: 36,
+              borderRadius: "9px",
+              border: `1px solid ${HX.border2}`,
+              bgcolor: HX.surface,
+              color: HX.tx2,
+              cursor: "pointer",
+              fontSize: "13px",
+              fontFamily: FONT,
+              fontWeight: 600,
+              flexShrink: 0,
+              transition: ".15s",
+              "&:hover": { bgcolor: HX.surface3, color: HX.tx },
+            }}
+          >
+            <FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />
+            تصدير
+          </Box>
+          {!isVendor && (
+            <Box
+              component="button"
+              type="button"
+              onClick={() => navigate("/shipments/add")}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                px: "15px",
+                height: 36,
+                borderRadius: "9px",
+                border: "none",
+                bgcolor: HX.accent,
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontFamily: FONT,
+                fontWeight: 700,
+                flexShrink: 0,
+                transition: ".2s",
+                "&:hover": { bgcolor: "#4f46e5" },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 18 }} />
+              شحنة جديدة
+            </Box>
+          )}
+        </>
+      }
+    >
       <ToastContainer />
 
       {state.isModalOpen && (
@@ -319,45 +381,9 @@ export default function Shipments() {
         />
       )}
 
-      <Box sx={{ fontFamily: FONT }}>
-        {/* Page header */}
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: "20px", flexWrap: "wrap", gap: "10px" }}>
-          <Box>
-            <Box sx={{ fontSize: "20px", fontWeight: 800, color: HX.tx, fontFamily: FONT }}>
-              الشحنات
-            </Box>
-            <Box sx={{ fontSize: "12px", color: HX.tx2, fontFamily: FONT, mt: "2px" }}>
-              إدارة ومتابعة الشحنات
-            </Box>
-          </Box>
-          {!isVendor && (
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/shipments/add")}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                px: "16px",
-                py: "9px",
-                borderRadius: "10px",
-                border: "none",
-                bgcolor: HX.accent,
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontFamily: FONT,
-                fontWeight: 700,
-                transition: ".2s",
-                "&:hover": { bgcolor: "#4f46e5" },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 18 }} />
-              إضافة شحنة
-            </Box>
-          )}
-        </Box>
+      <Box sx={{
+        fontFamily: FONT, mt: "20px",
+      }}>
 
         {/* Main tabs */}
         <Box
@@ -366,9 +392,9 @@ export default function Shipments() {
             gap: "4px",
             mb: "20px",
             bgcolor: HX.surface,
-            borderRadius: "14px",
+            borderRadius: "13px",
             border: `1px solid ${HX.border}`,
-            p: "5px",
+            p: "4px",
             width: "100%",
             overflowX: "auto",
             "&::-webkit-scrollbar": { display: "none" },
@@ -389,9 +415,9 @@ export default function Shipments() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "7px",
-                  py: "10px",
+                  py: "8px",
                   px: "6px",
-                  borderRadius: "10px",
+                  borderRadius: "9px",
                   border: "none",
                   cursor: "pointer",
                   minWidth: 0,
