@@ -75,7 +75,7 @@ function FilterInput({
           minWidth: 0,
           fontSize: "12px",
           fontFamily: FONT,
-          color: HX.tx,
+          color: "#000",
           bgcolor: "transparent",
           "&::placeholder": { color: HX.tx3, fontSize: "12px" },
         }}
@@ -99,8 +99,9 @@ function FilterSelect({
     <FormControl size="small" sx={{ width: "100%", minWidth: 0 }}>
       <InputLabel
         sx={{
-          fontFamily: FONT, fontSize: "12px",
+          fontFamily: FONT, fontSize: "12px", color: "#000",
           "&.MuiInputLabel-shrink": { fontSize: "11px" },
+          "&.Mui-focused": { color: HX.accent },
         }}
       >
         {label}
@@ -115,7 +116,7 @@ function FilterSelect({
           "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border },
           "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-          "& .MuiSelect-select": { fontSize: "12px", fontFamily: FONT },
+          "& .MuiSelect-select": { fontSize: "12px", fontFamily: FONT, color: "#000" },
         }}
         MenuProps={{ PaperProps: { sx: { fontFamily: FONT } } }}
       >
