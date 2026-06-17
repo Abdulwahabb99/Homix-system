@@ -953,6 +953,99 @@ const swaggerOptions = {
           },
           required: ["data", "status"],
         },
+        ShipmentCreateRequest: {
+          type: "object",
+          properties: {
+            code: {
+              oneOf: [{ type: "integer" }, { type: "string" }],
+              example: 3001,
+            },
+            customer: {
+              type: "object",
+              description: "Legacy manual-order customer payload. Include at least `id`, `firstName`, `first_name`, or `default_address`.",
+              additionalProperties: true,
+              example: {
+                first_name: "عبير",
+                last_name: "ابوالمجيد",
+                phone: "01155559646",
+              },
+            },
+            deliveryBy: { example: 1, nullable: true, type: "integer" },
+            deliveryDate: { example: "2026-06-20T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            downPayment: { example: 0, type: "number" },
+            expectedDate: { example: "2026-06-19T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            expectedDeliveryDate: { example: "2026-06-20T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            governorate: { example: "الجيزة", nullable: true, type: "string" },
+            itemShipping: { example: 65, type: "number" },
+            line_items: {
+              type: "array",
+              minItems: 1,
+              items: {
+                type: "object",
+                properties: {
+                  price: { example: 16999, type: "number" },
+                  quantity: { example: 1, type: "integer" },
+                  title: { example: "كنبة شيب", type: "string" },
+                  variant_id: {
+                    oneOf: [{ type: "integer" }, { type: "string" }],
+                    example: 445566,
+                  },
+                },
+                required: ["price", "quantity", "title", "variant_id"],
+                additionalProperties: true,
+              },
+            },
+            name: { example: "#H9802", type: "string" },
+            notes: { example: "عميل يفضل الاتصال قبل التسليم", nullable: true, type: "string" },
+            number: {
+              oneOf: [{ type: "integer" }, { type: "string" }],
+              example: "9802",
+            },
+            order_number: {
+              oneOf: [{ type: "integer" }, { type: "string" }],
+              example: "31667",
+            },
+            orderDate: { example: "2026-06-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            paymentStatus: { example: 1, nullable: true, type: "integer" },
+            PoDate: { example: "2026-06-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            receivedAmount: { example: 0, type: "number" },
+            shipmentStatus: { example: 2, nullable: true, type: "integer" },
+            shipmentType: { example: "grouped", nullable: true, type: "string" },
+            shippedFromInventory: {
+              example: true,
+              type: "boolean",
+              description: "Optional in input, but the shipments API forces this to true.",
+            },
+            shippingCompany: { example: "J&T", nullable: true, type: "string" },
+            shippingFees: { example: 65, type: "number" },
+            shippingReceiveDate: { example: "2026-06-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            toBeCollected: { example: 29998, type: "number" },
+          },
+          required: ["customer", "line_items"],
+          additionalProperties: true,
+        },
+        ShipmentUpdateRequest: {
+          allOf: [
+            { $ref: "#/components/schemas/ShipmentCreateRequest" },
+            {
+              type: "object",
+              description: "Shipment updates also allow legacy pass-through fields.",
+              additionalProperties: true,
+            },
+          ],
+        },
+        ShipmentUpdateResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              additionalProperties: true,
+              description: "Updated legacy shipment/order entity returned by the write path.",
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
         ShipmentListItem: {
           type: "object",
           properties: {

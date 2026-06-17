@@ -85,6 +85,10 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  *         schema:
  *           type: string
  *       - in: query
+ *         name: shipmentNumber
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: shipmentStatus
  *         description: CSV of numeric shipment statuses.
  *         schema:
@@ -153,73 +157,7 @@ shipmentRouter.get(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [customer, line_items]
- *             properties:
- *               name:
- *                 type: string
- *                 example: "#H9802"
- *               number:
- *                 oneOf:
- *                   - type: integer
- *                   - type: string
- *                 example: "9802"
- *               order_number:
- *                 oneOf:
- *                   - type: integer
- *                   - type: string
- *                 example: "31667"
- *               customer:
- *                 type: object
- *                 description: Legacy customer payload used by manual order creation.
- *               line_items:
- *                 type: array
- *                 minItems: 1
- *                 items:
- *                   type: object
- *                   required: [title, price, quantity, variant_id]
- *                   properties:
- *                     title:
- *                       type: string
- *                       example: كنبة شيب
- *                     price:
- *                       type: number
- *                       example: 16999
- *                     quantity:
- *                       type: integer
- *                       example: 1
- *                     variant_id:
- *                       oneOf:
- *                         - type: integer
- *                         - type: string
- *                       example: 445566
- *               shippingCompany:
- *                 type: string
- *                 example: J&T
- *               governorate:
- *                 type: string
- *                 example: الجيزة
- *               shipmentStatus:
- *                 type: integer
- *                 example: 2
- *               shipmentType:
- *                 type: string
- *                 example: grouped
- *               shippingReceiveDate:
- *                 type: string
- *                 format: date-time
- *               deliveryDate:
- *                 type: string
- *                 format: date-time
- *               deliveryBy:
- *                 type: integer
- *                 example: 1
- *               shippingFees:
- *                 type: number
- *                 example: 65
- *               toBeCollected:
- *                 type: number
- *                 example: 29998
+ *             $ref: '#/components/schemas/ShipmentCreateRequest'
  *             example:
  *               name: "#H9802"
  *               number: "9802"
@@ -263,24 +201,52 @@ shipmentRouter.post("/", validateRequest({ body: shipmentCreateSchema }), asyncH
  *     description: Uses the legacy export flow and returns a file stream rather than a JSON body.
  *     parameters:
  *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: size
- *         schema:
- *           type: integer
- *       - in: query
- *         name: shipmentNumber
+ *         name: orderNumber
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: vendorName
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: paymentStatus
+ *         description: Numeric payment status id used by the legacy exporter.
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: financialStatus
+ *         description: Legacy financial status filter.
+ *         schema:
+ *           type: integer
  *       - in: query
  *         name: status
+ *         description: CSV of legacy order statuses.
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: deliveryStatus
+ *         description: CSV of legacy delivery aging buckets.
+ *         schema:
+ *           type: string
+ *           example: 1,2
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Export stream
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
  */
 shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
 
@@ -949,6 +915,10 @@ shipmentRouter.get(
  *           type: string
  *           example: 1,2
  *       - in: query
+ *         name: shipmentNumber
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: shipmentType
  *         schema:
  *           type: string
@@ -1025,21 +995,14 @@ shipmentRouter.get(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             additionalProperties: true
+ *             $ref: '#/components/schemas/ShipmentUpdateRequest'
  *     responses:
  *       200:
  *         description: Shipment updated
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: object
- *                   additionalProperties: true
- *                 status:
- *                   type: boolean
+ *               $ref: '#/components/schemas/ShipmentUpdateResponse'
  *   delete:
  *     security:
  *       - bearerAuth: []
