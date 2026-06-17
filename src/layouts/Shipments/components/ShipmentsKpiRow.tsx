@@ -161,7 +161,7 @@ export default function ShipmentsKpiRow({ cards, isLoading }: ShipmentsKpiRowPro
     return (
       <Grid container spacing="10px">
         {[...Array(5)].map((_, i) => (
-          <Grid item xs={6} sm={4} md={4} lg={2.4} key={i}>
+          <Grid item xs={6} sm={4} md={4} lg={4} key={i}>
             <SkeletonCard />
           </Grid>
         ))}
@@ -179,7 +179,7 @@ export default function ShipmentsKpiRow({ cards, isLoading }: ShipmentsKpiRowPro
           icon: FALLBACK_ICON,
         };
         return (
-          <Grid item xs={6} sm={4} md={4} lg={2.4} key={card.key}>
+          <Grid item xs={6} sm={4} md={4} lg={4} key={card.key}>
             <KpiCard
               iconBg={style.iconBg}
               iconColor={style.iconColor}
