@@ -163,7 +163,87 @@ orderRouter.get(
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/OrderMutationRequest'
+ *             type: object
+ *             required: [customer, line_items]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "#H9802"
+ *               number:
+ *                 oneOf:
+ *                   - type: integer
+ *                   - type: string
+ *                 example: "9802"
+ *               order_number:
+ *                 oneOf:
+ *                   - type: integer
+ *                   - type: string
+ *                 example: "31667"
+ *               customer:
+ *                 type: object
+ *                 description: Legacy customer payload used by the manual order creation/import pipeline.
+ *               line_items:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required: [title, price, quantity, variant_id]
+ *                   properties:
+ *                     title:
+ *                       type: string
+ *                       example: كنبة شيب
+ *                     price:
+ *                       type: number
+ *                       example: 16999
+ *                     quantity:
+ *                       type: integer
+ *                       example: 1
+ *                     variant_id:
+ *                       oneOf:
+ *                         - type: integer
+ *                         - type: string
+ *                       example: 445566
+ *               orderDate:
+ *                 type: string
+ *                 format: date-time
+ *               paymentStatus:
+ *                 type: integer
+ *                 example: 1
+ *               deliveryBy:
+ *                 type: integer
+ *                 example: 1
+ *               expectedDeliveryDate:
+ *                 type: string
+ *                 format: date-time
+ *               downPayment:
+ *                 type: number
+ *                 example: 200
+ *               shippingFees:
+ *                 type: number
+ *                 example: 65
+ *               toBeCollected:
+ *                 type: number
+ *                 example: 29998
+ *             example:
+ *               name: "#H9802"
+ *               number: "9802"
+ *               order_number: "31667"
+ *               customer:
+ *                 first_name: عبير
+ *                 last_name: ابوالمجيد
+ *                 phone: "01155559646"
+ *               line_items:
+ *                 - title: كنبة شيب
+ *                   price: 16999
+ *                   quantity: 1
+ *                   variant_id: 445566
+ *               orderDate: 2026-06-18T00:00:00.000Z
+ *               paymentStatus: 1
+ *               deliveryBy: 1
+ *               expectedDeliveryDate: 2026-06-20T00:00:00.000Z
+ *               downPayment: 200
+ *               shippingFees: 65
+ *               toBeCollected: 29998
  *     responses:
  *       200:
  *         description: Order created successfully
