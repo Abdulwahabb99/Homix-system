@@ -57,6 +57,14 @@ export function ShipmentTypeBadge({ type }: { type: number }) {
   return <PillBadge {...cfg} />;
 }
 
+export function PaymentStatusBadge({ status, label }: { status: number; label?: string }) {
+  const isPaid = status === 2;
+  const bg = isPaid ? HX.greenLight : HX.amberLight;
+  const color = isPaid ? "#065f46" : "#92400e";
+  const text = label ?? (isPaid ? "مدفوع" : "الدفع عند الاستلام");
+  return <PillBadge label={text} bg={bg} color={color} />;
+}
+
 export function DaysInTransitBadge({ days }: { days: number | null }) {
   if (days === null || days === undefined) return <span style={{ color: HX.tx3 }}>—</span>;
   const bg = days <= 1 ? HX.greenLight : days <= 5 ? HX.amberLight : HX.redLight;

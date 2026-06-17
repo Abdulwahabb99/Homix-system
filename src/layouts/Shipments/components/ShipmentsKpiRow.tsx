@@ -52,10 +52,11 @@ function KpiCard({ label, value, iconBg, iconColor, valueColor, icon }: KpiCardP
 
 interface ShipmentsKpiRowProps {
   shipments: any[];
+  totalCount?: number;
   isLoading?: boolean;
 }
 
-export default function ShipmentsKpiRow({ shipments, isLoading }: ShipmentsKpiRowProps) {
+export default function ShipmentsKpiRow({ shipments, totalCount, isLoading }: ShipmentsKpiRowProps) {
   if (isLoading) {
     return (
       <Grid container spacing="10px">
@@ -77,7 +78,7 @@ export default function ShipmentsKpiRow({ shipments, isLoading }: ShipmentsKpiRo
     );
   }
 
-  const total = shipments.length;
+  const total = totalCount ?? shipments.length;
   const delivered = shipments.filter((s) => s.shipmentStatus === 4).length;
   const ready = shipments.filter((s) => s.shipmentStatus === 3).length;
   const inWarehouse = shipments.filter((s) => s.shipmentStatus === 2).length;

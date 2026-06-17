@@ -6,8 +6,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
-import { ShipmentStatusBadge, ShipmentTypeBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
-import { getGovernorateLabel } from "shared/utils/constants";
+import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
+import type { ShipmentItem } from "query/shipmentsList";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -16,7 +16,7 @@ const TH: React.CSSProperties = {
   fontSize: "11px",
   fontWeight: 700,
   color: HX.tx2,
-  padding: "10px 14px",
+  padding: "10px 12px",
   textAlign: "right",
   whiteSpace: "nowrap",
   borderBottom: `1px solid ${HX.border}`,
@@ -25,9 +25,9 @@ const TH: React.CSSProperties = {
 
 const TD: React.CSSProperties = {
   fontFamily: FONT,
-  fontSize: "12.5px",
+  fontSize: "12px",
   color: HX.tx,
-  padding: "10px 14px",
+  padding: "9px 12px",
   textAlign: "right",
   whiteSpace: "nowrap",
   borderBottom: `0.5px solid ${HX.border}`,
@@ -80,44 +80,26 @@ function ActionBtn({
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return "—";
-  return moment(d).format("DD/MM/YYYY");
-}
-
-function computeDays(receiveDate: string | null | undefined): number | null {
-  if (!receiveDate) return null;
-  return moment().diff(moment(receiveDate), "days");
-}
-
-interface Shipment {
-  id: number | string;
-  code?: string;
-  orderNumber?: string;
-  customer?: { firstName?: string; lastName?: string };
-  shipmentStatus: number;
-  shipmentType: number;
-  governorate: number;
-  shippingCompany?: string;
-  shippingFees?: number | string;
-  shippingReceiveDate?: string;
-  deliveryDate?: string;
-  createdAt?: string;
+  return moment(d).format("DD/MM/YY");
 }
 
 interface ShipmentsTableProps {
-  shipments: Shipment[];
+  shipments: ShipmentItem[];
   isVendor: boolean;
   isLoading: boolean;
+  isFetching: boolean;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onEdit: (shipment: Shipment) => void;
-  onDelete: (shipment: Shipment) => void;
+  onEdit: (shipment: ShipmentItem) => void;
+  onDelete: (shipment: ShipmentItem) => void;
 }
 
 export default function ShipmentsTable({
   shipments,
   isVendor,
   isLoading,
+  isFetching,
   page,
   totalPages,
   onPageChange,
@@ -133,7 +115,7 @@ export default function ShipmentsTable({
           <Box
             key={i}
             sx={{
-              height: 48,
+              height: 44,
               bgcolor: i % 2 === 0 ? HX.surface : HX.surface2,
               borderBottom: `0.5px solid ${HX.border}`,
               opacity: 0.7,
@@ -154,6 +136,7 @@ export default function ShipmentsTable({
           fontFamily: FONT,
           fontSize: "13px",
           color: HX.tx3,
+          opacity: isFetching ? 0.5 : 1,
         }}
       >
         لا توجد شحنات مطابقة للفلاتر المحددة
@@ -162,185 +145,183 @@ export default function ShipmentsTable({
   }
 
   return (
-    <Box sx={cardSx}>
+    <Box sx={{ ...cardSx, opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s" }}>
       <Box sx={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            direction: "rtl",
-          }}
-        >
+        <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
           <thead>
             <tr>
               <th style={TH}>رقم العملية</th>
               <th style={TH}>رقم الشحنة</th>
               <th style={TH}>اسم العميل</th>
+              <th style={TH}>البائع</th>
               <th style={TH}>المحافظة</th>
               <th style={TH}>حالة الشحنة</th>
               <th style={TH}>نوع الشحنة</th>
-              <th style={TH}>شركة الشحن</th>
+              <th style={TH}>حالة الدفع</th>
+              <th style={TH}>التوصيل بواسطة</th>
+              <th style={{ ...TH, textAlign: "center" }}>المبلغ المطلوب</th>
               <th style={{ ...TH, textAlign: "center" }}>تكلفة الشحن</th>
               <th style={TH}>تاريخ الاستلام</th>
+              <th style={TH}>موعد التوصيل</th>
               <th style={TH}>تاريخ التوصيل</th>
-              <th style={{ ...TH, textAlign: "center" }}>عداد الأيام</th>
+              <th style={{ ...TH, textAlign: "center" }}>الأيام</th>
               {!isVendor && <th style={{ ...TH, textAlign: "center" }}>إجراءات</th>}
             </tr>
           </thead>
           <tbody>
-            {shipments.map((s, idx) => {
-              const customerName = `${s.customer?.firstName ?? ""} ${s.customer?.lastName ?? ""}`.trim();
-              const days = computeDays(s.shippingReceiveDate);
-              return (
-                <tr
-                  key={s.id}
-                  style={{
-                    background: idx % 2 === 0 ? HX.surface : HX.surface2,
-                    transition: "background .12s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLTableRowElement).style.background = HX.accentLight;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLTableRowElement).style.background =
-                      idx % 2 === 0 ? HX.surface : HX.surface2;
-                  }}
-                >
-                  <td style={TD}>
-                    <Box
-                      component="span"
-                      sx={{
-                        fontFamily: "monospace",
-                        fontSize: "11.5px",
-                        bgcolor: HX.surface3,
-                        px: "6px",
-                        py: "2px",
-                        borderRadius: "5px",
-                        color: HX.tx2,
-                      }}
-                    >
-                      {s.code || "—"}
+            {shipments.map((s, idx) => (
+              <tr
+                key={s.id}
+                style={{ background: idx % 2 === 0 ? HX.surface : HX.surface2, transition: "background .1s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = HX.accentLight; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
+              >
+                {/* رقم العملية */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>
+                    {s.operationNumber || "—"}
+                  </Box>
+                </td>
+
+                {/* رقم الشحنة */}
+                <td style={TD}>
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => navigate(`/shipments/${s.id}`)}
+                    sx={{
+                      border: "none", background: "none", p: 0, cursor: "pointer",
+                      fontFamily: FONT, fontSize: "12px", fontWeight: 700, color: HX.accent,
+                      display: "inline-flex", alignItems: "center", gap: "3px",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    {s.shipmentNumber || s.orderNumber || "—"}
+                    <OpenInNewIcon sx={{ fontSize: 11, opacity: 0.6 }} />
+                  </Box>
+                </td>
+
+                {/* اسم العميل */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "12px", fontWeight: 600 }}>
+                    {s.customerName || "—"}
+                  </Box>
+                </td>
+
+                {/* البائع */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
+                    {s.sellerName || "—"}
+                  </Box>
+                </td>
+
+                {/* المحافظة */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
+                    {s.governorate || "—"}
+                  </Box>
+                </td>
+
+                {/* حالة الشحنة */}
+                <td style={TD}>
+                  <ShipmentStatusBadge status={s.shipmentStatus} />
+                </td>
+
+                {/* نوع الشحنة */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>
+                    {s.shipmentTypeLabel || "—"}
+                  </Box>
+                </td>
+
+                {/* حالة الدفع */}
+                <td style={TD}>
+                  {s.paymentStatus != null
+                    ? <PaymentStatusBadge status={s.paymentStatus} label={s.paymentStatusLabel} />
+                    : <span style={{ color: HX.tx3 }}>—</span>
+                  }
+                </td>
+
+                {/* التوصيل بواسطة */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
+                    {s.deliveryBy || "—"}
+                  </Box>
+                </td>
+
+                {/* المبلغ المطلوب */}
+                <td style={{ ...TD, textAlign: "center" }}>
+                  {s.amountToCollect != null ? (
+                    <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 700 }}>
+                      {Number(s.amountToCollect).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      <Box component="span" sx={{ fontSize: "10px", color: HX.tx3, mr: "3px" }}>ج.م</Box>
                     </Box>
-                  </td>
-                  <td style={TD}>
-                    <Box
-                      component="button"
-                      type="button"
-                      onClick={() => navigate(`/shipments/${s.id}`)}
-                      sx={{
-                        border: "none",
-                        background: "none",
-                        p: 0,
-                        cursor: "pointer",
-                        fontFamily: FONT,
-                        fontSize: "12.5px",
-                        fontWeight: 700,
-                        color: HX.accent,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        "&:hover": { textDecoration: "underline" },
-                      }}
-                    >
-                      {s.orderNumber || "—"}
-                      <OpenInNewIcon sx={{ fontSize: 12, opacity: 0.6 }} />
+                  ) : <span style={{ color: HX.tx3 }}>—</span>}
+                </td>
+
+                {/* تكلفة الشحن */}
+                <td style={{ ...TD, textAlign: "center" }}>
+                  {s.shippingCost != null ? (
+                    <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.tx2 }}>
+                      {Number(s.shippingCost).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                      <Box component="span" sx={{ fontSize: "10px", color: HX.tx3, mr: "3px" }}>ج.م</Box>
                     </Box>
-                  </td>
-                  <td style={TD}>
-                    <Box
-                      component="span"
-                      sx={{ fontSize: "12.5px", fontWeight: 600, color: HX.tx }}
-                    >
-                      {customerName || "—"}
-                    </Box>
-                  </td>
-                  <td style={TD}>
-                    <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
-                      {getGovernorateLabel(Number(s.governorate)) || "—"}
-                    </Box>
-                  </td>
-                  <td style={TD}>
-                    <ShipmentStatusBadge status={s.shipmentStatus} />
-                  </td>
-                  <td style={TD}>
-                    <ShipmentTypeBadge type={s.shipmentType} />
-                  </td>
-                  <td style={TD}>
-                    <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
-                      {s.shippingCompany || "—"}
-                    </Box>
-                  </td>
+                  ) : <span style={{ color: HX.tx3 }}>—</span>}
+                </td>
+
+                {/* تاريخ الاستلام */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>
+                    {fmtDate(s.receivedInWarehouseDate)}
+                  </Box>
+                </td>
+
+                {/* موعد التوصيل */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>
+                    {fmtDate(s.scheduledDeliveryDate)}
+                  </Box>
+                </td>
+
+                {/* تاريخ التوصيل */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>
+                    {fmtDate(s.deliveryDate)}
+                  </Box>
+                </td>
+
+                {/* الأيام */}
+                <td style={{ ...TD, textAlign: "center" }}>
+                  <DaysInTransitBadge days={s.daysCounter ?? null} />
+                </td>
+
+                {/* إجراءات */}
+                {!isVendor && (
                   <td style={{ ...TD, textAlign: "center" }}>
-                    {s.shippingFees != null ? (
-                      <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 700, color: HX.tx }}>
-                        {Number(s.shippingFees).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                        <Box component="span" sx={{ fontSize: "10px", color: HX.tx3, mr: "3px" }}>
-                          ج.م
-                        </Box>
-                      </Box>
-                    ) : (
-                      <span style={{ color: HX.tx3 }}>—</span>
-                    )}
-                  </td>
-                  <td style={TD}>
-                    <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
-                      {fmtDate(s.shippingReceiveDate)}
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                      <ActionBtn
+                        onClick={(e) => { e.stopPropagation(); onEdit(s); }}
+                        bg={HX.blueLight} hoverBg={HX.blue} color={HX.blue} title="تعديل"
+                      >
+                        <EditIcon sx={{ fontSize: 14 }} />
+                      </ActionBtn>
+                      <ActionBtn
+                        onClick={(e) => { e.stopPropagation(); onDelete(s); }}
+                        bg={HX.redLight} hoverBg={HX.red} color={HX.red} title="حذف"
+                      >
+                        <DeleteIcon sx={{ fontSize: 14 }} />
+                      </ActionBtn>
                     </Box>
                   </td>
-                  <td style={TD}>
-                    <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
-                      {fmtDate(s.deliveryDate)}
-                    </Box>
-                  </td>
-                  <td style={{ ...TD, textAlign: "center" }}>
-                    <DaysInTransitBadge days={days} />
-                  </td>
-                  {!isVendor && (
-                    <td style={{ ...TD, textAlign: "center" }}>
-                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                        <ActionBtn
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(s);
-                          }}
-                          bg={HX.blueLight}
-                          hoverBg={HX.blue}
-                          color={HX.blue}
-                          title="تعديل"
-                        >
-                          <EditIcon sx={{ fontSize: 14 }} />
-                        </ActionBtn>
-                        <ActionBtn
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(s);
-                          }}
-                          bg={HX.redLight}
-                          hoverBg={HX.red}
-                          color={HX.red}
-                          title="حذف"
-                        >
-                          <DeleteIcon sx={{ fontSize: 14 }} />
-                        </ActionBtn>
-                      </Box>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
       </Box>
 
       {totalPages > 1 && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            p: "14px 16px",
-            borderTop: `0.5px solid ${HX.border}`,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", p: "12px 16px", borderTop: `0.5px solid ${HX.border}` }}>
           <Pagination
             count={totalPages}
             page={page}

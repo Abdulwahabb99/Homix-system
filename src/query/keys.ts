@@ -26,6 +26,12 @@ export const userKeys = {
   list: () => [...userKeys.all(), "list"],
 };
 
+export const shipmentKeys = {
+  all: () => ["shipments"] as const,
+  lists: () => [...shipmentKeys.all(), "list"] as const,
+  list: (filtersKey: string) => [...shipmentKeys.lists(), filtersKey] as const,
+};
+
 export const ticketKeys = {
   all: () => ["tickets"] as const,
   meta: () => [...ticketKeys.all(), "meta"] as const,

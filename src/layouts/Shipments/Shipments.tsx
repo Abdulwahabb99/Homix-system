@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { ToastContainer } from "react-toastify";
@@ -7,8 +7,8 @@ import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDateRange } from "hooks/useDateRange";
-import moment from "moment";
 import EditShipmentModal from "./components/EditShipmentModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import { HX } from "layouts/Orders/ordersHomixTheme";
@@ -19,8 +19,13 @@ import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
 import AccountsPanel from "./components/panels/AccountsPanel";
 import ReportsPanel from "./components/panels/ReportsPanel";
+import {
+  useShipmentsListQuery,
+  SHIPMENTS_LIST_PAGE_SIZE,
+  type ShipmentItem,
+} from "query/shipmentsList";
+import { shipmentKeys } from "query/keys";
 
-const ITEMS_PER_PAGE = 150;
 const FONT = "'Cairo', sans-serif";
 
 const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
@@ -79,224 +84,102 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-function rangeDateToIso(d: any) {
-  if (!d) return null;
-  return (moment.isMoment(d) ? d : moment.utc(String(d), "DD-MM-YYYY")).toISOString();
-}
-
-interface State {
-  shipments: any[];
-  isLoading: boolean;
-  totalPages: number;
-  error: any;
-  selectedShipmentStatus: string;
-  selectedShipmentTybe: string;
-  selectedGovernorate: string;
-  selectedDeliveryStatus: string;
-  orderNumber: string;
-  shippingCompany: string;
-  vendors: { label: string; value: any }[];
-  isModalOpen: boolean;
-  isDeleteModalOpen: boolean;
-  selectedShipment: any;
-}
-
-type Action =
-  | { type: "FETCH_START" }
-  | { type: "FETCH_SUCCESS"; payload: { shipments: any[]; totalPages: number } }
-  | { type: "FETCH_ERROR"; payload: any }
-  | { type: "SET_FIELD"; field: string; value: any }
-  | { type: "SET_VENDORS"; payload: any[] }
-  | { type: "SET_MODAL_OPEN"; payload: boolean }
-  | { type: "SET_DELETE_MODAL_OPEN"; payload: boolean };
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "FETCH_START":
-      return { ...state, isLoading: true };
-    case "FETCH_SUCCESS":
-      return { ...state, isLoading: false, shipments: action.payload.shipments, totalPages: action.payload.totalPages };
-    case "FETCH_ERROR":
-      return { ...state, isLoading: false, error: action.payload };
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "SET_VENDORS":
-      return { ...state, vendors: action.payload };
-    case "SET_MODAL_OPEN":
-      return { ...state, isModalOpen: action.payload };
-    case "SET_DELETE_MODAL_OPEN":
-      return { ...state, isDeleteModalOpen: action.payload };
-    default:
-      return state;
-  }
-}
-
 export default function Shipments() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useSelector((state: any) => state.auth);
   const isVendor = user.userType === "2";
 
   const { startDate, endDate, handleDatesChange, handleReset: resetDates } = useDateRange({ defaultDays: 0 });
 
   const page = parseInt(searchParams.get("page")) || 1;
-
   const [activeTab, setActiveTab] = useState("shipments");
 
-  const initialState: State = {
-    shipments: [],
-    isLoading: false,
-    totalPages: 0,
-    error: null,
-    selectedShipmentStatus: searchParams.get("shipmentStatus") || "",
-    selectedShipmentTybe: searchParams.get("shipmentType") || "",
-    selectedGovernorate: searchParams.get("governorate") || "",
-    selectedDeliveryStatus: searchParams.get("deliveryStatus") || "",
-    orderNumber: searchParams.get("orderNumber") || "",
-    shippingCompany: searchParams.get("shippingCompany") || "",
-    vendors: [],
-    isModalOpen: false,
-    isDeleteModalOpen: false,
-    selectedShipment: null,
-  };
+  // --- Filter state (URL-driven) ---
+  const shipmentStatus  = searchParams.get("shipmentStatus")  || "";
+  const shipmentType    = searchParams.get("shipmentType")    || "";
+  const governorate     = searchParams.get("governorate")     || "";
+  const orderNumber     = searchParams.get("orderNumber")     || "";
+  const shippingCompany = searchParams.get("shippingCompany") || "";
 
-  const [state, dispatch] = useReducer(reducer, initialState);
+  // --- Modal state ---
+  const [isModalOpen, setIsModalOpen]       = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedShipment, setSelectedShipment]   = useState<ShipmentItem | null>(null);
+  const [vendors, setVendors] = useState<{ label: string; value: any }[]>([]);
 
-  const getShipments = () => {
-    const shipmentStartIso = startDate ? rangeDateToIso(startDate) : null;
-    const shipmentEndIso = endDate ? rangeDateToIso(endDate) : null;
-    const query = new URLSearchParams({
-      page: String(page),
-      size: String(ITEMS_PER_PAGE),
-      ...(state.selectedShipmentStatus && { shipmentStatus: state.selectedShipmentStatus }),
-      ...(state.selectedShipmentTybe && { shipmentType: state.selectedShipmentTybe }),
-      ...(state.selectedGovernorate && { governorate: state.selectedGovernorate }),
-      ...(state.selectedDeliveryStatus && { deliveryStatus: state.selectedDeliveryStatus }),
-      ...(state.orderNumber && { orderNumber: state.orderNumber }),
-      ...(state.shippingCompany && { shippingCompany: state.shippingCompany }),
-      ...(shipmentStartIso ? { shipmentStartDate: shipmentStartIso } : {}),
-      ...(shipmentEndIso ? { shipmentEndDate: shipmentEndIso } : {}),
-    });
+  // --- React Query ---
+  const { data, isLoading, isFetching } = useShipmentsListQuery({
+    page,
+    shipmentStatus,
+    shipmentType,
+    governorate,
+    orderNumber,
+    shippingCompany,
+    startDate,
+    endDate,
+  });
 
-    dispatch({ type: "FETCH_START" });
+  const shipments   = data?.items      ?? [];
+  const totalCount  = data?.totalCount ?? 0;
+  const totalPages  = Math.ceil(totalCount / SHIPMENTS_LIST_PAGE_SIZE);
+
+  // Fetch vendors once
+  React.useEffect(() => {
     axiosRequest
-      .get(`${process.env.REACT_APP_API_URL}/shipments?${query.toString()}`)
-      .then(({ data }) => {
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-          return;
-        }
-        const sorted = [...data.data.shipments].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        dispatch({ type: "FETCH_SUCCESS", payload: { shipments: sorted, totalPages: data.data.totalPages } });
-      })
-      .catch((error) => dispatch({ type: "FETCH_ERROR", payload: error }));
-  };
+      .get(`${process.env.REACT_APP_API_URL}/vendors`)
+      .then(({ data: { data: d } }) => setVendors(d.map((v: any) => ({ label: v.name, value: v.id }))));
+  }, []);
 
-  const fetchVendors = () => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
-      dispatch({ type: "SET_VENDORS", payload: data.map((v: any) => ({ label: v.name, value: v.id })) });
-    });
-  };
-
+  // --- URL helpers ---
   const updateParams = (params: Record<string, any> = {}) => {
     const urlParams = new URLSearchParams(window.location.search);
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        urlParams.set(key, String(value));
-      } else {
-        urlParams.delete(key);
-      }
+      if (value !== undefined && value !== null && value !== "") urlParams.set(key, String(value));
+      else urlParams.delete(key);
     });
     navigate(`?${urlParams.toString()}`);
   };
 
-  const handleDropdownChange = (field: string, paramKey: string) => (value: string) => {
-    dispatch({ type: "SET_FIELD", field, value });
+  const setFilterParam = (paramKey: string) => (value: string) => {
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("page", "1");
     if (value) urlParams.set(paramKey, value);
     else urlParams.delete(paramKey);
-    const url = new URL(window.location.href);
-    url.search = urlParams.toString();
-    window.history.pushState({}, "", url);
+    urlParams.set("page", "1");
+    navigate(`?${urlParams.toString()}`);
   };
 
   const handleReset = () => {
-    dispatch({ type: "SET_FIELD", field: "selectedShipmentStatus", value: "" });
-    dispatch({ type: "SET_FIELD", field: "selectedShipmentTybe", value: "" });
-    dispatch({ type: "SET_FIELD", field: "selectedGovernorate", value: "" });
-    dispatch({ type: "SET_FIELD", field: "selectedDeliveryStatus", value: "" });
-    dispatch({ type: "SET_FIELD", field: "orderNumber", value: "" });
-    dispatch({ type: "SET_FIELD", field: "shippingCompany", value: "" });
     if (resetDates) resetDates();
-    const urlParams = new URLSearchParams();
-    const url = new URL(window.location.href);
-    url.search = urlParams.toString();
-    window.history.pushState({}, "", url);
-    setTimeout(() => getShipments(), 50);
+    navigate("?");
   };
 
+  // --- Mutations ---
   const handleEditShipment = (
-    id: any,
-    shipmentStatus: any,
-    shipmentType: any,
-    governorate: any,
-    shippingCompany: any,
-    shippingFees: any,
-    shippingReceiveDate: any,
-    deliveryDate: any
+    id: any, shipmentStatusVal: any, shipmentTypeVal: any, governorateVal: any,
+    shippingCompanyVal: any, shippingFees: any, shippingReceiveDate: any, deliveryDate: any
   ) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/shipments/${id}`, {
-        shipmentStatus,
-        shipmentType,
-        governorate,
-        shippingCompany,
-        shippingFees,
-        shippingReceiveDate,
-        deliveryDate,
+        shipmentStatus: shipmentStatusVal, shipmentType: shipmentTypeVal, governorate: governorateVal,
+        shippingCompany: shippingCompanyVal, shippingFees, shippingReceiveDate, deliveryDate,
       })
-      .then(({ data: { data } }) => {
-        dispatch({ type: "SET_MODAL_OPEN", payload: false });
-        const updated = state.shipments.map((s) =>
-          s.id === id ? { ...data, customer: s.customer } : s
-        );
-        dispatch({ type: "FETCH_SUCCESS", payload: { shipments: updated, totalPages: state.totalPages } });
-      })
-      .catch((error) => dispatch({ type: "FETCH_ERROR", payload: error }));
+      .then(() => {
+        setIsModalOpen(false);
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+      });
   };
 
   const deleteShipment = () => {
+    if (!selectedShipment) return;
     axiosRequest
-      .delete(`${process.env.REACT_APP_API_URL}/shipments/${state.selectedShipment.id}`)
+      .delete(`${process.env.REACT_APP_API_URL}/shipments/${selectedShipment.id}`)
       .then(() => {
-        const updated = state.shipments.filter((s) => s.id !== state.selectedShipment.id);
-        dispatch({ type: "FETCH_SUCCESS", payload: { shipments: updated, totalPages: state.totalPages } });
-        dispatch({ type: "SET_DELETE_MODAL_OPEN", payload: false });
-      })
-      .catch((error) => dispatch({ type: "FETCH_ERROR", payload: error }));
+        setIsDeleteModalOpen(false);
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+      });
   };
-
-  useEffect(() => { fetchVendors(); }, []);
-
-  useEffect(() => {
-    getShipments();
-  }, [
-    page,
-    state.selectedShipmentStatus,
-    state.selectedShipmentTybe,
-    state.selectedGovernorate,
-    state.selectedDeliveryStatus,
-    startDate,
-    endDate,
-    state.orderNumber,
-    state.shippingCompany,
-  ]);
-
-  const { shipments, isLoading, vendors, totalPages } = state;
 
   return (
     <DashboardLayout
@@ -309,22 +192,12 @@ export default function Shipments() {
             type="button"
             title="تصدير"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              px: "13px",
-              height: 36,
-              borderRadius: "9px",
-              border: `1px solid ${HX.border2}`,
-              bgcolor: HX.surface,
-              color: HX.tx2,
-              cursor: "pointer",
-              fontSize: "13px",
-              fontFamily: FONT,
-              fontWeight: 600,
-              flexShrink: 0,
-              transition: ".15s",
-              "&:hover": { bgcolor: HX.surface3, color: HX.tx },
+              display: "flex", alignItems: "center", gap: "5px",
+              px: "13px", height: 36, borderRadius: "9px",
+              border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
+              color: HX.tx2, cursor: "pointer", fontSize: "13px",
+              fontFamily: FONT, fontWeight: 600, flexShrink: 0,
+              transition: ".15s", "&:hover": { bgcolor: HX.surface3, color: HX.tx },
             }}
           >
             <FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />
@@ -336,22 +209,12 @@ export default function Shipments() {
               type="button"
               onClick={() => navigate("/shipments/add")}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                px: "15px",
-                height: 36,
-                borderRadius: "9px",
-                border: "none",
-                bgcolor: HX.accent,
-                color: "#fff",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontFamily: FONT,
-                fontWeight: 700,
-                flexShrink: 0,
-                transition: ".2s",
-                "&:hover": { bgcolor: "#4f46e5" },
+                display: "flex", alignItems: "center", gap: "6px",
+                px: "15px", height: 36, borderRadius: "9px",
+                border: "none", bgcolor: HX.accent, color: "#fff",
+                cursor: "pointer", fontSize: "13px", fontFamily: FONT,
+                fontWeight: 700, flexShrink: 0,
+                transition: ".2s", "&:hover": { bgcolor: "#4f46e5" },
               }}
             >
               <AddIcon sx={{ fontSize: 18 }} />
@@ -363,36 +226,33 @@ export default function Shipments() {
     >
       <ToastContainer />
 
-      {state.isModalOpen && (
+      {isModalOpen && selectedShipment && (
         <EditShipmentModal
-          open={state.isModalOpen}
-          onClose={() => dispatch({ type: "SET_MODAL_OPEN", payload: false })}
-          data={state.selectedShipment}
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          data={selectedShipment}
           vendors={vendors}
           onEdit={handleEditShipment}
         />
       )}
 
-      {state.isDeleteModalOpen && state.selectedShipment && (
+      {isDeleteModalOpen && selectedShipment && (
         <ConfirmDeleteModal
-          open={state.isDeleteModalOpen}
-          onClose={() => dispatch({ type: "SET_DELETE_MODAL_OPEN", payload: false })}
+          open={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
           handleConfirmDelete={deleteShipment}
         />
       )}
 
-      <Box sx={{
-        fontFamily: FONT, mt: "20px",
-      }}>
-
+      <Box sx={{ fontFamily: FONT , mt : '16px' }}>
         {/* Main tabs */}
         <Box
           sx={{
             display: "flex",
             gap: "4px",
-            mb: "20px",
+            mb: "16px",
             bgcolor: HX.surface,
-            borderRadius: "13px",
+            borderRadius: "12px",
             border: `1px solid ${HX.border}`,
             p: "4px",
             width: "100%",
@@ -402,7 +262,7 @@ export default function Shipments() {
         >
           {MAIN_TABS.map((tab) => {
             const active = activeTab === tab.id;
-            const count = tab.id === "shipments" ? shipments.length : null;
+            const count = tab.id === "shipments" ? totalCount : 0;
             return (
               <Box
                 key={tab.id}
@@ -414,8 +274,8 @@ export default function Shipments() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "7px",
-                  py: "8px",
+                  gap: "6px",
+                  py: "7px",
                   px: "6px",
                   borderRadius: "9px",
                   border: "none",
@@ -424,54 +284,37 @@ export default function Shipments() {
                   whiteSpace: "nowrap",
                   bgcolor: active ? HX.accent : "transparent",
                   color: active ? "#fff" : HX.tx2,
-                  boxShadow: active ? "0 2px 10px rgba(99,102,241,0.30)" : "none",
+                  boxShadow: active ? "0 2px 10px rgba(99,102,241,0.28)" : "none",
                   transition: "background .15s, box-shadow .15s, color .15s",
                   "&:hover": !active ? { bgcolor: HX.surface3, color: HX.tx } : {},
                 }}
               >
-                {/* Icon */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexShrink: 0,
-                    opacity: active ? 1 : 0.65,
-                  }}
-                >
+                <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: active ? 1 : 0.6 }}>
                   {tab.icon}
                 </Box>
-
-                {/* Label */}
-                <Box
-                  component="span"
-                  sx={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT }}
-                >
+                <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 600, fontFamily: FONT }}>
                   {tab.label}
                 </Box>
-
-                {/* Count badge */}
-                {count != null && (
-                  <Box
-                    component="span"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minWidth: "22px",
-                      height: "20px",
-                      px: "6px",
-                      borderRadius: "100px",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      fontFamily: FONT,
-                      flexShrink: 0,
-                      bgcolor: active ? "rgba(255,255,255,0.22)" : HX.surface3,
-                      color: active ? "#fff" : HX.tx2,
-                    }}
-                  >
-                    {count}
-                  </Box>
-                )}
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "20px",
+                    height: "18px",
+                    px: "5px",
+                    borderRadius: "100px",
+                    fontSize: "10.5px",
+                    fontWeight: 700,
+                    fontFamily: FONT,
+                    flexShrink: 0,
+                    bgcolor: active ? "rgba(255,255,255,0.22)" : HX.surface3,
+                    color: active ? "#fff" : HX.tx2,
+                  }}
+                >
+                  {count}
+                </Box>
               </Box>
             );
           })}
@@ -479,29 +322,27 @@ export default function Shipments() {
 
         {/* Shipments tab */}
         {activeTab === "shipments" && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <ShipmentsKpiRow shipments={shipments} isLoading={isLoading} />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <ShipmentsKpiRow
+              shipments={shipments}
+              totalCount={totalCount}
+              isLoading={isLoading}
+            />
 
             <ShipmentsFiltersBar
-              selectedShipmentStatus={state.selectedShipmentStatus}
-              selectedShipmentType={state.selectedShipmentTybe}
-              selectedGovernorate={state.selectedGovernorate}
-              orderNumber={state.orderNumber}
-              shippingCompany={state.shippingCompany}
+              selectedShipmentStatus={shipmentStatus}
+              selectedShipmentType={shipmentType}
+              selectedGovernorate={governorate}
+              orderNumber={orderNumber}
+              shippingCompany={shippingCompany}
               isVendor={isVendor}
               startDate={startDate}
               endDate={endDate}
-              onStatusChange={handleDropdownChange("selectedShipmentStatus", "shipmentStatus")}
-              onTypeChange={handleDropdownChange("selectedShipmentTybe", "shipmentType")}
-              onGovernorateChange={handleDropdownChange("selectedGovernorate", "governorate")}
-              onOrderNumberChange={(v) => {
-                dispatch({ type: "SET_FIELD", field: "orderNumber", value: v });
-                updateParams({ orderNumber: v || undefined, page: 1 });
-              }}
-              onShippingCompanyChange={(v) => {
-                dispatch({ type: "SET_FIELD", field: "shippingCompany", value: v });
-                updateParams({ shippingCompany: v || undefined, page: 1 });
-              }}
+              onStatusChange={setFilterParam("shipmentStatus")}
+              onTypeChange={setFilterParam("shipmentType")}
+              onGovernorateChange={setFilterParam("governorate")}
+              onOrderNumberChange={(v) => updateParams({ orderNumber: v || undefined, page: 1 })}
+              onShippingCompanyChange={(v) => updateParams({ shippingCompany: v || undefined, page: 1 })}
               onDatesChange={handleDatesChange}
               onDateReset={resetDates}
               onReset={handleReset}
@@ -511,25 +352,20 @@ export default function Shipments() {
               shipments={shipments}
               isVendor={isVendor}
               isLoading={isLoading}
+              isFetching={isFetching}
               page={page}
               totalPages={totalPages}
               onPageChange={(value) => updateParams({ page: value })}
-              onEdit={(s) => {
-                dispatch({ type: "SET_FIELD", field: "selectedShipment", value: s });
-                dispatch({ type: "SET_MODAL_OPEN", payload: true });
-              }}
-              onDelete={(s) => {
-                dispatch({ type: "SET_FIELD", field: "selectedShipment", value: s });
-                dispatch({ type: "SET_DELETE_MODAL_OPEN", payload: true });
-              }}
+              onEdit={(s) => { setSelectedShipment(s); setIsModalOpen(true); }}
+              onDelete={(s) => { setSelectedShipment(s); setIsDeleteModalOpen(true); }}
             />
           </Box>
         )}
 
-        {activeTab === "returns" && <ReturnsPanel />}
+        {activeTab === "returns"   && <ReturnsPanel />}
         {activeTab === "inventory" && <InventoryPanel />}
-        {activeTab === "accounts" && <AccountsPanel />}
-        {activeTab === "reports" && <ReportsPanel />}
+        {activeTab === "accounts"  && <AccountsPanel />}
+        {activeTab === "reports"   && <ReportsPanel />}
       </Box>
     </DashboardLayout>
   );
