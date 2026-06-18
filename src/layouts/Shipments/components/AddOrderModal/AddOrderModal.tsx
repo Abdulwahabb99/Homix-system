@@ -42,56 +42,42 @@ function AddOrderModal() {
     setIsOrderDetailsModalOpen(false);
   };
 
+  const toIsoDate = (d) => {
+    if (!d) return undefined;
+    const date = new Date(d);
+    return isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+
   const addNewOrder = () => {
-    axiosRequest
-      .post(`${baseURI}/shipments`, {
-        total_discounts: 0,
-        total_line_items_price: selectedProduct.variants[0].price,
-        total_price: selectedProduct.variants[0].price,
-        total_tax: 0,
-        customer: {
-          firstName: state.firstName,
-          lastName: state.lastName,
-          country: state.country,
-          province: state.province,
-          city: state.city,
-          phone: state.phone,
-          address: state.address,
-          email: state.email,
+    const variant = selectedProduct?.variants?.[0] ?? {};
+    const toStr = (v) => (v === undefined || v === null || v === "" ? undefined : String(v));
+    const body = {
+      customer: {
+        first_name: state.firstName,
+        last_name: state.lastName,
+        phone: state.phone,
+      },
+      line_items: [
+        {
+          title: selectedProduct?.title,
+          price: toStr(variant.price),
+          quantity: 1,
+          variant_id: toStr(variant.shopifyId),
         },
-        line_items: [
-          {
-            title: selectedProduct?.title,
-            name: selectedProduct?.title,
-            price: selectedProduct?.variants[0].price,
-            product_id: selectedProduct?.shopifyId,
-            quantity: 1,
-            variant_id: selectedProduct?.variants[0].shopifyId,
-            sku: selectedProduct?.variants[0].sku,
-            total_discount: "",
-            discount_allocations: [],
-            shipping_lines: [
-              {
-                price: orderDetails?.shippingCost,
-              },
-            ],
-          },
-        ],
-        userId: orderDetails?.selectedUser,
-        status: orderDetails?.orderStatus,
-        shippingFees: orderDetails?.shippingCost,
-        commission: orderDetails?.commission,
-        shipmentStatus: orderDetails?.shipmentStatus,
-        shipmentType: orderDetails?.shipmentType,
-        shippingCompany: orderDetails?.shippingCompany,
-        shippingReceiveDate: orderDetails?.shippingReceiveDate,
-        deliveryDate: orderDetails?.deliveryDate,
-        downPayment: orderDetails?.downPayment,
-        paymentStatus: orderDetails?.paymentStatus,
-        toBeCollected: orderDetails?.toBeCollected,
-        manufacturingDate: orderDetails?.manufacturingDate,
-        governorate: orderDetails?.governorate,
-      })
+      ],
+      shippingCompany: orderDetails?.shippingCompany,
+      governorate: toStr(orderDetails?.governorate),
+      shipmentStatus: toStr(orderDetails?.shipmentStatus),
+      shipmentType: toStr(orderDetails?.shipmentType),
+      shippingReceiveDate: toIsoDate(orderDetails?.shippingReceiveDate),
+      deliveryDate: toIsoDate(orderDetails?.deliveryDate),
+      deliveryBy: toStr(orderDetails?.deliveryBy),
+      shippingFees: toStr(orderDetails?.shippingCost),
+      toBeCollected: toStr(orderDetails?.toBeCollected),
+    };
+
+    axiosRequest
+      .post(`${baseURI}/shipments`, body)
       .then(() => {
         NotificationMeassage("success", "تم اضافه الشحنة بنجاح");
         navigate("/shipments");

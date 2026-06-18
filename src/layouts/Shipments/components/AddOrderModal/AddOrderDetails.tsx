@@ -38,6 +38,7 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
 
   const [shipmentStatus, setShipmentStatus] = useState(customer?.shipmentStatus);
   const [shipmentType, setShipmentType] = useState(customer?.shipmentType);
+  const [deliveryBy, setDeliveryBy] = useState(customer?.deliveryBy);
   const [governorate, setGovernorate] = useState(customer?.governorate);
   const [shippingCompany, setShippingCompany] = useState(customer?.shippingCompany);
   const [shippingReceiveDate, setShippingReceiveDate] = useState(
@@ -208,6 +209,21 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
             </Select>
           </FormControl>
           <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="deliveryBy">التوصيل بواسطة</InputLabel>
+            <Select
+              fullWidth
+              labelId="deliveryBy"
+              id="deliveryBy-select"
+              value={deliveryBy}
+              label="التوصيل بواسطة"
+              onChange={(e) => setDeliveryBy(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              <MenuItem value={1}>هوميكس</MenuItem>
+              <MenuItem value={2}>بائع</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
             <InputLabel id="governorate">المحافظة</InputLabel>
             <Select
               fullWidth
@@ -290,6 +306,7 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
               selectedUser,
               shipmentStatus,
               shipmentType,
+              deliveryBy,
               governorate,
               shippingCompany,
               shippingReceiveDate,
