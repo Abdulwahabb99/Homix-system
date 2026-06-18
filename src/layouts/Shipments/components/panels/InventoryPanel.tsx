@@ -6,6 +6,20 @@ import { useShipmentsInventoryQuery, INVENTORY_PAGE_SIZE, type InventoryItem } f
 
 const FONT = "'Cairo', sans-serif";
 
+// ⚠️ STATIC MOCK DATA — temporary, to preview the design only.
+// TODO: remove MOCK_INVENTORY and re-enable useShipmentsInventoryQuery below.
+const USE_MOCK = true;
+const MOCK_INVENTORY: InventoryItem[] = [
+  { id: 1, image: null, productCode: "PRD-1001", productName: "كنبة شيب 3 مقاعد", quantity: 8,  costPrice: 16999, color: "بيج",   size: "كبير",  statusLabel: "متوفر بالمخزون", vendorName: "ركة للأثاث" },
+  { id: 2, image: null, productCode: "PRD-1002", productName: "طاولة طعام خشب زان",  quantity: 0,  costPrice: 8500,  color: "بني",   size: "وسط",   statusLabel: "نفذ بالمخزون",   vendorName: "دريسينج هاوس" },
+  { id: 3, image: null, productCode: "PRD-1003", productName: "كرسي مكتب دوار",      quantity: 24, costPrice: 2200,  color: "أسود",  size: "قياسي", statusLabel: "متوفر بالمخزون", vendorName: "بين باج" },
+  { id: 4, image: null, productCode: "PRD-1004", productName: "سرير كابتونيه",       quantity: 5,  costPrice: 12750, color: "رمادي", size: "180سم", statusLabel: "متوفر بالمخزون", vendorName: "ركة للأثاث" },
+  { id: 5, image: null, productCode: "PRD-1005", productName: "مكتبة كتب 5 أرفف",     quantity: 0,  costPrice: 4300,  color: "أبيض",  size: "كبير",  statusLabel: "نفذ بالمخزون",   vendorName: "هوم سنتر" },
+  { id: 6, image: null, productCode: "PRD-1006", productName: "ترابيزة قهوة رخام",    quantity: 13, costPrice: 3900,  color: "ذهبي",  size: "وسط",   statusLabel: "متوفر بالمخزون", vendorName: "دريسينج هاوس" },
+  { id: 7, image: null, productCode: "PRD-1007", productName: "بين باج جلد",          quantity: 31, costPrice: 1450,  color: "أزرق",  size: "كبير",  statusLabel: "متوفر بالمخزون", vendorName: "بين باج" },
+  { id: 8, image: null, productCode: "PRD-1008", productName: "دولاب ملابس 4 أبواب",  quantity: 2,  costPrice: 18900, color: "بني",   size: "كبير",  statusLabel: "متوفر بالمخزون", vendorName: "ركة للأثاث" },
+];
+
 const TH: React.CSSProperties = {
   fontFamily: FONT, fontSize: "11px", fontWeight: 700, color: HX.tx2,
   padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap",
@@ -64,13 +78,13 @@ function SkeletonRows() {
 
 export default function InventoryPanel() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({ page });
+  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({ page }, { enabled: !USE_MOCK });
 
-  const items      = data?.items      ?? [];
-  const totalCount = data?.totalCount ?? 0;
+  const items      = USE_MOCK ? MOCK_INVENTORY : (data?.items ?? []);
+  const totalCount = USE_MOCK ? MOCK_INVENTORY.length : (data?.totalCount ?? 0);
   const totalPages = Math.ceil(totalCount / INVENTORY_PAGE_SIZE);
 
-  if (isLoading) return <SkeletonRows />;
+  if (!USE_MOCK && isLoading) return <SkeletonRows />;
 
   if (items.length === 0) {
     return (
