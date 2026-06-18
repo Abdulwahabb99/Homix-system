@@ -102,7 +102,7 @@ const adminMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true },
   { to: "/orders", label: "الطلبات", icon: icons.orders, badge: "72", badgeType: "warn" },
   { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default" },
-  { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets },
   { to: "/financialReports", label: "الإيرادات", icon: icons.revenue },
 ];
@@ -126,14 +126,14 @@ const operationsMain: NavItem[] = [
   { to: "/products", label: "المنتجات", icon: icons.product },
   { to: "/orders", label: "الطلبات", icon: icons.orders },
   { to: "/factories", label: "المصانع", icon: icons.suppliers },
-  { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets },
 ];
 
 const logisticsMain: NavItem[] = [
   { to: "/products", label: "المنتجات", icon: icons.product },
   { to: "/orders", label: "الطلبات", icon: icons.orders },
-  { to: "/shipments", label: "الشحنات", icon: icons.shipments },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets },
 ];
 
