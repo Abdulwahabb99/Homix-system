@@ -1,106 +1,88 @@
 import React from "react";
-import { Grid, TextField } from "@mui/material";
-import MDTypography from "components/MDTypography";
-import styles from "./AddOrderModal.module.css";
+import { Box, Grid, TextField, Typography } from "@mui/material";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PropTypes from "prop-types";
+import { HX } from "layouts/Orders/ordersHomixTheme";
+
+const FONT = "'Cairo', sans-serif";
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "10px",
+    fontFamily: FONT,
+    fontSize: "13px",
+    bgcolor: HX.surface,
+    "& fieldset": { borderColor: HX.border },
+    "&:hover fieldset": { borderColor: HX.accent },
+    "&.Mui-focused fieldset": { borderColor: HX.accent, borderWidth: "1px" },
+  },
+  "& .MuiInputBase-input": { color: HX.tx, fontFamily: FONT },
+  "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "13px", color: HX.tx2 },
+  "& .MuiInputLabel-root.Mui-focused": { color: HX.accent },
+};
 
 function CustomerDetails({ handleChange, state }) {
+  const fields = [
+    { name: "firstName", label: "الاسم الأول", required: true },
+    { name: "lastName", label: "اسم العائلة", required: true },
+    { name: "phone", label: "رقم العميل" },
+    { name: "address", label: "عنوان العميل", multiline: true },
+    { name: "country", label: "البلد" },
+    { name: "province", label: "المحافظة" },
+    { name: "city", label: "المدينة" },
+    { name: "email", label: "البريد الإلكتروني" },
+  ];
+
   return (
-    <div className={styles.productsCard}>
-      <MDTypography variant="h5" fontWeight="medium" mb={2}>
-        بيانات العميل
-      </MDTypography>
+    <Box
+      sx={{
+        bgcolor: HX.surface,
+        borderRadius: HX.r,
+        border: `0.5px solid ${HX.border}`,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+        p: "18px 20px",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: "9px", mb: "18px" }}>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            borderRadius: "9px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: HX.greenLight,
+            color: HX.green,
+            flexShrink: 0,
+          }}
+        >
+          <PersonOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+        </Box>
+        <Typography sx={{ fontFamily: FONT, fontSize: "14px", fontWeight: 700, color: HX.tx }}>
+          بيانات العميل
+        </Typography>
+      </Box>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <TextField
-            name="firstName"
-            label="اسم الاول"
-            variant="outlined"
-            fullWidth
-            value={state.firstName}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            name="lastName"
-            label="اسم العائلة"
-            variant="outlined"
-            fullWidth
-            value={state.lastName}
-            onChange={handleChange}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            name="phone"
-            label="رقم العميل"
-            variant="outlined"
-            fullWidth
-            value={state.phone}
-            onChange={handleChange}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            name="address"
-            label="عنوان العميل"
-            variant="outlined"
-            fullWidth
-            value={state.address}
-            onChange={handleChange}
-            multiline
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            name="country"
-            label="البلد"
-            variant="outlined"
-            fullWidth
-            value={state.country}
-            onChange={handleChange}
-            multiline
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            name="province"
-            label="المحافظة"
-            variant="outlined"
-            fullWidth
-            value={state.province}
-            onChange={handleChange}
-            multiline
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            name="city"
-            label="المدينة"
-            variant="outlined"
-            fullWidth
-            value={state.city}
-            onChange={handleChange}
-            multiline
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            name="email"
-            label="البريد الإلكتروني"
-            variant="outlined"
-            fullWidth
-            value={state.email}
-            onChange={handleChange}
-          />
-        </Grid>
+      <Grid container spacing={1.6}>
+        {fields.map((f) => (
+          <Grid item xs={12} sm={f.name === "address" ? 12 : 6} key={f.name}>
+            <TextField
+              name={f.name}
+              label={f.required ? `${f.label} *` : f.label}
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={state[f.name]}
+              onChange={handleChange}
+              multiline={f.multiline}
+              minRows={f.multiline ? 2 : undefined}
+              sx={fieldSx}
+            />
+          </Grid>
+        ))}
       </Grid>
-    </div>
+    </Box>
   );
 }
 
