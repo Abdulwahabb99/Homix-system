@@ -1,29 +1,28 @@
-import { IconButton, Switch } from "@mui/material";
-import AgGrid from "components/AgGrid/AgGrid";
-import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import Spinner from "components/Spinner/Spinner";
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import React, { useEffect, useState } from "react";
-import { ToastContainer } from "react-toastify";
+import React, { useEffect, useMemo, useState } from "react";
+import { Box, Grid, IconButton, Switch, Tooltip } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DoNotDisturbOnIcon from "@mui/icons-material/DoNotDisturbOn";
 import { useNavigate } from "react-router-dom";
-import EditVendorModal from "./components/EditVendorModal";
+import { ToastContainer } from "react-toastify";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import HomixDataTable, { type HomixColumn } from "components/HomixDataTable/HomixDataTable";
+import HomixSearchInput from "components/HomixSearchInput/HomixSearchInput";
+import HomixStatusBadge from "components/HomixStatusBadge/HomixStatusBadge";
+import HomixKpiCard from "components/HomixKpiCard/HomixKpiCard";
+import { HX } from "layouts/Orders/ordersHomixTheme";
 import axiosRequest from "shared/functions/axiosRequest";
-
-const statusOptions = { 1: "اونلاين", 2: "اوفلاين" };
+import EditVendorModal from "./components/EditVendorModal";
 
 function Vendors() {
   const [isloading, setIsLoading] = useState(false);
   const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const getStatusValue = (value) => {
-    const statusValue = statusOptions[value];
-    return statusValue;
-  };
 
   const getVendors = () => {
     setIsLoading(true);
@@ -34,7 +33,6 @@ function Vendors() {
           localStorage.removeItem("user");
           navigate("/authentication/sign-in");
         }
-
         const newData = data.data.sort((a, b) => a.id - b.id);
         setVendors(newData);
       })
@@ -45,30 +43,14 @@ function Vendors() {
         setIsLoading(false);
       });
   };
-  // const deleteVendor = () => {
-  //   axiosRequest
-  //     .delete(`${process.env.REACT_APP_API_URL}/vendors/${selectedVendorId}`)
-  //     .then(() => {
-  //       setIsDeleteModalOpenned(false);
-  //       const newData = vendors.filter((factory) => factory.id !== selectedVendorId);
-  //       setVendors(newData);
-  //       NotificationMeassage("success", "تم مسح البائع");
-  //     })
-  //     .catch(() => {
-  //       NotificationMeassage("error", "حدث خطأ");
-  //     });
-  // };
 
   const handleChange = (id, value) => {
     axiosRequest
       .put(`${process.env.REACT_APP_API_URL}/vendors/${id}/activeStatus`)
       .then(() => {
-        const newData = vendors.map((vendor) => {
-          if (vendor.id === id) {
-            return { ...vendor, active: !value };
-          }
-          return vendor;
-        });
+        const newData = vendors.map((vendor) =>
+          vendor.id === id ? { ...vendor, active: !value } : vendor
+        );
         setVendors(newData);
         NotificationMeassage("success", "تم تغير الحالة");
       })
@@ -93,7 +75,7 @@ function Vendors() {
         setIsEditModalOpenned(false);
         NotificationMeassage("success", "تم تعديل المورد بنجاح");
       })
-      .catch((error) => {
+      .catch(() => {
         NotificationMeassage("error", "حدث خطأ");
       });
   };
@@ -102,46 +84,60 @@ function Vendors() {
     getVendors();
   }, []);
 
-  const colDefs = [
+  const onlineCount = useMemo(() => vendors.filter((v) => v.active).length, [vendors]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return vendors;
+    return vendors.filter(
+      (v) =>
+        (v.name || "").toLowerCase().includes(q) ||
+        (v.user?.email || "").toLowerCase().includes(q)
+    );
+  }, [vendors, search]);
+
+  const columns: HomixColumn<any>[] = [
     {
-      field: "name",
-      headerName: "اسم البائع",
-      sortable: true,
-      minWidth: 140,
+      key: "name", header: "اسم البائع", minWidth: 160,
+      render: (v) => <Box component="span" sx={{ fontWeight: 700, color: HX.tx }}>{v.name}</Box>,
     },
-    { field: "user.email", headerName: "البريد الالكتروني", minWidth: 190, sortable: false },
     {
-      field: "status",
-      headerName: "الحالة",
-      sortable: false,
-      minWidth: 90,
-      maxWidth: 90,
-      valueGetter: ({ data }) => getStatusValue(data.status),
-      cellRenderer: ({ data }) => (
-        <Switch checked={data.active} onChange={() => handleChange(data.id, data.active)} />
+      key: "email", header: "البريد الإلكتروني", minWidth: 200,
+      render: (v) => <Box component="span" sx={{ color: HX.tx2 }}>{v.user?.email || "—"}</Box>,
+    },
+    {
+      key: "status", header: "الحالة", align: "center", minWidth: 160,
+      render: (v) => (
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <HomixStatusBadge
+            label={v.active ? "نشط" : "غير نشط"}
+            bg={v.active ? HX.greenLight : HX.surface3}
+            color={v.active ? "#065f46" : HX.tx2}
+            dot={v.active ? HX.green : HX.tx3}
+          />
+          <Switch size="small" checked={!!v.active} onChange={() => handleChange(v.id, v.active)} />
+        </Box>
       ),
     },
     {
-      headerName: "تعديل",
-      minWidth: 80,
-      maxWidth: 80,
-      sortable: false,
-      cellRenderer: ({ data }) => (
-        <IconButton
-          onClick={() => {
-            setIsEditModalOpenned(true);
-            setSelectedVendor(data);
-          }}
-          sx={{ fontSize: "1.2rem" }}
-        >
-          <EditIcon />
-        </IconButton>
+      key: "actions", header: "تعديل", align: "center", width: 90,
+      render: (v) => (
+        <Tooltip title="تعديل">
+          <IconButton
+            size="small"
+            aria-label="تعديل البائع"
+            onClick={() => { setSelectedVendor(v); setIsEditModalOpenned(true); }}
+            sx={{ color: HX.blue, bgcolor: HX.blueLight, borderRadius: "8px", "&:hover": { bgcolor: HX.blue, color: "#fff" } }}
+          >
+            <EditIcon sx={{ fontSize: 17 }} />
+          </IconButton>
+        </Tooltip>
       ),
     },
   ];
 
   return (
-    <DashboardLayout>
+    <DashboardLayout pageTitle="البائعون" pageSubtitle="إدارة حسابات البائعين وحالتهم">
       <ToastContainer />
 
       {isEditModalOpenned && (
@@ -152,19 +148,35 @@ function Vendors() {
           onEdit={handleEditVendor}
         />
       )}
-      {isloading ? (
-        <Spinner />
-      ) : (
-        <AgGrid
-          rowData={vendors}
-          columnDefs={colDefs}
-          defaultColDef={{
-            resizable: true,
-          }}
-          enableQuickFilter
-          gridHeight={"500px"}
+
+      <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
+        {/* KPI strip */}
+        <Grid container spacing="10px">
+          <Grid item xs={4}>
+            <HomixKpiCard icon={<StorefrontIcon />} iconBg={HX.accentLight} iconColor={HX.accent} valueColor={HX.accent} label="إجمالي البائعين" value={vendors.length} />
+          </Grid>
+          <Grid item xs={4}>
+            <HomixKpiCard icon={<CheckCircleIcon />} iconBg={HX.greenLight} iconColor={HX.green} valueColor={HX.green} label="نشط" value={onlineCount} />
+          </Grid>
+          <Grid item xs={4}>
+            <HomixKpiCard icon={<DoNotDisturbOnIcon />} iconBg={HX.surface3} iconColor={HX.tx2} label="غير نشط" value={vendors.length - onlineCount} />
+          </Grid>
+        </Grid>
+
+        {/* Search */}
+        <Box sx={{ bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`, p: "12px 14px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <HomixSearchInput value={search} onChange={setSearch} placeholder="بحث بالاسم أو البريد الإلكتروني..." />
+        </Box>
+
+        {/* Table */}
+        <HomixDataTable
+          columns={columns}
+          rows={filtered}
+          getRowKey={(v) => v.id}
+          isLoading={isloading}
+          emptyLabel="لا يوجد بائعون"
         />
-      )}
+      </Box>
     </DashboardLayout>
   );
 }

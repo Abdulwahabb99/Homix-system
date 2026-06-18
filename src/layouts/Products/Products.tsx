@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, Grid, Pagination, Stack, TextField, Typography } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box, Grid, Pagination, Typography } from "@mui/material";
 
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import HomixSearchInput from "components/HomixSearchInput/HomixSearchInput";
+import { HX } from "layouts/Orders/ordersHomixTheme";
 import ProductCard from "./components/ProductCard";
 import {
   ProductsFilterDialog,
@@ -113,8 +114,8 @@ function Products() {
     getCategories();
   }, []);
 
-  const handleSearchChange = (e) => {
-    setParams({ searchQuery: e.target.value, page: "1" });
+  const handleSearchChange = (value) => {
+    setParams({ searchQuery: value, page: "1" });
   };
 
   const handleApplyFilters = (vendorsList, categoryList) => {
@@ -139,85 +140,41 @@ function Products() {
     setSearchParams(next);
   };
 
-  const searchFieldStyles = {
-    flex: 1,
-    minWidth: 0,
-    "& .MuiInputLabel-root": {
-      fontSize: "0.8125rem",
-      color: "primary.main",
-      "&.Mui-focused": {
-        color: "primary.main",
-      },
-    },
-    "& .MuiOutlinedInput-root": {
-      height: 40,
-      borderRadius: 1.5,
-      fontSize: "0.8125rem",
-      "&:hover .MuiOutlinedInput-notchedOutline": {
-        borderColor: "rgba(99, 102, 241, 0.35)",
-      },
-      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-        borderColor: "primary.main",
-        borderWidth: 2,
-      },
-    },
-  };
-
   return (
-    <DashboardLayout>
+    <DashboardLayout pageTitle="المنتجات" pageSubtitle="ابحث عن المنتج، أو اضبط الموردين والتصنيفات من أيقونة التصفية">
       <Box
         sx={{
-          px: { xs: 2, sm: 3 },
           py: 2.5,
           maxWidth: 1680,
           mx: "auto",
           width: "100%",
         }}
       >
-        <Stack spacing={0.5} mb={2.5}>
-          <Typography variant="h6" fontWeight={700} color="text.primary" fontSize="1.1rem">
-            المنتجات
-          </Typography>
-          <Typography variant="body2" color="text.secondary" fontSize="0.8125rem">
-            ابحث عن المنتج، أو اضبط الموردين والتصنيفات من أيقونة التصفية
-          </Typography>
-        </Stack>
-
         {loading ? (
           <ProductsPageSkeleton />
         ) : (
           <>
             <Box
               sx={{
-                p: 2,
+                p: "12px 14px",
                 mb: 2.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 12px rgba(15, 23, 42, 0.04)",
+                borderRadius: HX.r,
+                border: `0.5px solid ${HX.border}`,
+                bgcolor: HX.surface,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
               }}
             >
-              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ width: "100%" }}>
-                <TextField
-                  label="بحث"
-                  placeholder="اسم المنتج…"
-                  variant="outlined"
-                  size="small"
-                  value={searchQueryParam}
-                  onChange={handleSearchChange}
-                  sx={searchFieldStyles}
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ style: { fontSize: "0.8125rem" } }}
-                  InputProps={{
-                    endAdornment: <SearchIcon sx={{ color: "text.disabled", fontSize: 18 }} />,
-                  }}
-                />
-                <ProductsFilterTriggerButton
-                  onClick={() => setFilterDialogOpen(true)}
-                  activeCount={filterActiveCount}
-                />
-              </Stack>
+              <HomixSearchInput
+                value={searchQueryParam}
+                onChange={handleSearchChange}
+                placeholder="اسم المنتج…"
+              />
+              <ProductsFilterTriggerButton
+                onClick={() => setFilterDialogOpen(true)}
+                activeCount={filterActiveCount}
+              />
             </Box>
 
             <ProductsFilterDialog

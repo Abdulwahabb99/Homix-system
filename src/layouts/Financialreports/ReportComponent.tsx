@@ -1,14 +1,21 @@
 /* eslint-disable react/prop-types */
 import React from "react";
-import { Grid } from "@mui/material";
-import MDBox from "components/MDBox";
-import ComplexStatisticsCard from "examples/Cards/StatisticsCards/ComplexStatisticsCard";
-import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
-import PaidIcon from "@mui/icons-material/Paid";
+import { Box, Grid, Typography } from "@mui/material";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PaidIcon from "@mui/icons-material/Paid";
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
+import SavingsIcon from "@mui/icons-material/Savings";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PendingIcon from "@mui/icons-material/Pending";
+import HomixKpiCard from "components/HomixKpiCard/HomixKpiCard";
+import { HX } from "layouts/Orders/ordersHomixTheme";
 import { formatMoneyEgpInteger } from "shared/formatMoney";
+
+const FONT = "'Cairo', sans-serif";
 
 function ReportComponent({ financialreportData }) {
   const {
@@ -23,110 +30,50 @@ function ReportComponent({ financialreportData }) {
     halfCompletedOrders,
   } = financialreportData;
 
+  const money = formatMoneyEgpInteger;
+
+  const primary = [
+    { icon: <PaidIcon />,         iconBg: HX.greenLight,  iconColor: HX.green,  valueColor: HX.green, label: "صافي الربح",        value: money(totalProfit) },
+    { icon: <LeaderboardIcon />,  iconBg: HX.blueLight,   iconColor: HX.blue,                          label: "السعر الإجمالي",    value: money(totalRevenue) },
+    { icon: <StorefrontIcon />,   iconBg: HX.amberLight,  iconColor: HX.amber,                         label: "إجمالي التكلفة",    value: money(totalCost) },
+    { icon: <MonetizationOnIcon />, iconBg: HX.purpleLight, iconColor: HX.purple,                      label: "عمولة المنصة",      value: money(totalCommission) },
+  ];
+
+  const secondary = [
+    { icon: <ReceiptLongIcon />,  iconBg: HX.accentLight, iconColor: HX.accent, valueColor: HX.accent, label: "عدد الطلبات",       value: ordersCount || 0 },
+    { icon: <CheckCircleIcon />,  iconBg: HX.greenLight,  iconColor: HX.green,                          label: "إجمالي الطلبات المسلّمة", value: money(deliveredOrders?.totalRevenue) },
+    { icon: <SavingsIcon />,      iconBg: HX.tealLight,   iconColor: HX.teal,                           label: "جدية الشراء",       value: money(totalDownPayment) },
+    { icon: <AccountBalanceWalletIcon />, iconBg: HX.blueLight, iconColor: HX.blue,                     label: "المطلوب تحصيله",    value: money(totalToBeCollected) },
+    { icon: <HourglassEmptyIcon />, iconBg: HX.amberLight, iconColor: HX.amber,                         label: "الطلبات النصف مكتملة", value: halfCompletedOrders?.ordersCount || 0 },
+    { icon: <PendingIcon />,      iconBg: HX.surface3,    iconColor: HX.tx2,                            label: "مبالغ الطلبات النصف مكتملة", value: money(halfCompletedOrders?.totalRevenue) },
+  ];
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx2, mb: "10px", mt: "4px" }}>
+      {children}
+    </Typography>
+  );
+
   return (
-    <MDBox py={3}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="dark"
-              icon="weekend"
-              title="عدد الطلبات"
-              count={ordersCount || 0}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              icon="leaderboard"
-              title="السعر الاجمالي"
-              count={formatMoneyEgpInteger(totalRevenue)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="success"
-              icon="store"
-              title="اجمالي التكلفة"
-              count={formatMoneyEgpInteger(totalCost)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="error"
-              icon={<CheckCircleIcon />}
-              title="السعر الاجمالي للطلبات التي تم تسليمها"
-              count={formatMoneyEgpInteger(deliveredOrders?.totalRevenue)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="primary"
-              icon={<PaidIcon />}
-              title="صافي الربح"
-              count={formatMoneyEgpInteger(totalProfit)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="light"
-              icon={<MonetizationOnIcon />}
-              title="عمولة المنصة"
-              count={formatMoneyEgpInteger(totalCommission)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="light"
-              icon={<MonetizationOnIcon />}
-              title="جدية الشراء"
-              count={formatMoneyEgpInteger(totalDownPayment)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="light"
-              icon={<MonetizationOnIcon />}
-              title="اجمالي المبالغ المطلوب تحصيلها"
-              count={formatMoneyEgpInteger(totalToBeCollected)}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="dark"
-              icon={<HourglassEmptyIcon />}
-              title="عدد الطلبات النصف مكتملة"
-              count={halfCompletedOrders?.ordersCount || 0}
-            />
-          </MDBox>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <MDBox mb={1.5}>
-            <ComplexStatisticsCard
-              color="dark"
-              icon={<PendingIcon />}
-              title="اجمالي مبالغ الطلبات النصف مكتملة"
-              count={formatMoneyEgpInteger(halfCompletedOrders?.totalRevenue)}
-            />
-          </MDBox>
-        </Grid>
+    <Box sx={{ mt: "18px", display: "flex", flexDirection: "column", gap: "6px" }}>
+      <SectionTitle>الملخص المالي</SectionTitle>
+      <Grid container spacing="10px">
+        {primary.map((c) => (
+          <Grid item xs={6} sm={6} md={3} key={c.label}>
+            <HomixKpiCard {...c} />
+          </Grid>
+        ))}
       </Grid>
-    </MDBox>
+
+      <SectionTitle>تفاصيل إضافية</SectionTitle>
+      <Grid container spacing="10px">
+        {secondary.map((c) => (
+          <Grid item xs={6} sm={4} md={2} key={c.label}>
+            <HomixKpiCard {...c} />
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
 }
 

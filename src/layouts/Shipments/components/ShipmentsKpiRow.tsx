@@ -1,9 +1,8 @@
 import React from "react";
-import { Box, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
+import HomixKpiCard, { HomixKpiCardSkeleton } from "components/HomixKpiCard/HomixKpiCard";
 import type { ShipmentSummaryCard } from "query/shipmentsList";
-
-const FONT = "'Cairo', sans-serif";
 
 /* Icon + color per known card key — falls back to accent style for unknowns */
 const KEY_STYLES: Record<string, { iconBg: string; iconColor: string; valueColor?: string; icon: React.ReactNode }> = {
@@ -94,63 +93,6 @@ const FALLBACK_ICON = (
   </svg>
 );
 
-function KpiCard({
-  iconBg, iconColor, icon, value, valueColor, label,
-}: {
-  iconBg: string; iconColor: string; icon: React.ReactNode;
-  value: number | string; valueColor?: string; label: string;
-}) {
-  return (
-    <Box
-      sx={{
-        bgcolor: HX.surface,
-        borderRadius: HX.r,
-        p: "14px 16px",
-        border: `0.5px solid ${HX.border}`,
-        transition: ".2s",
-        "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,0.06)", transform: "translateY(-1px)" },
-      }}
-    >
-      <Box sx={{ mb: "10px" }}>
-        <Box
-          sx={{
-            width: 32, height: 32, borderRadius: "9px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            bgcolor: iconBg, color: iconColor,
-            "& svg": { width: 15, height: 15 },
-          }}
-        >
-          {icon}
-        </Box>
-      </Box>
-      <Box sx={{ fontSize: "22px", fontWeight: 800, lineHeight: 1, mb: "3px", color: valueColor ?? HX.tx, fontFamily: FONT }}>
-        {typeof value === "number" ? value.toLocaleString("en-US") : value}
-      </Box>
-      <Box sx={{ fontSize: "11px", color: HX.tx2, fontWeight: 500, fontFamily: FONT }}>{label}</Box>
-    </Box>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <Box
-      sx={{
-        bgcolor: HX.surface,
-        borderRadius: HX.r,
-        p: "14px 16px",
-        border: `0.5px solid ${HX.border}`,
-        height: 90,
-        "& > div": { borderRadius: "6px", bgcolor: HX.surface3, animation: "hx-pulse 1.4s ease-in-out infinite" },
-        "@keyframes hx-pulse": { "0%,100%": { opacity: 1 }, "50%": { opacity: 0.45 } },
-      }}
-    >
-      <Box sx={{ width: 32, height: 32, borderRadius: "9px !important", mb: "10px" }} />
-      <Box sx={{ width: "50%", height: 18, mb: "6px" }} />
-      <Box sx={{ width: "70%", height: 11 }} />
-    </Box>
-  );
-}
-
 interface ShipmentsKpiRowProps {
   cards?: ShipmentSummaryCard[];
   isLoading?: boolean;
@@ -162,7 +104,7 @@ export default function ShipmentsKpiRow({ cards, isLoading }: ShipmentsKpiRowPro
       <Grid container spacing="10px">
         {[...Array(5)].map((_, i) => (
           <Grid item xs={6} sm={4} md={4} lg={4} key={i}>
-            <SkeletonCard />
+            <HomixKpiCardSkeleton />
           </Grid>
         ))}
       </Grid>
@@ -180,7 +122,7 @@ export default function ShipmentsKpiRow({ cards, isLoading }: ShipmentsKpiRowPro
         };
         return (
           <Grid item xs={6} sm={4} md={4} lg={4} key={card.key}>
-            <KpiCard
+            <HomixKpiCard
               iconBg={style.iconBg}
               iconColor={style.iconColor}
               icon={style.icon}

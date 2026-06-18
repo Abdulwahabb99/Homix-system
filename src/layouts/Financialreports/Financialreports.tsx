@@ -1,11 +1,25 @@
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import React, { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
+import { Box, Grid, MenuItem, Select, TextField, Typography } from "@mui/material";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import ReportComponent from "./ReportComponent";
-import { Box, Button, Grid, MenuItem, Select, TextField, Typography } from "@mui/material";
 import axiosRequest from "shared/functions/axiosRequest";
-import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { HomixKpiCardSkeleton } from "components/HomixKpiCard/HomixKpiCard";
+import { HX } from "layouts/Orders/ordersHomixTheme";
+
+const FONT = "'Cairo', sans-serif";
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    height: 40, borderRadius: "10px", fontFamily: FONT, fontSize: "13px", bgcolor: HX.surface,
+    "& fieldset": { borderColor: HX.border },
+    "&:hover fieldset": { borderColor: HX.accent },
+    "&.Mui-focused fieldset": { borderColor: HX.accent, borderWidth: "1px" },
+  },
+  "& .MuiInputBase-input": { color: HX.tx, fontFamily: FONT },
+};
 
 function Financialreports() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +37,7 @@ function Financialreports() {
   const [selectedVendor, setSelectedVendor] = useState("");
   const [financialreportData, setFinancialreportData] = useState(null);
   const isAdmin = user.userType === "1";
+
   const getVendors = () => {
     axiosRequest
       .get("/vendors")
@@ -97,128 +112,101 @@ function Financialreports() {
   }, []);
 
   return (
-    <DashboardLayout>
-        <ToastContainer />
-        <Grid container spacing={2}>
-          <Grid item xs={6} md={3} lg={3}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-              }}
-            >
-              <Typography
-                variant="h6"
-                component="label"
-                htmlFor="start-date"
-                sx={{ marginBottom: "8px" }}
-              >
-                تاريخ البدأ
-              </Typography>
+    <DashboardLayout pageTitle="التقارير المالية" pageSubtitle="ملخص الإيرادات والتكاليف والأرباح خلال الفترة المحددة">
+      <ToastContainer />
 
-              <TextField
-                id="start-date"
-                variant="outlined"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                fullWidth
-                InputProps={{
-                  inputProps: {
-                    max: formattedDate,
-                  },
-                }}
-              />
-            </Box>
-          </Grid>
-          <Grid item xs={6} md={3} lg={3}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-              }}
-            >
-              <Typography
-                variant="h6"
-                component="label"
-                htmlFor="start-date"
-                sx={{ marginBottom: "8px" }}
-              >
-                تاريخ الانتهاء{" "}
-              </Typography>
+      <Box sx={{ fontFamily: FONT, mt: "16px" }}>
+        {/* Filter bar */}
+        <Box
+          sx={{
+            bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`,
+            p: "14px 16px", display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 180px", minWidth: 160 }}>
+            <Typography component="label" htmlFor="start-date" sx={{ fontFamily: FONT, fontSize: "12px", fontWeight: 600, color: HX.tx2 }}>
+              تاريخ البدء
+            </Typography>
+            <TextField
+              id="start-date" variant="outlined" type="date" value={startDate}
+              onChange={(e) => setStartDate(e.target.value)} fullWidth sx={fieldSx}
+              InputProps={{ inputProps: { max: formattedDate } }}
+            />
+          </Box>
 
-              <TextField
-                id="start-date"
-                variant="outlined"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                fullWidth
-                InputProps={{
-                  inputProps: {
-                    max: formattedDate,
-                  },
-                }}
-              />
-            </Box>
-          </Grid>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 180px", minWidth: 160 }}>
+            <Typography component="label" htmlFor="end-date" sx={{ fontFamily: FONT, fontSize: "12px", fontWeight: 600, color: HX.tx2 }}>
+              تاريخ الانتهاء
+            </Typography>
+            <TextField
+              id="end-date" variant="outlined" type="date" value={endDate}
+              onChange={(e) => setEndDate(e.target.value)} fullWidth sx={fieldSx}
+              InputProps={{ inputProps: { max: formattedDate } }}
+            />
+          </Box>
+
           {isAdmin && (
-            <Grid item xs={6} md={3} lg={3}>
-              <Box
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 180px", minWidth: 160 }}>
+              <Typography component="label" htmlFor="vendors" sx={{ fontFamily: FONT, fontSize: "12px", fontWeight: 600, color: HX.tx2 }}>
+                المصنّعون
+              </Typography>
+              <Select
+                id="vendors" value={selectedVendor} fullWidth displayEmpty
+                onChange={(e) => setSelectedVendor(e.target.value)}
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  minWidth: "150px",
+                  height: 40, borderRadius: "10px", fontFamily: FONT, fontSize: "13px", bgcolor: HX.surface,
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
+                  "& .MuiSelect-select": { fontFamily: FONT, fontSize: "13px" },
                 }}
+                MenuProps={{ PaperProps: { sx: { fontFamily: FONT } } }}
               >
-                <Typography
-                  variant="h6"
-                  component="label"
-                  htmlFor="vendors"
-                  sx={{ marginBottom: "8px" }}
-                >
-                  المصنعين{" "}
-                </Typography>
-                <Select
-                  labelId="vendors"
-                  id="vendors"
-                  value={selectedVendor}
-                  label="حالة الطلب"
-                  fullWidth
-                  onChange={(e) => setSelectedVendor(e.target.value)}
-                  sx={{ height: 43 }}
-                >
-                  {vendors.map((option) => {
-                    return (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </Box>
-            </Grid>
+                <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "13px" }}>الكل</MenuItem>
+                {vendors.map((option) => (
+                  <MenuItem key={option.value} value={option.value} sx={{ fontFamily: FONT, fontSize: "13px" }}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
           )}
-          <Grid item xs={6} md={3} lg={3} justifyContent={"center"}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={getFinancialreport}
-              style={{ color: "#fff", marginTop: "2.1rem" }}
-            >
-              بحث
-            </Button>
-          </Grid>
-        </Grid>
 
-        {financialreportData && !isLoading ? (
+          <Box
+            component="button"
+            type="button"
+            onClick={getFinancialreport}
+            sx={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              px: "22px", height: 40, borderRadius: "10px", border: "none",
+              bgcolor: HX.accent, color: "#fff", cursor: "pointer",
+              fontSize: "13px", fontFamily: FONT, fontWeight: 700, flexShrink: 0,
+              transition: ".15s", "&:hover": { bgcolor: "#4f46e5" },
+            }}
+          >
+            <FilterAltIcon sx={{ fontSize: 17 }} /> بحث
+          </Box>
+        </Box>
+
+        {/* Report */}
+        {isLoading ? (
+          <Box sx={{ mt: "18px" }}>
+            <Grid container spacing="10px">
+              {[...Array(10)].map((_, i) => (
+                <Grid item xs={6} sm={4} md={3} key={i}>
+                  <HomixKpiCardSkeleton />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ) : financialreportData ? (
           <ReportComponent financialreportData={financialreportData} />
         ) : (
-          <Spinner />
+          <Box sx={{ mt: "18px", py: 7, textAlign: "center", bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`, fontFamily: FONT, fontSize: "13px", color: HX.tx3 }}>
+            اختر الفترة الزمنية ثم اضغط «بحث» لعرض التقرير
+          </Box>
         )}
+      </Box>
     </DashboardLayout>
   );
 }
