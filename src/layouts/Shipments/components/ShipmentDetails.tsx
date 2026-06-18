@@ -1,578 +1,542 @@
-import MDBox from "components/MDBox";
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import styles from "../Shipments.module.css";
-import ArrowNextIcon from "@mui/icons-material/ArrowForward";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import PictureAsPdf from "@mui/icons-material/PictureAsPdf";
-import MDTypography from "components/MDTypography";
-import Spinner from "components/Spinner/Spinner";
-import {
-  Box,
-  Button,
-  Card,
-  Chip,
-  FormControl,
-  Grid,
-  Icon,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-  useMediaQuery,
-} from "@mui/material";
-// import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
-import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { ToastContainer } from "react-toastify";
-// import PdfData from "./PdfData";
-import { useReactToPrint } from "react-to-print";
+import moment from "moment";
+moment.locale("ar");
+import { Box, Typography, CircularProgress } from "@mui/material";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import SendIcon from "@mui/icons-material/Send";
+import { ToastContainer, toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
+import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import axiosRequest from "shared/functions/axiosRequest";
-import OrderInfoCard from "layouts/Orders/components/OrderInfoCard";
-import CustomerDetails from "./CustomerDetails";
+import { shipmentKeys } from "query/keys";
+import { HX } from "layouts/Orders/ordersHomixTheme";
+import { useShipmentDetailQuery } from "query/shipmentDetail";
+import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 
-export const statusoptions = [
-  { label: "معلق", value: 1 },
-  { label: "مؤكد", value: 3 },
-  { label: "ملغي", value: 4 },
-  { label: "قيد التصنيع ", value: 2 },
-  { label: "تم التسليم", value: 5 },
-  { label: "مسترجع ", value: 6 },
-  { label: "مستبدل ", value: 7 },
-  { label: "في المخزن ", value: 8 },
-];
+const FONT = "'Cairo', sans-serif";
 
-const PAYMENT_STATUS = { 2: "مدفوع", 1: "دفع عند الاستلام" };
+/* ── helpers ── */
+function fmtNum(n: number | null | undefined): string {
+  return Number(n ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return "—";
+  const m = moment(d).locale("ar");
+  return m.isValid() ? m.format("D MMMM YYYY") : "—";
+}
+function fmtDateTime(d: string | null | undefined): string {
+  if (!d) return "—";
+  const m = moment(d).locale("ar");
+  return m.isValid() ? m.format("D MMMM YYYY، h:mm A") : "—";
+}
 
-function ShipmentDetails() {
-  const { id } = useParams();
-  const [isLoading, setIsLoading] = useState(true);
-  const [orderDetails, setOrderDetails] = useState(null);
-  const [orderStatus, setOrderStatus] = useState(null);
-  const [slectedOrderLine, setSelectedOrderLine] = useState(null);
-  const [orderTotalPrice, setOrderTotalPrice] = useState(null);
-  const [orderTotalShipping, setOrderTotalShipping] = useState(null);
-  const [orderTotalToBeCollected, setOrderTotalToBeCollected] = useState(null);
-  const [orderTotalCost, setOrderTotalCost] = useState(null);
-  const [isEditModalOpenned, setIsEditModalOpenned] = useState(false);
-  const [orderlines, setOrderlines] = useState([]);
-  const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState([]);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editedCommentText, setEditedCommentText] = useState("");
-  const [administrator, setAdministrator] = useState("");
+const STATUS_COLORS: Record<number, { bg: string; color: string; dot: string }> = {
+  1:  { bg: HX.amberLight,  color: "#92400e", dot: HX.amber },   // معلقة
+  2:  { bg: HX.blueLight,   color: "#1e40af", dot: HX.blue },    // في المخزن
+  3:  { bg: HX.tealLight,   color: "#0f766e", dot: HX.teal },    // جاهزة للشحن
+  4:  { bg: HX.greenLight,  color: "#065f46", dot: HX.green },   // تم التسليم
+  5:  { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغية
+  6:  { bg: HX.redLight,    color: "#991b1b", dot: HX.red },     // مرفوضة
+  7:  { bg: HX.roseLight,   color: "#9f1239", dot: HX.rose },    // مسترجع من العميل
+  8:  { bg: HX.purpleLight, color: "#5b21b6", dot: HX.purple },  // مرتجع للمورد
+  9:  { bg: HX.accentLight, color: "#3730a3", dot: HX.accent },  // مستبدل
+  10: { bg: HX.redLight,    color: "#7f1d1d", dot: HX.red },     // فشل في التوصيل
+  11: { bg: HX.blueLight,   color: "#1e40af", dot: HX.blue },    // شحنة مجدولة
+  12: { bg: HX.tealLight,   color: "#0f766e", dot: HX.teal },    // خرجت للتوصيل
+};
 
-  const user = JSON.parse(localStorage.getItem("user"));
-  const navigate = useNavigate();
-  const componentRef = useRef();
-  const isSmallScreen = useMediaQuery("(max-width:600px)");
-  const isAdmin = user.userType === "1";
-
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-  });
-
-  const changeOrderStatus = (status) => {
-    axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}`, {
-        status: status,
-      })
-      .then(() => {
-        NotificationMeassage("success", "تم التعديل بنجاح");
-        setOrderStatus(status);
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
-  const onEdit = (notes, cost, id, color, size, material, itemShipping, toBeCollected) => {
-    axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orderLines/${id}`, {
-        notes: notes,
-        color: color,
-        size: size,
-        material: material,
-        itemShipping: itemShipping,
-        cost: Number(cost),
-        toBeCollected: Number(toBeCollected),
-      })
-      .then((res) => {
-        setOrderlines((prevDetails) => {
-          return prevDetails?.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  color: color,
-                  size: size,
-                  material: material,
-                  notes: notes,
-                  itemShipping: itemShipping,
-                  unitCost: Number(cost),
-                  toBeCollected: toBeCollected,
-                }
-              : item
-          );
-        });
-        NotificationMeassage("success", "تم التعديل بنجاح");
-        setTimeout(() => {
-          window.location.reload();
-          setIsEditModalOpenned(false);
-        }, 1000);
-      })
-      .catch((error) => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-  const getPaymentValue = (status) => {
-    const resultValue = PAYMENT_STATUS[status];
-    return resultValue;
-  };
-
-  const sendNewComment = () => {
-    axiosRequest
-      .post(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes`, {
-        text: commentText,
-      })
-      .then((res) => {
-        NotificationMeassage("success", "تم اضافة التعليق");
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-  const updateComment = (noteId) => {
-    axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`, {
-        text: editedCommentText,
-      })
-      .then((res) => {
-        NotificationMeassage("success", "تم تعديل التعليق");
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-  const deleteComment = (noteId) => {
-    axiosRequest
-      .delete(`${process.env.REACT_APP_API_URL}/orders/${orderDetails.id}/notes/${noteId}`)
-      .then(() => {
-        const updatedComments = comments.filter((comment) => comment.id !== noteId);
-        setComments(updatedComments);
-
-        NotificationMeassage("success", "تم حذف التعليق");
-      })
-      .catch(() => {
-        NotificationMeassage("error", "حدث خطأ");
-      });
-  };
-
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
-    setComments((prev) => [
-      {
-        text: commentText,
-        createdAt: new Date(),
-        user: { firstName: user.firstName, lastName: user.lastName },
-      },
-      ...prev,
-    ]);
-    setCommentText("");
-    sendNewComment();
-  };
-
-  const getUser = () => {
-    axiosRequest.get(`${process.env.REACT_APP_API_URL}/users`).then((res) => {
-      const users = res.data.data;
-      const user = users.find((user) => user.id === orderDetails.userId);
-      if (user) {
-        setAdministrator(`${user.firstName} ${user.lastName}`);
-      }
-    });
-  };
-
-  useEffect(() => {
-    const getOrderDetails = async () => {
-      setIsLoading(true);
-      try {
-        const { data } = await axiosRequest.get(`${process.env.REACT_APP_API_URL}/orders/${id}`);
-        if (data.force_logout) {
-          localStorage.removeItem("user");
-          navigate("/authentication/sign-in");
-        }
-        let orderPrice = 0;
-        let ordercost = 0;
-        let itemShipping = 0;
-        let toBeCollected = 0;
-        data.data.orderLines.forEach((item) => {
-          orderPrice += Number(item.price) * Number(item.quantity);
-          ordercost += Number(item.unitCost) * Number(item.quantity);
-          itemShipping += Number(item.itemShipping);
-          toBeCollected += Number(item.toBeCollected);
-        });
-
-        setOrderTotalPrice(orderPrice);
-        setOrderTotalCost(ordercost);
-        setOrderTotalShipping(itemShipping);
-        setOrderTotalToBeCollected(toBeCollected);
-        setOrderDetails(data.data);
-        setOrderlines(data.data.orderLines);
-        setOrderStatus(data.data.status);
-        const orderedComments = data.data?.notesList.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setComments(orderedComments);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getOrderDetails();
-  }, []);
-
-  useEffect(() => {
-    if (orderDetails) {
-      getUser();
-    }
-  }, [orderDetails]);
-
+function StatusBadge({ status, label }: { status: number; label: string }) {
+  const c = STATUS_COLORS[status] ?? STATUS_COLORS[1];
   return (
-    <>
-      <DashboardLayout>
-        <ToastContainer />
-
-        {!isLoading ? (
-          <>
-            <div className={styles.orderDetailsHeader}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <IconButton sx={{ color: "#344767" }} onClick={() => navigate("/shipments")}>
-                  <ArrowNextIcon />
-                </IconButton>
-                <MDTypography variant="h5" fontWeight="medium">
-                  {orderDetails?.name}
-                </MDTypography>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                {orderDetails?.paymentStatus && (
-                  <div
-                    style={{
-                      background: "#4472C4",
-                      color: "#fff",
-                      padding: "5px 5px",
-                      borderRadius: "5px",
-                      fontSize: "16px",
-                    }}
-                  >
-                    {getPaymentValue(orderDetails?.paymentStatus)}
-                  </div>
-                )}
-                {!isSmallScreen && isAdmin && (
-                  <div
-                    onClick={handlePrint}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Icon>
-                      <PictureAsPdf />
-                    </Icon>
-                  </div>
-                )}
-              </div>
-            </div>
-            <MDBox py={3}>
-              <MDBox>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "100%" }}>
-                      {orderDetails?.customer && (
-                        <CustomerDetails
-                          customerName={`${orderDetails?.customer.firstName} ${orderDetails.customer.lastName}`}
-                          email={orderDetails?.customer.email}
-                          address={
-                            orderDetails?.customer.address
-                              ? orderDetails.customer.address
-                              : orderDetails.customer.address2
-                          }
-                          phoneNumber={
-                            orderDetails?.customer.phoneNumber
-                              ? orderDetails.customer.phoneNumber
-                              : ""
-                          }
-                        />
-                      )}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ height: "100%" }}>
-                      {orderDetails && (
-                        <OrderInfoCard
-                          orderDetails={{ ...orderDetails, administrator }}
-                          isShimpentDetails
-                        />
-                      )}
-                      {/* {user?.userType === "1" && (
-                        <FormControl style={{ margin: "0 10px 10px 10px", width: "60%" }}>
-                          <InputLabel id="orderStatus">حالة الشحنة</InputLabel>
-                          <Select
-                            labelId="orderStatus"
-                            id="orderStatus-select"
-                            value={orderStatus}
-                            label="حالة الطلب"
-                            onChange={(e) => changeOrderStatus(e.target.value)}
-                            sx={{ height: 35, background: "#eee" }}
-                          >
-                            {statusoptions.map((option) => {
-                              return (
-                                <MenuItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </MenuItem>
-                              );
-                            })}
-                          </Select>
-                        </FormControl>
-                      )} */}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "23px" }}>
-                      {orderlines.map((order) => {
-                        return (
-                          <Box
-                            display="flex"
-                            alignItems="flex-start"
-                            justifyContent={"center"}
-                            flexDirection={"column"}
-                            gap={1}
-                            mt={1}
-                            key={order.id}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                width: "100%",
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center" }}>
-                                <img
-                                  src={order?.product.image}
-                                  alt={order.title}
-                                  width={40}
-                                  height={40}
-                                  style={{ borderRadius: 4 }}
-                                />
-                                <Typography
-                                  sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
-                                >
-                                  {order?.title}
-                                </Typography>
-                              </div>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  margin: "0 20px",
-                                }}
-                              >
-                                <Typography
-                                  sx={{ fontSize: "15px", color: "#000", marginLeft: "10px" }}
-                                >
-                                  {Number(order?.product.variants[0].price).toFixed(0)} ج.م
-                                </Typography>
-                              </div>
-                            </div>
-                            <Chip
-                              style={{ fontSize: "10px" }}
-                              label={order?.product.variants[0].title}
-                              color="primary"
-                              variant="filled"
-                              size="small"
-                              sx={{
-                                backgroundColor: "#f0f0f0",
-                                margin: "2px 2px 2px 0",
-                                border: "1px solid #00000099",
-                                color: "#000",
-                              }}
-                            />
-                          </Box>
-                        );
-                      })}
-                    </Card>
-                  </Grid>
-                  <Grid item xs={12} md={6} lg={6}>
-                    <Card sx={{ padding: "10px 13px 0 13px" }}>
-                      <TextField
-                        fullWidth
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="اكتب تعليقك هنا..."
-                        multiline
-                        rows={2}
-                        variant="outlined"
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "& fieldset": {
-                              borderColor: "#999",
-                            },
-                            "&:hover fieldset": {
-                              borderColor: "#115293",
-                            },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#0d47a1",
-                            },
-                          },
-                          "& .MuiInputBase-input::placeholder": {
-                            color: "#999",
-                            opacity: 1,
-                          },
-                        }}
-                      />
-
-                      <Box mt={2} display="flex" justifyContent="flex-end">
-                        <Button
-                          disabled={!commentText}
-                          variant="text"
-                          sx={{ color: "#007aff" }}
-                          onClick={handleAddComment}
-                        >
-                          إضافة
-                        </Button>
-                      </Box>
-                    </Card>
-                  </Grid>
-                </Grid>
-                {comments.map((comment, index) => {
-                  const commentMaker = `${comment.user?.firstName} ${comment.user?.lastName}`;
-
-                  return (
-                    <Box
-                      key={index}
-                      sx={{
-                        backgroundColor: "#f9f9f9",
-                        padding: "10px",
-                        borderRadius: "8px",
-                        my: 2,
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {" "}
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontSize: "14px" }}
-                        >
-                          {new Date(comment.createdAt).toLocaleString()}
-                        </Typography>
-                        {commentMaker && (
-                          <Chip
-                            style={{ fontSize: "10px" }}
-                            label={commentMaker}
-                            color="primary"
-                            variant="filled"
-                            size="small"
-                            sx={{
-                              backgroundColor: "#f0f0f0",
-                              margin: "2px 2px 2px 0",
-                              border: "1px solid #00000099",
-                              color: "#000",
-                              padding: "0 5px",
-                            }}
-                          />
-                        )}
-                      </Box>
-
-                      {editingIndex === index ? (
-                        <>
-                          <TextField
-                            fullWidth
-                            value={editedCommentText}
-                            onChange={(e) => setEditedCommentText(e.target.value)}
-                            multiline
-                            size="small"
-                            sx={{ mt: 1 }}
-                          />
-                          <Box display="flex" justifyContent="flex-end" gap={1} mt={1}>
-                            <Button
-                              variant="text"
-                              size="small"
-                              onClick={() => {
-                                const updated = [...comments];
-                                updated[index].text = editedCommentText;
-                                setComments(updated);
-                                setEditingIndex(null);
-                                updateComment(comment.id);
-                              }}
-                            >
-                              حفظ
-                            </Button>
-                            <Button
-                              variant="text"
-                              size="small"
-                              color="error"
-                              onClick={() => setEditingIndex(null)}
-                            >
-                              إلغاء
-                            </Button>
-                          </Box>
-                        </>
-                      ) : (
-                        <>
-                          <Box display="flex" justifyContent="space-between">
-                            <Typography variant="body1" sx={{ fontSize: "16px", mt: 1 }}>
-                              {comment.text}
-                            </Typography>
-                            <Box display="flex" gap={1} alignItems="center">
-                              <IconButton
-                                size="small"
-                                color="secondary"
-                                onClick={() => {
-                                  setEditingIndex(index);
-                                  setEditedCommentText(comment.text);
-                                }}
-                              >
-                                <EditIcon />
-                              </IconButton>{" "}
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => {
-                                  deleteComment(comment.id);
-                                }}
-                              >
-                                <DeleteIcon />
-                              </IconButton>{" "}
-                            </Box>
-                          </Box>
-                        </>
-                      )}
-                    </Box>
-                  );
-                })}
-              </MDBox>
-            </MDBox>
-          </>
-        ) : (
-          <Spinner />
-        )}
-      </DashboardLayout>
-    </>
+    <Box component="span" sx={{
+      display: "inline-flex", alignItems: "center", gap: "4px",
+      px: "10px", py: "3px", borderRadius: "20px",
+      fontFamily: FONT, fontSize: "10.5px", fontWeight: 700, whiteSpace: "nowrap",
+      bgcolor: c.bg, color: c.color,
+    }}>
+      <Box component="span" sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: c.dot, flexShrink: 0 }} />
+      {label}
+    </Box>
   );
 }
 
-export default ShipmentDetails;
+function PlainBadge({ label, bg, color }: { label: string; bg: string; color: string }) {
+  return (
+    <Box component="span" sx={{
+      display: "inline-flex", alignItems: "center",
+      px: "10px", py: "3px", borderRadius: "20px",
+      fontFamily: FONT, fontSize: "10.5px", fontWeight: 700, whiteSpace: "nowrap",
+      bgcolor: bg, color,
+    }}>
+      {label}
+    </Box>
+  );
+}
+
+/* ── Card shell ── */
+function Card({ title, icon, extra, noPad, children }: {
+  title: string; icon: React.ReactNode; extra?: React.ReactNode; noPad?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`, overflow: "hidden" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: "12px 16px", borderBottom: `0.5px solid ${HX.border}` }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "8px", fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx }}>
+          <Box sx={{ display: "flex", color: HX.tx2, "& svg": { fontSize: 16 } }}>{icon}</Box>
+          {title}
+        </Box>
+        {extra}
+      </Box>
+      <Box sx={{ p: noPad ? 0 : "16px" }}>{children}</Box>
+    </Box>
+  );
+}
+
+function InfoRow({ icon, iconBg, iconColor, label, value, valueSx }: {
+  icon: React.ReactNode; iconBg: string; iconColor: string; label: string; value: React.ReactNode; valueSx?: any;
+}) {
+  return (
+    <Box sx={{
+      display: "flex", alignItems: "center", gap: "10px", py: "9px",
+      borderBottom: `0.5px solid ${HX.border}`,
+      "&:first-of-type": { pt: 0 }, "&:last-of-type": { borderBottom: "none", pb: 0 },
+    }}>
+      <Box sx={{ width: 30, height: 30, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, bgcolor: iconBg, color: iconColor, "& svg": { fontSize: 15 } }}>
+        {icon}
+      </Box>
+      <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3, fontWeight: 500, minWidth: 110 }}>{label}</Typography>
+      <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 600, color: HX.tx, flex: 1, ...valueSx }}>{value}</Typography>
+    </Box>
+  );
+}
+
+/* ── Product thumb ── */
+function ProductThumb({ image }: { image: string | null }) {
+  const isUrl = !!image && /^(https?:)?\/\//.test(image);
+  return (
+    <Box sx={{
+      width: 52, height: 52, borderRadius: "10px", bgcolor: HX.surface2, border: `0.5px solid ${HX.border}`,
+      display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", flexShrink: 0, overflow: "hidden",
+    }}>
+      {isUrl ? <Box component="img" src={image as string} alt="" sx={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "📦"}
+    </Box>
+  );
+}
+
+function ProdTag({ children }: { children: React.ReactNode }) {
+  return (
+    <Box component="span" sx={{
+      fontFamily: FONT, fontSize: "10.5px", color: HX.tx2,
+      bgcolor: HX.surface2, border: `0.5px solid ${HX.border}`, px: "8px", py: "2px", borderRadius: "5px",
+    }}>
+      {children}
+    </Box>
+  );
+}
+
+/* ── Loading / error ── */
+function CenterState({ children }: { children: React.ReactNode }) {
+  return (
+    <DashboardLayout>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", fontFamily: FONT, color: HX.tx2, gap: "10px" }}>
+        {children}
+      </Box>
+    </DashboardLayout>
+  );
+}
+
+export default function ShipmentDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError } = useShipmentDetailQuery(id as string);
+  const { data: meta } = useShipmentsMetaQuery();
+
+  const [statusValue, setStatusValue] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [sendingNote, setSendingNote] = useState(false);
+
+  if (isLoading) {
+    return <CenterState><CircularProgress size={42} sx={{ color: HX.accent }} /></CenterState>;
+  }
+  if (isError || !data) {
+    return <CenterState>تعذّر تحميل تفاصيل الشحنة</CenterState>;
+  }
+
+  const { shipment, customer, financial, products, timeline, vendor } = data;
+  const currentStatus = statusValue !== "" ? Number(statusValue) : shipment.shipmentStatus;
+  const statusOptions = meta?.shipmentStatuses ?? [];
+  const notes = data.notes ?? [];
+
+  const sellerInitial = (vendor?.name || shipment.sellerName || "؟").charAt(0);
+  const customerInitial = (customer?.name || shipment.customerName || "؟").charAt(0);
+
+  const handleSaveStatus = () => {
+    const body = {
+      shipmentStatus: currentStatus,
+      shipmentType: shipment.shipmentType,
+      governorate: shipment.governorate,
+      shippingCompany: shipment.shippingCompany,
+      shippingFees: shipment.shippingCost,
+      shippingReceiveDate: shipment.receivedInWarehouseDate,
+      deliveryDate: shipment.deliveryDate,
+    };
+    setSaving(true);
+    axiosRequest
+      .put(`/shipments/${shipment.id}`, body)
+      .then(() => {
+        setSaved(true);
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(id as string) });
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() });
+        setTimeout(() => setSaved(false), 2000);
+      })
+      .catch(() => toast.error("تعذّر حفظ التغييرات"))
+      .finally(() => setSaving(false));
+  };
+
+  const handleSendNote = () => {
+    const t = noteText.trim();
+    if (!t || sendingNote) return;
+    setSendingNote(true);
+    axiosRequest
+      .post(`/shipments/${shipment.id}/notes`, { text: t })
+      .then(() => {
+        setNoteText("");
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(id as string) });
+      })
+      .catch(() => toast.error("تعذّر إرسال الملاحظة"))
+      .finally(() => setSendingNote(false));
+  };
+
+  const shipNumber = shipment.shipmentNumber || `SH-${shipment.id}`;
+
+  const breadcrumbNode = (
+    <Box sx={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: FONT, fontSize: "12.5px", color: HX.tx3, flexWrap: "wrap" }}>
+      <Box component="span" onClick={() => navigate("/")} sx={{ display: "flex", cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>
+        <HomeRoundedIcon sx={{ fontSize: 16 }} />
+      </Box>
+      <Box component="span" sx={{ color: HX.tx3 }}>/</Box>
+      <Box component="span" onClick={() => navigate("/shipments")} sx={{ cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>الشحن والتوصيل</Box>
+      <Box component="span" sx={{ color: HX.tx3 }}>/</Box>
+      <Box component="span" onClick={() => navigate("/shipments")} sx={{ cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>الشحنات</Box>
+      <Box component="span" sx={{ color: HX.tx3 }}>/</Box>
+      <Box component="span" sx={{ color: HX.tx, fontWeight: 800 }}>{shipNumber}</Box>
+    </Box>
+  );
+
+  const headerBtnBase = {
+    display: "inline-flex", alignItems: "center", gap: "6px",
+    px: "15px", height: 34, borderRadius: "9px", cursor: "pointer",
+    fontFamily: FONT, fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap",
+    transition: ".15s", "& svg": { fontSize: 15 },
+  } as const;
+
+  const actionsNode = (
+    <>
+      <Box component="button" type="button" onClick={() => window.print()} sx={{
+        ...headerBtnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
+        "&:hover": { borderColor: HX.accent, color: HX.accent },
+      }}>
+        <PictureAsPdfOutlinedIcon /> تصدير PDF
+      </Box>
+      <Box component="button" type="button" sx={{
+        ...headerBtnBase, border: "0.5px solid rgba(245,158,11,0.25)", bgcolor: HX.amberLight, color: "#92400e",
+        "&:hover": { bgcolor: HX.amber, color: "#fff" },
+      }}>
+        <EventRepeatOutlinedIcon /> إعادة جدولة
+      </Box>
+      <Box component="button" type="button" sx={{
+        ...headerBtnBase, border: "none", bgcolor: HX.accent, color: "#fff",
+        "&:hover": { bgcolor: "#4f46e5" },
+      }}>
+        <TimelineIcon /> تتبع الشحنة
+      </Box>
+    </>
+  );
+
+  return (
+    <DashboardLayout header={<HomixPageHeader breadcrumb={breadcrumbNode} actions={actionsNode} />}>
+      <ToastContainer />
+      <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px" }}>
+
+        {/* Shipment header strip */}
+        <Box sx={{
+          bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`,
+          p: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap",
+        }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
+            <Box>
+              <Typography sx={{ fontFamily: FONT, fontSize: "10px", color: HX.tx3, mb: "2px" }}>رقم الشحنة</Typography>
+              <Typography sx={{ fontFamily: FONT, fontSize: "20px", fontWeight: 900, color: HX.accent, lineHeight: 1.1 }}>
+                {shipment.shipmentNumber || `SH-${shipment.id}`}
+              </Typography>
+              <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3, mt: "3px" }}>
+                {shipment.operationNumber ? `OP-${shipment.operationNumber}` : ""} {shipment.orderNumber ? `· طلب #${shipment.orderNumber}` : ""}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                <StatusBadge status={shipment.shipmentStatus} label={shipment.shipmentStatusLabel} />
+                <PlainBadge label={shipment.paymentStatusLabel} bg={shipment.paymentStatus === 2 ? HX.greenLight : HX.amberLight} color={shipment.paymentStatus === 2 ? "#065f46" : "#92400e"} />
+                <PlainBadge label={shipment.shipmentTypeLabel} bg={shipment.shipmentType === "grouped" ? HX.blueLight : HX.tealLight} color={shipment.shipmentType === "grouped" ? "#1e40af" : "#0f766e"} />
+              </Box>
+              <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>
+                استلام المخزن: {fmtDate(shipment.receivedInWarehouseDate)}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>عداد الأيام</Typography>
+            <Box sx={{ display: "inline-flex", alignItems: "center", gap: "5px", bgcolor: HX.amberLight, color: "#92400e", px: "14px", py: "6px", borderRadius: "8px", fontFamily: FONT, fontSize: "14px", fontWeight: 800 }}>
+              <AccessTimeIcon sx={{ fontSize: 15 }} /> {shipment.daysCounter ?? 0} يوم
+            </Box>
+            <Typography sx={{ fontFamily: FONT, fontSize: "10px", color: HX.tx3 }}>
+              موعد التسليم: {fmtDate(shipment.scheduledDeliveryDate)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Grid */}
+        <Box sx={{ display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", lg: "1fr 330px" }, alignItems: "start" }}>
+
+          {/* LEFT */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+
+            {/* Products */}
+            <Card
+              title="المنتجات في هذه الشحنة"
+              icon={<Inventory2OutlinedIcon />}
+              extra={<Typography sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx3 }}>{products.length} منتج</Typography>}
+              noPad
+            >
+              {products.map((p, i) => (
+                <Box key={i} sx={{
+                  display: "flex", alignItems: "center", gap: "12px", p: "12px 16px",
+                  borderBottom: i < products.length - 1 ? `0.5px solid ${HX.border}` : "none",
+                  transition: ".15s", "&:hover": { bgcolor: HX.surface2 },
+                }}>
+                  <ProductThumb image={p.image} />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx, mb: "3px" }}>{p.productName}</Typography>
+                    <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {p.productCode && <ProdTag>كود: {p.productCode}</ProdTag>}
+                      {p.size && <ProdTag>📐 {p.size}</ProdTag>}
+                      {p.color && <ProdTag>🎨 {p.color}</ProdTag>}
+                      {p.vendorName && <ProdTag>بائع: {p.vendorName}</ProdTag>}
+                      {p.quantity > 1 && <ProdTag>الكمية: {p.quantity}</ProdTag>}
+                    </Box>
+                  </Box>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 900, color: HX.accent, flexShrink: 0 }}>
+                    {fmtNum(p.price)} ج.م
+                  </Typography>
+                </Box>
+              ))}
+              {products.length === 0 && (
+                <Box sx={{ p: "24px", textAlign: "center", fontFamily: FONT, fontSize: "12px", color: HX.tx3 }}>لا توجد منتجات</Box>
+              )}
+            </Card>
+
+            {/* Shipment details */}
+            <Card title="تفاصيل الشحنة" icon={<LocalShippingOutlinedIcon />}>
+              <InfoRow icon={<Inventory2OutlinedIcon />} iconBg={HX.accentLight} iconColor={HX.accent} label="رقم الشحنة" value={shipment.shipmentNumber || `SH-${shipment.id}`} valueSx={{ color: HX.accent, fontWeight: 800 }} />
+              <InfoRow icon={<ReceiptLongOutlinedIcon />} iconBg={HX.greenLight} iconColor={HX.green} label="رقم الطلب" value={`#${shipment.orderNumber}`} />
+              <InfoRow icon={<LocalShippingOutlinedIcon />} iconBg={HX.blueLight} iconColor={HX.blue} label="شركة الشحن" value={shipment.shippingCompany || "—"} valueSx={{ fontWeight: 800 }} />
+              <InfoRow icon={<LocalShippingOutlinedIcon />} iconBg={HX.tealLight} iconColor={HX.teal} label="التوصيل بواسطة" value={shipment.deliveryBy || "—"} />
+              <InfoRow icon={<AccessTimeIcon />} iconBg={HX.amberLight} iconColor={HX.amber} label="تاريخ الاستلام" value={fmtDate(shipment.receivedInWarehouseDate)} />
+              <InfoRow icon={<CalendarTodayOutlinedIcon />} iconBg={HX.tealLight} iconColor={HX.teal} label="موعد التوصيل" value={fmtDate(shipment.scheduledDeliveryDate)} />
+              <InfoRow icon={<CheckRoundedIcon />} iconBg={HX.greenLight} iconColor={HX.green} label="تاريخ التسليم" value={shipment.deliveryDate ? fmtDate(shipment.deliveryDate) : "لم يتم بعد"} valueSx={!shipment.deliveryDate ? { color: HX.tx3 } : {}} />
+              <InfoRow icon={<PlaceOutlinedIcon />} iconBg={HX.purpleLight} iconColor={HX.purple} label="المحافظة" value={shipment.governorate || "—"} />
+            </Card>
+
+            {/* Timeline */}
+            <Card title="سجل الأحداث" icon={<HistoryOutlinedIcon />}>
+              {timeline.length === 0 ? (
+                <Box sx={{ textAlign: "center", fontFamily: FONT, fontSize: "12px", color: HX.tx3, py: "12px" }}>لا توجد أحداث</Box>
+              ) : (
+                <Box>
+                  {timeline.map((ev, i) => {
+                    const last = i === timeline.length - 1;
+                    const c = last ? { bg: HX.accentLight, color: HX.accent, border: HX.accent } : { bg: HX.greenLight, color: HX.green, border: HX.green };
+                    return (
+                      <Box key={ev.id} sx={{
+                        display: "flex", alignItems: "flex-start", position: "relative",
+                        borderRight: `2px solid ${last ? "transparent" : HX.border}`, mr: "14px", pr: "16px", py: "10px",
+                      }}>
+                        <Box sx={{
+                          position: "absolute", right: -15, width: 28, height: 28, borderRadius: "50%",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          bgcolor: c.bg, color: c.color, border: `2px solid ${c.border}`,
+                        }}>
+                          {last ? <AccessTimeIcon sx={{ fontSize: 13 }} /> : <CheckRoundedIcon sx={{ fontSize: 13 }} />}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, color: HX.tx }}>{ev.message}</Typography>
+                          {ev.userName && <Typography sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx2, mt: "2px" }}>{ev.userName}</Typography>}
+                          <Typography sx={{ fontFamily: FONT, fontSize: "10.5px", color: HX.tx3, mt: "3px" }}>🕐 {fmtDateTime(ev.changedAt)}</Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+            </Card>
+
+            {/* Notes */}
+            <Card
+              title="الملاحظات"
+              icon={<ChatBubbleOutlineOutlinedIcon />}
+              extra={<Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>{notes.length} رسائل</Typography>}
+            >
+              <Box sx={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: 240, overflowY: "auto", pb: "4px" }}>
+                {notes.length === 0 && (
+                  <Box sx={{ textAlign: "center", fontFamily: FONT, fontSize: "12px", color: HX.tx3, py: "12px" }}>لا توجد ملاحظات</Box>
+                )}
+                {notes.map((n) => (
+                  <Box key={n.id} sx={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <Box sx={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, fontSize: "10px", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+                      {(n.userName || "؟").charAt(0)}
+                    </Box>
+                    <Box>
+                      <Box sx={{ bgcolor: HX.surface2, border: `0.5px solid ${HX.border}`, color: HX.tx, p: "9px 12px", borderRadius: "0 12px 12px 12px", fontFamily: FONT, fontSize: "12px", lineHeight: 1.6, maxWidth: 360 }}>
+                        {n.text}
+                      </Box>
+                      <Typography sx={{ fontFamily: FONT, fontSize: "10px", color: HX.tx3, mt: "3px" }}>{n.userName} · {fmtDateTime(n.createdAt)}</Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+              <Box sx={{ borderTop: `0.5px solid ${HX.border}`, pt: "12px", mt: "10px", display: "flex", gap: "8px", alignItems: "center" }}>
+                <Box
+                  component="input"
+                  placeholder="أضف ملاحظة..."
+                  value={noteText}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNoteText(e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") handleSendNote(); }}
+                  sx={{
+                    flex: 1, height: 34, px: "12px", border: `0.5px solid ${HX.border}`, borderRadius: "9px",
+                    fontFamily: FONT, fontSize: "12.5px", color: HX.tx, bgcolor: HX.surface, outline: "none", textAlign: "right",
+                    "&:focus": { borderColor: HX.accent },
+                  }}
+                />
+                <Box component="button" type="button" onClick={handleSendNote} disabled={sendingNote} sx={{
+                  display: "inline-flex", alignItems: "center", gap: "5px", px: "16px", height: 34, borderRadius: "9px", border: "none",
+                  bgcolor: HX.accent, color: "#fff", cursor: sendingNote ? "default" : "pointer", fontFamily: FONT, fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap",
+                  opacity: sendingNote ? 0.7 : 1, "&:hover": { bgcolor: "#4f46e5" },
+                }}>
+                  {sendingNote ? <CircularProgress size={13} sx={{ color: "#fff" }} /> : <SendIcon sx={{ fontSize: 14, transform: "scaleX(-1)" }} />}
+                  إرسال
+                </Box>
+              </Box>
+            </Card>
+          </Box>
+
+          {/* RIGHT */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+
+            {/* Client */}
+            <Card title="بيانات العميل" icon={<PersonOutlineOutlinedIcon />}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: "10px", mb: "14px", pb: "12px", borderBottom: `0.5px solid ${HX.border}` }}>
+                <Box sx={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, fontSize: "15px", fontWeight: 900, color: "#fff", background: "linear-gradient(135deg,#f59e0b,#d97706)", flexShrink: 0 }}>
+                  {customerInitial}
+                </Box>
+                <Box>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 800, color: HX.tx }}>{customer?.name || shipment.customerName || "—"}</Typography>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>عميل</Typography>
+                </Box>
+              </Box>
+              <InfoRow icon={<PhoneOutlinedIcon />} iconBg={HX.greenLight} iconColor={HX.green} label="الهاتف" value={customer?.phoneNumber || shipment.customerPhone || "—"} valueSx={{ fontFamily: "monospace", fontSize: "12px", color: HX.tx2 }} />
+              <InfoRow icon={<PlaceOutlinedIcon />} iconBg={HX.amberLight} iconColor={HX.amber} label="العنوان" value={customer?.address || "—"} valueSx={{ fontSize: "11.5px" }} />
+            </Card>
+
+            {/* Seller */}
+            <Card title="البائع" icon={<StorefrontOutlinedIcon />}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Box sx={{ width: 38, height: 38, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT, fontSize: "15px", fontWeight: 900, color: "#fff", background: "linear-gradient(135deg,#8c7355,#5a4530)", flexShrink: 0 }}>
+                  {sellerInitial}
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx }}>{vendor?.name || shipment.sellerName || "—"}</Typography>
+                </Box>
+              </Box>
+            </Card>
+
+            {/* Financials */}
+            <Card title="التفاصيل المالية" icon={<ReceiptLongOutlinedIcon />} noPad>
+              {[
+                { label: "إجمالي سعر البيع", value: `${fmtNum(financial.totalPrice)} ج.م` },
+                { label: "تكلفة الشحن", value: `${fmtNum(financial.shippingCost)} ج.م` },
+              ].map((r) => (
+                <Box key={r.label} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: "9px 16px", borderBottom: `0.5px solid ${HX.border}` }}>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "12.5px", color: HX.tx2 }}>{r.label}</Typography>
+                  <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx }}>{r.value}</Typography>
+                </Box>
+              ))}
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: "9px 16px", borderBottom: `0.5px solid ${HX.border}` }}>
+                <Typography sx={{ fontFamily: FONT, fontSize: "12.5px", color: HX.tx2 }}>طريقة الدفع</Typography>
+                <PlainBadge label={shipment.paymentStatusLabel} bg={shipment.paymentStatus === 2 ? HX.greenLight : HX.amberLight} color={shipment.paymentStatus === 2 ? "#065f46" : "#92400e"} />
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: "11px 16px", background: `linear-gradient(135deg, ${HX.accentLight}, rgba(99,102,241,0.03))`, borderTop: `0.5px solid ${HX.accentBorder}` }}>
+                <Typography sx={{ fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, color: HX.tx }}>المبلغ المطلوب تحصيله</Typography>
+                <Typography sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 900, color: HX.accent }}>{fmtNum(financial.amountToCollect)} ج.م</Typography>
+              </Box>
+            </Card>
+
+            {/* Status control */}
+            <Card title="تحديث الحالة" icon={<AccessTimeIcon />}>
+              <Typography sx={{ fontFamily: FONT, fontSize: "11px", fontWeight: 700, color: HX.tx3, mb: "6px" }}>حالة الشحنة</Typography>
+              <Box
+                component="select"
+                value={String(currentStatus)}
+                onChange={(e: any) => setStatusValue(e.target.value)}
+                sx={{
+                  width: "100%", height: 36, px: "10px", border: `0.5px solid ${HX.border}`, borderRadius: "8px",
+                  fontFamily: FONT, fontSize: "12.5px", color: HX.tx, bgcolor: HX.surface, cursor: "pointer", outline: "none",
+                  "&:focus": { borderColor: HX.accent },
+                }}
+              >
+                {statusOptions.length === 0 && <option value={String(shipment.shipmentStatus)}>{shipment.shipmentStatusLabel}</option>}
+                {statusOptions.map((o) => (
+                  <option key={o.value} value={String(o.value)}>{o.label}</option>
+                ))}
+              </Box>
+              <Box
+                component="button"
+                type="button"
+                onClick={handleSaveStatus}
+                disabled={saving}
+                sx={{
+                  width: "100%", mt: "12px", py: "9px", borderRadius: "9px", border: "none", cursor: saving ? "default" : "pointer",
+                  bgcolor: saved ? HX.green : HX.accent, color: "#fff", fontFamily: FONT, fontSize: "12.5px", fontWeight: 700,
+                  opacity: saving ? 0.7 : 1, transition: ".15s", "&:hover": { bgcolor: saved ? HX.green : "#4f46e5" },
+                }}
+              >
+                {saving ? "جارٍ الحفظ..." : saved ? "✓ تم الحفظ" : "حفظ التغييرات"}
+              </Box>
+            </Card>
+          </Box>
+        </Box>
+      </Box>
+    </DashboardLayout>
+  );
+}
