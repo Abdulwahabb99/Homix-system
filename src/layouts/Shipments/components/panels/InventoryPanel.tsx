@@ -9,20 +9,6 @@ import { useShipmentsInventoryQuery, INVENTORY_PAGE_SIZE, type InventoryItem } f
 
 const FONT = "'Cairo', sans-serif";
 
-// ⚠️ STATIC MOCK DATA — temporary, to preview the design only.
-// TODO: set USE_MOCK = false to re-enable useShipmentsInventoryQuery.
-const USE_MOCK = true;
-const MOCK_INVENTORY: InventoryItem[] = [
-  { id: 1, image: "🛏️", productCode: "RKA-001", productName: "غرفة نوم مودرن",      quantity: 3, costPrice: 9775,  color: "بيج",        size: "كينج",   statusLabel: "متوفر", vendorName: "ركة للأثاث" },
-  { id: 2, image: "🛋️", productCode: "DRS-101", productName: "كنبة L شيب",          quantity: 1, costPrice: 8500,  color: "رمادي",      size: "300×200", statusLabel: "متوفر", vendorName: "دريسينج هاوس" },
-  { id: 3, image: "🍽️", productCode: "BNG-201", productName: "طقم سفرة 6 كراسي",    quantity: 0, costPrice: 4200,  color: "خشب طبيعي",  size: "180×90",  statusLabel: "نفذ",   vendorName: "بين باج" },
-  { id: 4, image: "🪞", productCode: "DRS-102", productName: "دريسينج مودرن",        quantity: 2, costPrice: 3200,  color: "أبيض",       size: "120×50",  statusLabel: "متوفر", vendorName: "دريسينج هاوس" },
-  { id: 5, image: "🪑", productCode: "MOD-301", productName: "كرسي مكتب طبي",        quantity: 5, costPrice: 1800,  color: "أسود",       size: "قياسي",  statusLabel: "متوفر", vendorName: "مصنع المودرن" },
-  { id: 6, image: "🛏️", productCode: "RKA-002", productName: "غرفة نوم كلاسيك",      quantity: 0, costPrice: 11000, color: "عسلي",       size: "كوين",   statusLabel: "نفذ",   vendorName: "ركة للأثاث" },
-  { id: 7, image: "🛋️", productCode: "MOD-302", productName: "أنتريه مودرن",         quantity: 1, costPrice: 5500,  color: "كريمي",      size: "200×150", statusLabel: "متوفر", vendorName: "مصنع المودرن" },
-  { id: 8, image: "🍽️", productCode: "BNG-202", productName: "بوفيه سفرة",           quantity: 3, costPrice: 2800,  color: "أبيض",       size: "160×45",  statusLabel: "متوفر", vendorName: "بين باج" },
-];
-
 function fmt(n: number): string {
   return Number(n ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
@@ -168,10 +154,10 @@ export default function InventoryPanel() {
   const [vendorFilter, setVendorFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("");
 
-  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({ page }, { enabled: !USE_MOCK });
+  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({ page });
 
-  const rawItems   = USE_MOCK ? MOCK_INVENTORY : (data?.items ?? []);
-  const totalCount = USE_MOCK ? MOCK_INVENTORY.length : (data?.totalCount ?? 0);
+  const rawItems   = data?.items      ?? [];
+  const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / INVENTORY_PAGE_SIZE);
 
   const vendors = useMemo(
@@ -242,7 +228,7 @@ export default function InventoryPanel() {
       </Box>
 
       {/* Cards grid */}
-      {!USE_MOCK && isLoading ? (
+      {isLoading ? (
         <SkeletonGrid />
       ) : items.length === 0 ? (
         <Box sx={{
@@ -254,14 +240,14 @@ export default function InventoryPanel() {
       ) : (
         <Box sx={{
           display: "grid", gap: "10px",
-          opacity: isFetching && !USE_MOCK ? 0.7 : 1, transition: "opacity .2s",
+          opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s",
           gridTemplateColumns: { xs: "repeat(1,1fr)", sm: "repeat(2,1fr)", md: "repeat(3,1fr)", lg: "repeat(4,1fr)" },
         }}>
           {items.map((item) => <InventoryCard key={item.id} item={item} />)}
         </Box>
       )}
 
-      {!USE_MOCK && totalPages > 1 && (
+      {totalPages > 1 && (
         <Box sx={{ bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`, overflow: "hidden" }}>
           <HomixPaginationBar
             page={page - 1}

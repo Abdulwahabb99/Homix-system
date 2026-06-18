@@ -50,12 +50,11 @@ export async function fetchShipmentsInventory(params: InventoryParams): Promise<
   return normalizeResponse(data);
 }
 
-export function useShipmentsInventoryQuery(params: InventoryParams, options?: { enabled?: boolean }) {
+export function useShipmentsInventoryQuery(params: InventoryParams) {
   return useQuery({
     queryKey: shipmentKeys.inventory(JSON.stringify(params)),
     queryFn: () => fetchShipmentsInventory(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
-    enabled: options?.enabled ?? true,
   });
 }
