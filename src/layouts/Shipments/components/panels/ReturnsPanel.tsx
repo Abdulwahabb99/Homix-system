@@ -257,6 +257,15 @@ export default function ReturnsPanel() {
     setCustomerPage(1);
   };
 
+  const handleTabChange = (id: "vendor" | "customer") => {
+    if (id === activeTab) return;
+    setActiveTab(id);
+    setFilters(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+    setVendorPage(1);
+    setCustomerPage(1);
+  };
+
   const TABS = [
     { id: "vendor"   as const, label: "مرتجعات البائعين", count: vendorCount,   dot: HX.accent },
     { id: "customer" as const, label: "مرتجعات العملاء",  count: customerCount, dot: HX.red    },
@@ -281,7 +290,7 @@ export default function ReturnsPanel() {
               key={tab.id}
               component="button"
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               sx={{
                 display: "inline-flex", alignItems: "center", gap: "7px",
                 px: "16px", py: "9px",
