@@ -131,7 +131,7 @@ function AddOrderModal() {
         />
       )}
 
-      <Box sx={{ fontFamily: FONT, pb: "90px" }}>
+      <Box sx={{ fontFamily: FONT, pb: "90px", mt: "20px" }}>
         {/* Header */}
         <Box
           sx={{
@@ -308,8 +308,10 @@ function AddOrderModal() {
           </Grid>
 
           {/* Right column */}
-          <Grid item xs={12} lg={5}>
-            <CustomerDetails handleChange={changeCustomerChange} state={state} />
+          <Grid item xs={12} lg={5} sx={{ display: "flex" }}>
+            <Box sx={{ width: "100%" }}>
+              <CustomerDetails handleChange={changeCustomerChange} state={state} />
+            </Box>
           </Grid>
         </Grid>
       </Box>

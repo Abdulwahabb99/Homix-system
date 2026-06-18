@@ -26,11 +26,11 @@ function CustomerDetails({ handleChange, state }) {
     { name: "firstName", label: "الاسم الأول", required: true },
     { name: "lastName", label: "اسم العائلة", required: true },
     { name: "phone", label: "رقم العميل" },
-    { name: "address", label: "عنوان العميل", multiline: true },
+    { name: "email", label: "البريد الإلكتروني" },
     { name: "country", label: "البلد" },
     { name: "province", label: "المحافظة" },
     { name: "city", label: "المدينة" },
-    { name: "email", label: "البريد الإلكتروني" },
+    { name: "address", label: "عنوان العميل", multiline: true },
   ];
 
   return (
@@ -41,6 +41,7 @@ function CustomerDetails({ handleChange, state }) {
         border: `0.5px solid ${HX.border}`,
         boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
         p: "18px 20px",
+        height: "100%",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: "9px", mb: "18px" }}>
