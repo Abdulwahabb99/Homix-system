@@ -19,7 +19,7 @@ import AddEditUser from "layouts/Users/AddEditUser";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import { clearUser } from "store/slices/authSlice";
-import AddOrderModal from "layouts/Orders/components/AddOrderModal/AddOrderModal";
+import AddOrderModal from "layouts/Orders/OrderCreate";
 import AddShipmentsModal from "layouts/Shipments/components/AddOrderModal/AddOrderModal";
 import OrderEdit from "layouts/Orders/OrderEdit/OrderEdit";
 import { adminRoutes } from "routes";
