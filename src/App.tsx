@@ -41,6 +41,7 @@ const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/ShipmentDetails"));
+const ShipmentEdit = React.lazy(() => import("layouts/Shipments/components/ShipmentEdit/ShipmentEdit"));
 const TicketDetailPage = React.lazy(() => import("layouts/Tickets/TicketDetailPage"));
 
 function parseUserFromStorageRaw(raw: string | null): Record<string, unknown> | null {
@@ -267,6 +268,14 @@ export default function App() {
                   element={
                     <ProtectedRoutes>
                       <AddShipmentsModal />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/shipments/edit/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <ShipmentEdit />
                     </ProtectedRoutes>
                   }
                 />

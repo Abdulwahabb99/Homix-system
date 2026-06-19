@@ -9,7 +9,6 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import EditShipmentModal from "./components/EditShipmentModal";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import ShipmentsKpiRow from "./components/ShipmentsKpiRow";
@@ -122,10 +121,8 @@ export default function Shipments() {
   const endDate        = dateFromUrl(searchParams.get("endDate")   || "");
 
   // Modal state
-  const [isModalOpen, setIsModalOpen]             = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment]   = useState<ShipmentItem | null>(null);
-  const [vendors, setVendors] = useState<{ label: string; value: any }[]>([]);
   const [isExportLoading, setIsExportLoading]     = useState(false);
 
   // React Query
@@ -153,13 +150,6 @@ export default function Shipments() {
     accounts:  tabCountMap["accounts"]  ?? 0,
     reports:   tabCountMap["performance"] ?? 0,
   };
-
-  // Fetch vendors for EditShipmentModal
-  React.useEffect(() => {
-    axiosRequest
-      .get(`${process.env.REACT_APP_API_URL}/vendors`)
-      .then(({ data: { data: d } }) => setVendors(d.map((v: any) => ({ label: v.name, value: v.id }))));
-  }, []);
 
   // Apply all filter values to URL at once
   const handleApply = (values: FilterValues) => {
@@ -221,21 +211,6 @@ export default function Shipments() {
   };
 
   // Mutations
-  const handleEditShipment = (
-    id: any, shipmentStatusVal: any, shipmentTypeVal: any, governorateVal: any,
-    shippingCompanyVal: any, shippingFees: any, shippingReceiveDate: any, deliveryDate: any
-  ) => {
-    axiosRequest
-      .put(`${process.env.REACT_APP_API_URL}/shipments/${id}`, {
-        shipmentStatus: shipmentStatusVal, shipmentType: shipmentTypeVal, governorate: governorateVal,
-        shippingCompany: shippingCompanyVal, shippingFees, shippingReceiveDate, deliveryDate,
-      })
-      .then(() => {
-        setIsModalOpen(false);
-        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
-      });
-  };
-
   const deleteShipment = () => {
     if (!selectedShipment) return;
     axiosRequest
@@ -303,16 +278,6 @@ export default function Shipments() {
       }
     >
       <ToastContainer />
-
-      {isModalOpen && selectedShipment && (
-        <EditShipmentModal
-          open={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          data={selectedShipment}
-          vendors={vendors}
-          onEdit={handleEditShipment}
-        />
-      )}
 
       {isDeleteModalOpen && selectedShipment && (
         <ConfirmDeleteModal
@@ -413,7 +378,7 @@ export default function Shipments() {
               totalPages={totalPages}
               totalCount={totalCount}
               onPageChange={updatePageParam}
-              onEdit={(s) => { setSelectedShipment(s); setIsModalOpen(true); }}
+              onEdit={(s) => navigate(`/shipments/edit/${s.id}`)}
               onDelete={(s) => { setSelectedShipment(s); setIsDeleteModalOpen(true); }}
             />
           </Box>

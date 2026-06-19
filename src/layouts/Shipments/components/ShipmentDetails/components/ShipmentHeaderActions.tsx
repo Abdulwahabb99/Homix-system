@@ -1,5 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import EventRepeatOutlinedIcon from "@mui/icons-material/EventRepeatOutlined";
 import TimelineIcon from "@mui/icons-material/Timeline";
@@ -13,10 +15,19 @@ const btnBase = {
   transition: ".15s", "& svg": { fontSize: 15 },
 } as const;
 
-/** Top-bar action buttons: تصدير PDF / إعادة جدولة / تتبع الشحنة. */
-export default function ShipmentHeaderActions() {
+/** Top-bar action buttons: تعديل / تصدير PDF / إعادة جدولة / تتبع الشحنة. */
+export default function ShipmentHeaderActions({ shipmentId }: { shipmentId?: string }) {
+  const navigate = useNavigate();
   return (
     <>
+      {shipmentId && (
+        <Box component="button" type="button" onClick={() => navigate(`/shipments/edit/${shipmentId}`)} sx={{
+          ...btnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
+          "&:hover": { borderColor: HX.accent, color: HX.accent },
+        }}>
+          <EditOutlinedIcon /> تعديل
+        </Box>
+      )}
       <Box component="button" type="button" onClick={() => window.print()} sx={{
         ...btnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
         "&:hover": { borderColor: HX.accent, color: HX.accent },

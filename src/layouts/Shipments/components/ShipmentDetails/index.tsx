@@ -65,7 +65,7 @@ function LoadedShipmentDetails({
 
   return (
     <DashboardLayout
-      header={<HomixPageHeader breadcrumb={<ShipmentBreadcrumb shipNumber={shipNumber} />} actions={<ShipmentHeaderActions />} />}
+      header={<HomixPageHeader breadcrumb={<ShipmentBreadcrumb shipNumber={shipNumber} />} actions={<ShipmentHeaderActions shipmentId={shipmentDetailId} />} />}
     >
       <ToastContainer />
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px" }}>
