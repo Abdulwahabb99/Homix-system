@@ -1,68 +1,109 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { MenuItem, TextField } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../constants";
 import type { SelectOption } from "../constants";
 
-const controlSx = {
-  width: "100%", height: 36, px: "12px",
-  border: `0.5px solid ${HX.border}`, borderRadius: "9px",
-  fontFamily: FONT, fontSize: "13px", color: HX.tx, bgcolor: HX.surface, outline: "none",
-  transition: ".15s",
-  "&:focus": { borderColor: HX.accent, boxShadow: "0 0 0 3px rgba(99,102,241,0.08)" },
-  "&::placeholder": { color: HX.tx3 },
+/**
+ * Mirrors the field look used across the system (see ShipmentEdit): rounded 10px,
+ * 12px text, HX.border outline that turns accent on hover/focus, fixed 44px height
+ * for single-line fields, floating label with an open notch.
+ */
+export const inputSx = {
+  fontFamily: FONT,
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "10px",
+    fontFamily: FONT,
+    fontSize: "12px",
+    bgcolor: HX.surface,
+  },
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
+  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
+  "& .MuiOutlinedInput-input": { fontSize: "12px", fontFamily: FONT, color: "#000" },
+  "& .MuiOutlinedInput-root:not(.MuiInputBase-multiline)": { height: "44px" },
+  "& .MuiOutlinedInput-input:not(.MuiInputBase-inputMultiline)": {
+    height: "100%",
+    boxSizing: "border-box",
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  "& .MuiSelect-select.MuiSelect-select": {
+    minHeight: "unset",
+    height: "100%",
+    boxSizing: "border-box",
+    paddingTop: 0,
+    paddingBottom: 0,
+    display: "flex",
+    alignItems: "center",
+  },
+  "& .MuiInputLabel-root": {
+    fontFamily: FONT,
+    fontSize: "12px",
+    color: "#000",
+    "&.MuiInputLabel-shrink": { fontSize: "11px" },
+    "&.Mui-focused": { color: HX.accent },
+  },
+  "& .MuiMenuItem-root": { fontFamily: FONT },
 } as const;
 
-export function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
-  return (
-    <Typography component="label" sx={{ fontFamily: FONT, fontSize: "11.5px", fontWeight: 700, color: HX.tx2, display: "flex", alignItems: "center", gap: "4px" }}>
-      {children}
-      {required && <Box component="span" sx={{ color: HX.red }}>*</Box>}
-    </Typography>
-  );
+export const fieldBaseProps = {
+  fullWidth: true,
+  size: "small" as const,
+  sx: inputSx,
+  InputLabelProps: { shrink: true },
+} as const;
+
+export interface TextInputProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  placeholder?: string;
+  inputProps?: Record<string, unknown>;
 }
 
-export function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+export function TextInput({ label, value, onChange, type = "text", required, placeholder, inputProps }: TextInputProps) {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-      <FieldLabel required={required}>{label}</FieldLabel>
-      {children}
-    </Box>
-  );
-}
-
-export function TextInput({
-  value, onChange, placeholder, type = "text",
-}: {
-  value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <Box
-      component="input"
+    <TextField
+      {...fieldBaseProps}
+      label={label}
+      required={required}
       type={type}
-      value={value}
       placeholder={placeholder}
-      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-      sx={{ ...controlSx, textAlign: "right" }}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      inputProps={inputProps}
     />
   );
 }
 
-export function SelectInput({
-  value, onChange, options,
-}: {
-  value: number | string; onChange: (v: number) => void; options: SelectOption[];
-}) {
+export interface SelectInputProps {
+  label: string;
+  value: number | string;
+  onChange: (value: number) => void;
+  options: SelectOption[];
+  required?: boolean;
+  disabled?: boolean;
+}
+
+export function SelectInput({ label, value, onChange, options, required, disabled }: SelectInputProps) {
   return (
-    <Box
-      component="select"
-      value={String(value)}
-      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(Number(e.target.value))}
-      sx={{ ...controlSx, cursor: "pointer" }}
+    <TextField
+      {...fieldBaseProps}
+      select
+      label={label}
+      required={required}
+      disabled={disabled}
+      value={value === "" ? "" : Number(value)}
+      onChange={(e) => onChange(Number(e.target.value))}
     >
       {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+        <MenuItem key={o.value} value={o.value} sx={{ fontFamily: FONT }}>
+          {o.label}
+        </MenuItem>
       ))}
-    </Box>
+    </TextField>
   );
 }
