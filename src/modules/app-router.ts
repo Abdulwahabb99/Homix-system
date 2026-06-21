@@ -909,6 +909,7 @@ const swaggerOptions = {
                 governorates: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 inventoryStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 paymentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                shippingCompanies: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 tabs: {
@@ -1016,7 +1017,7 @@ const swaggerOptions = {
               type: "boolean",
               description: "Optional in input, but the shipments API forces this to true.",
             },
-            shippingCompany: { example: "J&T", nullable: true, type: "string" },
+            shippingCompany: { example: 3, nullable: true, type: "integer" },
             shippingFees: { example: 65, type: "number" },
             shippingReceiveDate: { example: "2026-06-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             toBeCollected: { example: 29998, type: "number" },
@@ -1064,6 +1065,7 @@ const swaggerOptions = {
             receivedInWarehouseDate: { example: "2026-05-12T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             scheduledDeliveryDate: { example: "2026-05-17T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             sellerName: { example: "ركنة للأثاث", type: "string" },
+            shippingCompany: { example: 3, nullable: true, type: "integer" },
             shipmentNumber: { example: "SH-9802", type: "string" },
             shipmentStatus: { example: 2, nullable: true, type: "integer" },
             shipmentStatusLabel: { example: "في المخزن", type: "string" },
@@ -1145,7 +1147,7 @@ const swaggerOptions = {
                     {
                       type: "object",
                       properties: {
-                        shippingCompany: { example: "J&T Express", type: "string" },
+                        shippingCompanyName: { example: "J&T Express", type: "string" },
                       },
                     },
                   ],
@@ -1390,6 +1392,44 @@ const swaggerOptions = {
             status: { example: true, type: "boolean" },
           },
           required: ["message", "status"],
+        },
+        ShipmentShippingCompanyItem: {
+          type: "object",
+          properties: {
+            createdAt: { example: "2026-06-20T10:00:00.000Z", type: "string", format: "date-time" },
+            id: { example: 3, type: "integer" },
+            name: { example: "J&T", type: "string" },
+            updatedAt: { example: "2026-06-20T10:00:00.000Z", type: "string", format: "date-time" },
+          },
+          required: ["createdAt", "id", "name", "updatedAt"],
+        },
+        ShipmentShippingCompanyRequest: {
+          type: "object",
+          properties: {
+            name: { example: "J&T", type: "string" },
+          },
+          required: ["name"],
+        },
+        ShipmentShippingCompanyListResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                items: { items: { $ref: "#/components/schemas/ShipmentShippingCompanyItem" }, type: "array" },
+              },
+            },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
+        ShipmentShippingCompanyItemResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/ShipmentShippingCompanyItem" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
         },
         ShipmentPerformanceResponse: {
           type: "object",

@@ -67,6 +67,9 @@ import type {
   ShipmentListResponse,
   ShipmentMetaResponse,
   ShipmentNote,
+  ShippingCompanyItem,
+  ShippingCompanyListResponse,
+  ShippingCompanyMutationInput,
   ShipmentSummaryResponse,
 } from "./shipment.types";
 
@@ -82,6 +85,7 @@ const productTypeModel = require("../../../app/modules/product/productType.model
 const shipmentInventoryModel = require("../../../app/modules/shipments/shipmentInventory.model");
 const shipmentExpenseModel = require("../../../app/modules/shipments/shipmentExpense.model");
 const shipmentReturnModel = require("../../../app/modules/shipments/shipmentReturn.model");
+const shippingCompanyModel = require("../../../app/modules/shipments/shippingCompany.model");
 
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
@@ -220,6 +224,12 @@ const buildIncludes = () => [
     required: false,
   },
   {
+    as: "shippingCompanyRecord",
+    attributes: ["id", "name"],
+    model: shippingCompanyModel,
+    required: false,
+  },
+  {
     as: "customer",
     model: customerModel,
     required: false,
@@ -252,14 +262,16 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
   const product = toPlain(firstLine.product);
   const vendor = toPlain(product.vendor);
   const customer = toPlain(order.customer);
+  const shippingCompanyRecord = toPlain(order.shippingCompanyRecord);
   const deliveryBy = toNullableNumber(order.deliveryBy);
+  const shippingCompanyName = toText(shippingCompanyRecord.name, toText(order.shippingCompany));
 
   return {
     amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
     customerName: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
     customerPhone: toText(customer.phoneNumber),
     daysCounter: getShipmentAgingDays(order.shipmentStatus, order.shippingReceiveDate, order.deliveryDate, order.updatedAt),
-    deliveryBy: toText(order.shippingCompany) || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
+    deliveryBy: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
     deliveryDate: toIsoString(order.deliveryDate),
     governorate: toText(order.governorate),
     id: toNumber(order.id),
@@ -270,6 +282,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     receivedInWarehouseDate: toIsoString(order.shippingReceiveDate),
     scheduledDeliveryDate: toIsoString(order.expectedDeliveryDate),
     sellerName: toText(vendor.name),
+    shippingCompany: toNullableNumber(shippingCompanyRecord.id),
     shipmentNumber: buildShipmentNumber(order.id),
     shipmentStatus: toNullableNumber(order.shipmentStatus),
     shipmentStatusLabel: getShipmentStatusLabel(order.shipmentStatus),
@@ -340,6 +353,17 @@ const shouldAutoForfeitVendorReturn = (returnValue: unknown): boolean => {
   return (daysCounter ?? 0) >= 12;
 };
 
+const mapShippingCompanyItem = (companyValue: unknown): ShippingCompanyItem => {
+  const company = toPlain(companyValue);
+
+  return {
+    createdAt: toIsoString(company.createdAt) ?? "",
+    id: toNumber(company.id),
+    name: toText(company.name),
+    updatedAt: toIsoString(company.updatedAt) ?? "",
+  };
+};
+
 export class ShipmentRepository {
   public async findShipmentEntity(shipmentId: number): Promise<unknown | null> {
     return orderModel.findByPk(shipmentId);
@@ -347,6 +371,35 @@ export class ShipmentRepository {
 
   public async findReturnById(returnId: number): Promise<unknown | null> {
     return shipmentReturnModel.findByPk(returnId);
+  }
+
+  public async findShippingCompanyById(shippingCompanyId: number): Promise<unknown | null> {
+    return shippingCompanyModel.findByPk(shippingCompanyId);
+  }
+
+  public async normalizeShippingCompanyPayload(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const nextPayload = { ...payload };
+    const rawShippingCompany = nextPayload.shippingCompany;
+    const normalizedShippingCompanyId = rawShippingCompany === undefined || rawShippingCompany === ""
+      ? null
+      : toNullableNumber(rawShippingCompany);
+
+    if (normalizedShippingCompanyId) {
+      const company = await this.findShippingCompanyById(normalizedShippingCompanyId);
+      if (!company) {
+        throw new NotFoundError("Shipping company not found");
+      }
+
+      const plainCompany = toPlain(company);
+      nextPayload.shippingCompany = toText(plainCompany.name);
+      return nextPayload;
+    }
+
+    if (rawShippingCompany === null || rawShippingCompany === "") {
+      nextPayload.shippingCompany = null;
+    }
+
+    return nextPayload;
   }
 
   public async getMeta(): Promise<ShipmentMetaResponse> {
@@ -363,6 +416,9 @@ export class ShipmentRepository {
         shipmentStatus: SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
       },
     });
+    const shippingCompanies = await shippingCompanyModel.findAll({
+      order: [["name", "ASC"]],
+    });
 
     return {
       deliveryByOptions: Object.entries(DELIVERY_BY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
@@ -372,6 +428,7 @@ export class ShipmentRepository {
       governorates: Object.entries(GOVERNORATE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       inventoryStatuses: Object.entries(INVENTORY_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       paymentStatuses: Object.entries(PAYMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      shippingCompanies: shippingCompanies.map((company: unknown) => ({ id: toNumber(toPlain(company).id), label: toText(toPlain(company).name) })),
       shipmentStatuses: Object.entries(SHIPMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shipmentTypes: [
         { id: "grouped", label: SHIPMENT_TYPE_LABELS.grouped ?? "شحن مجمع" },
@@ -500,7 +557,7 @@ export class ShipmentRepository {
       }),
       shipment: {
         ...mapShipmentListItem(order),
-        shippingCompany: toText(order.shippingCompany),
+        shippingCompanyName: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany)),
       },
       timeline: mapTimeline(logs),
       vendor: {
@@ -867,7 +924,8 @@ export class ShipmentRepository {
         accountingStatus,
         accountingStatusLabel: ACCOUNT_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
         amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
-        deliveryBy: toText(order.shippingCompany) || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
+        deliveryBy: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany))
+          || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
         deliveryDate: toIsoString(order.deliveryDate),
         operationNumber: normalizeOperationCode(order.code),
         orderNumber: toText(order.orderNumber, toText(order.number, toText(order.name))),
@@ -935,6 +993,80 @@ export class ShipmentRepository {
       size: filters.size,
       totalCount: filteredItems.length,
     };
+  }
+
+  public async listShippingCompanies(search?: string): Promise<ShippingCompanyListResponse> {
+    const companies = await shippingCompanyModel.findAll({
+      order: [["name", "ASC"]],
+      where: search
+        ? where(fn("lower", col("ShippingCompany.name")), { [Op.like]: `%${search.toLowerCase()}%` })
+        : undefined,
+    });
+
+    return {
+      items: companies.map((company: unknown) => mapShippingCompanyItem(company)),
+    };
+  }
+
+  public async createShippingCompany(payload: ShippingCompanyMutationInput): Promise<ShippingCompanyItem> {
+    const existingCompany = await shippingCompanyModel.findOne({
+      where: where(fn("lower", col("ShippingCompany.name")), { [Op.eq]: payload.name.toLowerCase() }),
+    });
+    if (existingCompany) {
+      throw new ConflictError("Shipping company already exists");
+    }
+
+    const company = await shippingCompanyModel.create({ name: payload.name });
+    return mapShippingCompanyItem(company);
+  }
+
+  public async updateShippingCompany(
+    shippingCompanyId: number,
+    payload: ShippingCompanyMutationInput,
+  ): Promise<ShippingCompanyItem | null> {
+    const company = await shippingCompanyModel.findByPk(shippingCompanyId);
+    if (!company) {
+      return null;
+    }
+
+    const existingCompany = await shippingCompanyModel.findOne({
+      where: {
+        [Op.and]: [
+          where(fn("lower", col("ShippingCompany.name")), { [Op.eq]: payload.name.toLowerCase() }),
+          { id: { [Op.ne]: shippingCompanyId } },
+        ],
+      },
+    });
+    if (existingCompany) {
+      throw new ConflictError("Shipping company already exists");
+    }
+
+    const previousName = toText(toPlain(company).name);
+    await company.update({ name: payload.name });
+    await orderModel.update(
+      { shippingCompany: payload.name },
+      { where: { shippingCompany: previousName } },
+    );
+
+    return mapShippingCompanyItem(company);
+  }
+
+  public async deleteShippingCompany(shippingCompanyId: number): Promise<boolean> {
+    const company = await shippingCompanyModel.findByPk(shippingCompanyId);
+    if (!company) {
+      return false;
+    }
+
+    const companyName = toText(toPlain(company).name);
+    const linkedOrdersCount = await orderModel.count({
+      where: { shippingCompany: companyName },
+    });
+    if (linkedOrdersCount > 0) {
+      throw new ConflictError("Shipping company is linked to shipments");
+    }
+
+    await company.destroy();
+    return true;
   }
 
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<ExpenseAccountItem> {
@@ -1077,7 +1209,7 @@ export class ShipmentRepository {
       return null;
     }
 
-    const nextPayload = { ...payload };
+    const nextPayload = await this.normalizeShippingCompanyPayload(payload);
     for (const key of ["shippingReceiveDate", "deliveryDate"]) {
       if (nextPayload[key] === "") {
         nextPayload[key] = null;

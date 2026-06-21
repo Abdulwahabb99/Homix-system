@@ -18,6 +18,9 @@ import {
   shipmentNoteParamsSchema,
   shipmentNoteSchema,
   shipmentPerformanceQuerySchema,
+  shipmentShippingCompaniesQuerySchema,
+  shipmentShippingCompanyMutationSchema,
+  shipmentShippingCompanyParamsSchema,
   shipmentReturnMutationSchema,
   shipmentReturnParamsSchema,
   shipmentReturnsQuerySchema,
@@ -171,7 +174,7 @@ shipmentRouter.get(
  *                   price: 16999
  *                   quantity: 1
  *                   variant_id: 445566
- *               shippingCompany: J&T
+ *               shippingCompany: 3
  *               governorate: الجيزة
  *               shipmentStatus: 2
  *               shipmentType: grouped
@@ -189,6 +192,115 @@ shipmentRouter.get(
  *               $ref: '#/components/schemas/ShipmentMessageResponse'
  */
 shipmentRouter.post("/", validateRequest({ body: shipmentCreateSchema }), asyncHandler(shipmentController.createShipment));
+
+/**
+ * @swagger
+ * /shipments/shipping-companies:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: List shipping companies
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Shipping companies
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentShippingCompanyListResponse'
+ *   post:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Create a shipping company
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentShippingCompanyRequest'
+ *     responses:
+ *       201:
+ *         description: Shipping company created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentShippingCompanyItemResponse'
+ */
+shipmentRouter.get(
+  "/shipping-companies",
+  validateRequest({ query: shipmentShippingCompaniesQuerySchema }),
+  asyncHandler(shipmentController.listShippingCompanies),
+);
+
+shipmentRouter.post(
+  "/shipping-companies",
+  validateRequest({ body: shipmentShippingCompanyMutationSchema }),
+  asyncHandler(shipmentController.createShippingCompany),
+);
+
+/**
+ * @swagger
+ * /shipments/shipping-companies/{shippingCompanyId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update a shipping company
+ *     parameters:
+ *       - in: path
+ *         name: shippingCompanyId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShipmentShippingCompanyRequest'
+ *     responses:
+ *       200:
+ *         description: Shipping company updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentShippingCompanyItemResponse'
+ *   delete:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Delete a shipping company
+ *     parameters:
+ *       - in: path
+ *         name: shippingCompanyId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Shipping company deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ShipmentMessageResponse'
+ */
+shipmentRouter.put(
+  "/shipping-companies/:shippingCompanyId",
+  validateRequest({ body: shipmentShippingCompanyMutationSchema, params: shipmentShippingCompanyParamsSchema }),
+  asyncHandler(shipmentController.updateShippingCompany),
+);
+
+shipmentRouter.delete(
+  "/shipping-companies/:shippingCompanyId",
+  validateRequest({ params: shipmentShippingCompanyParamsSchema }),
+  asyncHandler(shipmentController.deleteShippingCompany),
+);
 
 /**
  * @swagger

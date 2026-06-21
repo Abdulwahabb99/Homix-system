@@ -7,6 +7,7 @@ const orderModel = {
   findAndCountAll: jest.fn(),
   findByPk: jest.fn(),
   findOne: jest.fn(),
+  update: jest.fn(),
 };
 
 const productModel = {
@@ -27,6 +28,13 @@ const shipmentExpenseModel = {
 };
 
 const shipmentReturnModel = {
+  create: jest.fn(),
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  findOne: jest.fn(),
+};
+
+const shippingCompanyModel = {
   create: jest.fn(),
   findAll: jest.fn(),
   findByPk: jest.fn(),
@@ -67,6 +75,7 @@ jest.mock("../../../app/modules/product/product.model", () => productModel);
 jest.mock("../../../app/modules/shipments/shipmentInventory.model", () => shipmentInventoryModel);
 jest.mock("../../../app/modules/shipments/shipmentExpense.model", () => shipmentExpenseModel);
 jest.mock("../../../app/modules/shipments/shipmentReturn.model", () => shipmentReturnModel);
+jest.mock("../../../app/modules/shipments/shippingCompany.model", () => shippingCompanyModel);
 jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
 jest.mock("../../../app/modules/customer/customer.model", () => ({}));
 jest.mock("../../../app/modules/notes/notes.model", () => ({
@@ -139,9 +148,13 @@ const makeShipment = () => ({
   ],
   orderNumber: "31667",
   paymentStatus: 1,
+  shippingCompany: "J&T",
   shipmentStatus: 2,
   shipmentType: "grouped",
-  shippingCompany: "J&T",
+  shippingCompanyRecord: {
+    id: 3,
+    name: "J&T",
+  },
   shippingFees: "65",
   shippingReceiveDate: "2026-05-12T00:00:00.000Z",
   toBeCollected: "29998",
@@ -203,6 +216,41 @@ describe("shipmentRouter", () => {
           Object.assign(state, payload);
         }),
       };
+    });
+    shippingCompanyModel.findAll.mockResolvedValue([
+      {
+        createdAt: "2026-06-20T10:00:00.000Z",
+        id: 3,
+        name: "J&T",
+        updatedAt: "2026-06-20T10:00:00.000Z",
+      },
+    ]);
+    shippingCompanyModel.findByPk.mockImplementation(async (id: number) => {
+      if (id === 999) {
+        return null;
+      }
+
+      const state = {
+        createdAt: "2026-06-20T10:00:00.000Z",
+        id,
+        name: id === 4 ? "DHL" : "J&T",
+        updatedAt: "2026-06-20T10:00:00.000Z",
+      };
+
+      return {
+        destroy: jest.fn(async () => undefined),
+        toJSON: () => ({ ...state }),
+        update: jest.fn(async (payload: Record<string, unknown>) => {
+          Object.assign(state, payload);
+        }),
+      };
+    });
+    shippingCompanyModel.findOne.mockResolvedValue(null);
+    shippingCompanyModel.create.mockResolvedValue({
+      createdAt: "2026-06-20T10:00:00.000Z",
+      id: 4,
+      name: "DHL",
+      updatedAt: "2026-06-20T10:00:00.000Z",
     });
     shipmentInventoryModel.findAll.mockResolvedValue([
       {
@@ -269,6 +317,43 @@ describe("shipmentRouter", () => {
       reason: "مواد تغليف",
       type: 2,
     });
+    shippingCompanyModel.findAll.mockResolvedValue([
+      {
+        createdAt: "2026-05-01T00:00:00.000Z",
+        id: 3,
+        name: "J&T",
+        updatedAt: "2026-05-01T00:00:00.000Z",
+      },
+    ]);
+    shippingCompanyModel.findOne.mockResolvedValue(null);
+    shippingCompanyModel.findByPk.mockImplementation(async (id: number) => {
+      if (id === 3) {
+        const state = {
+          createdAt: "2026-05-01T00:00:00.000Z",
+          id: 3,
+          name: "J&T",
+          updatedAt: "2026-05-01T00:00:00.000Z",
+        };
+
+        return {
+          destroy: jest.fn(),
+          toJSON: () => ({ ...state }),
+          update: jest.fn(async (payload: Record<string, unknown>) => {
+            Object.assign(state, payload);
+          }),
+        };
+      }
+
+      return null;
+    });
+    shippingCompanyModel.create.mockImplementation(async ({ name }: { name: string }) => ({
+      toJSON: () => ({
+        createdAt: "2026-05-01T00:00:00.000Z",
+        id: 4,
+        name,
+        updatedAt: "2026-05-01T00:00:00.000Z",
+      }),
+    }));
   });
 
   it("returns shipments metadata", async () => {
@@ -307,6 +392,9 @@ describe("shipmentRouter", () => {
     expect(response.body.data.governorates).toEqual(
       expect.arrayContaining([expect.objectContaining({ label: "الجيزة" })]),
     );
+    expect(response.body.data.shippingCompanies).toEqual([
+      { id: 3, label: "J&T" },
+    ]);
   });
 
   it("creates shipments through the TS service boundary", async () => {
@@ -330,7 +418,7 @@ describe("shipmentRouter", () => {
       name: "#H9802",
       shipmentStatus: 2,
       shipmentType: "grouped",
-      shippingCompany: "J&T",
+      shippingCompany: 3,
       shippingFees: 65,
       shippingReceiveDate: "2026-06-18T00:00:00.000Z",
       toBeCollected: 29998,
@@ -342,9 +430,46 @@ describe("shipmentRouter", () => {
     expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
       expect.objectContaining({
         ...payload,
+        shippingCompany: "J&T",
         shippedFromInventory: true,
       }),
     ], true);
+  });
+
+  it("lists shipping companies", async () => {
+    const response = await request(app).get("/shipments/shipping-companies");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items).toEqual([
+      expect.objectContaining({ id: 3, name: "J&T" }),
+    ]);
+  });
+
+  it("creates a shipping company", async () => {
+    const response = await request(app).post("/shipments/shipping-companies").send({ name: "DHL" });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toEqual(expect.objectContaining({ id: 4, name: "DHL" }));
+  });
+
+  it("updates a shipping company and syncs linked orders", async () => {
+    const response = await request(app).put("/shipments/shipping-companies/3").send({ name: "J&T Express" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual(expect.objectContaining({ id: 3, name: "J&T Express" }));
+    expect(orderModel.update).toHaveBeenCalledTimes(1);
+    expect(orderModel.update.mock.calls[0]?.[0]).toEqual({ shippingCompany: "J&T Express" });
+    expect(orderModel.update.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ where: expect.any(Object) }));
+  });
+
+  it("deletes an unused shipping company", async () => {
+    orderModel.count.mockReset();
+    orderModel.count.mockResolvedValue(0);
+
+    const response = await request(app).delete("/shipments/shipping-companies/3");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: "Shipping company deleted successfully", status: true });
   });
 
   it("rejects shipment creation payloads without line items", async () => {
@@ -373,6 +498,7 @@ describe("shipmentRouter", () => {
       expect.objectContaining({
         customerName: "عبير ابوالمجيد",
         operationNumber: "3002",
+        shippingCompany: 3,
         shipmentNumber: "SH-9802",
         shipmentStatusLabel: "في المخزن",
         shipmentTypeLabel: "شحن مجمع",
@@ -410,7 +536,8 @@ describe("shipmentRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
-    expect(response.body.data.shipment.shippingCompany).toBe("J&T");
+    expect(response.body.data.shipment.shippingCompany).toBe(3);
+    expect(response.body.data.shipment.shippingCompanyName).toBe("J&T");
     expect(response.body.data.timeline[0].message).toBe("تم استلام الطلب");
   });
 

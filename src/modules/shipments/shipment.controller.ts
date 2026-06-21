@@ -84,6 +84,28 @@ export class ShipmentController {
     response.status(201).json({ data: unwrap(await this.shipmentService.createExpenseAccount(request.body)), status: true });
   };
 
+  public listShippingCompanies = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ data: unwrap(await this.shipmentService.listShippingCompanies(request.query.search as string | undefined)), status: true });
+  };
+
+  public createShippingCompany = async (request: Request, response: Response): Promise<void> => {
+    response.status(201).json({ data: unwrap(await this.shipmentService.createShippingCompany(request.body)), status: true });
+  };
+
+  public updateShippingCompany = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateShippingCompany(Number(request.params.shippingCompanyId), request.body)),
+      status: true,
+    });
+  };
+
+  public deleteShippingCompany = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({
+      ...unwrap(await this.shipmentService.deleteShippingCompany(Number(request.params.shippingCompanyId))),
+      status: true,
+    });
+  };
+
   public updateExpenseAccount = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({
       data: unwrap(await this.shipmentService.updateExpenseAccount(Number(request.params.expenseId), request.body)),

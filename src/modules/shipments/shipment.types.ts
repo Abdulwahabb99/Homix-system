@@ -100,6 +100,7 @@ export type ShipmentMetaResponse = {
   governorates: ShipmentMetaOption[];
   inventoryStatuses: ShipmentMetaOption[];
   paymentStatuses: ShipmentMetaOption[];
+  shippingCompanies: ShipmentMetaOption[];
   shipmentStatuses: ShipmentMetaOption[];
   shipmentTypes: ShipmentMetaOption[];
   tabs: Array<{ count?: number; id: string; label: string }>;
@@ -131,6 +132,7 @@ export type ShipmentListItem = {
   receivedInWarehouseDate: string | null;
   scheduledDeliveryDate: string | null;
   sellerName: string;
+  shippingCompany: number | null;
   shipmentNumber: string;
   shipmentStatus: number | null;
   shipmentStatusLabel: string;
@@ -185,7 +187,7 @@ export type ShipmentDetailsResponse = {
     vendorName: string;
   }>;
   shipment: ShipmentListItem & {
-    shippingCompany: string;
+    shippingCompanyName: string;
   };
   timeline: ShipmentTimelineItem[];
   vendor: {
@@ -260,6 +262,21 @@ export type DeliveryAccountsListResponse = {
   page: number;
   size: number;
   totalCount: number;
+};
+
+export type ShippingCompanyItem = {
+  createdAt: string;
+  id: number;
+  name: string;
+  updatedAt: string;
+};
+
+export type ShippingCompanyListResponse = {
+  items: ShippingCompanyItem[];
+};
+
+export type ShippingCompanyMutationInput = {
+  name: string;
 };
 
 export type ExpenseAccountItem = {

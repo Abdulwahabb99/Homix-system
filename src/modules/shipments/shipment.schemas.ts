@@ -12,6 +12,10 @@ export const shipmentIdParamsSchema = z.object({
   shipmentId: z.coerce.number().int().positive(),
 });
 
+export const shipmentShippingCompanyParamsSchema = z.object({
+  shippingCompanyId: z.coerce.number().int().positive(),
+});
+
 export const shipmentInventoryItemParamsSchema = z.object({
   inventoryItemId: z.coerce.number().int().positive(),
 });
@@ -81,7 +85,7 @@ export const shipmentCreateSchema = z.object({
   shipmentStatus: z.coerce.number().int().positive().optional().nullable(),
   shipmentType: z.string().trim().min(1).optional().nullable(),
   shippedFromInventory: z.boolean().optional(),
-  shippingCompany: z.string().trim().min(1).optional().nullable(),
+  shippingCompany: z.coerce.number().int().positive().optional().nullable(),
   shippingFees: z.coerce.number().min(0).optional(),
   shippingReceiveDate: dateString.optional().nullable(),
   toBeCollected: z.coerce.number().min(0).optional(),
@@ -171,4 +175,12 @@ export const shipmentPerformanceQuerySchema = z.object({
   endDate: dateString.optional(),
   period: z.enum(PERFORMANCE_PERIODS).default("daily"),
   startDate: dateString.optional(),
+});
+
+export const shipmentShippingCompaniesQuerySchema = z.object({
+  search: z.string().trim().optional(),
+});
+
+export const shipmentShippingCompanyMutationSchema = z.object({
+  name: z.string().trim().min(1),
 });

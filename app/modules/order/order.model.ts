@@ -11,6 +11,7 @@ const OrderLine = require("../orderLines/orderline.model");
 const Customer = require("../customer/customer.model");
 const User = require("../user/user.model");
 const Note = require("../notes/notes.model");
+const ShippingCompany = require("../shipments/shippingCompany.model");
 
 const Order = sequelize.define(
   "Order",
@@ -249,6 +250,9 @@ const Order = sequelize.define(
       {
         fields: ["deliveryBy"],
       },
+      {
+        fields: ["shippingCompany"],
+      },
       // New indexes for query optimization
       {
         fields: ["name"],
@@ -293,6 +297,9 @@ Customer.hasMany(Order, { foreignKey: "customerId" });
 
 Order.belongsTo(User, { as: "user", foreignKey: "userId" });
 User.hasMany(Order, { foreignKey: "userId" });
+
+Order.belongsTo(ShippingCompany, { as: "shippingCompanyRecord", foreignKey: "shippingCompany", targetKey: "name" });
+ShippingCompany.hasMany(Order, { as: "orders", foreignKey: "shippingCompany", sourceKey: "name" });
 
 Order.hasMany(Note, {
   as: "notesList",

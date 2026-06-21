@@ -22,6 +22,9 @@ import type {
   ShipmentListQuery,
   ShipmentListResponse,
   ShipmentMetaResponse,
+  ShippingCompanyItem,
+  ShippingCompanyListResponse,
+  ShippingCompanyMutationInput,
   ShipmentSummaryResponse,
 } from "./shipment.types";
 import type { ShipmentMutationPayload, ShipmentRequestUser } from "./shipment.internal-types";
@@ -31,8 +34,9 @@ export class ShipmentService {
   public constructor(private readonly shipmentRepository: ShipmentRepository) {}
 
   public async createShipment(payload: ShipmentMutationPayload): Promise<Result<{ message: string }>> {
+    const normalizedPayload = await this.shipmentRepository.normalizeShippingCompanyPayload(payload);
     await shipmentLegacyGateway.createShipment({
-      ...payload,
+      ...normalizedPayload,
       shippedFromInventory: true,
     });
     return success({ message: "Shipment created successfully" });
@@ -152,6 +156,35 @@ export class ShipmentService {
 
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<Result<ExpenseAccountsListResponse["items"][number]>> {
     return success(await this.shipmentRepository.createExpenseAccount(payload));
+  }
+
+  public async listShippingCompanies(search?: string): Promise<Result<ShippingCompanyListResponse>> {
+    return success(await this.shipmentRepository.listShippingCompanies(search));
+  }
+
+  public async createShippingCompany(payload: ShippingCompanyMutationInput): Promise<Result<ShippingCompanyItem>> {
+    return success(await this.shipmentRepository.createShippingCompany(payload));
+  }
+
+  public async updateShippingCompany(
+    shippingCompanyId: number,
+    payload: ShippingCompanyMutationInput,
+  ): Promise<Result<ShippingCompanyItem>> {
+    const company = await this.shipmentRepository.updateShippingCompany(shippingCompanyId, payload);
+    if (!company) {
+      throw new NotFoundError("Shipping company not found");
+    }
+
+    return success(company);
+  }
+
+  public async deleteShippingCompany(shippingCompanyId: number): Promise<Result<{ message: string }>> {
+    const deleted = await this.shipmentRepository.deleteShippingCompany(shippingCompanyId);
+    if (!deleted) {
+      throw new NotFoundError("Shipping company not found");
+    }
+
+    return success({ message: "Shipping company deleted successfully" });
   }
 
   public async updateExpenseAccount(
