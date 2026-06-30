@@ -27,11 +27,11 @@ import pxToRem from "assets/theme-dark/functions/pxToRem";
 
 const { white } = colors;
 
-const interFontStack =
-  '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const cairoFontStack =
+  '"Cairo", "Noto Sans Arabic", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 const baseProperties = {
-  fontFamily: interFontStack,
+  fontFamily: cairoFontStack,
   fontWeightLighter: 100,
   fontWeightLight: 300,
   fontWeightRegular: 400,
