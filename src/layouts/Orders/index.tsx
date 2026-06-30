@@ -63,6 +63,14 @@ function Orders() {
   }, [searchParams]);
   const payment = searchParams.get("paymentStatus") || "";
   const filterUserId = searchParams.get("userId") || "";
+  const paymentList = useMemo(() => {
+    const raw = searchParams.get("paymentStatus");
+    return raw ? raw.split(",") : [];
+  }, [searchParams]);
+  const userIdList = useMemo(() => {
+    const raw = searchParams.get("userId");
+    return raw ? raw.split(",") : [];
+  }, [searchParams]);
   const deliveryByList = useMemo(() => {
     const raw = searchParams.get("deliveryBy");
     if (!raw) return [];
@@ -342,18 +350,18 @@ function Orders() {
   const handleApplyFilters = (d: {
     orderStatus: number[];
     selectedVendor: string[];
-    paymentStatus: string;
+    paymentStatus: string[];
     deliveryStatus: number[];
-    userId: string;
+    userId: string[];
     deliveryBy: number[];
   }) => {
     setParams({
       page:           "1",
       status:         d.orderStatus?.length   ? d.orderStatus.map(String)   : "",
       vendorId:       d.selectedVendor?.length ? d.selectedVendor            : "",
-      paymentStatus:  d.paymentStatus || "",
+      paymentStatus:  d.paymentStatus?.length ? d.paymentStatus : "",
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
-      userId:         d.userId || "",
+      userId:         d.userId?.length ? d.userId : "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
     });
   };
@@ -526,9 +534,9 @@ function Orders() {
                 value={{
                   orderStatus:    orderStatus,
                   selectedVendor: selectedVendor,
-                  paymentStatus:  payment,
+                  paymentStatus:  paymentList,
                   deliveryStatus: deliveryStatusList,
-                  userId:         filterUserId,
+                  userId:         userIdList,
                   deliveryBy:     deliveryByList,
                 }}
                 onApply={handleApplyFilters}

@@ -1,18 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  Collapse,
-  FormControl,
-  Grid,
-  ListItemText,
-  MenuItem,
-  OutlinedInput,
-  Select,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Collapse, Grid, Typography } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -21,13 +8,14 @@ import { PAYMENT_STATUS, DELIVERY_STATUS, statusoptions } from "layouts/Orders/u
 import type { OrdersMeta } from "query/ordersMeta.api";
 import moment from "moment";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
+import MultiSelect from "components/MultiSelect/MultiSelect";
 
 export interface FiltersPanelValue {
   orderStatus: number[];
   selectedVendor: string[];
-  paymentStatus: string;
+  paymentStatus: string[];
   deliveryStatus: number[];
-  userId: string;
+  userId: string[];
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
 }
@@ -50,22 +38,6 @@ interface OrdersHomixFiltersPanelProps {
   onDateRangeClear: () => void;
 }
 
-/* ─── shared select sx ─── */
-const selectSx = {
-  height: 34,
-  borderRadius: "8px",
-  fontSize: "12.5px",
-  fontFamily: "'Cairo',sans-serif",
-  bgcolor: HX.surface,
-  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
-  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-    borderColor: HX.accent,
-    borderWidth: 1,
-    boxShadow: `0 0 0 3px ${HX.accentLight}`,
-  },
-} as const;
-
 const labelSx = {
   fontSize: "11px",
   fontWeight: 600,
@@ -75,15 +47,17 @@ const labelSx = {
   mb: "4px",
 } as const;
 
-const MENU_PROPS = {
-  PaperProps: {
-    sx: {
-      borderRadius: "10px", mt: "5px",
-      boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-      "& .MuiMenuItem-root": { fontFamily: "'Cairo',sans-serif", fontSize: "12.5px" },
-    },
-  },
-};
+/* shared field wrapper — module-level so its identity is stable across re-renders.
+   (Defining it inside the component re-created the type each render, which remounted
+   every Select and slammed the open dropdown shut on each selection.) */
+function FieldBox({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Box>
+      <Typography component="label" sx={labelSx}>{label}</Typography>
+      {children}
+    </Box>
+  );
+}
 
 const FALLBACK_DELIVERY_BY: { id: number; label: string }[] = [
   { id: 1, label: "هوميكس" },
@@ -103,7 +77,7 @@ export default function OrdersHomixFiltersPanel({
   onDateRangeChange,
   onDateRangeClear,
 }: OrdersHomixFiltersPanelProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const statusOpts = useMemo(
     () =>
@@ -146,28 +120,34 @@ export default function OrdersHomixFiltersPanel({
   /* draft state — synced when external value changes */
   const [draftStatus,   setDraftStatus]   = useState<number[]>(value.orderStatus ?? []);
   const [draftDelivery, setDraftDelivery] = useState<number[]>(value.deliveryStatus ?? []);
-  const [draftPayment,  setDraftPayment]  = useState<string>(value.paymentStatus ?? "");
+  const [draftPayment,  setDraftPayment]  = useState<string[]>((value.paymentStatus ?? []).map(String));
   const [draftVendor,   setDraftVendor]   = useState<string[]>((value.selectedVendor ?? []).map(String));
-  const [draftUserId,   setDraftUserId]   = useState<string>(value.userId ?? "");
+  const [draftUserId,   setDraftUserId]   = useState<string[]>((value.userId ?? []).map(String));
   const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
 
   const hasDateRange = Boolean(dateRangeStart) && Boolean(dateRangeEnd);
 
+  // Only re-sync the drafts when the COMMITTED filter values actually change
+  // (apply / reset / chip removal). Using a serialized key — instead of the
+  // inline `value` object reference — keeps the user's in-progress selections
+  // from being wiped on unrelated parent re-renders (e.g. window-focus refetch
+  // or switching browser tabs).
+  const valueKey = JSON.stringify(value);
   useEffect(() => {
     setDraftStatus(value.orderStatus ?? []);
     setDraftDelivery(value.deliveryStatus ?? []);
-    setDraftPayment(value.paymentStatus ?? "");
+    setDraftPayment((value.paymentStatus ?? []).map(String));
     setDraftVendor((value.selectedVendor ?? []).map(String));
-    setDraftUserId(value.userId ?? "");
+    setDraftUserId((value.userId ?? []).map(String));
     setDraftDeliveryBy(value.deliveryBy ?? []);
-  }, [value]);
+  }, [valueKey]);
 
   const totalActive =
     draftStatus.length +
     draftDelivery.length +
-    (draftPayment ? 1 : 0) +
+    draftPayment.length +
     (isVendor ? 0 : draftVendor.length) +
-    (draftUserId ? 1 : 0) +
+    draftUserId.length +
     (hasDateRange ? 1 : 0) +
     draftDeliveryBy.length;
 
@@ -185,9 +165,9 @@ export default function OrdersHomixFiltersPanel({
   const handleReset = () => {
     setDraftStatus([]);
     setDraftDelivery([]);
-    setDraftPayment("");
+    setDraftPayment([]);
     setDraftVendor([]);
-    setDraftUserId("");
+    setDraftUserId([]);
     setDraftDeliveryBy([]);
     onReset();
   };
@@ -203,17 +183,18 @@ export default function OrdersHomixFiltersPanel({
       label: `تصنيع: ${manufactureOpts.find((o) => o.value === s)?.label ?? s}`,
       onRemove: () => setDraftDelivery((p) => p.filter((x) => x !== s)),
     })),
-    ...(draftPayment
-      ? [{ label: `دفع: ${paymentOpts.find((o) => String(o.value) === draftPayment)?.label ?? draftPayment}`, onRemove: () => setDraftPayment("") }]
-      : []),
+    ...(isVendor ? [] : draftPayment.map((p) => ({
+      label: `دفع: ${paymentOpts.find((o) => String(o.value) === p)?.label ?? p}`,
+      onRemove: () => setDraftPayment((prev) => prev.filter((x) => x !== p)),
+    }))),
     ...(isVendor ? [] : draftVendor.map((v) => ({
       label: `مصنع: ${vendors.find((o) => String(o.value) === v)?.label ?? v}`,
       onRemove: () => setDraftVendor((p) => p.filter((x) => x !== v)),
     }))),
-    ...(draftUserId ? [{
-      label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === draftUserId)?.label ?? draftUserId}`,
-      onRemove: () => setDraftUserId(""),
-    }] : []),
+    ...draftUserId.map((uid) => ({
+      label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === uid)?.label ?? uid}`,
+      onRemove: () => setDraftUserId((prev) => prev.filter((x) => x !== uid)),
+    })),
     ...(hasDateRange
       ? [
           {
@@ -235,15 +216,6 @@ export default function OrdersHomixFiltersPanel({
       onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
     })),
   ];
-  /* ── shared field wrapper ── */
-  function FieldBox({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-      <Box>
-        <Typography component="label" sx={labelSx}>{label}</Typography>
-        {children}
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ ...cardSx }}>
@@ -307,50 +279,24 @@ export default function OrdersHomixFiltersPanel({
             {/* حالة الطلب */}
             <Grid item xs={12} sm={6} md={12 / 5}>
               <FieldBox label="حالة الطلب">
-                <FormControl fullWidth size="small">
-                  <Select multiple displayEmpty value={draftStatus}
-                    onChange={(e) => setDraftStatus(e.target.value as number[])}
-                    input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                    renderValue={(sel) => sel.length === 0
-                      ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل الحالات</span>
-                      : sel.length === 1
-                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{statusOpts.find((o) => o.value === sel[0])?.label}</span>
-                      : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
-                    }
-                  >
-                    {statusOpts.map((o) => (
-                      <MenuItem key={o.value} value={o.value} dense>
-                        <Checkbox size="small" checked={draftStatus.includes(o.value)} sx={{ py: 0, mr: 0.5 }} />
-                        <ListItemText primary={o.label} primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <MultiSelect
+                  value={draftStatus}
+                  onChange={setDraftStatus}
+                  options={statusOpts}
+                  placeholder="كل الحالات"
+                />
               </FieldBox>
             </Grid>
 
             {/* حالة التصنيع */}
             <Grid item xs={12} sm={6} md={12 / 5}>
               <FieldBox label="حالة التصنيع">
-                <FormControl fullWidth size="small">
-                  <Select multiple displayEmpty value={draftDelivery}
-                    onChange={(e) => setDraftDelivery(e.target.value as number[])}
-                    input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                    renderValue={(sel) => sel.length === 0
-                      ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل الحالات</span>
-                      : sel.length === 1
-                      ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{manufactureOpts.find((o) => o.value === sel[0])?.label}</span>
-                      : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
-                    }
-                  >
-                    {manufactureOpts.map((o) => (
-                      <MenuItem key={o.value} value={o.value} dense>
-                        <Checkbox size="small" checked={draftDelivery.includes(o.value)} sx={{ py: 0, mr: 0.5 }} />
-                        <ListItemText primary={o.label} primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <MultiSelect
+                  value={draftDelivery}
+                  onChange={setDraftDelivery}
+                  options={manufactureOpts}
+                  placeholder="كل الحالات"
+                />
               </FieldBox>
             </Grid>
 
@@ -358,25 +304,12 @@ export default function OrdersHomixFiltersPanel({
             {!isVendor && (
               <Grid item xs={12} sm={6} md={12 / 5}>
                 <FieldBox label="طريقة الدفع">
-                  <FormControl fullWidth size="small">
-                    <Select displayEmpty value={draftPayment}
-                      onChange={(e) => setDraftPayment(e.target.value as string)}
-                      input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                      renderValue={(sel) => !sel
-                        ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>الكل</span>
-                        : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{paymentOpts.find((o) => String(o.value) === sel)?.label ?? sel}</span>
-                      }
-                    >
-                      <MenuItem value="" dense>
-                        <em style={{ fontSize: "12.5px", color: HX.tx2, fontFamily: "'Cairo',sans-serif" }}>الكل</em>
-                      </MenuItem>
-                      {paymentOpts.map((o) => (
-                        <MenuItem key={o.value} value={String(o.value)} dense>
-                          {o.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <MultiSelect
+                    value={draftPayment}
+                    onChange={setDraftPayment}
+                    options={paymentOpts.map((o) => ({ value: String(o.value), label: o.label }))}
+                    placeholder="الكل"
+                  />
                 </FieldBox>
               </Grid>
             )}
@@ -384,42 +317,12 @@ export default function OrdersHomixFiltersPanel({
             {/* التوصيل بواسطة — من الـ meta: deliveryByOptions */}
             <Grid item xs={12} sm={6} md={12 / 5}>
               <FieldBox label="التوصيل بواسطة">
-                <FormControl fullWidth size="small">
-                  <Select
-                    multiple
-                    displayEmpty
-                    value={draftDeliveryBy}
-                    onChange={(e) => setDraftDeliveryBy(e.target.value as number[])}
-                    input={<OutlinedInput />}
-                    MenuProps={MENU_PROPS}
-                    sx={selectSx}
-                    renderValue={(sel) =>
-                      sel.length === 0 ? (
-                        <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>الكل</span>
-                      ) : sel.length === 1 ? (
-                        <span style={{ fontFamily: "'Cairo',sans-serif" }}>
-                          {deliveryByOpts.find((o) => o.id === sel[0])?.label}
-                        </span>
-                      ) : (
-                        <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
-                      )
-                    }
-                  >
-                    {deliveryByOpts.map((o) => (
-                      <MenuItem key={o.id} value={o.id} dense>
-                        <Checkbox
-                          size="small"
-                          checked={draftDeliveryBy.includes(o.id)}
-                          sx={{ py: 0, mr: 0.5 }}
-                        />
-                        <ListItemText
-                          primary={o.label}
-                          primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }}
-                        />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <MultiSelect
+                  value={draftDeliveryBy}
+                  onChange={setDraftDeliveryBy}
+                  options={deliveryByOpts.map((o) => ({ value: o.id, label: o.label }))}
+                  placeholder="الكل"
+                />
               </FieldBox>
             </Grid>
 
@@ -427,25 +330,12 @@ export default function OrdersHomixFiltersPanel({
             {!isVendor && (
               <Grid item xs={12} sm={6} md={12 / 5}>
                 <FieldBox label="المصنع / البائع">
-                  <FormControl fullWidth size="small">
-                    <Select multiple displayEmpty value={draftVendor}
-                      onChange={(e) => setDraftVendor(e.target.value as string[])}
-                      input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                      renderValue={(sel) => sel.length === 0
-                        ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل المصانع</span>
-                        : sel.length === 1
-                        ? <span style={{ fontFamily: "'Cairo',sans-serif" }}>{vendors.find((o) => String(o.value) === sel[0])?.label ?? sel[0]}</span>
-                        : <span style={{ fontFamily: "'Cairo',sans-serif" }}>{sel.length} محدد</span>
-                      }
-                    >
-                      {vendors.map((o) => (
-                        <MenuItem key={String(o.value)} value={String(o.value)} dense>
-                          <Checkbox size="small" checked={draftVendor.includes(String(o.value))} sx={{ py: 0, mr: 0.5 }} />
-                          <ListItemText primary={o.label} primaryTypographyProps={{ fontSize: "12.5px", fontFamily: "'Cairo',sans-serif" }} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <MultiSelect
+                    value={draftVendor}
+                    onChange={setDraftVendor}
+                    options={vendors.map((o) => ({ value: String(o.value), label: o.label }))}
+                    placeholder="كل المصانع"
+                  />
                 </FieldBox>
               </Grid>
             )}
@@ -472,30 +362,12 @@ export default function OrdersHomixFiltersPanel({
             {/* المسئول */}
             <Grid item xs={12} sm={6} md={4}>
               <FieldBox label="المسئول">
-                <FormControl fullWidth size="small">
-                  <Select displayEmpty value={draftUserId}
-                    onChange={(e) => setDraftUserId(e.target.value as string)}
-                    input={<OutlinedInput />} MenuProps={MENU_PROPS} sx={selectSx}
-                    renderValue={(sel) => !sel
-                      ? <span style={{ color: HX.tx3, fontFamily: "'Cairo',sans-serif" }}>كل المسئولين</span>
-                      : (() => {
-                          const u = assigneeOpts.find((x) => String(x.id) === sel);
-                          return <span style={{ fontFamily: "'Cairo',sans-serif" }}>
-                            {u?.label ?? sel}
-                          </span>;
-                        })()
-                    }
-                  >
-                    <MenuItem value="" dense>
-                      <em style={{ fontSize: "12.5px", color: HX.tx2, fontFamily: "'Cairo',sans-serif" }}>كل المسئولين</em>
-                    </MenuItem>
-                    {assigneeOpts.map((u) => (
-                      <MenuItem key={String(u.id)} value={String(u.id)} dense>
-                        {u.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <MultiSelect
+                  value={draftUserId}
+                  onChange={setDraftUserId}
+                  options={assigneeOpts.map((u) => ({ value: String(u.id), label: u.label }))}
+                  placeholder="كل المسئولين"
+                />
               </FieldBox>
             </Grid>
 
