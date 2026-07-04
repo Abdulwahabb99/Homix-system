@@ -48,7 +48,9 @@ function avColor(s: string) {
    Column definitions — SINGLE source of truth
    widths used in colgroup + nothing else
 ───────────────────────────────────────── */
-const CHECKBOX_W = 44;
+const CHECKBOX_W = 30;
+/* checkbox أصغر داخل عمود ضيّق */
+const CHECKBOX_SX = { p: 0, "& .MuiSvgIcon-root": { fontSize: 5 } } as const;
 
 const BASE_COLS = [
   { key: "code",          label: "رقم العملية",    w: 80  },
@@ -466,13 +468,13 @@ export default function OrdersHomixTableV2({
           <thead style={{ position: "sticky", top: 0, zIndex: 3 }}>
             <tr>
               {!isVendor && (
-                <th style={{ ...TH, textAlign: "center" }}>
+                <th style={{ ...TH, textAlign: "center", padding: "2px 4px" }}>
                   <Checkbox
                     size="small"
                     checked={isAllSelected}
                     indeterminate={isIndeterminate}
                     onChange={toggleAll}
-                    sx={{ p: 0 }}
+                    sx={CHECKBOX_SX}
                   />
                 </th>
               )}
@@ -532,9 +534,9 @@ export default function OrdersHomixTableV2({
                 >
                   {/* checkbox */}
                   {!isVendor && (
-                    <td style={{ ...TD, textAlign: "center" }}>
+                    <td style={{ ...TD, textAlign: "center", padding: "9px 4px" }}>
                       <Checkbox size="small" checked={isSelected}
-                        onChange={() => toggleRow(rk)} sx={{ p: 0 }} />
+                        onChange={() => toggleRow(rk)} sx={CHECKBOX_SX} />
                     </td>
                   )}
 

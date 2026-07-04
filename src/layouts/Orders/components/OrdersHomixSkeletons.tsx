@@ -231,7 +231,7 @@ const TD_SK: React.CSSProperties = {
   fontFamily:   "'Cairo',sans-serif",
 };
 
-const CHECKBOX_W_SK = 44;
+const CHECKBOX_W_SK = 30;
 
 const COLS = [
   { label: "رقم العملية",   w: 98  },
@@ -283,7 +283,7 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
 
           <thead style={{ position: "sticky", top: 0, zIndex: 3 }}>
             <tr>
-              <th style={{ ...TH_SK, textAlign: "center", width: CHECKBOX_W_SK }}>
+              <th style={{ ...TH_SK, textAlign: "center", width: CHECKBOX_W_SK, padding: "9px 4px" }}>
                 <Skeleton variant="rounded" animation="wave" width={14} height={14} sx={{ mx: "auto", ...skSx }} />
               </th>
               {COLS.map((c, i) => (
@@ -303,7 +303,7 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
           <tbody>
             {Array.from({ length: rows }).map((_, ri) => (
               <tr key={ri}>
-                <td style={{ ...TD_SK, textAlign: "center" }}>
+                <td style={{ ...TD_SK, textAlign: "center", padding: "9px 4px" }}>
                   <Skeleton variant="rounded" animation="wave" width={14} height={14} sx={{ mx: "auto", ...skSx }} />
                 </td>
                 {COLS.map((c, ci) => (
