@@ -27,6 +27,8 @@ export interface MultiSelectProps<T extends string | number = string | number> {
   countSuffix?: string;
   disabled?: boolean;
   fullWidth?: boolean;
+  /** fired when the dropdown closes (e.g. to apply the current selection) */
+  onClose?: () => void;
   /** override / extend the default Select styling */
   sx?: SxProps<Theme>;
 }
@@ -71,6 +73,7 @@ export default function MultiSelect<T extends string | number>({
   countSuffix = "محدد",
   disabled,
   fullWidth = true,
+  onClose,
   sx,
 }: MultiSelectProps<T>) {
   return (
@@ -80,6 +83,7 @@ export default function MultiSelect<T extends string | number>({
         displayEmpty
         value={value}
         onChange={(e) => onChange(e.target.value as T[])}
+        onClose={onClose}
         input={<OutlinedInput />}
         MenuProps={MENU_PROPS}
         sx={{ ...defaultSelectSx, ...(sx as object) }}

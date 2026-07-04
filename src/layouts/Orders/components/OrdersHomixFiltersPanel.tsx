@@ -162,6 +162,33 @@ export default function OrdersHomixFiltersPanel({
     });
   };
 
+  // Auto-apply the current drafts the moment a dropdown closes, so the list
+  // refetches with the chosen filter directly — no need to hit "تطبيق الفلاتر".
+  // Skipped when nothing changed (a no-op open/close) to avoid resetting the
+  // page and refetching pointlessly. The committed key is normalised exactly
+  // like the drafts (see the sync effect above) so equality is reliable.
+  const committedKey = JSON.stringify({
+    orderStatus:    value.orderStatus ?? [],
+    selectedVendor: (value.selectedVendor ?? []).map(String),
+    paymentStatus:  (value.paymentStatus ?? []).map(String),
+    deliveryStatus: value.deliveryStatus ?? [],
+    userId:         (value.userId ?? []).map(String),
+    deliveryBy:     value.deliveryBy ?? [],
+  });
+
+  const handleDropdownClose = () => {
+    const draftKey = JSON.stringify({
+      orderStatus:    draftStatus,
+      selectedVendor: draftVendor,
+      paymentStatus:  draftPayment,
+      deliveryStatus: draftDelivery,
+      userId:         draftUserId,
+      deliveryBy:     draftDeliveryBy,
+    });
+    if (draftKey === committedKey) return;
+    handleApply();
+  };
+
   const handleReset = () => {
     setDraftStatus([]);
     setDraftDelivery([]);
@@ -282,6 +309,7 @@ export default function OrdersHomixFiltersPanel({
                 <MultiSelect
                   value={draftStatus}
                   onChange={setDraftStatus}
+                  onClose={handleDropdownClose}
                   options={statusOpts}
                   placeholder="كل الحالات"
                 />
@@ -294,6 +322,7 @@ export default function OrdersHomixFiltersPanel({
                 <MultiSelect
                   value={draftDelivery}
                   onChange={setDraftDelivery}
+                  onClose={handleDropdownClose}
                   options={manufactureOpts}
                   placeholder="كل الحالات"
                 />
@@ -307,6 +336,7 @@ export default function OrdersHomixFiltersPanel({
                   <MultiSelect
                     value={draftPayment}
                     onChange={setDraftPayment}
+                    onClose={handleDropdownClose}
                     options={paymentOpts.map((o) => ({ value: String(o.value), label: o.label }))}
                     placeholder="الكل"
                   />
@@ -320,6 +350,7 @@ export default function OrdersHomixFiltersPanel({
                 <MultiSelect
                   value={draftDeliveryBy}
                   onChange={setDraftDeliveryBy}
+                  onClose={handleDropdownClose}
                   options={deliveryByOpts.map((o) => ({ value: o.id, label: o.label }))}
                   placeholder="الكل"
                 />
@@ -333,6 +364,7 @@ export default function OrdersHomixFiltersPanel({
                   <MultiSelect
                     value={draftVendor}
                     onChange={setDraftVendor}
+                    onClose={handleDropdownClose}
                     options={vendors.map((o) => ({ value: String(o.value), label: o.label }))}
                     placeholder="كل المصانع"
                   />
@@ -365,6 +397,7 @@ export default function OrdersHomixFiltersPanel({
                 <MultiSelect
                   value={draftUserId}
                   onChange={setDraftUserId}
+                  onClose={handleDropdownClose}
                   options={assigneeOpts.map((u) => ({ value: String(u.id), label: u.label }))}
                   placeholder="كل المسئولين"
                 />
