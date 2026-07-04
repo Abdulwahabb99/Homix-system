@@ -453,15 +453,17 @@ export default function OrderDetailsView({
                             ))}
                           </Box>
                           <Box sx={{ mt: 2 }}>
+                            <Typography sx={{ fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 }}>
+                              حالة التصنيع (تشغيل الفعلي)
+                            </Typography>
                             <SelectComponent
                               id="order-manufacture-status"
-                              label="حالة التصنيع (تشغيل الفعلي)"
                               options={manufactureStatusOptions}
                               value={manufactureStatus}
                               onChange={changeManufactureStatus}
                               withSectionBorder={false}
+                              boxSx={{ p: 0 }}
                               formControlSx={{
-                                "& .MuiInputLabel-root": { fontSize: "0.78rem", color: OD.tx3 },
                                 "& .MuiOutlinedInput-root": {
                                   minHeight: 40,
                                   borderRadius: "9px",
