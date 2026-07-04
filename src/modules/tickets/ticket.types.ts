@@ -30,6 +30,18 @@ export type TicketNote = {
   user: TicketUserSummary | null;
 };
 
+export type TicketHistoryItem = {
+  changedAt: string;
+  description: string;
+  eventType: string;
+  field: string;
+  fromValue: string;
+  id: number;
+  message: string;
+  toValue: string;
+  user: TicketUserSummary | null;
+};
+
 export type TicketOrderSummary = {
   customerName: string;
   id: number;
@@ -59,6 +71,7 @@ export type TicketSummary = {
 export type TicketDetails = TicketSummary & {
   attachments: TicketAttachment[];
   createdBy: TicketUserSummary | null;
+  history: TicketHistoryItem[];
   notesList: TicketNote[];
 };
 

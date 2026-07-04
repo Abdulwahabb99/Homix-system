@@ -42,6 +42,7 @@ export class TicketController {
     const result = await this.ticketService.updateTicket(
       Number(request.params.ticketId),
       request.body,
+      request.user ?? { id: 0 },
       request.vendorId,
     );
     response.status(200).json({ data: unwrap(result), status: true });
@@ -84,6 +85,7 @@ export class TicketController {
       request.filePaths ?? [],
       request.fileNames ?? [],
       request.descriptions ?? [],
+      request.user ?? { id: 0 },
       request.vendorId,
     );
     response.status(201).json({ data: unwrap(result), status: true });
@@ -93,6 +95,7 @@ export class TicketController {
     const result = await this.ticketService.deleteAttachment(
       Number(request.params.ticketId),
       Number(request.params.attachmentId),
+      request.user ?? { id: 0 },
       request.vendorId,
     );
     response.status(200).json({ data: unwrap(result), status: true });

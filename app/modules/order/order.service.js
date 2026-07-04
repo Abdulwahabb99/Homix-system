@@ -308,6 +308,7 @@ class OrderService {
           deliveryDate: order.deliveryDate || null,
           governorate: order.governorate || null,
           shipmentStatus: order.shipmentStatus || null,
+          scheduleStatus: order.scheduleStatus || null,
           shipmentType: order.shipmentType || "separate",
           deliveryBy: order.deliveryBy || null,
           expectedDate: order.expectedDate || null,

@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 
 import { sequelize } from "../../infrastructure/database";
 import { USER_TYPES } from "../../../config/constants";
+import { buildLogMessage, getHistoryActorLabel } from "../orders/order.helpers";
 import {
   OVERDUE_DAYS_THRESHOLD,
   TICKET_STATUS,
@@ -13,6 +14,7 @@ import type {
   TicketAttachment,
   TicketCreateInput,
   TicketDetails,
+  TicketHistoryItem,
   TicketListFilters,
   TicketListResponse,
   TicketLookupResponse,
@@ -67,6 +69,16 @@ type UserModel = {
   findAll: (options?: Record<string, unknown>) => Promise<Array<Plainable>>;
 };
 
+type LogRecord = Plainable & {
+  save?: () => Promise<void>;
+};
+
+type LogModel = {
+  bulkCreate: (payload: Array<Record<string, unknown>>) => Promise<unknown>;
+  create: (payload: Record<string, unknown>) => Promise<LogRecord>;
+  findAll: (options?: Record<string, unknown>) => Promise<LogRecord[]>;
+};
+
 type OrderModel = {
   findOne: (options?: Record<string, unknown>) => Promise<Plainable | null>;
 };
@@ -76,6 +88,7 @@ const noteModel = require("../../../app/modules/notes/notes.model") as NoteModel
 const attachmentModel = require("../../../app/modules/attachments/attachment.model") as AttachmentModel;
 const orderModel = require("../../../app/modules/order/order.model") as OrderModel;
 const userModel = require("../../../app/modules/user/user.model") as UserModel;
+const logModel = require("../../../app/modules/logs/log.model") as LogModel;
 const customerModel = require("../../../app/modules/customer/customer.model");
 const orderLineModel = require("../../../app/modules/orderLines/orderline.model");
 const productModel = require("../../../app/modules/product/product.model");
@@ -194,6 +207,94 @@ const mapTicketAttachment = (value: unknown): TicketAttachment => {
   };
 };
 
+const buildTicketHistoryMessage = (log: PlainRecord): string => {
+  const field = getText(log.field);
+  const action = getText(log.action);
+
+  if (action === "create" && field === "ticket_created") {
+    return "تم إنشاء التذكرة";
+  }
+
+  if (action === "create" && field === "ticket_note") {
+    return "تمت إضافة ملاحظة";
+  }
+
+  if (action === "update" && field === "ticket_note") {
+    return "تم تحديث الملاحظة";
+  }
+
+  if (action === "delete" && field === "ticket_note") {
+    return "تم حذف الملاحظة";
+  }
+
+  if (action === "create" && field === "ticket_attachment") {
+    return "تمت إضافة مرفق";
+  }
+
+  if (action === "delete" && field === "ticket_attachment") {
+    return "تم حذف المرفق";
+  }
+
+  return buildLogMessage(log);
+};
+
+const buildTicketHistoryEventType = (log: PlainRecord): string => {
+  const field = getText(log.field);
+  const action = getText(log.action);
+
+  if (action === "create" && field === "ticket_created") {
+    return "ticket_created";
+  }
+
+  if (action === "create" && field === "ticket_note") {
+    return "note_added";
+  }
+
+  if (action === "update" && field === "ticket_note") {
+    return "note_updated";
+  }
+
+  if (action === "delete" && field === "ticket_note") {
+    return "note_deleted";
+  }
+
+  if (action === "create" && field === "ticket_attachment") {
+    return "attachment_added";
+  }
+
+  if (action === "delete" && field === "ticket_attachment") {
+    return "attachment_deleted";
+  }
+
+  if (field === "status") {
+    return "status_updated";
+  }
+
+  return "ticket_updated";
+};
+
+const mapTicketHistoryItem = (
+  value: unknown,
+  usersById: Map<number, TicketUserSummary>,
+): TicketHistoryItem => {
+  const log = value && typeof value === "object" ? (value as PlainRecord) : {};
+  const user = usersById.get(Number(log.userId ?? 0)) ?? null;
+
+  return {
+    changedAt: toIsoString(log.createdAt),
+    description: getHistoryActorLabel(
+      user ? `${user.firstName} ${user.lastName}`.trim() : "",
+    ),
+    eventType: buildTicketHistoryEventType(log),
+    field: getText(log.field),
+    fromValue: getText(log.from),
+    id: Number(log.id ?? 0),
+    message: buildTicketHistoryMessage(log),
+    toValue: getText(log.to),
+    user,
+  };
+};
+
 const getLatestReplyText = (
   notes: unknown[],
   userId: number | null,
@@ -236,7 +337,10 @@ const mapTicketSummary = (value: unknown): TicketSummary => {
   };
 };
 
-const mapTicketDetails = (value: unknown): TicketDetails => {
+const mapTicketDetails = (
+  value: unknown,
+  history: TicketHistoryItem[] = [],
+): TicketDetails => {
   const ticket = value && typeof value === "object" ? (value as PlainRecord) : {};
 
   return {
@@ -250,6 +354,7 @@ const mapTicketDetails = (value: unknown): TicketDetails => {
         .map((note) => mapTicketNote(note))
         .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
       : [],
+    history,
   };
 };
 
@@ -598,7 +703,27 @@ export class TicketRepository {
       return null;
     }
 
-    return mapTicketDetails(toPlain(ticket));
+    const logs = await logModel.findAll({
+      order: [["createdAt", "DESC"]],
+      where: { entityId: ticketId, entityType: "ticket" },
+    });
+    const userIds = logs
+      .map((log) => Number(toPlain(log).userId ?? 0))
+      .filter((id) => id > 0);
+    const users = userIds.length > 0
+      ? await userModel.findAll({ attributes: ["id", "firstName", "lastName"], where: { id: { [Op.in]: userIds } } })
+      : [];
+    const usersById = new Map<number, TicketUserSummary>(
+      users
+        .map((user) => toUserSummary(toPlain(user)))
+        .filter((user): user is TicketUserSummary => user !== null)
+        .map((user) => [user.id, user]),
+    );
+
+    return mapTicketDetails(
+      toPlain(ticket),
+      logs.map((log) => mapTicketHistoryItem(toPlain(log), usersById)),
+    );
   }
 
   public async getRawTicketById(
@@ -620,6 +745,14 @@ export class TicketRepository {
     }
 
     await ticket.update(payload as Record<string, unknown>);
+  }
+
+  public async createLogs(entries: Array<Record<string, unknown>>): Promise<void> {
+    if (entries.length === 0) {
+      return;
+    }
+
+    await logModel.bulkCreate(entries);
   }
 
   public async createNote(ticketId: number, text: string, userId: number): Promise<TicketNote> {

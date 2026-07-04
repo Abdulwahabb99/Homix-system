@@ -27,6 +27,12 @@ const attachmentModel = {
   findByPk: jest.fn(),
 };
 
+const logModel = {
+  bulkCreate: jest.fn(),
+  create: jest.fn(),
+  findAll: jest.fn(),
+};
+
 jest.mock("../../../app/middlewares/protectApi", () => {
   return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     req.user = { id: 1, userType: "1" };
@@ -44,6 +50,7 @@ jest.mock("../../../app/modules/order/order.model", () => orderModel);
 jest.mock("../../../app/modules/user/user.model", () => userModel);
 jest.mock("../../../app/modules/notes/notes.model", () => noteModel);
 jest.mock("../../../app/modules/attachments/attachment.model", () => attachmentModel);
+jest.mock("../../../app/modules/logs/log.model", () => logModel);
 jest.mock("../../../app/modules/customer/customer.model", () => ({}));
 jest.mock("../../../app/modules/orderLines/orderline.model", () => ({}));
 jest.mock("../../../app/modules/product/product.model", () => ({}));
@@ -90,7 +97,7 @@ const makeTicket = () => ({
       userId: 1,
     },
   ],
-  order: makeOrder(),
+  linkedOrder: makeOrder(),
   orderId: 7,
   status: 1,
   type: 1,
@@ -130,6 +137,29 @@ describe("ticketRouter", () => {
       user: { firstName: "Ahmed", id: 1, lastName: "Hesham" },
     });
     ticketModel.create.mockResolvedValue({ id: 4 });
+    logModel.findAll.mockResolvedValue([
+      {
+        action: "create",
+        createdAt: "2026-05-03T20:33:00.000Z",
+        entityId: 4,
+        entityType: "ticket",
+        field: "ticket_created",
+        id: 88,
+        to: "1",
+        userId: 1,
+      },
+      {
+        action: "update",
+        createdAt: "2026-05-04T20:33:00.000Z",
+        entityId: 4,
+        entityType: "ticket",
+        field: "status",
+        from: "1",
+        id: 89,
+        to: "2",
+        userId: 1,
+      },
+    ]);
   });
 
   it("returns ticket metadata", async () => {
@@ -189,5 +219,23 @@ describe("ticketRouter", () => {
 
     expect(response.status).toBe(201);
     expect(response.body.data.text).toBe("تم فتح التذكرة بنجاح");
+  });
+
+  it("returns ticket details with history", async () => {
+    const response = await request(app).get("/tickets/4");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.history).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: "ticket_created",
+          message: "تم إنشاء التذكرة",
+        }),
+        expect.objectContaining({
+          eventType: "status_updated",
+          field: "status",
+        }),
+      ]),
+    );
   });
 });

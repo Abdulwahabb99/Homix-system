@@ -52,6 +52,26 @@ export const SHIPMENT_STATUS_LABELS: Record<number, string> = {
   [SHIPMENT_STATUS.OUT_FOR_DELIVERY]: "خرجت للتوصيل",
 };
 
+export const SHIPMENT_SCHEDULE_STATUS = {
+  SCHEDULED: 1,
+  NO_RESPONSE: 2,
+  POSTPONED: 3,
+  CANCELED_DELIVERY_DELAY: 4,
+  CANCELED_CHANGED_MIND: 5,
+  CANCELED_NO_RESPONSE: 6,
+  CALL_LATER: 7,
+} as const;
+
+export const SHIPMENT_SCHEDULE_STATUS_LABELS: Record<number, string> = {
+  [SHIPMENT_SCHEDULE_STATUS.SCHEDULED]: "مجدول",
+  [SHIPMENT_SCHEDULE_STATUS.NO_RESPONSE]: "لا يوجد رد",
+  [SHIPMENT_SCHEDULE_STATUS.POSTPONED]: "مؤجل",
+  [SHIPMENT_SCHEDULE_STATUS.CANCELED_DELIVERY_DELAY]: "الغاء تأخير في التوصيل",
+  [SHIPMENT_SCHEDULE_STATUS.CANCELED_CHANGED_MIND]: "الغاء تغيير رأي",
+  [SHIPMENT_SCHEDULE_STATUS.CANCELED_NO_RESPONSE]: "الغاء لا يوجد رد",
+  [SHIPMENT_SCHEDULE_STATUS.CALL_LATER]: "إعادة الاتصال لاحقا",
+};
+
 export const SHIPMENT_TYPE_LABELS: Record<string, string> = {
   collected: "شحن مجمع",
   grouped: "شحن مجمع",

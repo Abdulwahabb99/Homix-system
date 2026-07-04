@@ -918,6 +918,7 @@ const swaggerOptions = {
                 orderSources: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 paymentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 priorities: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                scheduleStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shippingCompanies: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
@@ -1020,6 +1021,7 @@ const swaggerOptions = {
             paymentStatus: { example: 1, nullable: true, type: "integer" },
             PoDate: { example: "2026-06-18T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             receivedAmount: { example: 0, type: "number" },
+            scheduleStatus: { example: 1, nullable: true, type: "integer" },
             shipmentStatus: { example: 2, nullable: true, type: "integer" },
             shipmentType: { example: "grouped", nullable: true, type: "string" },
             shippedFromInventory: {
@@ -1078,6 +1080,8 @@ const swaggerOptions = {
             paymentStatusLabel: { example: "الدفع عند الاستلام", type: "string" },
             receivedInWarehouseDate: { example: "2026-05-12T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             scheduledDeliveryDate: { example: "2026-05-17T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+            scheduleStatus: { example: 1, nullable: true, type: "integer" },
+            scheduleStatusLabel: { example: "مجدول", type: "string" },
             sellerName: { example: "ركنة للأثاث", type: "string" },
             shippingCompany: { example: 3, nullable: true, type: "integer" },
             shipmentNumber: { example: "SH-9802", type: "string" },
@@ -1516,6 +1520,20 @@ const swaggerOptions = {
             user: { $ref: "#/components/schemas/TicketUserSummary" },
           },
         },
+        TicketHistoryItem: {
+          type: "object",
+          properties: {
+            changedAt: { example: "2026-05-03T22:33:00.000Z", type: "string" },
+            description: { example: "بواسطة Ahmed Hesham", type: "string" },
+            eventType: { example: "status_updated", type: "string" },
+            field: { example: "status", type: "string" },
+            fromValue: { example: "1", type: "string" },
+            id: { example: 88, type: "integer" },
+            message: { example: "تم تحديث status إلى 2", type: "string" },
+            toValue: { example: "2", type: "string" },
+            user: { $ref: "#/components/schemas/TicketUserSummary" },
+          },
+        },
         TicketOrderSummary: {
           type: "object",
           properties: {
@@ -1557,6 +1575,10 @@ const swaggerOptions = {
                   type: "array",
                 },
                 createdBy: { $ref: "#/components/schemas/TicketUserSummary" },
+                history: {
+                  items: { $ref: "#/components/schemas/TicketHistoryItem" },
+                  type: "array",
+                },
                 notesList: {
                   items: { $ref: "#/components/schemas/TicketNoteSummary" },
                   type: "array",

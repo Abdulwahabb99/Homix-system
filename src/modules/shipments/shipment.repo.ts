@@ -3,7 +3,7 @@ import { Op, fn, col, where } from "sequelize";
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
-import { ORDER_SOURCE_ARABIC, ORDER_SOURCE } from "../../../config/constants";
+import { ORDER_SOURCE_ARABIC, ORDER_SOURCE, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
@@ -21,6 +21,7 @@ import {
   RETURN_TO_VENDOR_FINAL_STATUSES,
   RETURN_TO_VENDOR_STATUS,
   RETURN_TO_VENDOR_STATUS_LABELS,
+  SHIPMENT_SCHEDULE_STATUS_LABELS,
   SHIPMENT_PRIORITY_LABELS,
   CUSTOMER_RETURN_STATUS_LABELS,
   SHIPMENT_STATUS,
@@ -91,6 +92,7 @@ const shipmentExpenseModel = require("../../../app/modules/shipments/shipmentExp
 const shipmentReturnModel = require("../../../app/modules/shipments/shipmentReturn.model");
 const shippingCompanyModel = require("../../../app/modules/shipments/shippingCompany.model");
 const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
+const SHIPMENT_SCHEDULE_LABELS = SHIPMENT_SCHEDULE_STATUS_ARABIC as Record<number, string>;
 
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
@@ -164,6 +166,12 @@ const buildShipmentWhereClause = (
   if (filters.shipmentStatus) {
     andConditions.push(where(col("Order.shipmentStatus"), {
       [Op.in]: filters.shipmentStatus.split(",").map(Number),
+    }));
+  }
+
+  if (filters.scheduleStatus) {
+    andConditions.push(where(col("Order.scheduleStatus"), {
+      [Op.in]: filters.scheduleStatus.split(",").map(Number),
     }));
   }
 
@@ -297,6 +305,8 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     paymentStatusLabel: PAYMENT_STATUS_LABELS[toNumber(order.paymentStatus)] ?? "",
     receivedInWarehouseDate: toIsoString(order.shippingReceiveDate),
     scheduledDeliveryDate: toIsoString(order.expectedDeliveryDate),
+    scheduleStatus: toNullableNumber(order.scheduleStatus),
+    scheduleStatusLabel: SHIPMENT_SCHEDULE_LABELS[toNumber(order.scheduleStatus)] ?? "",
     sellerName: toText(vendor.name),
     shippingCompany: toNullableNumber(shippingCompanyRecord.id),
     shipmentNumber: buildShipmentNumber(order.id),
@@ -457,6 +467,7 @@ export class ShipmentRepository {
       orderSources: Object.entries(ORDER_SOURCE).map(([, id]) => ({ id: Number(id), label: ORDER_SOURCE_LABELS[Number(id)] ?? String(id) })),
       paymentStatuses: Object.entries(PAYMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       priorities: Object.entries(SHIPMENT_PRIORITY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      scheduleStatuses: Object.entries(SHIPMENT_SCHEDULE_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shippingCompanies: shippingCompanies.map((company: unknown) => ({ id: toNumber(toPlain(company).id), label: toText(toPlain(company).name) })),
       shipmentStatuses: Object.entries(SHIPMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shipmentTypes: [

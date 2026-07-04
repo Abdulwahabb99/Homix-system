@@ -104,6 +104,12 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  *           type: string
  *           example: 2,3,4
  *       - in: query
+ *         name: scheduleStatus
+ *         description: CSV of numeric scheduling statuses. `1` = مجدول, `2` = لا يوجد رد, `3` = مؤجل, `4` = الغاء تأخير في التوصيل, `5` = الغاء تغيير رأي, `6` = الغاء لا يوجد رد, `7` = إعادة الاتصال لاحقا.
+ *         schema:
+ *           type: string
+ *           example: 1,3
+ *       - in: query
  *         name: paymentStatus
  *         description: CSV of numeric payment statuses.
  *         schema:
@@ -188,6 +194,7 @@ shipmentRouter.get(
  *                   variant_id: 445566
  *               shippingCompany: 3
  *               governorate: الجيزة
+ *               scheduleStatus: 1
  *               shipmentStatus: 2
  *               shipmentType: grouped
  *               shippingReceiveDate: 2026-06-18T00:00:00.000Z
@@ -1038,6 +1045,12 @@ shipmentRouter.get(
  *         schema:
  *           type: string
  *           example: 2,3,4
+ *       - in: query
+ *         name: scheduleStatus
+ *         description: CSV of numeric scheduling statuses. `1` = مجدول, `2` = لا يوجد رد, `3` = مؤجل, `4` = الغاء تأخير في التوصيل, `5` = الغاء تغيير رأي, `6` = الغاء لا يوجد رد, `7` = إعادة الاتصال لاحقا.
+ *         schema:
+ *           type: string
+ *           example: 1,3
  *       - in: query
  *         name: paymentStatus
  *         description: CSV of numeric payment statuses

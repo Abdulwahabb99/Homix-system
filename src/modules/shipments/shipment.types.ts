@@ -17,6 +17,7 @@ export type ShipmentListQuery = {
   page: number;
   paymentStatus?: string;
   priority?: string;
+  scheduleStatus?: string;
   shipmentNumber?: string;
   shipmentStatus?: string;
   shipmentType?: string;
@@ -104,6 +105,7 @@ export type ShipmentMetaResponse = {
   orderSources: ShipmentMetaOption[];
   paymentStatuses: ShipmentMetaOption[];
   priorities: ShipmentMetaOption[];
+  scheduleStatuses: ShipmentMetaOption[];
   shippingCompanies: ShipmentMetaOption[];
   shipmentStatuses: ShipmentMetaOption[];
   shipmentTypes: ShipmentMetaOption[];
@@ -139,6 +141,8 @@ export type ShipmentListItem = {
   paymentStatusLabel: string;
   receivedInWarehouseDate: string | null;
   scheduledDeliveryDate: string | null;
+  scheduleStatus: number | null;
+  scheduleStatusLabel: string;
   sellerName: string;
   shippingCompany: number | null;
   shipmentNumber: string;

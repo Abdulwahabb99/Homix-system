@@ -17,6 +17,18 @@ import type {
   TicketUpdateInput,
 } from "./ticket.types";
 
+const toLogValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return String(value);
+};
+
 const normalizeUpdatePayload = (payload: TicketUpdateInput): TicketUpdateInput => {
   const nextPayload = { ...payload };
 
@@ -71,6 +83,15 @@ export class TicketService {
       ...payload,
       createdByUserId: user.id,
     });
+    await this.ticketRepository.createLogs([{
+      action: "create",
+      entityId: createdTicket.id,
+      entityType: "ticket",
+      field: "ticket_created",
+      from: "",
+      to: String(payload.type),
+      userId: user.id,
+    }]);
 
     const ticket = await this.ticketRepository.getTicketById(createdTicket.id, vendorId);
     if (!ticket) {
@@ -102,12 +123,16 @@ export class TicketService {
   public async updateTicket(
     ticketId: number,
     payload: TicketUpdateInput,
+    user: TicketRequestUser,
     vendorId?: number | null,
   ): Promise<Result<TicketDetails>> {
     const existingTicket = await this.ticketRepository.getRawTicketById(ticketId, vendorId);
     if (!existingTicket) {
       throw new NotFoundError("Ticket not found");
     }
+    const plainTicket = "toJSON" in existingTicket && typeof existingTicket.toJSON === "function"
+      ? existingTicket.toJSON()
+      : existingTicket;
 
     if (payload.assignedToUserId) {
       const hasAssignee = await this.ticketRepository.hasAssignee(payload.assignedToUserId);
@@ -116,7 +141,19 @@ export class TicketService {
       }
     }
 
-    await this.ticketRepository.updateTicket(ticketId, normalizeUpdatePayload(payload));
+    const normalizedPayload = normalizeUpdatePayload(payload);
+    await this.ticketRepository.updateTicket(ticketId, normalizedPayload);
+    await this.ticketRepository.createLogs(
+      Object.entries(normalizedPayload).map(([field, nextValue]) => ({
+        action: "update",
+        entityId: ticketId,
+        entityType: "ticket",
+        field,
+        from: toLogValue(plainTicket[field as keyof typeof plainTicket]),
+        to: toLogValue(nextValue),
+        userId: user.id,
+      })),
+    );
     const ticket = await this.ticketRepository.getTicketById(ticketId, vendorId);
     if (!ticket) {
       throw new NotFoundError("Ticket not found");
@@ -136,7 +173,17 @@ export class TicketService {
       throw new NotFoundError("Ticket not found");
     }
 
-    return success(await this.ticketRepository.createNote(ticketId, payload.text, user.id));
+    const createdNote = await this.ticketRepository.createNote(ticketId, payload.text, user.id);
+    await this.ticketRepository.createLogs([{
+      action: "create",
+      entityId: ticketId,
+      entityType: "ticket",
+      field: "ticket_note",
+      from: "",
+      to: payload.text,
+      userId: user.id,
+    }]);
+    return success(createdNote);
   }
 
   public async updateNote(
@@ -161,7 +208,18 @@ export class TicketService {
       throw new NotFoundError("Note not found");
     }
 
-    return success(await this.ticketRepository.updateNote(note, payload.text));
+    const previousText = toLogValue(plainNote.text);
+    const updatedNote = await this.ticketRepository.updateNote(note, payload.text);
+    await this.ticketRepository.createLogs([{
+      action: "update",
+      entityId: ticketId,
+      entityType: "ticket",
+      field: "ticket_note",
+      from: previousText,
+      to: payload.text,
+      userId: user.id,
+    }]);
+    return success(updatedNote);
   }
 
   public async deleteNote(
@@ -186,6 +244,15 @@ export class TicketService {
     }
 
     await this.ticketRepository.deleteNote(note);
+    await this.ticketRepository.createLogs([{
+      action: "delete",
+      entityId: ticketId,
+      entityType: "ticket",
+      field: "ticket_note",
+      from: toLogValue(plainNote.text),
+      to: "",
+      userId: user.id,
+    }]);
 
     return success({ message: "Note deleted successfully" });
   }
@@ -195,6 +262,7 @@ export class TicketService {
     filePaths: string[],
     fileNames: string[],
     descriptions: string[],
+    user: TicketRequestUser,
     vendorId?: number | null,
   ): Promise<Result<TicketAttachment[]>> {
     const ticket = await this.ticketRepository.getRawTicketById(ticketId, vendorId);
@@ -206,12 +274,25 @@ export class TicketService {
       throw new ConflictError("No files uploaded");
     }
 
-    return success(await this.ticketRepository.addAttachments(ticketId, filePaths, fileNames, descriptions));
+    const attachments = await this.ticketRepository.addAttachments(ticketId, filePaths, fileNames, descriptions);
+    await this.ticketRepository.createLogs(
+      attachments.map((attachment, index) => ({
+        action: "create",
+        entityId: ticketId,
+        entityType: "ticket",
+        field: "ticket_attachment",
+        from: "",
+        to: attachment.name || fileNames[index] || "",
+        userId: user.id,
+      })),
+    );
+    return success(attachments);
   }
 
   public async deleteAttachment(
     ticketId: number,
     attachmentId: number,
+    user: TicketRequestUser,
     vendorId?: number | null,
   ): Promise<Result<{ message: string }>> {
     const ticket = await this.ticketRepository.getRawTicketById(ticketId, vendorId);
@@ -232,6 +313,15 @@ export class TicketService {
     }
 
     await this.ticketRepository.deleteAttachment(attachment);
+    await this.ticketRepository.createLogs([{
+      action: "delete",
+      entityId: ticketId,
+      entityType: "ticket",
+      field: "ticket_attachment",
+      from: toLogValue(plainAttachment.name),
+      to: "",
+      userId: user.id,
+    }]);
 
     return success({ message: "Attachment deleted successfully" });
   }

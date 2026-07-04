@@ -90,6 +90,24 @@ const SHIPMENTS_STATUS = {
   SCHEDULED: 11,
   OUT_FOR_DELIVERY: 12,
 };
+const SHIPMENT_SCHEDULE_STATUS = {
+  SCHEDULED: 1,
+  NO_RESPONSE: 2,
+  POSTPONED: 3,
+  CANCELED_DELIVERY_DELAY: 4,
+  CANCELED_CHANGED_MIND: 5,
+  CANCELED_NO_RESPONSE: 6,
+  CALL_LATER: 7,
+};
+const SHIPMENT_SCHEDULE_STATUS_ARABIC = {
+  1: "مجدول",
+  2: "لا يوجد رد",
+  3: "مؤجل",
+  4: "الغاء تأخير في التوصيل",
+  5: "الغاء تغيير رأي",
+  6: "الغاء لا يوجد رد",
+  7: "إعادة الاتصال لاحقا",
+};
 const SHIPMENT_TYPE = {
   COLLECTED_SHIPMENT: 1,
   GOVERNORATES_SHIPMENT: 2,
@@ -149,6 +167,8 @@ module.exports = {
   DELIVERY_BY,
   DELIVERY_BY_ARABIC,
   SHIPMENTS_STATUS,
+  SHIPMENT_SCHEDULE_STATUS,
+  SHIPMENT_SCHEDULE_STATUS_ARABIC,
   SHIPMENT_TYPE,
   GOVERNORATES,
   MANUFACTURE_STATUS,

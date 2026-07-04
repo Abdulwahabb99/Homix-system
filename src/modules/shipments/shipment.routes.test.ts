@@ -1,4 +1,5 @@
 import express from "express";
+import { Op } from "sequelize";
 import request from "supertest";
 
 const orderModel = {
@@ -123,6 +124,7 @@ const makeShipment = (overrides: Record<string, unknown> = {}) => ({
   id: 9802,
   notes: "shipment note",
   orderSource: 1,
+  scheduleStatus: 1,
   notesList: [
     {
       createdAt: "2026-05-15T11:00:00.000Z",
@@ -398,6 +400,15 @@ describe("shipmentRouter", () => {
     expect(response.body.data.shippingCompanies).toEqual([
       { id: 3, label: "J&T" },
     ]);
+    expect(response.body.data.scheduleStatuses).toEqual([
+      { id: 1, label: "مجدول" },
+      { id: 2, label: "لا يوجد رد" },
+      { id: 3, label: "مؤجل" },
+      { id: 4, label: "الغاء تأخير في التوصيل" },
+      { id: 5, label: "الغاء تغيير رأي" },
+      { id: 6, label: "الغاء لا يوجد رد" },
+      { id: 7, label: "إعادة الاتصال لاحقا" },
+    ]);
     expect(response.body.data.orderSources).toEqual([
       { id: 1, label: "شو رووم" },
       { id: 2, label: "اونلاين" },
@@ -428,6 +439,7 @@ describe("shipmentRouter", () => {
         },
       ],
       name: "#H9802",
+      scheduleStatus: 1,
       shipmentStatus: 2,
       shipmentType: "grouped",
       shippingCompany: 3,
@@ -539,10 +551,31 @@ describe("shipmentRouter", () => {
         operationNumber: "3002",
         orderSource: 1,
         orderSourceLabel: "شو رووم",
+        scheduleStatus: 1,
+        scheduleStatusLabel: "مجدول",
         shippingCompany: 3,
         shipmentNumber: "SH-9802",
         shipmentStatusLabel: "في المخزن",
         shipmentTypeLabel: "شحن مجمع",
+      }),
+    );
+  });
+
+  it("filters shipments by schedule status", async () => {
+    const response = await request(app).get("/shipments").query({ page: 1, scheduleStatus: "1", size: 20 });
+
+    expect(response.status).toBe(200);
+    const whereClause = orderModel.findAndCountAll.mock.calls[0][0].where as Record<PropertyKey, unknown>;
+    const andKey = Object.getOwnPropertySymbols(whereClause)[0];
+    const conditions = andKey && Array.isArray(whereClause[andKey])
+      ? whereClause[andKey] as Array<Record<PropertyKey, unknown>>
+      : [];
+
+    expect(conditions).toContainEqual(
+      expect.objectContaining({
+        logic: expect.objectContaining({
+          [Op.in]: [1],
+        }),
       }),
     );
   });

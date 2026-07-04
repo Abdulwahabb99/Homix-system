@@ -344,6 +344,19 @@ ticketRouter.post(
  *                         url: uploads/ticket/proof.png
  *                         description: Screenshot
  *                         createdAt: 2026-05-03T22:33:00.000Z
+ *                     history:
+ *                       - id: 88
+ *                         changedAt: 2026-05-03T22:33:00.000Z
+ *                         eventType: ticket_created
+ *                         field: ticket_created
+ *                         fromValue: ""
+ *                         toValue: "1"
+ *                         message: تم إنشاء التذكرة
+ *                         description: بواسطة Ahmed Hesham
+ *                         user:
+ *                           id: 1
+ *                           firstName: Ahmed
+ *                           lastName: Hesham
  *                     notesList:
  *                       - id: 22
  *                         text: تم فتح التذكرة بنجاح
@@ -421,6 +434,7 @@ ticketRouter.post(
  *                       productName: غرفة نوم - دريسينج
  *                       productSku: RKA-001
  *                     attachments: []
+ *                     history: []
  *                     notesList: []
  *       404:
  *         description: Ticket or assignee not found

@@ -89,6 +89,11 @@ const run = async (): Promise<void> => {
     deletedAt: { allowNull: true, type: DataTypes.DATE },
   });
 
+  await ensureColumn("orders", "scheduleStatus", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+
   await sequelize.query(`
     INSERT INTO "shippingCompanies" ("name", "createdAt", "updatedAt")
     SELECT source."name", NOW(), NOW()
