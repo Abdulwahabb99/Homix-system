@@ -4,10 +4,14 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
-import { PAYMENT_STATUS, DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
+import {
+  PAYMENT_STATUS,
+  DELIVERY_STATUS,
+  statusoptions,
+  mapDeliveryPriorityToBadgeLevel,
+} from "layouts/Orders/utils/constants";
 import type { OrdersMeta } from "query/ordersMeta.api";
 import moment from "moment";
-import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import MultiSelect from "components/MultiSelect/MultiSelect";
 
 export interface FiltersPanelValue {
@@ -31,10 +35,14 @@ interface OrdersHomixFiltersPanelProps {
   value: FiltersPanelValue;
   onApply: (v: FiltersPanelValue) => void;
   onReset: () => void;
-  /** من `useDateRange` — لعرض المكوّن الموحّد لنطاق التاريخ */
-  dateRangeStart: any;
-  dateRangeEnd: any;
-  onDateRangeChange: (start: string, end: string) => void;
+  /** الأولوية — معرّفاتها المحددة؛ تُطبَّق مباشرة عند النقر */
+  priorityValue: string[];
+  onPriorityChange: (next: string[]) => void;
+  /** نطاق التاريخ — حقلان مستقلان بصيغة "YYYY-MM-DD" (فارغ = غير محدد) */
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (iso: string) => void;
+  onEndDateChange: (iso: string) => void;
   onDateRangeClear: () => void;
 }
 
@@ -64,6 +72,50 @@ const FALLBACK_DELIVERY_BY: { id: number; label: string }[] = [
   { id: 2, label: "بائع" },
 ];
 
+/* الأولوية — تُستخدم عند غياب `meta.priorities` (1 بالمدة، 2 مستعجل، 3 مستعجل جداً) */
+const FALLBACK_PRIORITIES: { value: string; label: string }[] = [
+  { value: "1", label: "بالمدة المحددة" },
+  { value: "2", label: "مستعجل" },
+  { value: "3", label: "مستعجل جداً" },
+];
+
+/* اللون الدلالي لكل أولوية — يطابق PriorityBadge. نُطابق حسب مستوى الشارة حتى تصحّ
+   الألوان سواء كانت معرّفات الـ meta أرقامًا (1/2/3) أو نصوصًا (onschedule…). */
+const PRIORITY_STYLE_BY_LEVEL = {
+  normal:        { bg: HX.greenLight, color: "#065f46", dot: HX.green },
+  urgent:        { bg: HX.amberLight, color: "#92400e", dot: HX.amber },
+  "very-urgent": { bg: HX.redLight,   color: "#991b1b", dot: HX.red },
+} as const;
+
+function priorityStyle(id: string) {
+  const level = mapDeliveryPriorityToBadgeLevel(id);
+  return level ? PRIORITY_STYLE_BY_LEVEL[level] : { bg: HX.accentLight, color: HX.accent, dot: HX.accent };
+}
+
+/* حقل تاريخ أصلي مُنسَّق ليطابق بقية حقول الفلاتر. القيمة بصيغة "YYYY-MM-DD". */
+function DateInput({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
+  return (
+    <Box
+      component="input"
+      type="date"
+      value={value}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+      sx={{
+        width: "100%", height: 34, boxSizing: "border-box",
+        px: "10px", borderRadius: "8px",
+        border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
+        color: value ? HX.tx : HX.tx3,
+        fontSize: "12.5px", fontFamily: "'Cairo',sans-serif",
+        outline: "none", cursor: "pointer",
+        transition: "border-color .15s, box-shadow .15s",
+        "&:hover": { borderColor: HX.accent },
+        "&:focus": { borderColor: HX.accent, boxShadow: `0 0 0 3px ${HX.accentLight}` },
+        "&::-webkit-calendar-picker-indicator": { cursor: "pointer", opacity: 0.55 },
+      }}
+    />
+  );
+}
+
 export default function OrdersHomixFiltersPanel({
   isVendor,
   vendors,
@@ -72,9 +124,12 @@ export default function OrdersHomixFiltersPanel({
   value,
   onApply,
   onReset,
-  dateRangeStart,
-  dateRangeEnd,
-  onDateRangeChange,
+  priorityValue,
+  onPriorityChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
   onDateRangeClear,
 }: OrdersHomixFiltersPanelProps) {
   const [open, setOpen] = useState(false);
@@ -117,6 +172,14 @@ export default function OrdersHomixFiltersPanel({
     [meta?.deliveryByOptions]
   );
 
+  const priorityOpts = useMemo(
+    () =>
+      meta?.priorities?.length
+        ? meta.priorities.map((p) => ({ value: String(p.id), label: p.label }))
+        : FALLBACK_PRIORITIES,
+    [meta?.priorities]
+  );
+
   /* draft state — synced when external value changes */
   const [draftStatus,   setDraftStatus]   = useState<number[]>(value.orderStatus ?? []);
   const [draftDelivery, setDraftDelivery] = useState<number[]>(value.deliveryStatus ?? []);
@@ -125,7 +188,7 @@ export default function OrdersHomixFiltersPanel({
   const [draftUserId,   setDraftUserId]   = useState<string[]>((value.userId ?? []).map(String));
   const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
 
-  const hasDateRange = Boolean(dateRangeStart) && Boolean(dateRangeEnd);
+  const hasDateRange = Boolean(startDate) || Boolean(endDate);
 
   // Only re-sync the drafts when the COMMITTED filter values actually change
   // (apply / reset / chip removal). Using a serialized key — instead of the
@@ -149,7 +212,8 @@ export default function OrdersHomixFiltersPanel({
     (isVendor ? 0 : draftVendor.length) +
     draftUserId.length +
     (hasDateRange ? 1 : 0) +
-    draftDeliveryBy.length;
+    draftDeliveryBy.length +
+    priorityValue.length;
 
   const handleApply = () => {
     onApply({
@@ -222,17 +286,17 @@ export default function OrdersHomixFiltersPanel({
       label: `مسئول: ${assigneeOpts.find((x) => String(x.id) === uid)?.label ?? uid}`,
       onRemove: () => setDraftUserId((prev) => prev.filter((x) => x !== uid)),
     })),
+    ...priorityValue.map((pv) => ({
+      label: `أولوية: ${priorityOpts.find((o) => o.value === pv)?.label ?? pv}`,
+      onRemove: () => onPriorityChange(priorityValue.filter((x) => x !== pv)),
+    })),
     ...(hasDateRange
       ? [
           {
             label: `التاريخ: ${
-              moment.isMoment(dateRangeStart)
-                ? dateRangeStart.clone().locale("ar").format("L")
-                : String(dateRangeStart)
+              startDate ? moment(startDate, "YYYY-MM-DD").locale("ar").format("L") : "…"
             } — ${
-              moment.isMoment(dateRangeEnd)
-                ? dateRangeEnd.clone().locale("ar").format("L")
-                : String(dateRangeEnd)
+              endDate ? moment(endDate, "YYYY-MM-DD").locale("ar").format("L") : "…"
             }`,
             onRemove: () => onDateRangeClear(),
           },
@@ -391,8 +455,61 @@ export default function OrdersHomixFiltersPanel({
 
           <Grid container spacing="10px" alignItems="flex-end">
 
-            {/* المسئول */}
+            {/* من تاريخ */}
+            <Grid item xs={6} sm={6} md={2.5}>
+              <FieldBox label="من تاريخ">
+                <DateInput value={startDate} onChange={onStartDateChange} />
+              </FieldBox>
+            </Grid>
+
+            {/* إلى تاريخ */}
+            <Grid item xs={6} sm={6} md={2.5}>
+              <FieldBox label="إلى تاريخ">
+                <DateInput value={endDate} onChange={onEndDateChange} />
+              </FieldBox>
+            </Grid>
+
+            {/* الأولوية — رقائق تُطبَّق مباشرة */}
             <Grid item xs={12} sm={6} md={4}>
+              <FieldBox label="الأولوية">
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", minHeight: 34 }}>
+                  {priorityOpts.map((o) => {
+                    const active = priorityValue.includes(o.value);
+                    const st = priorityStyle(o.value);
+                    return (
+                      <Box
+                        key={o.value}
+                        onClick={() =>
+                          onPriorityChange(
+                            active
+                              ? priorityValue.filter((x) => x !== o.value)
+                              : [...priorityValue, o.value]
+                          )
+                        }
+                        sx={{
+                          display: "flex", alignItems: "center", gap: "5px",
+                          px: "10px", height: 30, borderRadius: "8px",
+                          cursor: "pointer", userSelect: "none", transition: ".15s",
+                          bgcolor: st.bg, color: st.color,
+                          fontSize: "12px", fontWeight: active ? 700 : 600,
+                          fontFamily: "'Cairo',sans-serif",
+                          border: active ? `1.5px solid ${st.dot}` : "1.5px solid transparent",
+                          boxShadow: active ? `0 0 0 3px ${st.bg}` : "none",
+                          opacity: active ? 1 : 0.72,
+                          "&:hover": { opacity: 1 },
+                        }}
+                      >
+                        <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: st.dot, flexShrink: 0 }} />
+                        {o.label}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </FieldBox>
+            </Grid>
+
+            {/* المسئول */}
+            <Grid item xs={12} sm={6} md={3}>
               <FieldBox label="المسئول">
                 <MultiSelect
                   value={draftUserId}
@@ -401,30 +518,6 @@ export default function OrdersHomixFiltersPanel({
                   options={assigneeOpts.map((u) => ({ value: String(u.id), label: u.label }))}
                   placeholder="كل المسئولين"
                 />
-              </FieldBox>
-            </Grid>
-
-            <Grid item xs={12} sm={12} md={8}>
-              <FieldBox label="من تاريخ — إلى تاريخ">
-                <Box
-                  sx={{
-                    minHeight: 34,
-                    "& .custom-date-picker, & .DateRangePicker, & .DateRangePickerInput": {
-                      width: "100% !important",
-                    },
-                  }}
-                >
-                  <DateRangePickerWrapper
-                    startDate={dateRangeStart || ""}
-                    endDate={dateRangeEnd || ""}
-                    handleDatesChange={onDateRangeChange}
-                    allowPastDays
-                    allowFutureDays
-                    maxDaysRange={730}
-                    useDefaultPresets
-                    isMeduim
-                  />
-                </Box>
               </FieldBox>
             </Grid>
 

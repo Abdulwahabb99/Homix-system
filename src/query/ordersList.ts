@@ -14,6 +14,7 @@ export const ORDERS_LIST_PAGE_SIZE = 30;
  * @param {string} [p.deliveryStatusParam]
  * @param {string} [p.userIdParam]
  * @param {string} [p.deliveryByParam] معرفات «التوصيل بواسطة» من الـ meta مفصولة بفواصل
+ * @param {string} [p.priorityParam] معرفات «الأولوية» مفصولة بفواصل
  * @param {import("moment").Moment | null} [p.startDate]
  * @param {import("moment").Moment | null} [p.endDate]
  */
@@ -29,10 +30,12 @@ function buildQueryString(p) {
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
   if (p.userIdParam)       query.set("userId",         p.userIdParam);
   if (p.deliveryByParam)   query.set("deliveryBy",     p.deliveryByParam);
+  if (p.priorityParam)     query.set("priority",       p.priorityParam);
   if (p.operationCode)     query.set("operationCode",  p.operationCode);
   if (p.customerName)      query.set("customerName",   p.customerName);
   if (p.productCode)       query.set("productCode",    p.productCode);
-  if (p.endDate) query.set("endDate", p.endDate.utc().toISOString());
+  if (p.startDate) query.set("startDate", p.startDate.utc().toISOString());
+  if (p.endDate)   query.set("endDate",   p.endDate.utc().toISOString());
   return query.toString();
 }
 

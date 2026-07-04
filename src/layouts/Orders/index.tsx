@@ -8,7 +8,6 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import moment from "moment";
 import "moment-timezone";
 import "moment/locale/ar";
-import { useDateRange } from "hooks/useDateRange";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
@@ -41,12 +40,17 @@ function rangeDateToIso(d: any) {
 
 function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const {
-    startDate,
-    endDate,
-    handleDatesChange,
-    handleReset: handleDateReset,
-  } = useDateRange({ defaultDays: 0, useEndOfDay: true });
+
+  /* ── Date range — two independent URL-driven bounds (startDate / endDate) ──
+     Stored in the URL as "DD-MM-YYYY"; exposed as UTC moments for the queries. */
+  const startDate = useMemo(() => {
+    const raw = searchParams.get("startDate");
+    return raw ? moment.utc(raw, "DD-MM-YYYY").startOf("day") : "";
+  }, [searchParams]);
+  const endDate = useMemo(() => {
+    const raw = searchParams.get("endDate");
+    return raw ? moment.utc(raw, "DD-MM-YYYY").endOf("day") : "";
+  }, [searchParams]);
 
   /* ── URL-driven filter params (existing, unchanged) ── */
   const page = parseInt(searchParams.get("page"), 10) || 1;
@@ -80,6 +84,10 @@ function Orders() {
     const raw = searchParams.get("deliveryStatus");
     if (!raw) return [];
     return raw.split(",").map(Number).filter((n) => !isNaN(n));
+  }, [searchParams]);
+  const priorityList = useMemo(() => {
+    const raw = searchParams.get("priority");
+    return raw ? raw.split(",") : [];
   }, [searchParams]);
 
   const setParams = useCallback(
@@ -148,6 +156,7 @@ function Orders() {
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
+  const priorityParam = searchParams.get("priority");
 
   const metaQuery = useOrdersMeta(Boolean(token));
 
@@ -158,6 +167,7 @@ function Orders() {
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        pr: priorityParam || null,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
         oc: apiOperationCode || null,
         cn: apiCustomerName || null,
@@ -165,7 +175,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, priorityParam, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -183,6 +193,7 @@ function Orders() {
         ds: deliveryStatusParam || null,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        pr: priorityParam || null,
         sd: rangeDateToIso(startDate),
         ed: rangeDateToIso(endDate),
       }),
@@ -197,6 +208,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      priorityParam,
       startDate,
       endDate,
     ]
@@ -214,6 +226,7 @@ function Orders() {
       deliveryStatus: deliveryStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
       userId: filterUserId || undefined,
+      priority: priorityParam || undefined,
       startDate: rangeDateToIso(startDate) ?? undefined,
       endDate: rangeDateToIso(endDate) ?? undefined,
     }),
@@ -228,6 +241,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      priorityParam,
       startDate,
       endDate,
     ]
@@ -249,6 +263,7 @@ function Orders() {
           paymentStatusParam, deliveryStatusParam,
           userIdParam: filterUserId || undefined,
           deliveryByParam: deliveryByParam || undefined,
+          priorityParam: priorityParam || undefined,
           startDate, endDate,
           operationCode: apiOperationCode || undefined,
           customerName: apiCustomerName || undefined,
@@ -336,7 +351,6 @@ function Orders() {
   };
 
   const handleFullReset = () => {
-    handleDateReset();
     setSearchParams(new URLSearchParams([["page", "1"]]));
     setSearchOperationCode("");
     setSearchProductCode("");
@@ -346,7 +360,22 @@ function Orders() {
     setApiCustomerName("");
   };
 
-  /* ── Apply filters (التاريخ يُحدَّث من DateRangePicker مباشرة عبر useDateRange) ── */
+  /* ── Date range: each bound applies directly to the URL (→ refetch) ── */
+  const handleStartDateChange = (iso: string) => {
+    setParams({ page: "1", startDate: iso ? moment(iso, "YYYY-MM-DD").format("DD-MM-YYYY") : "" });
+  };
+  const handleEndDateChange = (iso: string) => {
+    setParams({ page: "1", endDate: iso ? moment(iso, "YYYY-MM-DD").format("DD-MM-YYYY") : "" });
+  };
+  const handleDateRangeClear = () => {
+    setParams({ page: "1", startDate: "", endDate: "" });
+  };
+
+  /* ── Priority: chips apply directly (→ refetch) ── */
+  const handlePriorityChange = (next: string[]) => {
+    setParams({ page: "1", priority: next });
+  };
+
   const handleApplyFilters = (d: {
     orderStatus: number[];
     selectedVendor: string[];
@@ -375,8 +404,10 @@ function Orders() {
       deliveryStatus: "",
       userId: "",
       deliveryBy: "",
+      priority: "",
+      startDate: "",
+      endDate: "",
     });
-    handleDateReset();
   };
 
   const deleteOrder = () => {
@@ -433,6 +464,7 @@ function Orders() {
       ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
       ...(filterUserId       && { userId:         filterUserId }),
       ...(deliveryByParam     && { deliveryBy:     deliveryByParam }),
+      ...(priorityParam       && { priority:       priorityParam }),
       ...(startDate          && { startDate:      rangeDateToIso(startDate) }),
       ...(endDate            && { endDate:        rangeDateToIso(endDate) }),
     });
@@ -541,10 +573,13 @@ function Orders() {
                 }}
                 onApply={handleApplyFilters}
                 onReset={handleFilterReset}
-                dateRangeStart={startDate}
-                dateRangeEnd={endDate}
-                onDateRangeChange={handleDatesChange}
-                onDateRangeClear={handleDateReset}
+                priorityValue={priorityList}
+                onPriorityChange={handlePriorityChange}
+                startDate={startDate ? startDate.format("YYYY-MM-DD") : ""}
+                endDate={endDate ? endDate.format("YYYY-MM-DD") : ""}
+                onStartDateChange={handleStartDateChange}
+                onEndDateChange={handleEndDateChange}
+                onDateRangeClear={handleDateRangeClear}
               />
 
             </>
