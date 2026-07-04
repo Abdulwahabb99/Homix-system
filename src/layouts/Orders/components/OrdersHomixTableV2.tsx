@@ -51,28 +51,28 @@ function avColor(s: string) {
 const CHECKBOX_W = 44;
 
 const BASE_COLS = [
-  { key: "code",          label: "رقم العملية",    w: 110 },
-  { key: "orderNumber",   label: "رقم الطلب",      w: 95  },
-  { key: "productCode",   label: "كود المنتج",     w: 105 },
-  { key: "customerName",  label: "اسم العميل",     w: 170 },
-  { key: "status",        label: "حالة الطلب",     w: 120 },
-  { key: "factory",       label: "اسم المصنع",     w: 155 },
-  { key: "compCost",      label: "سعر التكلفة",    w: 110 },
-  { key: "totalPrice",    label: "سعر البيع",      w: 110 },
-  { key: "paymentStatus", label: "حالة الدفع",     w: 130 },
-  { key: "delivery",      label: "التوصيل بواسطة", w: 115 },
-  { key: "mfgStatus",     label: "حالة التصنيع",   w: 140 },
-  { key: "createdAt",     label: "تاريخ الطلب",    w: 90  },
-  { key: "poDate",        label: "تاريخ التصنيع",  w: 100 },
-  { key: "days",          label: "عداد الأيام",    w: 100 },
+  { key: "code",          label: "رقم العملية",    w: 80  },
+  { key: "orderNumber",   label: "رقم الطلب",      w: 70  },
+  { key: "productCode",   label: "كود المنتج",     w: 104 },
+  { key: "customerName",  label: "اسم العميل",     w: 128 },
+  { key: "status",        label: "حالة الطلب",     w: 83 },
+  { key: "factory",       label: "اسم المصنع",     w: 120 },
+  { key: "compCost",      label: "سعر التكلفة",    w: 81  },
+  { key: "totalPrice",    label: "سعر البيع",      w: 76  },
+  { key: "paymentStatus", label: "حالة الدفع",     w: 126 },
+  { key: "delivery",      label: "التوصيل بواسطة", w: 112 },
+  { key: "mfgStatus",     label: "حالة التصنيع",   w: 125 },
+  { key: "createdAt",     label: "تاريخ الطلب",    w: 86  },
+  { key: "poDate",        label: "تاريخ التصنيع",  w: 94  },
+  { key: "days",          label: "عداد الأيام",    w: 92  },
 ] as const;
 
 const ADMIN_COLS = [
-  { key: "admin", label: "المسئول", w: 140 },
-  { key: "type",  label: "النوع",   w: 90  },
+  { key: "admin", label: "المسئول", w: 116 },
+  { key: "type",  label: "النوع",   w: 84  },
 ] as const;
 
-const ACTIONS_COL = { key: "actions", label: "", w: 90 } as const;
+const ACTIONS_COL = { key: "actions", label: "", w: 92 } as const;
 
 /* ─────────────────────────────────────────
    Base cell styles (inline — no className magic)
@@ -90,7 +90,8 @@ const TH: React.CSSProperties = {
   borderLeft:   "none",
   whiteSpace:   "nowrap",
   letterSpacing: ".3px",
-  overflow:   "hidden",
+  overflow:     "hidden",
+  textOverflow: "ellipsis",
   /* sticky comes from <thead> — NOT from individual cells */
 };
 
@@ -106,6 +107,7 @@ const TD: React.CSSProperties = {
   whiteSpace:   "nowrap",
   verticalAlign:"middle",
   overflow:     "hidden",
+  textOverflow: "ellipsis",
 };
 
 /* ─────────────────────────────────────────
@@ -125,9 +127,38 @@ function AvatarCircle({ name, size = 26 }: { name: string; size?: number }) {
   );
 }
 
-function FactoryCell({ name }: { name: string }) {
+/* نص يُقصّ بنقاط (…) عند التجاوز ويعرض النص كاملاً في tooltip عند المرور.
+   يعتمد على min-width:0 + flex:1 كي يتقلّص داخل خلية بعرض ثابت. */
+function EllipsisText({
+  children,
+  title,
+  style,
+}: {
+  children: React.ReactNode;
+  title?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+    <span
+      title={title || undefined}
+      style={{
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        minWidth: 0,
+        flex: 1,
+        ...style,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function FactoryCell({ name }: { name: string }) {
+  const has = Boolean(name && name !== "—");
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
       <span style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         width: 22, height: 22, borderRadius: 6, flexShrink: 0,
@@ -136,9 +167,9 @@ function FactoryCell({ name }: { name: string }) {
       }}>
         {initials(name || "?")}
       </span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: HX.tx, fontFamily: FONT }}>
+      <EllipsisText title={has ? name : undefined} style={{ fontSize: 12, fontWeight: 600, color: HX.tx, fontFamily: FONT }}>
         {name || "—"}
-      </span>
+      </EllipsisText>
     </span>
   );
 }
@@ -446,7 +477,7 @@ export default function OrdersHomixTableV2({
                 </th>
               )}
               {allCols.map((c) => (
-                <th key={c.key} style={TH}>{c.label}</th>
+                <th key={c.key} style={TH} title={c.label || undefined}>{c.label}</th>
               ))}
             </tr>
           </thead>
@@ -524,8 +555,10 @@ export default function OrdersHomixTableV2({
                   </td>
 
                   {/* كود المنتج */}
-                  <td style={TD}>
+                  <td title={productCode !== "—" ? productCode : undefined} style={TD}>
                     <span style={{
+                      display: "inline-block", maxWidth: "100%", verticalAlign: "middle",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       fontFamily: "monospace", fontSize: 11,
                       background: HX.surface2, padding: "2px 7px",
                       borderRadius: 5, color: HX.tx2,
@@ -536,9 +569,11 @@ export default function OrdersHomixTableV2({
 
                   {/* اسم العميل */}
                   <td style={TD}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                       {order.customerName && <AvatarCircle name={order.customerName} />}
-                      <span style={{ fontFamily: FONT }}>{order.customerName || "—"}</span>
+                      <EllipsisText title={order.customerName || undefined} style={{ fontFamily: FONT }}>
+                        {order.customerName || "—"}
+                      </EllipsisText>
                     </span>
                   </td>
 
@@ -585,9 +620,11 @@ export default function OrdersHomixTableV2({
                   {!isVendor && (
                     <td style={TD}>
                       {user || userName ? (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                           {userName ? <AvatarCircle name={userName} size={22} /> : null}
-                          <span style={{ fontSize: 12, fontFamily: FONT }}>{userName || "—"}</span>
+                          <EllipsisText title={userName || undefined} style={{ fontSize: 12, fontFamily: FONT }}>
+                            {userName || "—"}
+                          </EllipsisText>
                         </span>
                       ) : (
                         <span style={{ color: HX.tx3, fontSize: "11.5px" }}>—</span>
@@ -597,7 +634,7 @@ export default function OrdersHomixTableV2({
 
                   {/* النوع */}
                   {!isVendor && (
-                    <td style={{ ...TD, color: HX.tx2 }}>{order.type || "—"}</td>
+                    <td title={order.type || undefined} style={{ ...TD, color: HX.tx2 }}>{order.type || "—"}</td>
                   )}
 
                   {/* Actions */}
