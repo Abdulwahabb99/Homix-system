@@ -383,7 +383,7 @@ export default function OrdersHomixTableV2({
         sx={{
           display: { xs: "block", md: "none" },
           overflow: "auto",
-          maxHeight: 560,
+          maxHeight: 460,
           flex: 1,
           scrollbarWidth: "thin",
           scrollbarColor: `${HX.border} transparent`,
@@ -409,7 +409,7 @@ export default function OrdersHomixTableV2({
         sx={{
           display: { xs: "none", md: "block" },
           overflow: "auto",
-          maxHeight: 560,
+          maxHeight: 460,
           flex: 1,
           scrollbarWidth: "thin",
           scrollbarColor: `${HX.border} transparent`,

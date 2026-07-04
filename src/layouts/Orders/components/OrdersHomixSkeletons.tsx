@@ -268,7 +268,7 @@ export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
 
       {/* Same single-container, pure-HTML approach as the real table */}
       <div style={{
-        overflow: "auto", maxHeight: 560, flex: 1,
+        overflow: "auto", maxHeight: 460, flex: 1,
         scrollbarWidth: "thin", scrollbarColor: `${HX.border} transparent`,
       }}>
         <table style={{

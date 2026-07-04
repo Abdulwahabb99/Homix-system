@@ -550,9 +550,9 @@ function Orders() {
             </>
           )}
 
-          {/* Table — skeleton while first load OR fetching a new page */}
-          {isInitialLoad || (ordersFetching && orders.length === 0) ? (
-            <OrdersHomixTableSkeleton rows={10} />
+          {/* Table — skeleton on any load/refetch (filter change, page change, first load) */}
+          {ordersFetching ? (
+            <OrdersHomixTableSkeleton rows={8} />
           ) : (
             <OrdersHomixTableV2
               orders={orders}
