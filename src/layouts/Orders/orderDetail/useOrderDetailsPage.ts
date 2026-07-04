@@ -4,6 +4,16 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { normalizeOrderDetailPayload } from "./orderDetailNormalize";
 
+/** يستخرج رسالة الخطأ من رد الـ API إن وُجدت، وإلا الرسالة الافتراضية */
+function getApiErrorMessage(error: any, fallback: string): string {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
 export function useOrderDetailsPage() {
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +34,11 @@ export function useOrderDetailsPage() {
   const [administrator, setAdministrator] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; url: string }[]>([]);
   const [invoicePdfLoading, setInvoicePdfLoading] = useState(false);
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [isUpdatingComment, setIsUpdatingComment] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user") ?? "{}");
+  const isAdmin = user.userType === "1";
 
   const changeManufactureStatus = useCallback(
     (status: number | null) => {
@@ -88,18 +101,30 @@ export function useOrderDetailsPage() {
   );
 
   const updateComment = useCallback(
-    (noteId: number | string) => {
+    async (noteId: number | string) => {
       if (orderDetails?.id == null) return;
-      axiosRequest
-        .put(`/orders/${orderDetails.id}/notes/${noteId}`, {
-          text: editedCommentText,
-        })
-        .then(() => {
-          NotificationMeassage("success", "تم تعديل التعليق");
-        })
-        .catch(() => {
-          NotificationMeassage("error", "حدث خطأ");
+      const newText = editedCommentText;
+
+      // تحديث متفائل: نُحدّث النص فوراً ونحتفظ بلقطة للرجوع عند الفشل
+      let snapshot: any[] = [];
+      setComments((prev) => {
+        snapshot = prev;
+        return prev.map((c) => (c.id === noteId ? { ...c, text: newText } : c));
+      });
+      setIsUpdatingComment(true);
+
+      try {
+        await axiosRequest.put(`/orders/${orderDetails.id}/notes/${noteId}`, {
+          text: newText,
         });
+        setEditingIndex(null);
+        NotificationMeassage("success", "تم تعديل التعليق");
+      } catch (error) {
+        setComments(snapshot); // رجوع للحالة السابقة
+        NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ أثناء تعديل التعليق"));
+      } finally {
+        setIsUpdatingComment(false);
+      }
     },
     [orderDetails?.id, editedCommentText]
   );
@@ -114,8 +139,8 @@ export function useOrderDetailsPage() {
           setPendingDeleteNoteId(null);
           NotificationMeassage("success", "تم حذف التعليق");
         })
-        .catch(() => {
-          NotificationMeassage("error", "حدث خطأ");
+        .catch((error) => {
+          NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ أثناء حذف التعليق"));
         });
     },
     [orderDetails?.id]
@@ -123,36 +148,60 @@ export function useOrderDetailsPage() {
 
   const handleAddComment = useCallback(async () => {
     if (orderDetails?.id == null) return;
+    const text = commentText.trim();
+    const files = selectedFiles;
+    if (!text && files.length === 0) return;
+
+    // إنشاء متفائل: نُظهر التعليق فوراً بمعرّف مؤقت ونُفرِغ الحقل
+    const tempId = `temp-${Date.now()}`;
+    const optimisticComment = {
+      id: tempId,
+      text,
+      createdAt: new Date(),
+      user: { firstName: user.firstName, lastName: user.lastName },
+      attachments: files,
+      isEdited: true,
+      pending: true,
+    };
+    setComments((prev) => [optimisticComment, ...prev]);
+    setCommentText("");
+    setSelectedFiles([]);
+    setIsAddingComment(true);
+
     try {
       const { data } = await axiosRequest.post(`/orders/${orderDetails.id}/notes`, {
-        text: commentText,
+        text,
       });
+      const realId = data.data.id;
+      // مطابقة المعرّف المؤقت بالمعرّف الحقيقي القادم من الخادم
+      setComments((prev) =>
+        prev.map((c) => (c.id === tempId ? { ...c, id: realId, pending: false } : c))
+      );
 
-      const newComment = {
-        id: data.data.id,
-        text: commentText,
-        createdAt: new Date(),
-        user: { firstName: user.firstName, lastName: user.lastName },
-        attachments: selectedFiles,
-        isEdited: true,
-      };
-
-      setComments((prev) => [newComment, ...prev]);
-      setCommentText("");
-
-      if (selectedFiles.length > 0) {
-        const formData = new FormData();
-        selectedFiles.forEach((file) => {
-          formData.append("files", file.file);
-        });
-        await axiosRequest.post(`/orders/${orderDetails.id}/notes/${newComment.id}/upload`, formData);
-        setSelectedFiles([]);
-        NotificationMeassage("success", "تم إضافة التعليق والمرفقات بنجاح");
+      if (files.length > 0) {
+        try {
+          const formData = new FormData();
+          files.forEach((file) => formData.append("files", file.file));
+          await axiosRequest.post(`/orders/${orderDetails.id}/notes/${realId}/upload`, formData);
+          NotificationMeassage("success", "تم إضافة التعليق والمرفقات بنجاح");
+        } catch (uploadErr) {
+          // التعليق أُنشئ بنجاح لكن رفع المرفقات فشل — نُبقي التعليق ونُظهر الخطأ فقط
+          NotificationMeassage(
+            "error",
+            getApiErrorMessage(uploadErr, "تم إضافة التعليق لكن تعذّر رفع المرفقات")
+          );
+        }
       } else {
         NotificationMeassage("success", "تم إضافة التعليق");
       }
-    } catch {
-      NotificationMeassage("error", "حدث خطأ أثناء إضافة التعليق أو رفع المرفقات");
+    } catch (error) {
+      // فشل الإنشاء — نرجع الواجهة للحالة السابقة ونستعيد المدخلات
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
+      setCommentText(text);
+      setSelectedFiles(files);
+      NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ أثناء إضافة التعليق"));
+    } finally {
+      setIsAddingComment(false);
     }
   }, [commentText, orderDetails?.id, selectedFiles, user.firstName, user.lastName]);
 
@@ -272,6 +321,9 @@ export function useOrderDetailsPage() {
     setInvoicePdfLoading,
     user,
     isVendor: user.userType === "2",
+    isAdmin,
+    isAddingComment,
+    isUpdatingComment,
     changeManufactureStatus,
     onEdit,
     updateComment,

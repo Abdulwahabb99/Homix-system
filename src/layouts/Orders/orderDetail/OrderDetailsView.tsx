@@ -15,7 +15,7 @@ import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlin
 import ShowChartOutlinedIcon from "@mui/icons-material/ShowChartOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-import { Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { SelectComponent } from "components/ui";
 import { getDeliveryStatusValue, getStatusValue, manufactureStatusOptions } from "shared/utils/constants";
@@ -48,6 +48,9 @@ export type OrderDetailsViewProps = {
   orderTotalCost: number | null;
   orderId: string | undefined;
   isVendor: boolean;
+  isAdmin: boolean;
+  isAddingComment: boolean;
+  isUpdatingComment: boolean;
   navigate: NavigateFunction;
   changeManufactureStatus: (status: number | null) => void;
   updateComment: (noteId: number | string) => void;
@@ -78,6 +81,9 @@ export default function OrderDetailsView({
   orderTotalCost,
   orderId,
   isVendor,
+  isAdmin,
+  isAddingComment,
+  isUpdatingComment,
   navigate,
   changeManufactureStatus,
   updateComment,
@@ -558,7 +564,7 @@ export default function OrderDetailsView({
                                     : "linear-gradient(135deg,#f59e0b,#d97706)";
 
                                 return (
-                                  <Stack key={comment.id ?? index} direction="row" spacing={1.125} alignItems="flex-start">
+                                  <Stack key={comment.id ?? index} direction="row" spacing={1.125} alignItems="flex-start" sx={{ opacity: comment.pending ? 0.6 : 1, transition: "opacity .2s" }}>
                                     <Box
                                       sx={{
                                         width: 28,
@@ -595,28 +601,31 @@ export default function OrderDetailsView({
                                               fullWidth
                                               value={editedCommentText}
                                               onChange={(e) => setEditedCommentText(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                  e.preventDefault();
+                                                  if (!isUpdatingComment && editedCommentText.trim()) {
+                                                    updateComment(comment.id);
+                                                  }
+                                                }
+                                              }}
                                               multiline
                                               size="small"
                                               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "9px", fontSize: "0.75rem" } }}
                                             />
                                             <Stack direction="row" spacing={0.75} justifyContent="flex-end" mt={1}>
-                                              <Button size="small" onClick={() => setEditingIndex(null)} sx={{ textTransform: "none", fontSize: "0.7rem" }}>
+                                              <Button size="small" disabled={isUpdatingComment} onClick={() => setEditingIndex(null)} sx={{ textTransform: "none", fontSize: "0.7rem" }}>
                                                 إلغاء
                                               </Button>
                                               <Button
                                                 size="small"
                                                 variant="contained"
                                                 disableElevation
-                                                onClick={() => {
-                                                  const updated = [...comments];
-                                                  updated[index].text = editedCommentText;
-                                                  setComments(updated);
-                                                  setEditingIndex(null);
-                                                  updateComment(comment.id);
-                                                }}
-                                                sx={{ textTransform: "none", fontSize: "0.7rem", bgcolor: OD.accent, "&:hover": { bgcolor: OD.accentHover } }}
+                                                disabled={isUpdatingComment || !editedCommentText.trim()}
+                                                onClick={() => updateComment(comment.id)}
+                                                sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 56, bgcolor: OD.accent, "&:hover": { bgcolor: OD.accentHover } }}
                                               >
-                                                حفظ
+                                                {isUpdatingComment ? <CircularProgress size={14} sx={{ color: "#fff" }} /> : "حفظ"}
                                               </Button>
                                             </Stack>
                                           </>
@@ -628,25 +637,27 @@ export default function OrderDetailsView({
                                         <Typography sx={{ fontSize: "0.625rem", color: OD.tx3 }}>
                                           {commentMaker} · {new Date(comment.createdAt).toLocaleString("en-US")}
                                         </Typography>
-                                        <Stack direction="row" spacing={0.25}>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                              setEditingIndex(index);
-                                              setEditedCommentText(comment.text);
-                                            }}
-                                            sx={{ p: 0.35, color: OD.accent }}
-                                          >
-                                            <EditIcon sx={{ fontSize: 16 }} />
-                                          </IconButton>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => setPendingDeleteNoteId(comment.id)}
-                                            sx={{ p: 0.35, color: OD.red }}
-                                          >
-                                            <DeleteIcon sx={{ fontSize: 16 }} />
-                                          </IconButton>
-                                        </Stack>
+                                        {isAdmin && editingIndex !== index && (
+                                          <Stack direction="row" spacing={0.25}>
+                                            <IconButton
+                                              size="small"
+                                              onClick={() => {
+                                                setEditingIndex(index);
+                                                setEditedCommentText(comment.text);
+                                              }}
+                                              sx={{ p: 0.35, color: OD.accent }}
+                                            >
+                                              <EditIcon sx={{ fontSize: 16 }} />
+                                            </IconButton>
+                                            <IconButton
+                                              size="small"
+                                              onClick={() => setPendingDeleteNoteId(comment.id)}
+                                              sx={{ p: 0.35, color: OD.red }}
+                                            >
+                                              <DeleteIcon sx={{ fontSize: 16 }} />
+                                            </IconButton>
+                                          </Stack>
+                                        )}
                                       </Stack>
                                       {imageUrl && editingIndex !== index ? (
                                         <Box mt={0.75}>
@@ -706,6 +717,14 @@ export default function OrderDetailsView({
                             size="small"
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                if (!isAddingComment && (commentText.trim() || selectedFiles?.length)) {
+                                  handleAddComment();
+                                }
+                              }
+                            }}
                             placeholder="اكتب ملاحظاتك هنا..."
                             sx={{
                               flex: 1,
@@ -738,11 +757,12 @@ export default function OrderDetailsView({
                           <Button
                             variant="contained"
                             disableElevation
-                            disabled={!commentText && !selectedFiles?.length}
+                            disabled={(!commentText && !selectedFiles?.length) || isAddingComment}
                             onClick={handleAddComment}
                             sx={{
                               px: 2.25,
                               height: 36,
+                              minWidth: 76,
                               borderRadius: "9px",
                               textTransform: "none",
                               fontWeight: 700,
@@ -752,7 +772,7 @@ export default function OrderDetailsView({
                               "&:hover": { bgcolor: OD.accentHover },
                             }}
                           >
-                            إرسال
+                            {isAddingComment ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "إرسال"}
                           </Button>
                         </Box>
                       </Box>

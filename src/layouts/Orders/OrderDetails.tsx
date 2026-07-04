@@ -44,6 +44,9 @@ function OrderDetails() {
     invoicePdfLoading,
     setInvoicePdfLoading,
     isVendor,
+    isAdmin,
+    isAddingComment,
+    isUpdatingComment,
     changeManufactureStatus,
     onEdit,
     updateComment,
@@ -154,6 +157,9 @@ function OrderDetails() {
               orderTotalCost={orderTotalCost}
               orderId={id}
               isVendor={isVendor}
+              isAdmin={isAdmin}
+              isAddingComment={isAddingComment}
+              isUpdatingComment={isUpdatingComment}
               navigate={navigate}
               changeManufactureStatus={changeManufactureStatus}
               updateComment={updateComment}
