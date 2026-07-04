@@ -104,6 +104,11 @@ function scheduleRepositionAndClamp(): void {
   });
 }
 
+/* عرض عربي — مراجع ثابتة على مستوى الوحدة. تعريفها inline يغيّر هويّتها كل render،
+   فيُعيد react-dates ضبط monthTitleHeight=null باستمرار وتظهر لوحة فارغة. */
+const renderArabicDayContents = (day: any) => day.clone().locale("ar").format("D");
+const renderArabicMonthText = (day: any) => day.clone().locale("ar").format("MMMM YYYY");
+
 const DateRangePickerWrapper = ({
   startDate: initialStartDate,
   endDate: initialEndDate,
@@ -131,10 +136,10 @@ const DateRangePickerWrapper = ({
   const [openDirection, setOpenDirection] = useState(OPEN_DOWN);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [startDate, setStartDate] = useState(
-    initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null
+    initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("ar") : null
   );
   const [endDate, setEndDate] = useState(
-    initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("en") : null
+    initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("ar") : null
   );
   const [prevStartDate, setPrevStartDate] = useState(startDate);
   const [prevEndDate, setPrevEndDate] = useState(endDate);
@@ -160,8 +165,8 @@ const DateRangePickerWrapper = ({
   }, [isDesktopTwoMonths]);
 
   useEffect(() => {
-    setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("en") : null);
-    setEndDate(initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("en") : null);
+    setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("ar") : null);
+    setEndDate(initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("ar") : null);
   }, [initialStartDate, initialEndDate]);
 
   /* عند استخدام appendToBody تُعرض النافذة خارج الشجرة؛ نضيف homix-drp للعنصر المنبثق حتى تبقى ستايلات التقويم (:root + .homix-drp). */
@@ -258,8 +263,9 @@ const DateRangePickerWrapper = ({
   ];
 
   const onDatesChange = ({ startDate, endDate }) => {
-    setStartDate(startDate);
-    setEndDate(endDate);
+    // نعرض دائماً باللغة العربية (أرقام هندية + أسماء شهور عربية)؛ التحويل لصيغة الـ API يتم في confirm بـ locale("en")
+    setStartDate(startDate ? startDate.clone().locale("ar") : null);
+    setEndDate(endDate ? endDate.clone().locale("ar") : null);
   };
 
   const onFocusChange = (focused: string | null) => {
@@ -391,6 +397,11 @@ const DateRangePickerWrapper = ({
         /* moment: 0=الأحد … 5=الجمعة 6=السبت */
         firstDayOfWeek={6}
         renderCalendarInfo={renderPresets}
+        /* عرض عربي: أرقام هندية داخل خلايا الأيام، واسم الشهر/السنة والتاريخ المختار بالعربية.
+           لاحظ استخدام مراجع ثابتة (module-level) وإلا ظهرت اللوحة فارغة. */
+        renderDayContents={renderArabicDayContents}
+        renderMonthText={renderArabicMonthText}
+        displayFormat="DD/MM/YYYY"
         startDatePlaceholderText="من "
         endDatePlaceholderText="إلى "
         initialVisibleMonth={() =>
