@@ -32,6 +32,7 @@ export function useOrderDetailsPage() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedCommentText, setEditedCommentText] = useState("");
   const [administrator, setAdministrator] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; url: string }[]>([]);
   const [invoicePdfLoading, setInvoicePdfLoading] = useState(false);
   const [isAddingComment, setIsAddingComment] = useState(false);
@@ -154,10 +155,15 @@ export function useOrderDetailsPage() {
 
     // إنشاء متفائل: نُظهر التعليق فوراً بمعرّف مؤقت ونُفرِغ الحقل
     const tempId = `temp-${Date.now()}`;
+    const currentUser = users.find((u: any) => String(u.id) === String(user.id));
     const optimisticComment = {
       id: tempId,
       text,
       createdAt: new Date(),
+      userId: user.id,
+      userName: currentUser
+        ? `${currentUser.firstName ?? ""} ${currentUser.lastName ?? ""}`.trim()
+        : `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim(),
       user: { firstName: user.firstName, lastName: user.lastName },
       attachments: files,
       isEdited: true,
@@ -203,7 +209,7 @@ export function useOrderDetailsPage() {
     } finally {
       setIsAddingComment(false);
     }
-  }, [commentText, orderDetails?.id, selectedFiles, user.firstName, user.lastName]);
+  }, [commentText, orderDetails?.id, selectedFiles, users, user.id, user.firstName, user.lastName]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []) as File[];
@@ -223,15 +229,16 @@ export function useOrderDetailsPage() {
   }, []);
 
   useEffect(() => {
-    if (!orderDetails?.userId) return;
+    if (!orderDetails?.id) return;
     axiosRequest.get(`/users`).then((res) => {
-      const users = res.data.data;
-      const found = users?.find((u: any) => u.id === orderDetails.userId);
+      const list = res.data.data ?? [];
+      setUsers(list);
+      const found = list?.find((u: any) => String(u.id) === String(orderDetails.userId));
       if (found) {
         setAdministrator(`${found.firstName} ${found.lastName}`);
       }
     });
-  }, [orderDetails?.userId]);
+  }, [orderDetails?.id, orderDetails?.userId]);
 
   useEffect(() => {
     const getOrderDetails = async () => {
@@ -316,6 +323,7 @@ export function useOrderDetailsPage() {
     editedCommentText,
     setEditedCommentText,
     administrator,
+    users,
     selectedFiles,
     invoicePdfLoading,
     setInvoicePdfLoading,

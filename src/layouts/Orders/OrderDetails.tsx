@@ -40,6 +40,7 @@ function OrderDetails() {
     editedCommentText,
     setEditedCommentText,
     administrator,
+    users,
     selectedFiles,
     invoicePdfLoading,
     setInvoicePdfLoading,
@@ -142,6 +143,7 @@ function OrderDetails() {
               orderlines={orderlines}
               manufactureStatus={manufactureStatus}
               administrator={administrator}
+              users={users}
               comments={comments}
               commentText={commentText}
               setCommentText={setCommentText}

@@ -28,11 +28,37 @@ import {
 } from "./orderDetailNormalize";
 import { getOrderDetailPaymentLabel } from "./orderDetailPayment";
 
+/** اسم صاحب التعليق — يدعم أشكال الـ API المختلفة (user / createdBy / author / userName)،
+    ومع وجود userId فقط يُستخرج الاسم من قائمة المستخدمين. */
+function resolveCommenterName(comment: any, users: any[]): string {
+  const p = comment?.user ?? comment?.createdBy ?? comment?.author ?? {};
+  const nested =
+    [p.firstName ?? p.first_name, p.lastName ?? p.last_name].filter(Boolean).join(" ").trim() ||
+    (typeof p.name === "string" ? p.name.trim() : "") ||
+    (typeof p.fullName === "string" ? p.fullName.trim() : "");
+  if (nested) return nested;
+
+  const flat = comment?.userName ?? comment?.authorName ?? comment?.createdByName;
+  if (typeof flat === "string" && flat.trim()) return flat.trim();
+
+  const uid =
+    comment?.userId ?? comment?.user?.id ?? comment?.createdBy?.id ?? comment?.authorUserId;
+  if (uid != null && Array.isArray(users)) {
+    const u = users.find((x) => String(x.id) === String(uid));
+    if (u) {
+      const name = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+      if (name) return name;
+    }
+  }
+  return "—";
+}
+
 export type OrderDetailsViewProps = {
   orderDetails: any;
   orderlines: any[];
   manufactureStatus: number | null;
   administrator: string;
+  users: any[];
   comments: any[];
   commentText: string;
   setCommentText: (v: string) => void;
@@ -66,6 +92,7 @@ export default function OrderDetailsView({
   orderlines,
   manufactureStatus,
   administrator,
+  users,
   comments,
   commentText,
   setCommentText,
@@ -545,7 +572,7 @@ export default function OrderDetailsView({
                           ) : (
                             <Stack spacing={1.25}>
                               {comments.map((comment, index) => {
-                                const commentMaker = `${comment.user?.firstName ?? ""} ${comment.user?.lastName ?? ""}`.trim() || "—";
+                                const commentMaker = resolveCommenterName(comment, users);
                                 const initials = commentMaker
                                   .split(/\s+/)
                                   .filter(Boolean)
