@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -19,6 +19,7 @@ import { Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Typogr
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { SelectComponent } from "components/ui";
 import { getDeliveryStatusValue, getStatusValue, manufactureStatusOptions } from "shared/utils/constants";
+import { useOrdersMeta } from "query/ordersMeta.api";
 import { OrderStatusChip } from "../components/OrderStatusChips";
 import { OD } from "./odTheme";
 import {
@@ -86,6 +87,15 @@ export default function OrderDetailsView({
   setPendingDeleteNoteId,
   handleDownloadInvoice,
 }: OrderDetailsViewProps) {
+  /* خيارات «حالة التصنيع» من الـ meta (manufactureStatuses)؛ الثابت المحلي احتياطي فقط */
+  const metaQuery = useOrdersMeta();
+  const manufactureOptions = useMemo(() => {
+    const fromMeta = metaQuery.data?.manufactureStatuses;
+    return fromMeta?.length
+      ? fromMeta.map((s) => ({ value: s.id, label: s.label }))
+      : manufactureStatusOptions;
+  }, [metaQuery.data]);
+
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
                 {/* ——— order strip ——— */}
@@ -458,7 +468,7 @@ export default function OrderDetailsView({
                             </Typography>
                             <SelectComponent
                               id="order-manufacture-status"
-                              options={manufactureStatusOptions}
+                              options={manufactureOptions}
                               value={manufactureStatus}
                               onChange={changeManufactureStatus}
                               withSectionBorder={false}
