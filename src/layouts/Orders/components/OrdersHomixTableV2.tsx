@@ -48,12 +48,16 @@ function avColor(s: string) {
    Column definitions — SINGLE source of truth
    widths used in colgroup + nothing else
 ───────────────────────────────────────── */
-const CHECKBOX_W = 30;
-/* checkbox أصغر داخل عمود ضيّق */
-const CHECKBOX_SX = { p: 0, "& .MuiSvgIcon-root": { fontSize: 5 } } as const;
+const CHECKBOX_W = 22;
+const CHECKBOX_SX = {
+  p: 0,
+  transform: "scale(0.68)",
+  transformOrigin: "center",
+  "& .MuiSvgIcon-root": { fontSize: 25 },
+} as const;
 
 const BASE_COLS = [
-  { key: "code",          label: "رقم العملية",    w: 80  },
+  { key: "code",          label: "رقم العملية",    w: 78  },
   { key: "orderNumber",   label: "رقم الطلب",      w: 70  },
   { key: "productCode",   label: "كود المنتج",     w: 104 },
   { key: "customerName",  label: "اسم العميل",     w: 128 },
