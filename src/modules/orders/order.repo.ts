@@ -6,7 +6,9 @@ import {
   DELIVERY_BY_ARABIC,
   DELIVERY_STATUS,
   MANUFACTURE_STATUS_ARABIC,
+  ORDER_SOURCE_ARABIC,
   ORDER_STATUS,
+  ORDER_SOURCE,
   ORDER_STATUS_Arabic,
   PAYMENT_STATUS_ARABIC,
 } from "../../../config/constants";
@@ -40,6 +42,7 @@ const attachmentModel = require("../../../app/modules/attachments/attachment.mod
 const productTypeModel = require("../../../app/modules/product/productType.model");
 const logModel = require("../../../app/modules/logs/log.model");
 const dashboardDailyMetricModel = require("../dashboard/dashboard-daily-metric.model");
+const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
 
 const SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS: Array<keyof OrderListQuery> = [
   "customerName",
@@ -47,6 +50,7 @@ const SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS: Array<keyof OrderListQuery> = [
   "deliveryStatus",
   "manufactureStatus",
   "operationCode",
+  "orderSource",
   "orderNumber",
   "paymentStatus",
   "priority",
@@ -101,6 +105,9 @@ const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record
   }
   if (filters.deliveryBy) {
     andConditions.push(sequelize.where(sequelize.col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
+  }
+  if (filters.orderSource) {
+    andConditions.push(sequelize.where(sequelize.col("Order.orderSource"), { [Op.in]: filters.orderSource.split(",").map(Number) }));
   }
   if (filters.userId) {
     andConditions.push(sequelize.where(sequelize.col("Order.userId"), { [Op.eq]: filters.userId }));
@@ -207,6 +214,8 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     manufactureStatus: toNumber(order.manufactureStatus) || null,
     manufactureStatusLabel: getManufactureLabel(order.manufactureStatus),
     operationNumber: toText(order.code),
+    orderSource: toNumber(order.orderSource) || null,
+    orderSourceLabel: ORDER_SOURCE_LABELS[toNumber(order.orderSource)] ?? "",
     orderDate: toIsoString(order.orderDate),
     orderNumber: toText(order.orderNumber),
     paymentStatus: toNumber(order.paymentStatus) || null,
@@ -600,6 +609,7 @@ export class OrderRepository {
       assignees: assignees.map((user: unknown) => ({ id: toNumber(toPlain(user).id), label: `${toText(toPlain(user).firstName)} ${toText(toPlain(user).lastName)}`.trim() })),
       deliveryByOptions: Object.entries(DELIVERY_BY).map(([, id]) => ({ id: Number(id), label: DELIVERY_BY_ARABIC[id as keyof typeof DELIVERY_BY_ARABIC] ?? String(id) })),
       manufactureStatuses: Object.entries(MANUFACTURE_STATUS_ARABIC).map(([id, label]) => ({ id: Number(id), label: String(label) })),
+      orderSources: Object.entries(ORDER_SOURCE).map(([, id]) => ({ id: Number(id), label: ORDER_SOURCE_LABELS[Number(id)] ?? String(id) })),
       paymentStatuses: Object.entries(PAYMENT_STATUS_ARABIC).map(([id, label]) => ({ id: Number(id), label: String(label) })),
       priorities: [{ id: 1, label: "بالمدة" }, { id: 2, label: "مستعجل" }, { id: 3, label: "مستعجل جدا" }],
       statuses: Object.entries(ORDER_STATUS_Arabic).map(([id, label]) => ({ id: Number(id), label: String(label) })),

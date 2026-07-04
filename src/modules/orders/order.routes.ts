@@ -33,7 +33,7 @@ export const orderRouter = express.Router();
  *       - bearerAuth: []
  *     tags: [Orders]
  *     summary: Get order filter metadata
- *     description: Returns the dropdown/filter options used by the orders page. This endpoint has no query parameters. Labels are returned in Arabic for statuses, manufacture statuses, payment statuses, priorities, and delivery-by options.
+ *     description: Returns the dropdown/filter options used by the orders page. This endpoint has no query parameters. Labels are returned in Arabic for statuses, manufacture statuses, payment statuses, priorities, order sources, and delivery-by options.
  *     responses:
  *       200:
  *         description: Order filter options
@@ -116,6 +116,9 @@ orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
  *         schema: { type: string, example: "1,2" }
  *       - in: query
  *         name: deliveryBy
+ *         schema: { type: string, example: "1,2" }
+ *       - in: query
+ *         name: orderSource
  *         schema: { type: string, example: "1,2" }
  *       - in: query
  *         name: userId
@@ -212,6 +215,9 @@ orderRouter.get(
  *               deliveryBy:
  *                 type: integer
  *                 example: 1
+ *               orderSource:
+ *                 type: integer
+ *                 example: 1
  *               expectedDeliveryDate:
  *                 type: string
  *                 format: date-time
@@ -240,6 +246,7 @@ orderRouter.get(
  *               orderDate: 2026-06-18T00:00:00.000Z
  *               paymentStatus: 1
  *               deliveryBy: 1
+ *               orderSource: 1
  *               expectedDeliveryDate: 2026-06-20T00:00:00.000Z
  *               downPayment: 200
  *               shippingFees: 65
@@ -394,6 +401,9 @@ orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrder
  *         schema: { type: string, example: "1,2" }
  *       - in: query
  *         name: deliveryBy
+ *         schema: { type: string, example: "1,2" }
+ *       - in: query
+ *         name: orderSource
  *         schema: { type: string, example: "1,2" }
  *       - in: query
  *         name: userId

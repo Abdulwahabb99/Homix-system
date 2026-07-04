@@ -14,6 +14,7 @@ export type OrderListQuery = {
   endDate?: string;
   manufactureStatus?: string;
   operationCode?: string;
+  orderSource?: string;
   orderNumber?: string;
   page: number;
   paymentStatus?: string;
@@ -42,6 +43,8 @@ export type OrderListItem = {
   manufactureStatus: number | null;
   manufactureStatusLabel: string;
   operationNumber: string;
+  orderSource: number | null;
+  orderSourceLabel: string;
   orderDate: string | null;
   orderNumber: string;
   paymentStatus: number | null;
@@ -126,6 +129,7 @@ export type OrderMetaResponse = {
   assignees: OrderMetaOption[];
   deliveryByOptions: OrderMetaOption[];
   manufactureStatuses: OrderMetaOption[];
+  orderSources: OrderMetaOption[];
   paymentStatuses: OrderMetaOption[];
   priorities: OrderMetaOption[];
   statuses: OrderMetaOption[];

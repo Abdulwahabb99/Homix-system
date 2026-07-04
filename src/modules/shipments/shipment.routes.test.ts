@@ -107,7 +107,7 @@ app.use(express.json());
 app.use("/shipments", shipmentRouter);
 app.use(errorMiddleware);
 
-const makeShipment = () => ({
+const makeShipment = (overrides: Record<string, unknown> = {}) => ({
   code: "3002",
   customer: {
     address: "الهرم, الجيزة",
@@ -116,11 +116,13 @@ const makeShipment = () => ({
     phoneNumber: "01155559646",
   },
   deliveryBy: 1,
+  deliveryStatus: 2,
   deliveryDate: "2026-05-17T00:00:00.000Z",
-  expectedDeliveryDate: "2026-05-17T00:00:00.000Z",
+  expectedDeliveryDate: null,
   governorate: "الجيزة",
   id: 9802,
   notes: "shipment note",
+  orderSource: 1,
   notesList: [
     {
       createdAt: "2026-05-15T11:00:00.000Z",
@@ -160,6 +162,7 @@ const makeShipment = () => ({
   toBeCollected: "29998",
   totalPrice: "29998",
   updatedAt: "2026-05-15T12:00:00.000Z",
+  ...overrides,
 });
 
 const makeShipmentRecord = (overrides: Record<string, unknown> = {}) => {
@@ -395,6 +398,15 @@ describe("shipmentRouter", () => {
     expect(response.body.data.shippingCompanies).toEqual([
       { id: 3, label: "J&T" },
     ]);
+    expect(response.body.data.orderSources).toEqual([
+      { id: 1, label: "شو رووم" },
+      { id: 2, label: "اونلاين" },
+    ]);
+    expect(response.body.data.priorities).toEqual([
+      { id: 1, label: "بالمدة" },
+      { id: 2, label: "مستعجل" },
+      { id: 3, label: "مستعجل جدا" },
+    ]);
   });
 
   it("creates shipments through the TS service boundary", async () => {
@@ -433,6 +445,31 @@ describe("shipmentRouter", () => {
         shippingCompany: "J&T",
         shippedFromInventory: true,
       }),
+    ], true);
+  });
+
+  it("defaults shipment type to separate when omitted", async () => {
+    const payload = {
+      customer: {
+        firstName: "عبير",
+        lastName: "ابوالمجيد",
+      },
+      line_items: [
+        {
+          price: 16999,
+          quantity: 1,
+          title: "كنبة شيب",
+          variant_id: 445566,
+        },
+      ],
+      name: "#H9803",
+    };
+
+    const response = await request(app).post("/shipments").send(payload);
+
+    expect(response.status).toBe(200);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
+      expect.objectContaining(payload),
     ], true);
   });
 
@@ -497,13 +534,44 @@ describe("shipmentRouter", () => {
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
         customerName: "عبير ابوالمجيد",
+        deliveryPriority: 2,
+        deliveryPriorityLabel: "مستعجل",
         operationNumber: "3002",
+        orderSource: 1,
+        orderSourceLabel: "شو رووم",
         shippingCompany: 3,
         shipmentNumber: "SH-9802",
         shipmentStatusLabel: "في المخزن",
         shipmentTypeLabel: "شحن مجمع",
       }),
     );
+  });
+
+  it("filters shipments by computed priority", async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    orderModel.findAll.mockResolvedValue([
+      makeShipment({
+        deliveryStatus: 2,
+        expectedDeliveryDate: tomorrow.toISOString(),
+        id: 9802,
+      }),
+      makeShipment({
+        deliveryStatus: 1,
+        expectedDeliveryDate: nextWeek.toISOString(),
+        id: 9803,
+      }),
+    ]);
+
+    const response = await request(app).get("/shipments").query({ page: 1, priority: "2", size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.totalCount).toBe(1);
+    expect(response.body.data.items).toHaveLength(1);
+    expect(response.body.data.items[0]).toEqual(expect.objectContaining({ deliveryPriority: 2, id: 9802 }));
   });
 
   it("accepts ISO date filters for shipments list", async () => {

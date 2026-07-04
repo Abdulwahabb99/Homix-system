@@ -1,4 +1,10 @@
-import { SHIPMENT_FINAL_STATUSES, SHIPMENT_STATUS_LABELS, SHIPMENT_TYPE_LABELS } from "./shipment.constants";
+import {
+  SHIPMENT_FINAL_STATUSES,
+  SHIPMENT_PRIORITY,
+  SHIPMENT_PRIORITY_LABELS,
+  SHIPMENT_STATUS_LABELS,
+  SHIPMENT_TYPE_LABELS,
+} from "./shipment.constants";
 
 type PlainRecord = Record<string, unknown>;
 type Plainable = PlainRecord | { toJSON: () => PlainRecord };
@@ -95,6 +101,49 @@ export const getShipmentTypeLabel = (value: unknown): string => {
   }
 
   return SHIPMENT_TYPE_LABELS[normalizedValue] ?? normalizedValue;
+};
+
+export const getShipmentPriority = (
+  deliveryStatus: unknown,
+  expectedDeliveryDate: unknown,
+): number | null => {
+  const date = expectedDeliveryDate instanceof Date ? expectedDeliveryDate : new Date(String(expectedDeliveryDate ?? ""));
+  if (!Number.isNaN(date.getTime())) {
+    const dueDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const almostDueDate = new Date(today);
+    almostDueDate.setDate(almostDueDate.getDate() + 2);
+
+    if (dueDate < today) {
+      return SHIPMENT_PRIORITY.URGENT;
+    }
+
+    if (dueDate < almostDueDate) {
+      return SHIPMENT_PRIORITY.ALMOST_DUE;
+    }
+
+    return SHIPMENT_PRIORITY.ON_SCHEDULE;
+  }
+
+  const numericDeliveryStatus = toNumber(deliveryStatus);
+  if (numericDeliveryStatus === 1) {
+    return SHIPMENT_PRIORITY.ON_SCHEDULE;
+  }
+
+  if (numericDeliveryStatus === 2) {
+    return SHIPMENT_PRIORITY.ALMOST_DUE;
+  }
+
+  if (numericDeliveryStatus === 3) {
+    return SHIPMENT_PRIORITY.URGENT;
+  }
+
+  return null;
+};
+
+export const getShipmentPriorityLabel = (priority: unknown): string => {
+  return SHIPMENT_PRIORITY_LABELS[toNumber(priority)] ?? "";
 };
 
 export const getDaysBetween = (fromValue: unknown, toValue: unknown): number | null => {

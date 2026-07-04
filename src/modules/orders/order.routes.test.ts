@@ -137,6 +137,7 @@ const makeOrder = () => ({
   id: 7,
   manufactureStatus: 2,
   notes: "important note",
+  orderSource: 2,
   notesList: [
     {
       attachments: [
@@ -204,6 +205,10 @@ describe("orderRouter", () => {
       { id: 1, label: "هوميكس" },
       { id: 2, label: "بائع" },
     ]);
+    expect(response.body.data.orderSources).toEqual([
+      { id: 1, label: "شو رووم" },
+      { id: 2, label: "اونلاين" },
+    ]);
     expect(response.body.data.vendors[0]).toEqual({ id: 3, label: "ركنة للأثاث" });
   });
 
@@ -214,6 +219,33 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.cards).toEqual(
       expect.arrayContaining([expect.objectContaining({ key: "totalOrders", value: 1 })]),
+    );
+  });
+
+  it("creates manual orders with showroom as the default source", async () => {
+    const payload = {
+      customer: {
+        firstName: "عبير",
+        lastName: "ابوالمجيد",
+      },
+      line_items: [
+        {
+          price: 16999,
+          quantity: 1,
+          title: "كنبة شيب",
+          variant_id: 445566,
+        },
+      ],
+      name: "#H9802",
+    };
+
+    const response = await request(app).post("/orders").send(payload);
+
+    expect(response.status).toBe(200);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith(
+      [payload],
+      false,
+      undefined,
     );
   });
 
@@ -252,8 +284,27 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0].deliveryBy).toBe(1);
     expect(response.body.data.items[0].operationNumber).toBe("3001");
+    expect(response.body.data.items[0].orderSource).toBe(2);
+    expect(response.body.data.items[0].orderSourceLabel).toBe("اونلاين");
     expect(response.body.data.items[0].fine).toBe(0);
     expect(response.body.data.totalCount).toBe(1);
+  });
+
+  it("applies orderSource filter to the orders query", async () => {
+    const response = await request(app).get("/orders").query({ orderSource: "2", page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    const whereClause = orderModel.findAndCountAll.mock.calls[0][0].where as Record<PropertyKey, unknown>;
+    const andKey = Object.getOwnPropertySymbols(whereClause)[0];
+    const conditions = andKey && Array.isArray(whereClause[andKey])
+      ? whereClause[andKey] as Array<Record<PropertyKey, unknown>>
+      : [];
+
+    expect(conditions).toContainEqual(
+      expect.objectContaining({
+        [Op.in]: [2],
+      }),
+    );
   });
 
   it("applies deliveryBy filter to the orders query", async () => {
@@ -274,6 +325,9 @@ describe("orderRouter", () => {
   });
 
   it("supports multiple priority filters", async () => {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
     orderModel.findAndCountAll.mockResolvedValue({
       count: 2,
       rows: [
@@ -281,7 +335,7 @@ describe("orderRouter", () => {
         {
           ...makeOrder(),
           deliveryStatus: 1,
-          expectedDeliveryDate: "2026-06-20T00:00:00.000Z",
+          expectedDeliveryDate: nextWeek.toISOString(),
           id: 8,
           orderNumber: "31669",
         },
@@ -302,6 +356,8 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.deliveryBy).toBe(1);
     expect(response.body.data.order.orderNumber).toBe("31668");
+    expect(response.body.data.order.orderSource).toBe(2);
+    expect(response.body.data.order.orderSourceLabel).toBe("اونلاين");
     expect(response.body.data.order.fine).toBe(0);
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
     expect(response.body.data.order.itemsCount).toBe(1);

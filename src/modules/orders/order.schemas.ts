@@ -23,6 +23,7 @@ export const orderListQuerySchema = z.object({
   endDate: z.string().trim().optional(),
   manufactureStatus: csvNumberString.optional(),
   operationCode: z.string().trim().optional(),
+  orderSource: csvNumberString.optional(),
   orderNumber: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   paymentStatus: csvNumberString.optional(),

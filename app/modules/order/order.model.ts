@@ -5,6 +5,7 @@ const {
   PAYMENT_STATUS,
   DELIVERY_STATUS,
   DELIVERY_BY,
+  ORDER_SOURCE,
   SHIPMENTS_STATUS,
 } = require("../../../config/constants");
 const OrderLine = require("../orderLines/orderline.model");
@@ -87,6 +88,13 @@ const Order = sequelize.define(
       allowNull: true,
       validate: {
         isIn: [Object.values(PAYMENT_STATUS)],
+      },
+    },
+    orderSource: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        isIn: [Object.values(ORDER_SOURCE)],
       },
     },
     commission: {

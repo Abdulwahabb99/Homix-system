@@ -4,6 +4,24 @@ export const DEFAULT_PAGE_NUMBER = 1;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 
+export const SHIPMENT_PRIORITY = {
+  ON_SCHEDULE: 1,
+  ALMOST_DUE: 2,
+  URGENT: 3,
+} as const;
+
+export const SHIPMENT_PRIORITY_KEYS = [
+  SHIPMENT_PRIORITY.ON_SCHEDULE,
+  SHIPMENT_PRIORITY.ALMOST_DUE,
+  SHIPMENT_PRIORITY.URGENT,
+] as const;
+
+export const SHIPMENT_PRIORITY_LABELS: Record<number, string> = {
+  [SHIPMENT_PRIORITY.ON_SCHEDULE]: "بالمدة",
+  [SHIPMENT_PRIORITY.ALMOST_DUE]: "مستعجل",
+  [SHIPMENT_PRIORITY.URGENT]: "مستعجل جدا",
+};
+
 export const SHIPMENT_STATUS = {
   PENDING: 1,
   IN_WAREHOUSE: 2,

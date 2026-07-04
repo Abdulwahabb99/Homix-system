@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "db:audit-parity": "tsx src/scripts/audit-db-parity.ts",
+    "db:setup-order-source": "tsx src/scripts/setup-order-source.ts",
     "db:add-ticket-fks": "tsx src/scripts/add-ticket-foreign-keys.ts",
     "db:migrate-shipping-companies": "tsx src/scripts/migrate-shipping-companies.ts",
     "db:plan-constraints": "tsx src/scripts/plan-db-constraint-hardening.ts",

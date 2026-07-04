@@ -76,6 +76,12 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  *         schema:
  *           type: string
  *       - in: query
+ *         name: orderSource
+ *         description: CSV of numeric order source values. `1` = شو رووم, `2` = اونلاين.
+ *         schema:
+ *           type: string
+ *           example: 1,2
+ *       - in: query
  *         name: customerName
  *         schema:
  *           type: string
@@ -103,6 +109,12 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  *         schema:
  *           type: string
  *           example: 1,2
+ *       - in: query
+ *         name: priority
+ *         description: CSV of numeric delivery priority values. `1` = بالمدة, `2` = مستعجل, `3` = مستعجل جدا.
+ *         schema:
+ *           type: string
+ *           example: 1,3
  *       - in: query
  *         name: shipmentType
  *         schema:
@@ -1007,6 +1019,12 @@ shipmentRouter.get(
  *         schema:
  *           type: string
  *       - in: query
+ *         name: orderSource
+ *         description: CSV of numeric order source values. `1` = شو رووم, `2` = اونلاين.
+ *         schema:
+ *           type: string
+ *           example: 1,2
+ *       - in: query
  *         name: customerName
  *         schema:
  *           type: string
@@ -1026,6 +1044,12 @@ shipmentRouter.get(
  *         schema:
  *           type: string
  *           example: 1,2
+ *       - in: query
+ *         name: priority
+ *         description: CSV of numeric delivery priority values. `1` = بالمدة, `2` = مستعجل, `3` = مستعجل جدا.
+ *         schema:
+ *           type: string
+ *           example: 1,3
  *       - in: query
  *         name: shipmentNumber
  *         schema:

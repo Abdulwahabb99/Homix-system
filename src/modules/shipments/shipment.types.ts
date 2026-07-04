@@ -12,9 +12,11 @@ export type ShipmentListQuery = {
   deliveryDateTo?: string;
   endDate?: string;
   operationCode?: string;
+  orderSource?: string;
   orderNumber?: string;
   page: number;
   paymentStatus?: string;
+  priority?: string;
   shipmentNumber?: string;
   shipmentStatus?: string;
   shipmentType?: string;
@@ -99,7 +101,9 @@ export type ShipmentMetaResponse = {
   expenseTypes: ShipmentMetaOption[];
   governorates: ShipmentMetaOption[];
   inventoryStatuses: ShipmentMetaOption[];
+  orderSources: ShipmentMetaOption[];
   paymentStatuses: ShipmentMetaOption[];
+  priorities: ShipmentMetaOption[];
   shippingCompanies: ShipmentMetaOption[];
   shipmentStatuses: ShipmentMetaOption[];
   shipmentTypes: ShipmentMetaOption[];
@@ -124,7 +128,11 @@ export type ShipmentListItem = {
   customerPhone: string;
   daysCounter: number | null;
   deliveryBy: string;
+  deliveryPriority: number | null;
+  deliveryPriorityLabel: string;
   deliveryDate: string | null;
+  orderSource: number | null;
+  orderSourceLabel: string;
   operationNumber: string;
   orderNumber: string;
   paymentStatus: number | null;

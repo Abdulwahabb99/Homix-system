@@ -63,6 +63,14 @@ const PAYMENT_STATUS_ARABIC = {
   1: "الدفع عند الاستلام",
   2: "مدفوع",
 };
+const ORDER_SOURCE = {
+  SHOWROOM: 1,
+  ONLINE: 2,
+};
+const ORDER_SOURCE_ARABIC = {
+  1: "شو رووم",
+  2: "اونلاين",
+};
 const FACTORY_STATUS = {
   ONLINE: 1,
   OFFLINE: 2,
@@ -144,7 +152,9 @@ module.exports = {
   SHIPMENT_TYPE,
   GOVERNORATES,
   MANUFACTURE_STATUS,
+  ORDER_SOURCE,
   ORDER_STATUS_Arabic,
+  ORDER_SOURCE_ARABIC,
   PAYMENT_STATUS_ARABIC,
   MANUFACTURE_STATUS_ARABIC
 };

@@ -3,6 +3,7 @@ import { Op, fn, col, where } from "sequelize";
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
+import { ORDER_SOURCE_ARABIC, ORDER_SOURCE } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
@@ -20,6 +21,7 @@ import {
   RETURN_TO_VENDOR_FINAL_STATUSES,
   RETURN_TO_VENDOR_STATUS,
   RETURN_TO_VENDOR_STATUS_LABELS,
+  SHIPMENT_PRIORITY_LABELS,
   CUSTOMER_RETURN_STATUS_LABELS,
   SHIPMENT_STATUS,
   SHIPMENT_RETURN_TYPE,
@@ -32,6 +34,8 @@ import {
   buildUserName,
   getDaysBetween,
   getShipmentAgingDays,
+  getShipmentPriority,
+  getShipmentPriorityLabel,
   getShipmentStatusLabel,
   getShipmentTypeLabel,
   getVariantBySku,
@@ -86,6 +90,7 @@ const shipmentInventoryModel = require("../../../app/modules/shipments/shipmentI
 const shipmentExpenseModel = require("../../../app/modules/shipments/shipmentExpense.model");
 const shipmentReturnModel = require("../../../app/modules/shipments/shipmentReturn.model");
 const shippingCompanyModel = require("../../../app/modules/shipments/shippingCompany.model");
+const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
 
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
@@ -134,6 +139,12 @@ const buildShipmentWhereClause = (
         where(fn("lower", col("Order.orderNumber")), { [Op.like]: `%${filters.orderNumber.toLowerCase()}%` }),
       ],
     });
+  }
+
+  if (filters.orderSource) {
+    andConditions.push(where(col("Order.orderSource"), {
+      [Op.in]: filters.orderSource.split(",").map(Number),
+    }));
   }
 
   if (filters.customerName) {
@@ -265,6 +276,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
   const shippingCompanyRecord = toPlain(order.shippingCompanyRecord);
   const deliveryBy = toNullableNumber(order.deliveryBy);
   const shippingCompanyName = toText(shippingCompanyRecord.name, toText(order.shippingCompany));
+  const deliveryPriority = getShipmentPriority(order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
     amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
@@ -272,10 +284,14 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     customerPhone: toText(customer.phoneNumber),
     daysCounter: getShipmentAgingDays(order.shipmentStatus, order.shippingReceiveDate, order.deliveryDate, order.updatedAt),
     deliveryBy: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
+    deliveryPriority,
+    deliveryPriorityLabel: getShipmentPriorityLabel(deliveryPriority),
     deliveryDate: toIsoString(order.deliveryDate),
     governorate: toText(order.governorate),
     id: toNumber(order.id),
     operationNumber: normalizeOperationCode(order.code),
+    orderSource: toNullableNumber(order.orderSource),
+    orderSourceLabel: ORDER_SOURCE_LABELS[toNumber(order.orderSource)] ?? "",
     orderNumber: toText(order.orderNumber, toText(order.number, toText(order.name))),
     paymentStatus: toNullableNumber(order.paymentStatus),
     paymentStatusLabel: PAYMENT_STATUS_LABELS[toNumber(order.paymentStatus)] ?? "",
@@ -290,6 +306,17 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     shipmentTypeLabel: getShipmentTypeLabel(order.shipmentType),
     shippingCost: toNumber(order.shippingFees),
   };
+};
+
+const matchesShipmentPriority = (item: ShipmentListItem, priorityFilter?: string): boolean => {
+  if (!priorityFilter) {
+    return true;
+  }
+
+  return priorityFilter
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .includes(item.deliveryPriority ?? 0);
 };
 
 const mapShipmentNote = (noteValue: unknown) => {
@@ -427,7 +454,9 @@ export class ShipmentRepository {
       expenseTypes: Object.entries(EXPENSE_TYPE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       governorates: Object.entries(GOVERNORATE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       inventoryStatuses: Object.entries(INVENTORY_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      orderSources: Object.entries(ORDER_SOURCE).map(([, id]) => ({ id: Number(id), label: ORDER_SOURCE_LABELS[Number(id)] ?? String(id) })),
       paymentStatuses: Object.entries(PAYMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      priorities: Object.entries(SHIPMENT_PRIORITY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shippingCompanies: shippingCompanies.map((company: unknown) => ({ id: toNumber(toPlain(company).id), label: toText(toPlain(company).name) })),
       shipmentStatuses: Object.entries(SHIPMENT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       shipmentTypes: [
@@ -452,7 +481,9 @@ export class ShipmentRepository {
       subQuery: false,
       where: whereClause,
     });
-    const items: ShipmentListItem[] = orders.map((order: unknown) => mapShipmentListItem(order));
+    const items: ShipmentListItem[] = orders
+      .map((order: unknown) => mapShipmentListItem(order))
+      .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority));
     const deliveredCount = items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length;
     const inDeliveryStatuses = [
       SHIPMENT_STATUS.READY_FOR_SHIPPING,
@@ -488,6 +519,28 @@ export class ShipmentRepository {
 
   public async listShipments(filters: ShipmentListQuery, vendorId?: number | null): Promise<ShipmentListResponse> {
     const whereClause = buildShipmentWhereClause(filters, vendorId);
+
+    if (filters.priority) {
+      const rows = await orderModel.findAll({
+        include: buildIncludes(),
+        order: [["shippingReceiveDate", "DESC"]],
+        subQuery: false,
+        where: whereClause,
+      });
+      const filteredItems = rows
+        .map((row: unknown) => mapShipmentListItem(row))
+        .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority));
+      const start = (filters.page - 1) * filters.size;
+      const end = start + filters.size;
+
+      return {
+        items: filteredItems.slice(start, end),
+        page: filters.page ?? DEFAULT_PAGE_NUMBER,
+        size: filters.size ?? DEFAULT_PAGE_SIZE,
+        totalCount: filteredItems.length,
+      };
+    }
+
     const result = await orderModel.findAndCountAll({
       include: buildIncludes(),
       limit: filters.size,

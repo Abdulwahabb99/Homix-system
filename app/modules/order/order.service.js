@@ -14,6 +14,7 @@ const User = require("../user/user.model");
 const Notification = require("../notification/notification.model");
 const {
   ORDER_STATUS,
+  ORDER_SOURCE,
   USER_TYPES,
   ORDER_STATUS_Arabic,
   PAYMENT_STATUS,
@@ -307,7 +308,7 @@ class OrderService {
           deliveryDate: order.deliveryDate || null,
           governorate: order.governorate || null,
           shipmentStatus: order.shipmentStatus || null,
-          shipmentType: order.shipmentType || null,
+          shipmentType: order.shipmentType || "separate",
           deliveryBy: order.deliveryBy || null,
           expectedDate: order.expectedDate || null,
           expectedDeliveryDate: vendor.daysToDeliver
@@ -321,6 +322,9 @@ class OrderService {
           toBeCollected: order.toBeCollected || 0,
           itemShipping: order.itemShipping || 0,
           deliveryStatus: order.deliveryStatus || null,
+          orderSource:
+            order.orderSource
+            || (order.id ? ORDER_SOURCE.ONLINE : ORDER_SOURCE.SHOWROOM),
           fine: 0,
           userId: vendor?.accountManagerUserId || null,
         };
