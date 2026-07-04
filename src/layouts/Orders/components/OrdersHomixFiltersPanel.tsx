@@ -449,11 +449,24 @@ export default function OrdersHomixFiltersPanel({
               <line x1="3"  y1="10" x2="21" y2="10" />
             </Box>
             <Typography sx={{ fontSize: "10px", fontWeight: 700, color: HX.tx3, letterSpacing: "1px", textTransform: "uppercase", fontFamily: "'Cairo',sans-serif" }}>
-              التفاصيل
+              التفاصيل والأولوية
             </Typography>
           </Box>
 
           <Grid container spacing="10px" alignItems="flex-end">
+
+            {/* المسئول */}
+            <Grid item xs={12} sm={6} md={3}>
+              <FieldBox label="المسئول">
+                <MultiSelect
+                  value={draftUserId}
+                  onChange={setDraftUserId}
+                  onClose={handleDropdownClose}
+                  options={assigneeOpts.map((u) => ({ value: String(u.id), label: u.label }))}
+                  placeholder="كل المسئولين"
+                />
+              </FieldBox>
+            </Grid>
 
             {/* من تاريخ */}
             <Grid item xs={6} sm={6} md={2.5}>
@@ -505,19 +518,6 @@ export default function OrdersHomixFiltersPanel({
                     );
                   })}
                 </Box>
-              </FieldBox>
-            </Grid>
-
-            {/* المسئول */}
-            <Grid item xs={12} sm={6} md={3}>
-              <FieldBox label="المسئول">
-                <MultiSelect
-                  value={draftUserId}
-                  onChange={setDraftUserId}
-                  onClose={handleDropdownClose}
-                  options={assigneeOpts.map((u) => ({ value: String(u.id), label: u.label }))}
-                  placeholder="كل المسئولين"
-                />
               </FieldBox>
             </Grid>
 
