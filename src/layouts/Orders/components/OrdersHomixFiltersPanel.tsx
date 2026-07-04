@@ -158,13 +158,15 @@ export default function OrdersHomixFiltersPanel({
     [meta?.paymentStatuses]
   );
 
-  const assigneeOpts = useMemo(() => {
-    if (meta?.assignees?.length) return meta.assignees;
-    return users.map((u) => ({
-      id: Number(u.id),
-      label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
-    }));
-  }, [meta?.assignees, users]);
+  /* خيارات «المسؤول» من مستخدمي endpoint `/users` مباشرةً */
+  const assigneeOpts = useMemo(
+    () =>
+      users.map((u) => ({
+        id: Number(u.id),
+        label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
+      })),
+    [users]
+  );
 
   const deliveryByOpts = useMemo(
     () =>

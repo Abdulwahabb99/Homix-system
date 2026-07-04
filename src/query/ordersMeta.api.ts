@@ -79,8 +79,9 @@ function mapPriorities(raw: unknown): OrdersMetaPriority[] {
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
-    const idRaw = o.id ?? o.key;
-    const label = pickStr(o.label ?? o.name);
+    // نقبل أشكال المفاتيح المختلفة القادمة من الـ API (id/key/value، label/name/text)
+    const idRaw = o.id ?? o.key ?? o.value ?? o.deliveryPriority;
+    const label = pickStr(o.label ?? o.name ?? o.text ?? o.title ?? o.deliveryPriorityLabel);
     if (idRaw == null || !label) continue;
     out.push({ id: String(idRaw), label });
   }
@@ -110,7 +111,9 @@ export function mapApiToOrdersMeta(raw: Record<string, unknown>): OrdersMeta {
       raw.manufactureStatuses ?? raw.manufacture_statuses
     ),
     paymentStatuses: mapIdLabelOptions(raw.paymentStatuses ?? raw.payment_statuses),
-    priorities: mapPriorities(raw.priorities),
+    priorities: mapPriorities(
+      raw.priorities ?? raw.deliveryPriorities ?? raw.delivery_priorities
+    ),
     statuses: mapIdLabelOptions(raw.statuses),
     vendors: mapIdLabelOptions(raw.vendors),
   };
