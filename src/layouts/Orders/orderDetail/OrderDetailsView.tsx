@@ -15,7 +15,7 @@ import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlin
 import ShowChartOutlinedIcon from "@mui/icons-material/ShowChartOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { SelectComponent } from "components/ui";
 import { manufactureStatusOptions } from "shared/utils/constants";
@@ -146,14 +146,15 @@ export default function OrderDetailsView({
       : statusoptions;
   }, [metaQuery.data]);
 
-  const assigneeOptions = useMemo(() => {
-    const fromMeta = metaQuery.data?.assignees;
-    if (fromMeta?.length) return fromMeta.map((a) => ({ value: a.id, label: a.label }));
-    return (users ?? []).map((u: any) => ({
-      value: Number(u.id),
-      label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
-    }));
-  }, [metaQuery.data, users]);
+  /* «المسؤول» من users API (endpoint /users) مباشرةً */
+  const assigneeOptions = useMemo(
+    () =>
+      (users ?? []).map((u: any) => ({
+        value: Number(u.id),
+        label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
+      })),
+    [users]
+  );
 
   /* «حالة التسليم»: لا يوجد لها مفتاح في الـ meta — نستخدم الثابت المحلي.
      «مكان التسليم»: قيمتان ثابتتان تُحدّثان shippedFromInventory. */
@@ -527,17 +528,42 @@ export default function OrderDetailsView({
                               />
                             </Box>
 
-                            {/* المسؤول */}
+                            {/* المسؤول — بحث ضمن مستخدمي /users */}
                             <Box>
                               <Typography sx={statusFieldLabelSx}>المسؤول</Typography>
-                              <SelectComponent
+                              <Autocomplete
                                 id="order-assignee"
                                 options={assigneeOptions}
-                                value={orderDetails.userId != null ? Number(orderDetails.userId) : null}
-                                onChange={changeAssignee}
-                                withSectionBorder={false}
-                                boxSx={{ p: 0 }}
-                                formControlSx={statusSelectSx}
+                                value={
+                                  assigneeOptions.find(
+                                    (o) =>
+                                      o.value ===
+                                      (orderDetails.userId != null ? Number(orderDetails.userId) : null)
+                                  ) ?? null
+                                }
+                                onChange={(_e, newValue: any) =>
+                                  changeAssignee(newValue ? newValue.value : null)
+                                }
+                                getOptionLabel={(o: any) => o.label ?? ""}
+                                isOptionEqualToValue={(o: any, v: any) => o.value === v.value}
+                                noOptionsText="لا يوجد"
+                                size="small"
+                                sx={{
+                                  "& .MuiOutlinedInput-root": {
+                                    minHeight: 40,
+                                    borderRadius: "9px",
+                                    bgcolor: OD.sur,
+                                    fontSize: "0.78rem",
+                                    py: "1px !important",
+                                    "& fieldset": { borderColor: OD.brd },
+                                    "&:hover fieldset": { borderColor: OD.accent },
+                                    "&.Mui-focused fieldset": { borderColor: OD.accent },
+                                  },
+                                  "& .MuiAutocomplete-input": { fontSize: "0.78rem" },
+                                }}
+                                renderInput={(params) => (
+                                  <TextField {...params} placeholder="ابحث عن مسؤول..." />
+                                )}
                               />
                             </Box>
 
