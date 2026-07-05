@@ -49,6 +49,10 @@ function OrderDetails() {
     isAddingComment,
     isUpdatingComment,
     changeManufactureStatus,
+    changeOrderStatus,
+    changeDeliveryStatus,
+    changeAssignee,
+    changeDeliveryLocation,
     onEdit,
     updateComment,
     deleteComment,
@@ -164,6 +168,10 @@ function OrderDetails() {
               isUpdatingComment={isUpdatingComment}
               navigate={navigate}
               changeManufactureStatus={changeManufactureStatus}
+              changeOrderStatus={changeOrderStatus}
+              changeDeliveryStatus={changeDeliveryStatus}
+              changeAssignee={changeAssignee}
+              changeDeliveryLocation={changeDeliveryLocation}
               updateComment={updateComment}
               handleFileChange={handleFileChange}
               handleRemoveFile={handleRemoveFile}

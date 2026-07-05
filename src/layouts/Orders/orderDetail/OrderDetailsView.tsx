@@ -18,7 +18,8 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { SelectComponent } from "components/ui";
-import { getDeliveryStatusValue, getStatusValue, manufactureStatusOptions } from "shared/utils/constants";
+import { manufactureStatusOptions } from "shared/utils/constants";
+import { DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
 import { useOrdersMeta } from "query/ordersMeta.api";
 import { OrderStatusChip } from "../components/OrderStatusChips";
 import { OD } from "./odTheme";
@@ -79,6 +80,10 @@ export type OrderDetailsViewProps = {
   isUpdatingComment: boolean;
   navigate: NavigateFunction;
   changeManufactureStatus: (status: number | null) => void;
+  changeOrderStatus: (status: number | null) => void;
+  changeDeliveryStatus: (status: number | null) => void;
+  changeAssignee: (userId: number | null) => void;
+  changeDeliveryLocation: (shippedFromInventory: boolean) => void;
   updateComment: (noteId: number | string) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveFile: (index: number) => void;
@@ -113,6 +118,10 @@ export default function OrderDetailsView({
   isUpdatingComment,
   navigate,
   changeManufactureStatus,
+  changeOrderStatus,
+  changeDeliveryStatus,
+  changeAssignee,
+  changeDeliveryLocation,
   updateComment,
   handleFileChange,
   handleRemoveFile,
@@ -128,6 +137,44 @@ export default function OrderDetailsView({
       ? fromMeta.map((s) => ({ value: s.id, label: s.label }))
       : manufactureStatusOptions;
   }, [metaQuery.data]);
+
+  /* «حالة الطلب» من meta.statuses، و«المسؤول» من meta.assignees؛ ثوابت محلية احتياطية */
+  const orderStatusOptions = useMemo(() => {
+    const fromMeta = metaQuery.data?.statuses;
+    return fromMeta?.length
+      ? fromMeta.map((s) => ({ value: s.id, label: s.label }))
+      : statusoptions;
+  }, [metaQuery.data]);
+
+  const assigneeOptions = useMemo(() => {
+    const fromMeta = metaQuery.data?.assignees;
+    if (fromMeta?.length) return fromMeta.map((a) => ({ value: a.id, label: a.label }));
+    return (users ?? []).map((u: any) => ({
+      value: Number(u.id),
+      label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
+    }));
+  }, [metaQuery.data, users]);
+
+  /* «حالة التسليم»: لا يوجد لها مفتاح في الـ meta — نستخدم الثابت المحلي.
+     «مكان التسليم»: قيمتان ثابتتان تُحدّثان shippedFromInventory. */
+  const deliveryStatusOptions = DELIVERY_STATUS;
+  const deliveryLocationOptions = [
+    { value: "inventory", label: "مخازن هومكس" },
+    { value: "customer", label: "عنوان العميل" },
+  ];
+
+  const statusFieldLabelSx = { fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 } as const;
+  const statusSelectSx = {
+    "& .MuiOutlinedInput-root": {
+      minHeight: 40,
+      borderRadius: "9px",
+      bgcolor: OD.sur,
+      fontSize: "0.78rem",
+      "& fieldset": { borderColor: OD.brd },
+      "&:hover fieldset": { borderColor: OD.accent },
+    },
+    "& .MuiSelect-select": { py: 1, px: 1.5, textAlign: "start" },
+  } as const;
 
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
@@ -452,48 +499,61 @@ export default function OrderDetailsView({
                               gap: 1.75,
                             }}
                           >
-                            {[
-                              {
-                                label: "حالة الطلب",
-                                value: getStatusValue(orderDetails.status) ?? orderDetails.statusLabel ?? "—",
-                              },
-                              {
-                                label: "حالة التسليم",
-                                value: getDeliveryStatusValue(orderDetails.deliveryStatus) ?? "—",
-                              },
-                              {
-                                label: "المسؤول",
-                                value: administrator || "لا يوجد",
-                              },
-                              {
-                                label: "مكان التسليم",
-                                value: orderDetails.shippedFromInventory ? "مخازن هومكس" : "عنوان العميل",
-                              },
-                            ].map((row) => (
-                              <Box key={row.label}>
-                                <Typography sx={{ fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 }}>
-                                  {row.label}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    width: "100%",
-                                    minHeight: 34,
-                                    px: 1.5,
-                                    py: 0.75,
-                                    border: `0.5px solid ${OD.brd}`,
-                                    borderRadius: "9px",
-                                    bgcolor: OD.sur,
-                                    fontSize: "0.78rem",
-                                    fontWeight: 600,
-                                    color: OD.tx,
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  {row.value}
-                                </Box>
-                              </Box>
-                            ))}
+                            {/* حالة الطلب */}
+                            <Box>
+                              <Typography sx={statusFieldLabelSx}>حالة الطلب</Typography>
+                              <SelectComponent
+                                id="order-status"
+                                options={orderStatusOptions}
+                                value={orderDetails.status != null ? Number(orderDetails.status) : null}
+                                onChange={changeOrderStatus}
+                                withSectionBorder={false}
+                                boxSx={{ p: 0 }}
+                                formControlSx={statusSelectSx}
+                              />
+                            </Box>
+
+                            {/* حالة التسليم */}
+                            <Box>
+                              <Typography sx={statusFieldLabelSx}>حالة التسليم</Typography>
+                              <SelectComponent
+                                id="order-delivery-status"
+                                options={deliveryStatusOptions}
+                                value={orderDetails.deliveryStatus != null ? Number(orderDetails.deliveryStatus) : null}
+                                onChange={changeDeliveryStatus}
+                                withSectionBorder={false}
+                                boxSx={{ p: 0 }}
+                                formControlSx={statusSelectSx}
+                              />
+                            </Box>
+
+                            {/* المسؤول */}
+                            <Box>
+                              <Typography sx={statusFieldLabelSx}>المسؤول</Typography>
+                              <SelectComponent
+                                id="order-assignee"
+                                options={assigneeOptions}
+                                value={orderDetails.userId != null ? Number(orderDetails.userId) : null}
+                                onChange={changeAssignee}
+                                withSectionBorder={false}
+                                boxSx={{ p: 0 }}
+                                formControlSx={statusSelectSx}
+                              />
+                            </Box>
+
+                            {/* مكان التسليم */}
+                            <Box>
+                              <Typography sx={statusFieldLabelSx}>مكان التسليم</Typography>
+                              <SelectComponent
+                                id="order-delivery-location"
+                                options={deliveryLocationOptions}
+                                value={orderDetails.shippedFromInventory ? "inventory" : "customer"}
+                                onChange={(v: string) => changeDeliveryLocation(v === "inventory")}
+                                withSectionBorder={false}
+                                boxSx={{ p: 0 }}
+                                formControlSx={statusSelectSx}
+                              />
+                            </Box>
                           </Box>
                           <Box sx={{ mt: 2 }}>
                             <Typography sx={{ fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 }}>

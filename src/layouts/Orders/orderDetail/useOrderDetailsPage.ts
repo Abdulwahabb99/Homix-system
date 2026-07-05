@@ -59,6 +59,57 @@ export function useOrderDetailsPage() {
     [orderDetails?.id]
   );
 
+  /* تحديث متفائل لحقل واحد من الطلب (حالة الطلب/التسليم/المسؤول/مكان التسليم…):
+     نُحدّث الواجهة فوراً ونرجع للحالة السابقة عند فشل الـ API مع رسالة الخطأ. */
+  const updateOrderField = useCallback(
+    (patch: Record<string, any>) => {
+      if (orderDetails?.id == null) return;
+      const prev = orderDetails;
+      setOrderDetails((o: any) => ({ ...o, ...patch }));
+      axiosRequest
+        .put(`/orders/${orderDetails.id}`, patch)
+        .then(() => NotificationMeassage("success", "تم التعديل بنجاح"))
+        .catch((error) => {
+          setOrderDetails(prev);
+          NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
+        });
+    },
+    [orderDetails]
+  );
+
+  const changeOrderStatus = useCallback(
+    (status: number | null) => {
+      if (status == null) return;
+      updateOrderField({ status });
+    },
+    [updateOrderField]
+  );
+
+  const changeDeliveryStatus = useCallback(
+    (deliveryStatus: number | null) => {
+      if (deliveryStatus == null) return;
+      updateOrderField({ deliveryStatus });
+    },
+    [updateOrderField]
+  );
+
+  const changeAssignee = useCallback(
+    (userId: number | null) => {
+      if (userId == null) return;
+      updateOrderField({ userId });
+      const found = users.find((u: any) => String(u.id) === String(userId));
+      if (found) setAdministrator(`${found.firstName ?? ""} ${found.lastName ?? ""}`.trim());
+    },
+    [updateOrderField, users]
+  );
+
+  const changeDeliveryLocation = useCallback(
+    (shippedFromInventory: boolean) => {
+      updateOrderField({ shippedFromInventory });
+    },
+    [updateOrderField]
+  );
+
   const onEdit = useCallback(
     (notes: string, cost: number, lineId: number, color: string, size: string, material: string, itemShipping: number, toBeCollected: number) => {
       axiosRequest
@@ -333,6 +384,10 @@ export function useOrderDetailsPage() {
     isAddingComment,
     isUpdatingComment,
     changeManufactureStatus,
+    changeOrderStatus,
+    changeDeliveryStatus,
+    changeAssignee,
+    changeDeliveryLocation,
     onEdit,
     updateComment,
     deleteComment,
