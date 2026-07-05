@@ -115,17 +115,22 @@ export default function NewTicketModal({
     }
   }, [open, typeOptions]);
 
-  async function runSearch(params: { orderNumber?: string; operationNumber?: string }) {
-    const value = (params.orderNumber ?? params.operationNumber ?? "").trim();
+  async function handleSearch() {
+    const orderNumber = orderNumberInput.trim();
+    const operationNumber = operationInput.trim();
     setSearchError("");
     setFoundOrder(null);
-    if (!value) {
+    if (!orderNumber && !operationNumber) {
       setSearchError("أدخل رقم الطلب أو رقم العملية");
       return;
     }
     setSearchPending(true);
     try {
-      const res = await onLookupOrder(params);
+      // نُرسل الحقل الذي بحث به المستخدم فقط
+      const res = await onLookupOrder({
+        orderNumber: orderNumber || undefined,
+        operationNumber: operationNumber || undefined,
+      });
       if (!res) {
         setSearchError("لم يتم العثور على الطلب. تأكد من رقم الطلب أو رقم العملية.");
         return;
@@ -213,79 +218,59 @@ export default function NewTicketModal({
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, pt: 2.5, pb: 1 }}>
-        {/* رقم الطلب — بحث عبر ?orderNumber= */}
+        {/* رقم الطلب — يُرسل ?orderNumber= */}
         <Typography variant="caption" fontWeight={700} color="text.secondary" my={0.75} display="block">
           رقم الطلب
         </Typography>
-        <Stack direction="row" spacing={1} mb={1.5}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="مثال: 10773"
-            value={orderNumberInput}
-            onChange={(e) => setOrderNumberInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void runSearch({ orderNumber: orderNumberInput })}
-            disabled={searchPending || createPending}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-          />
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={() => void runSearch({ orderNumber: orderNumberInput })}
-            disabled={searchPending || createPending}
-            startIcon={<SearchIcon />}
-            sx={{
-              borderRadius: 2,
-              fontWeight: 700,
-              whiteSpace: "nowrap",
-              bgcolor: BRAND,
-              "&:hover": { bgcolor: "#5254e0" },
-              flexShrink: 0,
-            }}
-          >
-            بحث
-          </Button>
-        </Stack>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="مثال: 10773"
+          value={orderNumberInput}
+          onChange={(e) => setOrderNumberInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
+          disabled={searchPending || createPending}
+          sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+        />
 
-        {/* رقم العملية — بحث عبر ?operationNumber= */}
+        {/* رقم العملية — يُرسل ?operationNumber= */}
         <Typography variant="caption" fontWeight={700} color="text.secondary" my={0.75} display="block">
           رقم العملية
         </Typography>
-        <Stack direction="row" spacing={1} mb={foundOrder ? 2 : 0}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="مثال: 797"
-            value={operationInput}
-            onChange={(e) => setOperationInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void runSearch({ operationNumber: operationInput })}
-            disabled={searchPending || createPending}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-          />
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={() => void runSearch({ operationNumber: operationInput })}
-            disabled={searchPending || createPending}
-            startIcon={<SearchIcon />}
-            sx={{
-              borderRadius: 2,
-              fontWeight: 700,
-              whiteSpace: "nowrap",
-              bgcolor: BRAND,
-              "&:hover": { bgcolor: "#5254e0" },
-              flexShrink: 0,
-            }}
-          >
-            بحث
-          </Button>
-        </Stack>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="مثال: 797"
+          value={operationInput}
+          onChange={(e) => setOperationInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
+          disabled={searchPending || createPending}
+          sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+        />
 
         {searchError && (
-          <Typography variant="caption" color="error" display="block" mt={1} mb={foundOrder ? 1 : 0}>
+          <Typography variant="caption" color="error" display="block" mb={1}>
             {searchError}
           </Typography>
         )}
+
+        <Button
+          fullWidth
+          variant="contained"
+          disableElevation
+          onClick={() => void handleSearch()}
+          disabled={searchPending || createPending}
+          startIcon={<SearchIcon />}
+          sx={{
+            borderRadius: 2,
+            fontWeight: 700,
+            bgcolor: BRAND,
+            "&:hover": { bgcolor: "#5254e0" },
+            mb: foundOrder ? 2.5 : 0,
+          }}
+        >
+          {searchPending ? "جارٍ البحث…" : "بحث"}
+        </Button>
 
         {foundOrder && (
           <>
