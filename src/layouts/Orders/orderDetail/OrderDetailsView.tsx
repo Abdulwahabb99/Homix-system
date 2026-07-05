@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -15,7 +15,11 @@ import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlin
 import ShowChartOutlinedIcon from "@mui/icons-material/ShowChartOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-import { Autocomplete, Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
+import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
+import CheckIcon from "@mui/icons-material/Check";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import { Autocomplete, Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Modal, Stack, TextField, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { SelectComponent } from "components/ui";
 import { manufactureStatusOptions } from "shared/utils/constants";
@@ -52,6 +56,32 @@ function resolveCommenterName(comment: any, users: any[]): string {
     }
   }
   return "—";
+}
+
+/** أيقونة/لون حدث سجل الأحداث حسب نوعه */
+function timelineEventStyle(eventType: string): { bg: string; color: string; Icon: React.ElementType } {
+  switch (eventType) {
+    case "order_received":
+      return { bg: OD.gl, color: OD.green, Icon: CheckIcon };
+    case "notification_sent":
+      return { bg: OD.bl, color: OD.blue, Icon: NotificationsNoneOutlinedIcon };
+    default:
+      return { bg: OD.al, color: OD.accent, Icon: ScheduleIcon };
+  }
+}
+
+/** "٥ يوليو ٢٠٢٦، ١:٠٠ ص" — تنسيق عربي لوقت الحدث */
+function formatEventTime(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("ar-EG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export type OrderDetailsViewProps = {
@@ -129,6 +159,9 @@ export default function OrderDetailsView({
   setPendingDeleteNoteId,
   handleDownloadInvoice,
 }: OrderDetailsViewProps) {
+  /* صورة المنتج المعروضة في نافذة التكبير (lightbox) — null = مغلقة */
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   /* خيارات «حالة التصنيع» من الـ meta (manufactureStatuses)؛ الثابت المحلي احتياطي فقط */
   const metaQuery = useOrdersMeta();
   const manufactureOptions = useMemo(() => {
@@ -179,6 +212,43 @@ export default function OrderDetailsView({
 
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
+                {/* ——— نافذة تكبير صورة المنتج (تُغلق بالزر أو بالنقر خارج الصورة) ——— */}
+                <Modal
+                  open={Boolean(previewImage)}
+                  onClose={() => setPreviewImage(null)}
+                  sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}
+                >
+                  <Box sx={{ position: "relative", outline: "none", maxWidth: "94vw", maxHeight: "92vh" }}>
+                    <IconButton
+                      onClick={() => setPreviewImage(null)}
+                      aria-label="إغلاق"
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        bgcolor: "rgba(255,255,255,0.92)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                        "&:hover": { bgcolor: "#fff" },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 20, color: "#0f172a" }} />
+                    </IconButton>
+                    <Box
+                      component="img"
+                      src={previewImage ?? ""}
+                      alt=""
+                      sx={{
+                        display: "block",
+                        maxWidth: "94vw",
+                        maxHeight: "92vh",
+                        objectFit: "contain",
+                        borderRadius: "12px",
+                        boxShadow: "0 12px 48px rgba(0,0,0,0.5)",
+                      }}
+                    />
+                  </Box>
+                </Modal>
+
                 {/* ——— order strip ——— */}
                 <Box
                   sx={(theme) => ({
@@ -353,6 +423,7 @@ export default function OrderDetailsView({
                                   component="img"
                                   src={order?.product?.image}
                                   alt={order?.title || ""}
+                                  onClick={() => order?.product?.image && setPreviewImage(order.product.image)}
                                   sx={{
                                     width: 120,
                                     height: 110,
@@ -361,6 +432,11 @@ export default function OrderDetailsView({
                                     border: `0.5px solid ${OD.brd}`,
                                     bgcolor: OD.sur2,
                                     flexShrink: 0,
+                                    cursor: order?.product?.image ? "zoom-in" : "default",
+                                    transition: "opacity .15s, box-shadow .15s",
+                                    "&:hover": order?.product?.image
+                                      ? { opacity: 0.9, boxShadow: `0 0 0 2px ${OD.accent}` }
+                                      : undefined,
                                   }}
                                 />
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -1206,6 +1282,74 @@ export default function OrderDetailsView({
                           </Box>
                         </Box>
                       </Box>
+
+                      {/* سجل الأحداث — من data.timeline */}
+                      {Array.isArray(orderDetails.timeline) && orderDetails.timeline.length > 0 && (
+                        <Box
+                          sx={{
+                            bgcolor: OD.sur,
+                            borderRadius: `${OD.radius}px`,
+                            border: `0.5px solid ${OD.brd}`,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <Box sx={{ px: 2, py: 1.6, borderBottom: `0.5px solid ${OD.brd}` }}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <TimelineOutlinedIcon sx={{ fontSize: 18, color: OD.tx2 }} />
+                              <Typography sx={{ fontSize: "0.81rem", fontWeight: 700, color: OD.tx }}>
+                                سجل الأحداث
+                              </Typography>
+                            </Stack>
+                          </Box>
+                          <Box sx={{ p: "14px 16px" }}>
+                            {orderDetails.timeline.map((ev: any, i: number) => {
+                              const isLast = i === orderDetails.timeline.length - 1;
+                              const st = timelineEventStyle(ev?.eventType);
+                              const Icon = st.Icon;
+                              return (
+                                <Box key={ev?.id ?? i} sx={{ display: "flex", gap: 1.25 }}>
+                                  {/* المسار: نقطة + خط عمودي */}
+                                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                                    <Box
+                                      sx={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: "50%",
+                                        bgcolor: st.bg,
+                                        color: st.color,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <Icon sx={{ fontSize: 14 }} />
+                                    </Box>
+                                    {!isLast && (
+                                      <Box sx={{ flex: 1, width: "2px", bgcolor: OD.brd, minHeight: 16, my: "2px" }} />
+                                    )}
+                                  </Box>
+                                  {/* المحتوى */}
+                                  <Box sx={{ flex: 1, minWidth: 0, pt: "3px", pb: isLast ? 0 : 1.75 }}>
+                                    <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: OD.tx, lineHeight: 1.4 }}>
+                                      {ev?.message ?? "—"}
+                                    </Typography>
+                                    {ev?.description ? (
+                                      <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, mt: 0.25 }}>
+                                        {ev.description}
+                                        {ev?.userName ? ` · ${ev.userName}` : ""}
+                                      </Typography>
+                                    ) : null}
+                                    <Typography sx={{ fontSize: "0.66rem", color: OD.tx3, mt: 0.375 }}>
+                                      {formatEventTime(ev?.changedAt)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      )}
                     </Stack>
                   </Box>
                 </Box>

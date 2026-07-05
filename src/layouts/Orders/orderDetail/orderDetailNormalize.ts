@@ -50,7 +50,7 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     legacy.createdAt = legacy.createdAt ?? legacy.orderDate;
     legacy.deliveryStatus = legacy.deliveryStatus ?? legacy.manufactureStatus;
     delete legacy.statusHistory;
-    delete legacy.timeline;
+    legacy.timeline = Array.isArray(legacy.timeline) ? legacy.timeline : [];
     return legacy;
   }
 
@@ -128,10 +128,11 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     userId: order.userId,
     userName: order.userName,
     assigneeName: root.assigneeName ?? "",
+    /** سجل الأحداث من `data.timeline` — يُعرض في بطاقة «سجل الأحداث» */
+    timeline: Array.isArray(root.timeline) ? root.timeline : [],
   };
 
   delete (merged as any).statusHistory;
-  delete (merged as any).timeline;
 
   return merged;
 }
