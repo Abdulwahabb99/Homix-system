@@ -1,5 +1,5 @@
 import moment from "moment";
-import "moment/dist/locale/ar";
+import "moment/locale/ar";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { DateRangePicker } from "react-dates";
@@ -404,10 +404,12 @@ const DateRangePickerWrapper = ({
         displayFormat="DD/MM/YYYY"
         startDatePlaceholderText="من "
         endDatePlaceholderText="إلى "
+        /* locale("ar") على الشهر المرئي يجعل react-dates يعرض ترويسة أيام الأسبوع
+           (السبت/الأحد…) وأرقام الأيام بالعربية، لأنها تُشتق من هذا الـ moment */
         initialVisibleMonth={() =>
           isDesktopTwoMonths
-            ? moment().locale("en").subtract(1, "month")
-            : moment().locale("en")
+            ? moment().locale("ar").subtract(1, "month")
+            : moment().locale("ar")
         }
         inputIconPosition="after"
         customInputIcon={
