@@ -420,7 +420,8 @@ export default function Tickets() {
   });
 
   const handleLookupOrder = useCallback(
-    (input: string) => resolveOrderForNewTicket(navigate, input),
+    (input: { orderNumber?: string; operationNumber?: string }) =>
+      resolveOrderForNewTicket(navigate, input),
     [navigate]
   );
 

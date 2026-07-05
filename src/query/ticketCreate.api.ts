@@ -58,21 +58,30 @@ function mapLookupPayloadToResolved(rec: Record<string, unknown>): ResolvedOrder
 }
 
 /**
- * جلب طلب لربطه بتذكرة جديدة عبر GET `/tickets/orders/lookup?operationNumber=…`
- * (نفس حقل الـ query لرقم العملية أو رقم الطلب حسب ما يدعمه الخادم).
+ * جلب طلب لربطه بتذكرة جديدة عبر GET `/tickets/orders/lookup`.
+ * يُرسل `orderNumber` (رقم الطلب) و/أو `operationNumber` (رقم العملية) حسب حقل البحث.
  */
+export type OrderLookupParams = {
+  /** بحث بـ رقم الطلب → ?orderNumber= */
+  orderNumber?: string;
+  /** بحث بـ رقم العملية → ?operationNumber= */
+  operationNumber?: string;
+};
+
 export async function resolveOrderForNewTicket(
   navigate: NavigateFunction,
-  rawInput: string
+  input: OrderLookupParams
 ): Promise<ResolvedOrderForTicket | null> {
-  const s = rawInput.trim();
-  if (!s) return null;
+  const orderNumber = input.orderNumber?.trim();
+  const operationNumber = input.operationNumber?.replace(/^OP-?/i, "").trim();
 
-  const operationNumber = s.replace(/^OP-?/i, "").trim();
-  if (!operationNumber) return null;
+  const query: Record<string, string> = {};
+  if (orderNumber) query.orderNumber = orderNumber;
+  if (operationNumber) query.operationNumber = operationNumber;
+  if (!query.orderNumber && !query.operationNumber) return null;
 
   const { data } = await axiosRequest.get<Record<string, unknown>>(TICKETS_ORDERS_LOOKUP_PATH, {
-    params: { operationNumber },
+    params: query,
   });
   const root = data as unknown as ApiEnvelope;
   checkLogout(navigate, root);

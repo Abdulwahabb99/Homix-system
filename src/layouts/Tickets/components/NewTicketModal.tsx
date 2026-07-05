@@ -72,7 +72,10 @@ type Props = {
   /** أنواع التذكرة من الـ meta — المفتاح يُرسل للـ API كـ type */
   typeOptions: TicketMetaOption[];
   assignees: TicketMetaAssignee[];
-  onLookupOrder: (input: string) => Promise<ResolvedOrderForTicket | null>;
+  onLookupOrder: (input: {
+    orderNumber?: string;
+    operationNumber?: string;
+  }) => Promise<ResolvedOrderForTicket | null>;
   onCreateTicket: (payload: CreateTicketPayload) => Promise<void>;
   createPending?: boolean;
 };
@@ -86,9 +89,10 @@ export default function NewTicketModal({
   onCreateTicket,
   createPending = false,
 }: Props) {
-  const [opInput, setOpInput] = useState("");
+  const [orderNumberInput, setOrderNumberInput] = useState("");
+  const [operationInput, setOperationInput] = useState("");
   const [foundOrder, setFoundOrder] = useState<ResolvedOrderForTicket | null>(null);
-  const [opError, setOpError] = useState("");
+  const [searchError, setSearchError] = useState("");
   const [searchPending, setSearchPending] = useState(false);
   const [typeKey, setTypeKey] = useState<string>("");
   const [assigneeId, setAssigneeId] = useState("");
@@ -96,9 +100,10 @@ export default function NewTicketModal({
 
   useEffect(() => {
     if (!open) {
-      setOpInput("");
+      setOrderNumberInput("");
+      setOperationInput("");
       setFoundOrder(null);
-      setOpError("");
+      setSearchError("");
       setSearchPending(false);
       setTypeKey(typeOptions[0] ? String(typeOptions[0].key) : "");
       setAssigneeId("");
@@ -110,24 +115,24 @@ export default function NewTicketModal({
     }
   }, [open, typeOptions]);
 
-  async function handleSearch() {
-    const raw = opInput.trim();
-    setOpError("");
+  async function runSearch(params: { orderNumber?: string; operationNumber?: string }) {
+    const value = (params.orderNumber ?? params.operationNumber ?? "").trim();
+    setSearchError("");
     setFoundOrder(null);
-    if (!raw) {
-      setOpError("أدخل رقم العملية أو رقم الطلب");
+    if (!value) {
+      setSearchError("أدخل رقم الطلب أو رقم العملية");
       return;
     }
     setSearchPending(true);
     try {
-      const res = await onLookupOrder(raw);
+      const res = await onLookupOrder(params);
       if (!res) {
-        setOpError("لم يتم العثور على الطلب. تأكد من رقم العملية أو رقم الطلب.");
+        setSearchError("لم يتم العثور على الطلب. تأكد من رقم الطلب أو رقم العملية.");
         return;
       }
       setFoundOrder(res);
     } catch {
-      setOpError("تعذّر البحث عن الطلب");
+      setSearchError("تعذّر البحث عن الطلب");
     } finally {
       setSearchPending(false);
     }
@@ -135,16 +140,16 @@ export default function NewTicketModal({
 
   async function handleCreate() {
     if (!foundOrder) {
-      setOpError("ابحث أولاً عن الطلب");
+      setSearchError("ابحث أولاً عن الطلب");
       return;
     }
     const tid = Number(typeKey);
     const aid = Number(assigneeId);
     if (!Number.isFinite(tid) || !Number.isFinite(aid)) {
-      setOpError("اختر نوع التذكرة والمسئول");
+      setSearchError("اختر نوع التذكرة والمسئول");
       return;
     }
-    setOpError("");
+    setSearchError("");
     try {
       await onCreateTicket({
         orderId: foundOrder.orderId,
@@ -208,26 +213,25 @@ export default function NewTicketModal({
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, pt: 2.5, pb: 1 }}>
+        {/* رقم الطلب — بحث عبر ?orderNumber= */}
         <Typography variant="caption" fontWeight={700} color="text.secondary" my={0.75} display="block">
-          رقم العملية أو رقم الطلب (بحث عبر الخادم)
+          رقم الطلب
         </Typography>
-        <Stack direction="row" spacing={1} mb={foundOrder ? 2 : 0}>
+        <Stack direction="row" spacing={1} mb={1.5}>
           <TextField
             fullWidth
             size="small"
-            placeholder="مثال: 3001 أو 31668"
-            value={opInput}
-            onChange={(e) => setOpInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
-            error={Boolean(opError)}
-            helperText={opError}
+            placeholder="مثال: 10773"
+            value={orderNumberInput}
+            onChange={(e) => setOrderNumberInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void runSearch({ orderNumber: orderNumberInput })}
             disabled={searchPending || createPending}
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
           <Button
             variant="contained"
             disableElevation
-            onClick={() => void handleSearch()}
+            onClick={() => void runSearch({ orderNumber: orderNumberInput })}
             disabled={searchPending || createPending}
             startIcon={<SearchIcon />}
             sx={{
@@ -242,6 +246,46 @@ export default function NewTicketModal({
             بحث
           </Button>
         </Stack>
+
+        {/* رقم العملية — بحث عبر ?operationNumber= */}
+        <Typography variant="caption" fontWeight={700} color="text.secondary" my={0.75} display="block">
+          رقم العملية
+        </Typography>
+        <Stack direction="row" spacing={1} mb={foundOrder ? 2 : 0}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="مثال: 797"
+            value={operationInput}
+            onChange={(e) => setOperationInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void runSearch({ operationNumber: operationInput })}
+            disabled={searchPending || createPending}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+          />
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={() => void runSearch({ operationNumber: operationInput })}
+            disabled={searchPending || createPending}
+            startIcon={<SearchIcon />}
+            sx={{
+              borderRadius: 2,
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              bgcolor: BRAND,
+              "&:hover": { bgcolor: "#5254e0" },
+              flexShrink: 0,
+            }}
+          >
+            بحث
+          </Button>
+        </Stack>
+
+        {searchError && (
+          <Typography variant="caption" color="error" display="block" mt={1} mb={foundOrder ? 1 : 0}>
+            {searchError}
+          </Typography>
+        )}
 
         {foundOrder && (
           <>
