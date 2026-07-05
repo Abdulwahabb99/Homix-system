@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Box, Button, Grid, InputAdornment, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -250,6 +250,7 @@ function KpiCard({
 export default function Tickets() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const TICKET_PAGE_SIZE = 10;
   const [ticketTablePage, setTicketTablePage] = useState(0);
 
@@ -260,6 +261,8 @@ export default function Tickets() {
 
   // views
   const [newTicketOpen, setNewTicketOpen] = useState(false);
+  /** رقم عملية قادم من الرابط (?operationNumber=) لملء نافذة إنشاء التذكرة والبحث تلقائياً */
+  const [prefillOperation, setPrefillOperation] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
@@ -424,6 +427,18 @@ export default function Tickets() {
       resolveOrderForNewTicket(navigate, input),
     [navigate]
   );
+
+  // إذا حمل الرابط ?operationNumber= افتح نافذة الإنشاء بهذا الرقم وابحث تلقائياً،
+  // ثم أزل المعامل من الرابط حتى لا يتكرر الفتح عند الإغلاق/التحديث.
+  useEffect(() => {
+    const op = searchParams.get("operationNumber");
+    if (!op) return;
+    setPrefillOperation(op);
+    setNewTicketOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("operationNumber");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const openTicket = useCallback(
     (ticketId: string) => {
@@ -770,12 +785,16 @@ export default function Tickets() {
       {/* مودالات خارج غلاف الصفحة لتفادي أي stacking / overflow من المحتوى */}
       <NewTicketModal
         open={newTicketOpen}
-        onClose={() => setNewTicketOpen(false)}
+        onClose={() => {
+          setNewTicketOpen(false);
+          setPrefillOperation("");
+        }}
         typeOptions={typeOptionsForModal}
         assignees={filterAssigneeOptions}
         onLookupOrder={handleLookupOrder}
         onCreateTicket={handleCreateTicket}
         createPending={createTicketMutation.isPending}
+        initialOperationNumber={prefillOperation}
       />
 
       <TicketSettingsModal

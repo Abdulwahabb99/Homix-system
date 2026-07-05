@@ -1218,7 +1218,10 @@ export default function OrderDetailsView({
                                 icon: <ChatBubbleOutlineIcon sx={{ fontSize: 18 }} />,
                                 title: "فتح تذكرة",
                                 sub: "دعم العميل",
-                                onClick: () => navigate("/tickets"),
+                                onClick: () => {
+                                  const op = String(orderDetails.operationNumber ?? orderDetails.code ?? "").trim();
+                                  navigate(op ? `/tickets?operationNumber=${encodeURIComponent(op)}` : "/tickets");
+                                },
                               },
                               {
                                 icon: <LocalPrintshopOutlinedIcon sx={{ fontSize: 18 }} />,

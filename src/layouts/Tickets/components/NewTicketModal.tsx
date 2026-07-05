@@ -78,6 +78,8 @@ type Props = {
   }) => Promise<ResolvedOrderForTicket | null>;
   onCreateTicket: (payload: CreateTicketPayload) => Promise<void>;
   createPending?: boolean;
+  /** عند الفتح: يملأ حقل «رقم العملية» بهذه القيمة ويبحث تلقائياً */
+  initialOperationNumber?: string;
 };
 
 export default function NewTicketModal({
@@ -88,6 +90,7 @@ export default function NewTicketModal({
   onLookupOrder,
   onCreateTicket,
   createPending = false,
+  initialOperationNumber = "",
 }: Props) {
   const [orderNumberInput, setOrderNumberInput] = useState("");
   const [operationInput, setOperationInput] = useState("");
@@ -115,9 +118,17 @@ export default function NewTicketModal({
     }
   }, [open, typeOptions]);
 
-  async function handleSearch() {
-    const orderNumber = orderNumberInput.trim();
-    const operationNumber = operationInput.trim();
+  // فتح عبر رابط يحمل operationNumber: نملأ الحقل ونبحث مباشرة
+  useEffect(() => {
+    if (open && initialOperationNumber) {
+      setOperationInput(initialOperationNumber);
+      void handleSearch({ operationNumber: initialOperationNumber });
+    }
+  }, [open, initialOperationNumber]);
+
+  async function handleSearch(override?: { orderNumber?: string; operationNumber?: string }) {
+    const orderNumber = (override?.orderNumber ?? orderNumberInput).trim();
+    const operationNumber = (override?.operationNumber ?? operationInput).trim();
     setSearchError("");
     setFoundOrder(null);
     if (!orderNumber && !operationNumber) {
