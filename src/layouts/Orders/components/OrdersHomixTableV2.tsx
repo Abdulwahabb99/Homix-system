@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Box, Button, Checkbox, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
@@ -253,6 +253,9 @@ interface OrdersHomixTableV2Props {
   isFetching?: boolean;
   /** إجمالي السجلات من الـ API (للترقيم والعنوان) */
   totalCount?: number;
+  /** تصدير Excel — يُظهر زر Excel في ترويسة الجدول عند تمريره */
+  onExport?: () => void;
+  isExporting?: boolean;
 }
 
 /* ─────────────────────────────────────────
@@ -265,6 +268,7 @@ export default function OrdersHomixTableV2({
   page, totalPages, pageSize, onPageChange,
   calculateDaysFromPoDate, isFetching,
   totalCount: totalCountFromApi,
+  onExport, isExporting,
 }: OrdersHomixTableV2Props) {
   const totalCount =
     totalCountFromApi != null ? totalCountFromApi : totalPages * pageSize;
@@ -302,6 +306,23 @@ export default function OrdersHomixTableV2({
   const allCols    = [...BASE_COLS, ...extraCols, ACTIONS_COL];
   const colCount   = allCols.length + (isVendor ? 0 : 1); // +1 for checkbox
   const tableWidth = CHECKBOX_W + allCols.reduce((s, c) => s + c.w, 0);
+
+  /* ترتيب الصفحة الحالية محلياً حسب اختيار المستخدم */
+  const [sortKey, setSortKey] = useState<"newest" | "oldest" | "priceDesc" | "daysDesc">("newest");
+  const sortedOrders = useMemo(() => {
+    const arr = [...orders];
+    switch (sortKey) {
+      case "oldest":
+        return arr.sort((a, b) => moment(a.createdAt).diff(moment(b.createdAt)));
+      case "priceDesc":
+        return arr.sort((a, b) => Number(b.totalPrice ?? 0) - Number(a.totalPrice ?? 0));
+      case "daysDesc":
+        return arr.sort((a, b) => Number(b.daysSinceOrder ?? 0) - Number(a.daysSinceOrder ?? 0));
+      case "newest":
+      default:
+        return arr.sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
+    }
+  }, [orders, sortKey]);
 
   return (
     <Box sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
@@ -348,8 +369,9 @@ export default function OrdersHomixTableV2({
           )}
         </Box>
 
-        {!isVendor && selectionModel.length > 0 && (
-          <Stack direction="row" spacing={1.25} flexWrap="wrap" sx={{ alignItems: "center" }}>
+        <Stack direction="row" spacing={1.25} flexWrap="wrap" sx={{ alignItems: "center" }}>
+          {!isVendor && selectionModel.length > 0 && (
+            <>
             <Button
               variant="outlined"
               color="primary"
@@ -406,8 +428,72 @@ export default function OrdersHomixTableV2({
             >
               حذف المحدد
             </Button>
-          </Stack>
-        )}
+            </>
+          )}
+
+          {/* ترتيب الصفحة الحالية (بدون عنوان) */}
+          <Box
+            component="select"
+            value={sortKey}
+            onChange={(e) =>
+              setSortKey(
+                (e.target as HTMLSelectElement).value as
+                  | "newest"
+                  | "oldest"
+                  | "priceDesc"
+                  | "daysDesc"
+              )
+            }
+            sx={{
+              fontFamily: FONT,
+              fontSize: "12px",
+              height: 30,
+              px: "10px",
+              border: `0.5px solid ${HX.border}`,
+              borderRadius: "8px",
+              bgcolor: HX.surface,
+              color: HX.tx2,
+              outline: "none",
+              cursor: "pointer",
+              "&:focus": { borderColor: HX.accent },
+            }}
+          >
+            <option value="newest">الأحدث أولاً</option>
+            <option value="oldest">الأقدم أولاً</option>
+            <option value="priceDesc">الأعلى سعراً</option>
+            <option value="daysDesc">الأكثر إلحاحاً</option>
+          </Box>
+
+          {/* تصدير Excel */}
+          {onExport && (
+            <Box
+              component="button"
+              type="button"
+              onClick={onExport}
+              disabled={isExporting}
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                height: 30,
+                px: "12px",
+                fontSize: "11.5px",
+                fontWeight: 600,
+                fontFamily: FONT,
+                bgcolor: HX.surface2,
+                color: HX.tx2,
+                border: `0.5px solid ${HX.border}`,
+                borderRadius: "8px",
+                cursor: isExporting ? "default" : "pointer",
+                opacity: isExporting ? 0.6 : 1,
+                transition: ".15s",
+                "&:hover": { borderColor: HX.accent, color: HX.accent },
+              }}
+            >
+              {isExporting ? "جارٍ التصدير…" : "Excel"}
+            </Box>
+          )}
+        </Stack>
       </Box>
 
       {/* ─────────────────────────────────────────
@@ -499,7 +585,7 @@ export default function OrdersHomixTableV2({
               </tr>
             )}
 
-            {orders.map((order) => {
+            {sortedOrders.map((order) => {
               const rk = rowKey(order);
               const isSelected = selectionModel.includes(rk);
 

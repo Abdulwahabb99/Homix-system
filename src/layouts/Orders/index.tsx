@@ -608,6 +608,8 @@ function Orders() {
               onPageChange={(newPage) => setParams({ page: String(newPage + 1) })}
               calculateDaysFromPoDate={calculateDaysFromPoDate}
               isFetching={ordersFetching}
+              onExport={handleExport}
+              isExporting={isExportLoading}
             />
           )}
 
