@@ -52,6 +52,7 @@ export interface ShipmentsListParams {
   paymentStatus?: string;
   shipmentType?: string;
   deliveryBy?: string;
+  scheduleStatus?: string;
   vendorName?: string;
   startDate?: any;
   endDate?: any;
@@ -77,6 +78,7 @@ function buildQuery(p: ShipmentsListParams): string {
   if (p.paymentStatus)  q.set("paymentStatus",  p.paymentStatus);
   if (p.shipmentType)   q.set("shipmentType",   p.shipmentType);
   if (p.deliveryBy)     q.set("deliveryBy",     p.deliveryBy);
+  if (p.scheduleStatus) q.set("scheduleStatus", p.scheduleStatus);
   if (p.vendorName)     q.set("vendorName",     p.vendorName);
   const sd = toDateString(p.startDate);
   const ed = toDateString(p.endDate);

@@ -116,6 +116,7 @@ export default function Shipments() {
   const paymentStatus  = searchParams.get("paymentStatus")  || "";
   const shipmentType   = searchParams.get("shipmentType")   || "";
   const deliveryBy     = searchParams.get("deliveryBy")     || "";
+  const scheduleStatus = searchParams.get("scheduleStatus") || "";
   const vendorName     = searchParams.get("vendorName")     || "";
   const startDate      = dateFromUrl(searchParams.get("startDate") || "");
   const endDate        = dateFromUrl(searchParams.get("endDate")   || "");
@@ -128,7 +129,7 @@ export default function Shipments() {
   // React Query
   const queryParams = {
     page, operationCode, customerName, customerPhone,
-    shipmentStatus, paymentStatus, shipmentType, deliveryBy, vendorName,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, scheduleStatus, vendorName,
     startDate, endDate,
   };
 
@@ -161,6 +162,7 @@ export default function Shipments() {
     if (values.paymentStatus)  urlParams.set("paymentStatus",  values.paymentStatus);
     if (values.shipmentType)   urlParams.set("shipmentType",   values.shipmentType);
     if (values.deliveryBy)     urlParams.set("deliveryBy",     values.deliveryBy);
+    if (values.scheduleStatus) urlParams.set("scheduleStatus", values.scheduleStatus);
     if (values.vendorName)     urlParams.set("vendorName",     values.vendorName);
     if (values.startDate) {
       const m = moment.isMoment(values.startDate)
@@ -196,6 +198,7 @@ export default function Shipments() {
     if (paymentStatus)  q.set("paymentStatus",  paymentStatus);
     if (shipmentType)   q.set("shipmentType",   shipmentType);
     if (deliveryBy)     q.set("deliveryBy",     deliveryBy);
+    if (scheduleStatus) q.set("scheduleStatus", scheduleStatus);
     if (vendorName)     q.set("vendorName",     vendorName);
     const sIso = toIso(startDate);
     const eIso = toIso(endDate);
@@ -224,7 +227,7 @@ export default function Shipments() {
   // Default values snapshot for filter bar (from current URL)
   const filterDefaults: FilterValues = {
     operationCode, customerName, customerPhone,
-    shipmentStatus, paymentStatus, shipmentType, deliveryBy, vendorName,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, scheduleStatus, vendorName,
     startDate, endDate,
   };
 

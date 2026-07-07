@@ -18,6 +18,7 @@ export interface FilterValues {
   paymentStatus: string;
   shipmentType: string;
   deliveryBy: string;
+  scheduleStatus: string;
   vendorName: string;
   startDate: any;
   endDate: any;
@@ -155,7 +156,7 @@ export default function ShipmentsFiltersBar({
     const empty: FilterValues = {
       operationCode: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
-      deliveryBy: "", vendorName: "", startDate: null, endDate: null,
+      deliveryBy: "", scheduleStatus: "", vendorName: "", startDate: null, endDate: null,
     };
     setVals(empty);
     onReset();
@@ -168,6 +169,7 @@ export default function ShipmentsFiltersBar({
     { value: 2, label: "مدفوع" },
   ];
   const deliveryByOptions = meta?.deliveryByOptions ?? [];
+  const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
 
   return (
     <Box
@@ -237,6 +239,13 @@ export default function ShipmentsFiltersBar({
           value={vals.deliveryBy}
           options={deliveryByOptions}
           onChange={set("deliveryBy")}
+        />
+
+        <FilterSelect
+          label="حالة الجدولة"
+          value={vals.scheduleStatus}
+          options={scheduleStatuses}
+          onChange={set("scheduleStatus")}
         />
 
 

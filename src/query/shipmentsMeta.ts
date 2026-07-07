@@ -25,6 +25,7 @@ export interface ShipmentsMeta {
   customerReturnStatuses: ShipmentsMetaOption[];
   inventoryStatuses: ShipmentsMetaOption[];
   expenseTypes: ShipmentsMetaOption[];
+  scheduleStatuses: ShipmentsMetaOption[];
   tabs: ShipmentsTabCount[];
 }
 
@@ -53,6 +54,7 @@ function normalizeMeta(raw: any): ShipmentsMeta {
     customerReturnStatuses: pick("customerReturnStatuses", []),
     inventoryStatuses:      pick("inventoryStatuses",      []),
     expenseTypes:           pick("expenseTypes",           []),
+    scheduleStatuses:       pick("scheduleStatuses",       []),
     tabs: Array.isArray(raw.tabs) ? raw.tabs : [],
   };
 }
@@ -71,6 +73,7 @@ const FALLBACK: ShipmentsMeta = {
   customerReturnStatuses: [],
   inventoryStatuses: [],
   expenseTypes: [],
+  scheduleStatuses: [],
   tabs: [],
 };
 
