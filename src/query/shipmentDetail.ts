@@ -51,6 +51,8 @@ export interface ShipmentDetailInfo {
   shipmentNumber: string;
   shipmentStatus: number;
   shipmentStatusLabel: string;
+  scheduleStatus?: number;
+  scheduleStatusLabel?: string;
   shipmentType: string;
   shipmentTypeLabel: string;
   shippingCost: number;

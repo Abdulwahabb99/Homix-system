@@ -135,6 +135,7 @@ export default function ShipmentEdit() {
   const [shipmentType, setShipmentType] = useState<string>("");
   const [governorate, setGovernorate] = useState<string>("");
   const [deliveryBy, setDeliveryBy] = useState<number | "">("");
+  const [scheduleStatus, setScheduleStatus] = useState<number | "">("");
   const [shippingCompany, setShippingCompany] = useState("");
   const [shippingFees, setShippingFees] = useState("");
 
@@ -169,6 +170,11 @@ export default function ShipmentEdit() {
     governorate
   );
   const deliveryByOptions = meta?.deliveryByOptions ?? [];
+  const scheduleOptions = withCurrent(
+    meta?.scheduleStatuses ?? [],
+    scheduleStatus,
+    data?.shipment.scheduleStatusLabel
+  );
   const paymentOptions = meta?.paymentStatuses?.length ? meta.paymentStatuses : DEFAULT_PAYMENT_OPTIONS;
 
   // --- prefill once the shipment has loaded ---
@@ -177,6 +183,7 @@ export default function ShipmentEdit() {
     const { shipment, customer, financial } = data;
 
     setShipmentStatus(shipment.shipmentStatus != null ? Number(shipment.shipmentStatus) : "");
+    setScheduleStatus(shipment.scheduleStatus != null ? Number(shipment.scheduleStatus) : "");
     setShipmentType(shipment.shipmentType ?? "");
     setGovernorate(shipment.governorate ?? "");
     setShippingCompany(shipment.shippingCompany ?? "");
@@ -219,6 +226,7 @@ export default function ShipmentEdit() {
     if (shipmentType) body.shipmentType = shipmentType;
     if (governorate) body.governorate = governorate;
     if (deliveryBy !== "") body.deliveryBy = Number(deliveryBy);
+    if (scheduleStatus !== "") body.scheduleStatus = Number(scheduleStatus);
     if (shippingCompany.trim()) body.shippingCompany = shippingCompany.trim();
     if (shippingFees.trim() !== "" && Number.isFinite(Number(shippingFees))) {
       body.shippingFees = Number(shippingFees);
@@ -400,6 +408,20 @@ export default function ShipmentEdit() {
                 onChange={(e) => setDeliveryBy(Number(e.target.value))}
               >
                 {deliveryByOptions.map((o) => (
+                  <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                {...fieldBaseProps}
+                select
+                disabled={scheduleOptions.length === 0}
+                label="حالة الجدولة"
+                value={scheduleStatus === "" ? "" : Number(scheduleStatus)}
+                onChange={(e) => setScheduleStatus(Number(e.target.value))}
+              >
+                {scheduleOptions.map((o) => (
                   <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
                 ))}
               </TextField>
