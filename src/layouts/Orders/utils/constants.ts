@@ -18,6 +18,16 @@ export const DELIVERY_STATUS = [
   { label: "متأخر", value: 3 },
 ];
 
+/** خيارات ترتيب قائمة الطلبات — تُرسَل للـ API كـ sort[field]=dir (-1 تنازلي، 1 تصاعدي) */
+export const ORDERS_SORT_OPTIONS = [
+  { key: "newest",       label: "الأحدث أولاً",   field: "orderDate",  dir: -1 },
+  { key: "oldest",       label: "الأقدم أولاً",   field: "orderDate",  dir: 1 },
+  { key: "priceDesc",    label: "الأعلى سعراً",   field: "totalPrice", dir: -1 },
+  { key: "priorityDesc", label: "الأكثر إلحاحاً", field: "priority",   dir: -1 },
+] as const;
+
+export type OrdersSortKey = (typeof ORDERS_SORT_OPTIONS)[number]["key"];
+
 export const customerInitialState = {
   firstName: "",
   lastName: "",

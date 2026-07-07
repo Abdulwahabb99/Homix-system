@@ -1,4 +1,3 @@
-import moment from "moment";
 import axiosRequest from "shared/functions/axiosRequest";
 import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 
@@ -36,6 +35,7 @@ function buildQueryString(p) {
   if (p.productCode)       query.set("productCode",    p.productCode);
   if (p.startDate) query.set("startDate", p.startDate.utc().toISOString());
   if (p.endDate)   query.set("endDate",   p.endDate.utc().toISOString());
+  if (p.sortField && p.sortDir) query.set(`sort[${p.sortField}]`, String(p.sortDir));
   return query.toString();
 }
 
@@ -150,20 +150,17 @@ export async function fetchOrdersList({ params, navigate }) {
     return { orders: [], totalPages: 0, totalCount: 0 };
   }
 
+  // الترتيب يتم على الخادم عبر sort[...]، لذا نُبقي ترتيب العناصر كما ورد.
   if (Array.isArray(inner.items)) {
     const size = Number(inner.size) || ORDERS_LIST_PAGE_SIZE;
     const totalCount = inner.totalCount ?? inner.items.length;
     const totalPages = Math.max(1, Math.ceil(totalCount / size));
-    const newOrders = inner.items
-      .map(mapListItemRow)
-      .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
+    const newOrders = inner.items.map(mapListItemRow);
     return { orders: newOrders, totalPages, totalCount };
   }
 
   if (Array.isArray(inner.orders)) {
-    const newOrders = inner.orders
-      .map(mapOrderRow)
-      .sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
+    const newOrders = inner.orders.map(mapOrderRow);
     return {
       orders: newOrders,
       totalPages: inner.totalPages ?? 1,

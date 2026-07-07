@@ -16,6 +16,7 @@ import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
+import { ORDERS_SORT_OPTIONS } from "layouts/Orders/utils/constants";
 import { useOrdersSummaryQuery } from "query/ordersSummary.api";
 
 /* ── New UI components ── */
@@ -157,6 +158,11 @@ function Orders() {
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
   const priorityParam = searchParams.get("priority");
+  const sortKey = searchParams.get("sort") || "newest";
+  const sortConfig = useMemo(
+    () => ORDERS_SORT_OPTIONS.find((o) => o.key === sortKey) ?? ORDERS_SORT_OPTIONS[0],
+    [sortKey]
+  );
 
   const metaQuery = useOrdersMeta(Boolean(token));
 
@@ -168,6 +174,7 @@ function Orders() {
         u: filterUserId || null,
         db: deliveryByParam || null,
         pr: priorityParam || null,
+        srt: sortKey,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
         oc: apiOperationCode || null,
         cn: apiCustomerName || null,
@@ -175,7 +182,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, priorityParam, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -264,6 +271,8 @@ function Orders() {
           userIdParam: filterUserId || undefined,
           deliveryByParam: deliveryByParam || undefined,
           priorityParam: priorityParam || undefined,
+          sortField: sortConfig.field,
+          sortDir: sortConfig.dir,
           startDate, endDate,
           operationCode: apiOperationCode || undefined,
           customerName: apiCustomerName || undefined,
@@ -374,6 +383,11 @@ function Orders() {
   /* ── Priority: chips apply directly (→ refetch) ── */
   const handlePriorityChange = (next: string[]) => {
     setParams({ page: "1", priority: next });
+  };
+
+  /* ── Sort: يُرسَل للخادم عبر sort[field]=dir ── */
+  const handleSortChange = (key: string) => {
+    setParams({ page: "1", sort: key });
   };
 
   const handleApplyFilters = (d: {
@@ -610,6 +624,8 @@ function Orders() {
               isFetching={ordersFetching}
               onExport={handleExport}
               isExporting={isExportLoading}
+              sortValue={sortKey}
+              onSortChange={handleSortChange}
             />
           )}
 

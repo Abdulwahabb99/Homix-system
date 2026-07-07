@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback } from "react";
 import { Box, Button, Checkbox, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
@@ -7,6 +7,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import moment from "moment";
 import "moment-timezone";
 import { HX, cardSx } from "../ordersHomixTheme";
+import { ORDERS_SORT_OPTIONS } from "../utils/constants";
 import {
   OrderStatusBadge,
   DeliveryStatusBadge,
@@ -256,6 +257,9 @@ interface OrdersHomixTableV2Props {
   /** تصدير Excel — يُظهر زر Excel في ترويسة الجدول عند تمريره */
   onExport?: () => void;
   isExporting?: boolean;
+  /** ترتيب من الخادم — مفتاح الخيار الحالي ودالة التغيير */
+  sortValue?: string;
+  onSortChange?: (key: string) => void;
 }
 
 /* ─────────────────────────────────────────
@@ -269,6 +273,7 @@ export default function OrdersHomixTableV2({
   calculateDaysFromPoDate, isFetching,
   totalCount: totalCountFromApi,
   onExport, isExporting,
+  sortValue = "newest", onSortChange,
 }: OrdersHomixTableV2Props) {
   const totalCount =
     totalCountFromApi != null ? totalCountFromApi : totalPages * pageSize;
@@ -306,23 +311,6 @@ export default function OrdersHomixTableV2({
   const allCols    = [...BASE_COLS, ...extraCols, ACTIONS_COL];
   const colCount   = allCols.length + (isVendor ? 0 : 1); // +1 for checkbox
   const tableWidth = CHECKBOX_W + allCols.reduce((s, c) => s + c.w, 0);
-
-  /* ترتيب الصفحة الحالية محلياً حسب اختيار المستخدم */
-  const [sortKey, setSortKey] = useState<"newest" | "oldest" | "priceDesc" | "daysDesc">("newest");
-  const sortedOrders = useMemo(() => {
-    const arr = [...orders];
-    switch (sortKey) {
-      case "oldest":
-        return arr.sort((a, b) => moment(a.createdAt).diff(moment(b.createdAt)));
-      case "priceDesc":
-        return arr.sort((a, b) => Number(b.totalPrice ?? 0) - Number(a.totalPrice ?? 0));
-      case "daysDesc":
-        return arr.sort((a, b) => Number(b.daysSinceOrder ?? 0) - Number(a.daysSinceOrder ?? 0));
-      case "newest":
-      default:
-        return arr.sort((a, b) => moment(b.createdAt).diff(moment(a.createdAt)));
-    }
-  }, [orders, sortKey]);
 
   return (
     <Box sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
@@ -431,19 +419,11 @@ export default function OrdersHomixTableV2({
             </>
           )}
 
-          {/* ترتيب الصفحة الحالية (بدون عنوان) */}
+          {/* ترتيب من الخادم (بدون عنوان) */}
           <Box
             component="select"
-            value={sortKey}
-            onChange={(e) =>
-              setSortKey(
-                (e.target as HTMLSelectElement).value as
-                  | "newest"
-                  | "oldest"
-                  | "priceDesc"
-                  | "daysDesc"
-              )
-            }
+            value={sortValue}
+            onChange={(e) => onSortChange?.((e.target as HTMLSelectElement).value)}
             sx={{
               fontFamily: FONT,
               fontSize: "12px",
@@ -458,10 +438,11 @@ export default function OrdersHomixTableV2({
               "&:focus": { borderColor: HX.accent },
             }}
           >
-            <option value="newest">الأحدث أولاً</option>
-            <option value="oldest">الأقدم أولاً</option>
-            <option value="priceDesc">الأعلى سعراً</option>
-            <option value="daysDesc">الأكثر إلحاحاً</option>
+            {ORDERS_SORT_OPTIONS.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
           </Box>
 
           {/* تصدير Excel */}
@@ -585,7 +566,7 @@ export default function OrdersHomixTableV2({
               </tr>
             )}
 
-            {sortedOrders.map((order) => {
+            {orders.map((order) => {
               const rk = rowKey(order);
               const isSelected = selectionModel.includes(rk);
 
