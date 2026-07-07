@@ -111,7 +111,8 @@ export default function ShipmentsTable({
 }: ShipmentsTableProps) {
   const navigate = useNavigate();
 
-  if (isLoading) {
+  // هيكل تحميل عند أي جلب (تحميل أول أو إعادة جلب بعد تغيير فلتر/صفحة)
+  if (isLoading || isFetching) {
     return (
       <Box sx={{ ...cardSx, overflow: "hidden" }}>
         {[...Array(8)].map((_, i) => (
