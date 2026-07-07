@@ -364,7 +364,6 @@ export default function Shipments() {
             <ShipmentsKpiRow cards={summaryData} isLoading={isSummaryLoading} />
 
             <ShipmentsFiltersBar
-              key={`${operationCode}|${customerName}|${shipmentStatus}|${vendorName}`}
               defaultValues={filterDefaults}
               meta={metaData}
               isVendor={isVendor}
