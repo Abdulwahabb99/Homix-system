@@ -1,9 +1,8 @@
 import React from "react";
 import moment from "moment";
-import "moment/locale/ar";
+import "shared/functions/momentLocale";
 
 export default function TargetsProgressCard() {
-  moment.locale("ar");
   const endOfMonth = moment().endOf("month");
   const daysLeft = Math.max(0, endOfMonth.diff(moment(), "days"));
 
@@ -12,7 +11,7 @@ export default function TargetsProgressCard() {
       <div className="h-card-head">
         <div>
           <div className="h-card-title">تقدم الأهداف</div>
-          <div className="h-card-sub">أهداف {moment().format("MMMM YYYY")}</div>
+          <div className="h-card-sub">أهداف {moment().locale("ar").format("MMMM YYYY")}</div>
         </div>
         <div className="h-goals-pill h-nowrap">{daysLeft} يوم متبقية</div>
       </div>

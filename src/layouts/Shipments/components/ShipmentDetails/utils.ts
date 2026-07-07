@@ -1,5 +1,5 @@
 import moment from "moment";
-import "moment/locale/ar";
+import "shared/functions/momentLocale";
 
 /** Localized integer formatting (no decimals), English digits. */
 export function fmtNum(n: number | null | undefined): string {

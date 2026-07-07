@@ -7,7 +7,7 @@ import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import moment from "moment";
 import "moment-timezone";
-import "moment/locale/ar";
+import "shared/functions/momentLocale";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";

@@ -1,5 +1,5 @@
 import moment from "moment";
-import "moment/locale/ar";
+import "shared/functions/momentLocale";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { DateRangePicker } from "react-dates";

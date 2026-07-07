@@ -5,10 +5,11 @@ import { formatMoneyCompact } from "shared/formatMoney";
 
 /* ── helpers ── */
 function formatDateRange(startDate: string, endDate: string) {
-  const fmtD = (iso: string) =>
-    new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long" }).format(
-      new Date(iso + "T00:00:00")
-    );
+  const fmtD = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return String(iso ?? "");
+    return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long" }).format(d);
+  };
   return `${fmtD(startDate)} – ${fmtD(endDate)}`;
 }
 
