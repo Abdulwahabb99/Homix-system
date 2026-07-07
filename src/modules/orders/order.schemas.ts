@@ -7,6 +7,13 @@ const csvPriorityString = z.string().trim().min(1).refine(
   (value) => value.split(",").every((item) => ORDER_PRIORITY_KEYS.includes(Number(item.trim()) as typeof ORDER_PRIORITY_KEYS[number])),
   "Invalid priority value",
 );
+const sortDirectionSchema = z.coerce.number().refine((value) => value === 1 || value === -1, "Sort direction must be 1 or -1");
+const sortSchema = z.object({
+  orderDate: sortDirectionSchema.optional(),
+  priority: sortDirectionSchema.optional(),
+  subTotalPrice: sortDirectionSchema.optional(),
+  totalPrice: sortDirectionSchema.optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, "sort must include at least one field").optional();
 
 export const orderIdParamsSchema = z.object({
   orderId: z.coerce.number().int().positive(),
@@ -29,6 +36,7 @@ export const orderListQuerySchema = z.object({
   paymentStatus: csvNumberString.optional(),
   priority: csvPriorityString.optional(),
   productCode: z.string().trim().optional(),
+  sort: sortSchema,
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   startDate: z.string().trim().optional(),
   status: csvNumberString.optional(),
@@ -39,6 +47,7 @@ export const orderListQuerySchema = z.object({
 
 export const orderSummaryQuerySchema = orderListQuerySchema.omit({
   page: true,
+  sort: true,
   size: true,
 });
 

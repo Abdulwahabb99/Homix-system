@@ -93,6 +93,11 @@ const shipmentReturnModel = require("../../../app/modules/shipments/shipmentRetu
 const shippingCompanyModel = require("../../../app/modules/shipments/shippingCompany.model");
 const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
 const SHIPMENT_SCHEDULE_LABELS = SHIPMENT_SCHEDULE_STATUS_ARABIC as Record<number, string>;
+const SHIPMENT_SORTABLE_FIELDS = ["orderDate", "priority", "subTotalPrice", "totalPrice"] as const;
+
+type ShipmentSortField = (typeof SHIPMENT_SORTABLE_FIELDS)[number];
+type ShipmentSortDirection = 1 | -1;
+type ShipmentSortEntry = [ShipmentSortField, ShipmentSortDirection];
 
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
@@ -329,6 +334,59 @@ const matchesShipmentPriority = (item: ShipmentListItem, priorityFilter?: string
     .includes(item.deliveryPriority ?? 0);
 };
 
+const getShipmentSortEntries = (sort?: ShipmentListQuery["sort"]): ShipmentSortEntry[] => {
+  if (!sort) {
+    return [];
+  }
+
+  return SHIPMENT_SORTABLE_FIELDS.flatMap((field) => {
+    const direction = sort[field];
+    return direction === 1 || direction === -1 ? [[field, direction] satisfies ShipmentSortEntry] : [];
+  });
+};
+
+const getShipmentSortValue = (
+  field: ShipmentSortField,
+  entry: { item: ShipmentListItem; row: Record<string, unknown> },
+): number => {
+  if (field === "priority") {
+    return entry.item.deliveryPriority ?? 0;
+  }
+
+  if (field === "orderDate") {
+    const timestamp = new Date(toIsoString(entry.row.orderDate) ?? "").getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
+
+  return toNumber(entry.row[field]);
+};
+
+const compareShipmentEntries = (
+  left: { item: ShipmentListItem; row: Record<string, unknown> },
+  right: { item: ShipmentListItem; row: Record<string, unknown> },
+  sortEntries: ShipmentSortEntry[],
+): number => {
+  for (const [field, direction] of sortEntries) {
+    const leftValue = getShipmentSortValue(field, left);
+    const rightValue = getShipmentSortValue(field, right);
+    if (leftValue === rightValue) {
+      continue;
+    }
+
+    return direction === -1 ? rightValue - leftValue : leftValue - rightValue;
+  }
+
+  return right.item.id - left.item.id;
+};
+
+const buildShipmentSort = (sortEntries: ShipmentSortEntry[]): Array<[string, "ASC" | "DESC"]> => {
+  const databaseEntries = sortEntries
+    .filter(([field]) => field !== "priority")
+    .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
+
+  return databaseEntries.length > 0 ? databaseEntries : [["shippingReceiveDate", "DESC"]];
+};
+
 const mapShipmentNote = (noteValue: unknown) => {
   const note = toPlain(noteValue);
   return {
@@ -530,22 +588,31 @@ export class ShipmentRepository {
 
   public async listShipments(filters: ShipmentListQuery, vendorId?: number | null): Promise<ShipmentListResponse> {
     const whereClause = buildShipmentWhereClause(filters, vendorId);
+    const sortEntries = getShipmentSortEntries(filters.sort);
 
-    if (filters.priority) {
+    if (filters.priority || sortEntries.some(([field]) => field === "priority")) {
       const rows = await orderModel.findAll({
         include: buildIncludes(),
-        order: [["shippingReceiveDate", "DESC"]],
+        order: buildShipmentSort(sortEntries),
         subQuery: false,
         where: whereClause,
       });
       const filteredItems = rows
-        .map((row: unknown) => mapShipmentListItem(row))
-        .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority));
+        .map((row: unknown) => ({ item: mapShipmentListItem(row), row: toPlain(row) }))
+        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentPriority(item, filters.priority));
+      if (sortEntries.length > 0) {
+        filteredItems.sort(
+          (
+            left: { item: ShipmentListItem; row: Record<string, unknown> },
+            right: { item: ShipmentListItem; row: Record<string, unknown> },
+          ) => compareShipmentEntries(left, right, sortEntries),
+        );
+      }
       const start = (filters.page - 1) * filters.size;
       const end = start + filters.size;
 
       return {
-        items: filteredItems.slice(start, end),
+        items: filteredItems.slice(start, end).map(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => item),
         page: filters.page ?? DEFAULT_PAGE_NUMBER,
         size: filters.size ?? DEFAULT_PAGE_SIZE,
         totalCount: filteredItems.length,
@@ -556,7 +623,7 @@ export class ShipmentRepository {
       include: buildIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
-      order: [["shippingReceiveDate", "DESC"]],
+      order: buildShipmentSort(sortEntries),
       subQuery: false,
       where: whereClause,
     });

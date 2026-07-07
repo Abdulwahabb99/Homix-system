@@ -7,6 +7,13 @@ const csvString = z.string().trim().min(1);
 const dateString = z.string().trim().refine(isValidDateInput, {
   message: "Invalid date value",
 });
+const sortDirectionSchema = z.coerce.number().refine((value) => value === 1 || value === -1, "Sort direction must be 1 or -1");
+const sortSchema = z.object({
+  orderDate: sortDirectionSchema.optional(),
+  priority: sortDirectionSchema.optional(),
+  subTotalPrice: sortDirectionSchema.optional(),
+  totalPrice: sortDirectionSchema.optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, "sort must include at least one field").optional();
 
 export const shipmentIdParamsSchema = z.object({
   shipmentId: z.coerce.number().int().positive(),
@@ -49,6 +56,7 @@ export const shipmentListQuerySchema = z.object({
   shipmentNumber: z.string().trim().optional(),
   shipmentStatus: csvString.optional(),
   shipmentType: z.string().trim().optional(),
+  sort: sortSchema,
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   startDate: dateString.optional(),
   vendorName: z.string().trim().optional(),
@@ -56,6 +64,7 @@ export const shipmentListQuerySchema = z.object({
 
 export const shipmentSummaryQuerySchema = shipmentListQuerySchema.omit({
   page: true,
+  sort: true,
   size: true,
 });
 

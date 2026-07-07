@@ -21,6 +21,7 @@ export type ShipmentListQuery = {
   shipmentNumber?: string;
   shipmentStatus?: string;
   shipmentType?: string;
+  sort?: Partial<Record<"orderDate" | "priority" | "subTotalPrice" | "totalPrice", 1 | -1>>;
   size: number;
   startDate?: string;
   vendorName?: string;

@@ -420,6 +420,22 @@ orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrder
  *           type: string
  *           example: "3,2"
  *       - in: query
+ *         name: sort[orderDate]
+ *         description: Sort by order date. Use `-1` for newest first or `1` for oldest first.
+ *         schema: { type: integer, enum: [-1, 1] }
+ *       - in: query
+ *         name: sort[subTotalPrice]
+ *         description: Sort by subtotal price.
+ *         schema: { type: integer, enum: [-1, 1] }
+ *       - in: query
+ *         name: sort[totalPrice]
+ *         description: Sort by selling price.
+ *         schema: { type: integer, enum: [-1, 1] }
+ *       - in: query
+ *         name: sort[priority]
+ *         description: Sort by computed delivery priority.
+ *         schema: { type: integer, enum: [-1, 1] }
+ *       - in: query
  *         name: deliveryStatus
  *         schema: { type: string, example: "1,2" }
  *     responses:

@@ -104,6 +104,7 @@ import { errorMiddleware } from "../../shared/http";
 import { shipmentRouter } from "./shipment.routes";
 
 const app = express();
+app.set("query parser", "extended");
 app.use(express.json());
 app.use("/shipments", shipmentRouter);
 app.use(errorMiddleware);
@@ -605,6 +606,28 @@ describe("shipmentRouter", () => {
     expect(response.body.data.totalCount).toBe(1);
     expect(response.body.data.items).toHaveLength(1);
     expect(response.body.data.items[0]).toEqual(expect.objectContaining({ deliveryPriority: 2, id: 9802 }));
+  });
+
+  it("sorts shipments by totalPrice in the database query", async () => {
+    const response = await request(app).get("/shipments").query({ page: 1, size: 20, sort: { totalPrice: -1 } });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+      order: [["totalPrice", "DESC"]],
+    }));
+  });
+
+  it("sorts shipments by computed priority in memory", async () => {
+    orderModel.findAll.mockResolvedValue([
+      makeShipment({ code: "3003", deliveryStatus: 1, id: 9803, orderNumber: "31668" }),
+      makeShipment({ code: "3004", deliveryStatus: 3, id: 9804, orderNumber: "31669" }),
+    ]);
+
+    const response = await request(app).get("/shipments").query({ page: 1, size: 20, sort: { priority: -1 } });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(response.body.data.items.map((item: { orderNumber: string }) => item.orderNumber)).toEqual(["31669", "31668"]);
   });
 
   it("accepts ISO date filters for shipments list", async () => {

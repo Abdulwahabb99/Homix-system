@@ -113,11 +113,12 @@ const logModel = jest.requireMock("../../../app/modules/logs/log.model") as {
 };
 
 const app = express();
+app.set("query parser", "extended");
 app.use(express.json());
 app.use("/orders", orderRouter);
 app.use(errorMiddleware);
 
-const makeOrder = () => ({
+const makeOrder = (overrides: Record<string, unknown> = {}) => ({
   code: "3001",
   commission: "20",
   customer: {
@@ -182,6 +183,7 @@ const makeOrder = () => ({
   totalDiscounts: "100",
   totalPrice: "2299",
   user: { firstName: "Sara", lastName: "Mohamed" },
+  ...overrides,
 });
 
 describe("orderRouter", () => {
@@ -347,6 +349,28 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.items).toHaveLength(1);
     expect(response.body.data.items[0].orderNumber).toBe("31668");
+  });
+
+  it("sorts orders by totalPrice in the database query", async () => {
+    const response = await request(app).get("/orders").query({ page: 1, size: 20, sort: { totalPrice: -1 } });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+      order: [["totalPrice", "DESC"]],
+    }));
+  });
+
+  it("sorts orders by computed priority in memory", async () => {
+    orderModel.findAll.mockResolvedValue([
+      { ...makeOrder(), code: "3002", deliveryStatus: 1, id: 8, orderNumber: "31669" },
+      { ...makeOrder(), code: "3003", deliveryStatus: 3, id: 9, orderNumber: "31670" },
+    ]);
+
+    const response = await request(app).get("/orders").query({ page: 1, size: 20, sort: { priority: -1 } });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(response.body.data.items.map((item: { orderNumber: string }) => item.orderNumber)).toEqual(["31670", "31669"]);
   });
 
   it("returns order details in a focused DTO shape", async () => {

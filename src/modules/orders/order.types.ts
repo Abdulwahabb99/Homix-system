@@ -20,6 +20,7 @@ export type OrderListQuery = {
   paymentStatus?: string;
   priority?: string;
   productCode?: string;
+  sort?: Partial<Record<"orderDate" | "priority" | "subTotalPrice" | "totalPrice", 1 | -1>>;
   size: number;
   startDate?: string;
   status?: string;

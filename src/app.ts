@@ -39,6 +39,7 @@ export const createApp = (): Express => {
   const app = express();
 
   app.disable("etag");
+  app.set("query parser", "extended");
   app.use(requestContextMiddleware);
   app.use(httpLogger);
   app.use(bodyParser.json({ limit: JSON_LIMIT }));

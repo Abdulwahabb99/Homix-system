@@ -43,6 +43,11 @@ const productTypeModel = require("../../../app/modules/product/productType.model
 const logModel = require("../../../app/modules/logs/log.model");
 const dashboardDailyMetricModel = require("../dashboard/dashboard-daily-metric.model");
 const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
+const ORDER_SORTABLE_FIELDS = ["orderDate", "priority", "subTotalPrice", "totalPrice"] as const;
+
+type OrderSortField = (typeof ORDER_SORTABLE_FIELDS)[number];
+type OrderSortDirection = 1 | -1;
+type OrderSortEntry = [OrderSortField, OrderSortDirection];
 
 const SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS: Array<keyof OrderListQuery> = [
   "customerName",
@@ -156,6 +161,59 @@ const parseCsvNumbers = (value?: string): number[] => {
     .filter((item) => Number.isFinite(item) && item > 0);
 };
 
+const getOrderSortEntries = (sort?: OrderListQuery["sort"]): OrderSortEntry[] => {
+  if (!sort) {
+    return [];
+  }
+
+  return ORDER_SORTABLE_FIELDS.flatMap((field) => {
+    const direction = sort[field];
+    return direction === 1 || direction === -1 ? [[field, direction] satisfies OrderSortEntry] : [];
+  });
+};
+
+const getOrderSortValue = (
+  field: OrderSortField,
+  entry: { item: OrderListItem; row: Record<string, unknown> },
+): number => {
+  if (field === "priority") {
+    return entry.item.deliveryPriority ?? 0;
+  }
+
+  if (field === "orderDate") {
+    const timestamp = new Date(toIsoString(entry.row.orderDate) ?? "").getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
+
+  return toNumber(entry.row[field]);
+};
+
+const compareOrderEntries = (
+  left: { item: OrderListItem; row: Record<string, unknown> },
+  right: { item: OrderListItem; row: Record<string, unknown> },
+  sortEntries: OrderSortEntry[],
+): number => {
+  for (const [field, direction] of sortEntries) {
+    const leftValue = getOrderSortValue(field, left);
+    const rightValue = getOrderSortValue(field, right);
+    if (leftValue === rightValue) {
+      continue;
+    }
+
+    return direction === -1 ? rightValue - leftValue : leftValue - rightValue;
+  }
+
+  return right.item.id - left.item.id;
+};
+
+const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[string, "ASC" | "DESC"]> => {
+  const databaseEntries = sortEntries
+    .filter(([field]) => field !== "priority")
+    .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
+
+  return databaseEntries.length > 0 ? databaseEntries : [["orderDate", "DESC"]];
+};
+
 const resolveAggregateScope = (
   filters: OrderListQuery,
   vendorId?: number | null,
@@ -253,12 +311,53 @@ export class OrderRepository {
   }
 
   public async listOrders(filters: OrderListQuery, vendorId?: number | null): Promise<OrderListResponse> {
+    const sortEntries = getOrderSortEntries(filters.sort);
+    const requiresInMemoryProcessing = Boolean(filters.priority || filters.deliveryStatus || sortEntries.some(([field]) => field === "priority"));
+
+    if (requiresInMemoryProcessing) {
+      const rows = await orderModel.findAll({
+        include: [...buildIncludes(), { as: "user", attributes: ["firstName", "lastName"], model: userModel, required: false }],
+        order: buildOrderSort(sortEntries),
+        subQuery: false,
+        where: buildFilters(filters, vendorId),
+      });
+
+      const items = rows
+        .map((row: unknown): { item: OrderListItem; row: Record<string, unknown> } => ({ item: mapOrderSummary(row), row: toPlain(row) }))
+        .filter(({ item, row }: { item: OrderListItem; row: Record<string, unknown> }) => {
+          const matchesPriority = !filters.priority
+            || filters.priority.split(",").map((value) => Number(value.trim())).includes(item.deliveryPriority ?? 0);
+          const matchesDeliveryStatus = !filters.deliveryStatus
+            || filters.deliveryStatus.split(",").map(Number).includes(toNumber(row.deliveryStatus));
+          return matchesPriority && matchesDeliveryStatus;
+        });
+
+      if (sortEntries.length > 0) {
+        items.sort(
+          (
+            left: { item: OrderListItem; row: Record<string, unknown> },
+            right: { item: OrderListItem; row: Record<string, unknown> },
+          ) => compareOrderEntries(left, right, sortEntries),
+        );
+      }
+
+      const start = (filters.page - 1) * filters.size;
+      const end = start + filters.size;
+
+      return {
+        items: items.slice(start, end).map(({ item }: { item: OrderListItem; row: Record<string, unknown> }) => item),
+        page: filters.page,
+        size: filters.size,
+        totalCount: items.length,
+      };
+    }
+
     const result = await orderModel.findAndCountAll({
       distinct: true,
       include: [...buildIncludes(), { as: "user", attributes: ["firstName", "lastName"], model: userModel, required: false }],
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
-      order: [["orderDate", "DESC"]],
+      order: buildOrderSort(sortEntries),
       subQuery: false,
       where: buildFilters(filters, vendorId),
     });
