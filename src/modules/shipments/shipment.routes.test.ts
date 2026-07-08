@@ -103,6 +103,11 @@ jest.mock("../../../app/modules/order/order.service", () => legacyOrderService);
 import { errorMiddleware } from "../../shared/http";
 import { shipmentRouter } from "./shipment.routes";
 
+const noteModel = jest.requireMock("../../../app/modules/notes/notes.model") as {
+  create: jest.Mock;
+  findByPk: jest.Mock;
+};
+
 const app = express();
 app.set("query parser", "extended");
 app.use(express.json());
@@ -190,6 +195,14 @@ describe("shipmentRouter", () => {
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeShipment()] });
     orderModel.findOne.mockResolvedValue(makeShipment());
     orderModel.findByPk.mockImplementation(async (id: number) => makeShipmentRecord({ id }));
+    noteModel.create.mockResolvedValue({
+      createdAt: "2026-05-15T11:00:00.000Z",
+      id: 18,
+      text: "",
+      updatedAt: "2026-05-15T11:00:00.000Z",
+      user: { firstName: "Ahmed", id: 1, lastName: "Hesham" },
+    });
+    noteModel.findByPk.mockResolvedValue(null);
     shipmentReturnModel.findAll.mockResolvedValue([]);
     shipmentReturnModel.findOne.mockResolvedValue(null);
     shipmentReturnModel.create.mockResolvedValue({
@@ -500,6 +513,16 @@ describe("shipmentRouter", () => {
 
     expect(response.status).toBe(201);
     expect(response.body.data).toEqual(expect.objectContaining({ id: 4, name: "DHL" }));
+  });
+
+  it("adds an empty shipment note", async () => {
+    const response = await request(app)
+      .post("/shipments/9802/notes")
+      .send({});
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+    expect(response.body.data.text).toBe("");
   });
 
   it("updates a shipping company and syncs linked orders", async () => {

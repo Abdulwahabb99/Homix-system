@@ -231,6 +231,23 @@ describe("ticketRouter", () => {
     expect(response.body.data.text).toBe("تم فتح التذكرة بنجاح");
   });
 
+  it("adds an empty note to a ticket", async () => {
+    noteModel.create.mockResolvedValueOnce({
+      createdAt: "2026-05-03T20:34:00.000Z",
+      id: 11,
+      text: "",
+      updatedAt: "2026-05-03T20:34:00.000Z",
+      user: { firstName: "Ahmed", id: 1, lastName: "Hesham" },
+    });
+
+    const response = await request(app)
+      .post("/tickets/4/notes")
+      .send({});
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.text).toBe("");
+  });
+
   it("returns ticket details with history", async () => {
     const response = await request(app).get("/tickets/4");
 

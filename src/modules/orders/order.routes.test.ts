@@ -6,6 +6,7 @@ const orderModel = {
   count: jest.fn(),
   findAll: jest.fn(),
   findAndCountAll: jest.fn(),
+  findByPk: jest.fn(),
   findOne: jest.fn(),
 };
 
@@ -31,6 +32,7 @@ const legacyOrderService = {
   financialReport: jest.fn(),
   importOrders: jest.fn(),
   saveImportedOrders: jest.fn(),
+  sendNotification: jest.fn(),
   updateNote: jest.fn(),
   updateOrder: jest.fn(),
   uploadFiles: jest.fn(),
@@ -73,7 +75,12 @@ jest.mock("../../../app/modules/order/order.service", () => legacyOrderService);
 jest.mock("../../../app/modules/orderLines/orderline.model", () => ({}));
 jest.mock("../../../app/modules/product/product.model", () => ({}));
 jest.mock("../../../app/modules/customer/customer.model", () => ({}));
-jest.mock("../../../app/modules/notes/notes.model", () => ({}));
+const noteModel = {
+  create: jest.fn(),
+  findByPk: jest.fn(),
+};
+
+jest.mock("../../../app/modules/notes/notes.model", () => noteModel);
 jest.mock("../../../app/modules/attachments/attachment.model", () => ({}));
 jest.mock("../../../app/modules/product/productType.model", () => ({}));
 jest.mock("../../../app/modules/logs/log.model", () => ({
@@ -193,7 +200,10 @@ describe("orderRouter", () => {
     orderModel.count.mockResolvedValue(0);
     orderModel.findAll.mockResolvedValue([makeOrder()]);
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeOrder()] });
+    orderModel.findByPk.mockResolvedValue({ id: 7, orderNumber: "31668" });
     orderModel.findOne.mockResolvedValue(makeOrder());
+    noteModel.create.mockResolvedValue({ id: 9, text: "" });
+    noteModel.findByPk.mockResolvedValue(null);
     vendorModel.findAll.mockResolvedValue([{ id: 3, name: "ركنة للأثاث" }]);
     userModel.findAll.mockResolvedValue([{ firstName: "Sara", id: 1, lastName: "Mohamed" }]);
   });
@@ -249,6 +259,17 @@ describe("orderRouter", () => {
       false,
       undefined,
     );
+  });
+
+  it("adds an empty order note", async () => {
+    const response = await request(app)
+      .post("/orders/7/notes")
+      .send({});
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+    expect(response.body.data.text).toBe("");
+    expect(legacyOrderService.sendNotification).toHaveBeenCalled();
   });
 
   it("uses aggregate rows for stable summary cards and live count for urgent orders", async () => {
