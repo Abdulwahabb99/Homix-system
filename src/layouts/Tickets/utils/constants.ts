@@ -23,6 +23,25 @@ export type Attachment = {
   createdAt?: string;
 };
 
+/** حدث في سجل أحداث التذكرة (history من الـ API) */
+export type TicketHistoryEvent = {
+  id?: number;
+  /** نوع الحدث: status_updated / attachment_added / attachment_deleted / ticket_updated ... */
+  eventType: string;
+  /** الحقل المتأثّر (status, closedAt, ticket_attachment ...) */
+  field?: string;
+  /** العنوان الرئيسي للحدث */
+  message: string;
+  /** سطر فرعي (غالباً "بواسطة ...") */
+  description?: string;
+  fromValue?: string;
+  toValue?: string;
+  /** وقت الحدث ISO */
+  changedAt: string;
+  /** اسم المستخدم صاحب الحدث */
+  userName?: string;
+};
+
 export type Ticket = {
   id: string;
   op: string;
@@ -40,6 +59,8 @@ export type Ticket = {
   notes: string;
   chat: ChatMessage[];
   attachments: Attachment[];
+  /** سجل أحداث التذكرة من الـ API (history) — الأحدث أولاً */
+  history?: TicketHistoryEvent[];
   /** معرّف المستخدم المسند إليه التذكرة (من assignedTo.id) — لمطلوب تحديث التذكرة عبر API */
   assignedToUserId?: number;
   /** إن وُجد من الـ API على كائن الطلب — إجمالي مالي للعرض */

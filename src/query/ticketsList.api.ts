@@ -3,7 +3,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
 import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
-import type { Attachment, ChatMessage, Ticket } from "layouts/Tickets/utils/constants";
+import type { Attachment, ChatMessage, Ticket, TicketHistoryEvent } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
 
 /**
@@ -243,6 +243,42 @@ function mapNotesListToChat(raw: Record<string, unknown>): ChatMessage[] | null 
   });
 }
 
+/** history من تفاصيل التذكرة → أحداث سجل الأحداث (يُحافَظ على ترتيب الـ API: الأحدث أولاً) */
+function mapTicketHistory(raw: Record<string, unknown>): TicketHistoryEvent[] {
+  const list = raw.history;
+  if (!Array.isArray(list)) return [];
+  const out: TicketHistoryEvent[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const e = item as Record<string, unknown>;
+    const message = String(e.message ?? "").trim();
+    const changedAt = e.changedAt != null ? String(e.changedAt) : "";
+    if (!message && !changedAt) continue;
+
+    const u = e.user && typeof e.user === "object" ? (e.user as Record<string, unknown>) : {};
+    const fn = String(u.firstName ?? "").trim();
+    const ln = String(u.lastName ?? "").trim();
+    const userName = [fn, ln].filter(Boolean).join(" ").trim();
+
+    const id = Number(e.id);
+    const description =
+      e.description != null && String(e.description).trim() !== "" ? String(e.description).trim() : undefined;
+
+    out.push({
+      ...(Number.isFinite(id) ? { id } : {}),
+      eventType: String(e.eventType ?? ""),
+      ...(e.field != null && String(e.field).trim() !== "" ? { field: String(e.field) } : {}),
+      message,
+      ...(description ? { description } : {}),
+      ...(e.fromValue != null ? { fromValue: String(e.fromValue) } : {}),
+      ...(e.toValue != null ? { toValue: String(e.toValue) } : {}),
+      changedAt,
+      ...(userName ? { userName } : {}),
+    });
+  }
+  return out;
+}
+
 function inferAttachmentType(name: string, maybeUrl?: string): Attachment["type"] {
   const n = name.trim().toLowerCase();
   const ext = n.includes(".") ? n.split(".").pop() ?? "" : "";
@@ -314,6 +350,7 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
   const chat: ChatMessage[] =
     fromNotes ?? (Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : []);
   const attachments = mapApiAttachmentList(raw.attachments);
+  const history = mapTicketHistory(raw);
 
   const totalRaw =
     order.totalPrice ??
@@ -350,6 +387,7 @@ export function mapApiItemToTicket(raw: Record<string, unknown>): Ticket {
     notes: String(raw.notes ?? ""),
     chat,
     attachments,
+    history,
     ...(assignedToUserId != null ? { assignedToUserId } : {}),
     ...(orderTotalEgp != null ? { orderTotalEgp } : {}),
   };

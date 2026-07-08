@@ -20,6 +20,13 @@ import SendIcon from "@mui/icons-material/Send";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { Ticket, ChatMessage, Attachment } from "layouts/Tickets/utils/constants";
 import { TicketStatusChip, TicketTypeChip, DayCounter } from "layouts/Tickets/components/TicketChips";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
@@ -27,6 +34,45 @@ import { formatMoneyEgpInteger } from "shared/formatMoney";
 import type { TicketUpdatePayload } from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
+
+type EventTone = "primary" | "success" | "error" | "info" | "warning";
+
+/** أيقونة/لون حدث سجل الأحداث حسب نوعه (ألوان من ثيم MUI لدعم الوضعين الفاتح/الداكن) */
+function ticketEventStyle(eventType: string): { tone: EventTone; Icon: React.ElementType } {
+  switch (eventType) {
+    case "ticket_created":
+      return { tone: "success", Icon: CheckCircleOutlineIcon };
+    case "attachment_added":
+      return { tone: "success", Icon: AttachFileIcon };
+    case "attachment_deleted":
+      return { tone: "error", Icon: DeleteOutlineIcon };
+    case "status_updated":
+      return { tone: "info", Icon: FlagOutlinedIcon };
+    case "assignee_changed":
+    case "assignee_updated":
+      return { tone: "info", Icon: PersonOutlineIcon };
+    case "note_added":
+      return { tone: "primary", Icon: ChatBubbleOutlineIcon };
+    case "ticket_updated":
+      return { tone: "warning", Icon: EditOutlinedIcon };
+    default:
+      return { tone: "primary", Icon: ScheduleIcon };
+  }
+}
+
+/** "٨ يوليو ٢٠٢٦، ٣:٥٨ م" — تنسيق عربي لوقت الحدث */
+function formatTicketEventTime(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("ar-EG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 function attachmentOpenHref(url: string | undefined): string | undefined {
   if (!url?.trim()) return undefined;
@@ -793,8 +839,9 @@ export default function TicketDetailView({
           </Stack>
         </Grid>
 
-        {/* ── Right column: Chat ── */}
+        {/* ── Right column: Chat + Event log ── */}
         <Grid item xs={12} md={4}>
+          <Stack spacing={2}>
           <Paper
             variant="outlined"
             sx={{
@@ -918,6 +965,78 @@ export default function TicketDetailView({
               </Stack>
             </Box>
           </Paper>
+
+          {/* ── سجل الأحداث — من history ── */}
+          {Array.isArray(ticket.history) && ticket.history.length > 0 && (
+            <Paper
+              variant="outlined"
+              sx={{ borderRadius: 2.5, overflow: "hidden", borderColor: "divider" }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <TimelineOutlinedIcon sx={{ fontSize: 15, color: "text.secondary" }} />
+                <Typography variant="body2" fontWeight={700} color="text.primary">
+                  سجل الأحداث
+                </Typography>
+              </Box>
+              <Box sx={{ p: 2 }}>
+                {ticket.history.map((ev, i) => {
+                  const isLast = i === ticket.history!.length - 1;
+                  const st = ticketEventStyle(ev.eventType);
+                  const Icon = st.Icon;
+                  return (
+                    <Box key={ev.id ?? i} sx={{ display: "flex", gap: 1.25 }}>
+                      {/* المسار: نقطة + خط عمودي */}
+                      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            color: (t) => t.palette[st.tone].main,
+                            bgcolor: (t) => alpha(t.palette[st.tone].main, 0.14),
+                          }}
+                        >
+                          <Icon sx={{ fontSize: 14 }} />
+                        </Box>
+                        {!isLast && (
+                          <Box sx={{ flex: 1, width: "2px", minHeight: 16, my: "2px", bgcolor: "divider" }} />
+                        )}
+                      </Box>
+                      {/* المحتوى */}
+                      <Box sx={{ flex: 1, minWidth: 0, pt: "3px", pb: isLast ? 0 : 1.75 }}>
+                        <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "text.primary", lineHeight: 1.4 }}>
+                          {ev.message || "—"}
+                        </Typography>
+                        {(ev.description || ev.userName) && (
+                          <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", mt: 0.25 }}>
+                            {ev.description || (ev.userName ? `بواسطة ${ev.userName}` : "")}
+                          </Typography>
+                        )}
+                        <Typography sx={{ fontSize: "0.66rem", color: "text.disabled", mt: 0.375 }}>
+                          {formatTicketEventTime(ev.changedAt)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Paper>
+          )}
+          </Stack>
         </Grid>
       </Grid>
 
