@@ -14,6 +14,8 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
+  PriorityValueBadge,
+  OrderSourceBadge,
 } from "./OrdersHomixBadges";
 import OrdersHomixMobileList from "./OrdersHomixMobileList";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
@@ -63,12 +65,14 @@ const BASE_COLS = [
   { key: "productCode",   label: "كود المنتج",     w: 104 },
   { key: "customerName",  label: "اسم العميل",     w: 128 },
   { key: "status",        label: "حالة الطلب",     w: 83 },
+  { key: "orderSource",   label: "مصدر الطلب",     w: 96 },
   { key: "factory",       label: "اسم المصنع",     w: 120 },
   { key: "compCost",      label: "سعر التكلفة",    w: 81  },
   { key: "totalPrice",    label: "سعر البيع",      w: 76  },
   { key: "paymentStatus", label: "حالة الدفع",     w: 126 },
   { key: "delivery",      label: "التوصيل بواسطة", w: 112 },
   { key: "mfgStatus",     label: "حالة التأخير",   w: 125 },
+  { key: "priority",      label: "الأولوية",       w: 96  },
   { key: "createdAt",     label: "تاريخ الطلب",    w: 86  },
   { key: "poDate",        label: "تاريخ التصنيع",  w: 94  },
   { key: "days",          label: "عداد الأيام",    w: 92  },
@@ -230,6 +234,10 @@ interface Order {
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
   createdAt?: string;
+  orderSource?: number | null;
+  orderSourceLabel?: string;
+  deliveryPriority?: number | null;
+  deliveryPriorityLabel?: string;
 }
 interface User   { id: string | number; firstName?: string; lastName?: string }
 interface Vendor { label: string; value: string | number }
@@ -653,6 +661,9 @@ export default function OrdersHomixTableV2({
                   {/* حالة الطلب */}
                   <td style={TD}><OrderStatusBadge status={order.status} /></td>
 
+                  {/* مصدر الطلب */}
+                  <td style={TD}><OrderSourceBadge label={order.orderSourceLabel} /></td>
+
                   {/* اسم المصنع */}
                   <td style={TD}><FactoryCell name={factoryName} /></td>
 
@@ -677,6 +688,11 @@ export default function OrdersHomixTableV2({
 
                   {/* حالة التأخير */}
                   <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>
+
+                  {/* الأولوية */}
+                  <td style={TD}>
+                    <PriorityValueBadge priority={order.deliveryPriority} label={order.deliveryPriorityLabel} />
+                  </td>
 
                   {/* تاريخ الطلب */}
                   <td style={{ ...TD, color: HX.tx3, fontSize: "11.5px" }}>{createdFmt}</td>

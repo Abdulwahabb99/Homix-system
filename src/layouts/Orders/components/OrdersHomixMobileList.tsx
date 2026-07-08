@@ -12,6 +12,8 @@ import {
   PaymentBadge,
   DaysCounterBadge,
   DeliveryByBadge,
+  PriorityValueBadge,
+  OrderSourceBadge,
 } from "layouts/Orders/components/OrdersHomixBadges";
 
 const FONT = "'Cairo', sans-serif";
@@ -152,6 +154,10 @@ interface Order {
   userNameFromApi?: string;
   daysSinceOrder?: number | null;
   createdAt?: string;
+  orderSource?: number | null;
+  orderSourceLabel?: string;
+  deliveryPriority?: number | null;
+  deliveryPriorityLabel?: string;
 }
 interface User {
   id: string | number;
@@ -379,9 +385,11 @@ export default function OrdersHomixMobileList({
               }}
             >
               <OrderStatusBadge status={order.status} />
+              <OrderSourceBadge label={order.orderSourceLabel} />
               <PaymentBadge status={order.paymentStatus} />
               <DeliveryByBadge fromInventory={order.shippedFromInventory} />
               <DeliveryStatusBadge status={order.deliveryStatus} />
+              <PriorityValueBadge priority={order.deliveryPriority} label={order.deliveryPriorityLabel} />
               <DaysCounterBadge days={daysLabel} active={order.status === 2} />
             </Box>
 

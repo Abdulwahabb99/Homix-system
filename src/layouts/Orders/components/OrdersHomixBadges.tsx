@@ -105,6 +105,53 @@ export function PriorityBadge({ level }: { level: PriorityLevel }) {
   return <Bdg {...cfg} label={cfg.label} />;
 }
 
+/* ─── PRIORITY VALUE BADGE (من الـ API: 1 بالمدة، 2 مستعجل، 3 مستعجل جداً) ─── */
+const priorityValueConfig: Record<number, BadgeSx> = {
+  1: { bg: HX.greenLight, color: "#065f46", dot: HX.green },   // بالمدة
+  2: { bg: HX.amberLight, color: "#92400e", dot: HX.amber },   // مستعجل
+  3: { bg: HX.redLight, color: "#991b1b", dot: HX.red },       // مستعجل جداً
+};
+const priorityValueLabels: Record<number, string> = {
+  1: "بالمدة",
+  2: "مستعجل",
+  3: "مستعجل جداً",
+};
+
+export function PriorityValueBadge({
+  priority,
+  label,
+}: {
+  priority: number | null | undefined;
+  label?: string | null;
+}) {
+  const s = Number(priority);
+  const text = (label && label.trim()) || priorityValueLabels[s] || "";
+  if (!s && !text) return <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>;
+  const cfg = priorityValueConfig[s] ?? { bg: "rgba(100,100,100,0.10)", color: "#374151", dot: "#9ca3af" };
+  return <Bdg {...cfg} label={text || "—"} />;
+}
+
+/* ─── ORDER SOURCE BADGE (النص جاهز من الـ API عبر orderSourceLabel) ─── */
+export function OrderSourceBadge({ label }: { label?: string | null }) {
+  const text = (label && label.trim()) || "";
+  if (!text) return <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>;
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex", alignItems: "center", gap: "4px",
+        px: "9px", py: "3px", borderRadius: "20px",
+        fontSize: "10.5px", fontWeight: 700,
+        bgcolor: HX.surface2, color: HX.tx2,
+        border: `0.5px solid ${HX.border}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text}
+    </Box>
+  );
+}
+
 /* ─── DAYS COUNTER BADGE ─── */
 export function DaysCounterBadge({ days, active }: { days: string | number | null | undefined; active: boolean }) {
   if (!active) {

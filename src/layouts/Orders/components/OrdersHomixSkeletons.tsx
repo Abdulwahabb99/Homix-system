@@ -239,12 +239,14 @@ const COLS = [
   { label: "كود المنتج",   w: 104 },
   { label: "اسم العميل",   w: 128 },
   { label: "حالة الطلب",   w: 108 },
+  { label: "مصدر الطلب",   w: 96  },
   { label: "اسم المصنع",   w: 120 },
   { label: "سعر التكلفة",  w: 96  },
   { label: "سعر البيع",    w: 94  },
   { label: "حالة الدفع",   w: 132 },
   { label: "التوصيل",      w: 112 },
   { label: "حالة التأخير", w: 136 },
+  { label: "الأولوية",     w: 96  },
   { label: "تاريخ الطلب",  w: 86  },
   { label: "تاريخ التصنيع",w: 94  },
   { label: "عداد الأيام",  w: 92  },
@@ -253,7 +255,7 @@ const COLS = [
   { label: "",             w: 92  },
 ];
 
-const SK_WIDTHS = [55, 45, 60, 100, 72, 90, 50, 55, 80, 55, 90, 55, 55, 50, 80, 45, 60];
+const SK_WIDTHS = [55, 45, 60, 100, 72, 72, 90, 50, 55, 80, 55, 90, 72, 55, 55, 50, 80, 45, 60];
 
 export function OrdersHomixTableSkeleton({ rows = 10 }: { rows?: number }) {
   const totalW = CHECKBOX_W_SK + COLS.reduce((s, c) => s + c.w, 0);
