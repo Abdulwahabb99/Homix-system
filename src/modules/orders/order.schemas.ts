@@ -63,5 +63,5 @@ export const orderBulkDeleteSchema = z.object({
 });
 
 export const orderNoteSchema = z.object({
-  text: z.string().trim().min(1),
+  text: z.string().optional().default(""),
 });

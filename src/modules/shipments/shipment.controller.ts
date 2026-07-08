@@ -137,11 +137,11 @@ export class ShipmentController {
   };
 
   public addNote = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.shipmentService.addNote(Number(request.params.shipmentId), String(request.body.text), request.user ?? { id: 0 })), status: true });
+    response.status(200).json({ data: unwrap(await this.shipmentService.addNote(Number(request.params.shipmentId), request.body.text ?? "", request.user ?? { id: 0 })), status: true });
   };
 
   public updateNote = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.shipmentService.updateNote(Number(request.params.shipmentId), Number(request.params.noteId), String(request.body.text), request.user ?? { id: 0 })), status: true });
+    response.status(200).json({ data: unwrap(await this.shipmentService.updateNote(Number(request.params.shipmentId), Number(request.params.noteId), request.body.text ?? "", request.user ?? { id: 0 })), status: true });
   };
 
   public deleteNote = async (request: Request, response: Response): Promise<void> => {

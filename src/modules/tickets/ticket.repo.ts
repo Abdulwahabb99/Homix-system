@@ -535,7 +535,7 @@ export class TicketRepository {
     };
   }
 
-  public async lookupOrder(
+  public async lookupOrderByOperationNumber(
     operationNumber: string,
     vendorId?: number | null,
   ): Promise<TicketLookupResponse | null> {
@@ -543,24 +543,40 @@ export class TicketRepository {
     const order = await orderModel.findOne({
       include: buildDirectOrderInclude(vendorId),
       where: {
+        code: {
+          [Op.like]: `%${normalizedOperationNumber}%`,
+        },
+      },
+    });
+
+    if (!order) {
+      return null;
+    }
+
+    return mapOrderSummary(toPlain(order));
+  }
+
+  public async lookupOrderByOrderNumber(
+    orderNumber: string,
+    vendorId?: number | null,
+  ): Promise<TicketLookupResponse | null> {
+    const normalizedOrderNumber = orderNumber.trim();
+    const order = await orderModel.findOne({
+      include: buildDirectOrderInclude(vendorId),
+      where: {
         [Op.or]: [
           {
-            code: {
-              [Op.like]: `%${normalizedOperationNumber}%`,
+            orderNumber: {
+              [Op.like]: `%${normalizedOrderNumber}%`,
             },
           },
           {
             number: {
-              [Op.like]: `%${operationNumber}%`,
-            },
-          },
-          {
-            orderNumber: {
-              [Op.like]: `%${operationNumber}%`,
+              [Op.like]: `%${normalizedOrderNumber}%`,
             },
           },
           sequelize.where(sequelize.fn("lower", sequelize.col("name")), {
-            [Op.like]: `%${operationNumber.toLowerCase()}%`,
+            [Op.like]: `%${normalizedOrderNumber.toLowerCase()}%`,
           }),
         ],
       },

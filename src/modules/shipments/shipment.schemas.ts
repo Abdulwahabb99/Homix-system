@@ -124,7 +124,7 @@ export const shipmentCreateSchema = z.object({
 export const shipmentMutationSchema = z.record(z.string(), z.unknown());
 
 export const shipmentNoteSchema = z.object({
-  text: z.string().trim().min(1),
+  text: z.string().optional().default(""),
 });
 
 export const shipmentReturnsQuerySchema = z.object({

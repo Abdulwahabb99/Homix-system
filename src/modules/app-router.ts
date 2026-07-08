@@ -512,9 +512,8 @@ const swaggerOptions = {
         NotePayload: {
           type: "object",
           properties: {
-            text: { example: "Customer requested a darker stain", type: "string" },
+            text: { example: "", default: "", type: "string" },
           },
-          required: ["text"],
         },
         OrderMetaOption: {
           type: "object",
@@ -1458,9 +1457,8 @@ const swaggerOptions = {
         ShipmentNoteRequest: {
           type: "object",
           properties: {
-            text: { example: "تم التواصل مع شركة الشحن", type: "string" },
+            text: { example: "", default: "", type: "string" },
           },
-          required: ["text"],
         },
         ShipmentNoteResponse: {
           type: "object",
@@ -1790,9 +1788,8 @@ const swaggerOptions = {
         TicketNoteRequest: {
           type: "object",
           properties: {
-            text: { example: "تم إرسال رقم الشحنة للعميل", type: "string" },
+            text: { example: "", default: "", type: "string" },
           },
-          required: ["text"],
         },
         ProductPayload: {
           type: "object",

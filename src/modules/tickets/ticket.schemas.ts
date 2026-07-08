@@ -67,8 +67,12 @@ export const ticketNoteParamsSchema = z.object({
   ticketId: z.coerce.number().int().positive(positiveIntegerMessage),
 });
 
-export const ticketLookupQuerySchema = z.object({
+export const ticketOperationLookupQuerySchema = z.object({
   operationNumber: z.string().trim().min(1, "operationNumber is required"),
+});
+
+export const ticketOrderNumberLookupQuerySchema = z.object({
+  orderNumber: z.string().trim().min(1, "orderNumber is required"),
 });
 
 export const ticketCreateSchema = z.object({
@@ -86,5 +90,5 @@ export const ticketUpdateSchema = z.object({
 });
 
 export const ticketNoteSchema = z.object({
-  text: z.string().trim().min(1, "text is required"),
+  text: z.string().optional().default(""),
 });

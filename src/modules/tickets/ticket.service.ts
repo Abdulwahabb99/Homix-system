@@ -50,11 +50,23 @@ export class TicketService {
     return success(await this.ticketRepository.getMeta());
   }
 
-  public async lookupOrder(
+  public async lookupOrderByOperationNumber(
     operationNumber: string,
     vendorId?: number | null,
   ): Promise<Result<TicketLookupResponse>> {
-    const order = await this.ticketRepository.lookupOrder(operationNumber, vendorId);
+    const order = await this.ticketRepository.lookupOrderByOperationNumber(operationNumber, vendorId);
+    if (!order) {
+      throw new NotFoundError("Order not found");
+    }
+
+    return success(order);
+  }
+
+  public async lookupOrderByOrderNumber(
+    orderNumber: string,
+    vendorId?: number | null,
+  ): Promise<Result<TicketLookupResponse>> {
+    const order = await this.ticketRepository.lookupOrderByOrderNumber(orderNumber, vendorId);
     if (!order) {
       throw new NotFoundError("Order not found");
     }

@@ -177,8 +177,18 @@ describe("ticketRouter", () => {
 
   it("looks up an order by operation number", async () => {
     const response = await request(app)
-      .get("/tickets/orders/lookup")
+      .get("/tickets/orders/lookup/operation-number")
       .query({ operationNumber: "OP-3001" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.operationNumber).toBe("3001");
+    expect(response.body.data.orderNumber).toBe("31668");
+  });
+
+  it("looks up an order by order number", async () => {
+    const response = await request(app)
+      .get("/tickets/orders/lookup/order-number")
+      .query({ orderNumber: "31668" });
 
     expect(response.status).toBe(200);
     expect(response.body.data.operationNumber).toBe("3001");

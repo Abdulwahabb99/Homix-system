@@ -65,11 +65,11 @@ export class OrderController {
   };
 
   public addNote = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.orderService.addNote(Number(request.params.orderId), String(request.body.text), request.user ?? { id: 0 })), status: true });
+    response.status(200).json({ data: unwrap(await this.orderService.addNote(Number(request.params.orderId), request.body.text ?? "", request.user ?? { id: 0 })), status: true });
   };
 
   public updateNote = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.orderService.updateNote(Number(request.params.orderId), Number(request.params.noteId), String(request.body.text), request.user ?? { id: 0 })), status: true });
+    response.status(200).json({ data: unwrap(await this.orderService.updateNote(Number(request.params.orderId), Number(request.params.noteId), request.body.text ?? "", request.user ?? { id: 0 })), status: true });
   };
 
   public deleteNote = async (request: Request, response: Response): Promise<void> => {

@@ -11,9 +11,17 @@ export class TicketController {
     response.status(200).json({ data: unwrap(result), status: true });
   };
 
-  public lookupOrder = async (request: Request, response: Response): Promise<void> => {
-    const result = await this.ticketService.lookupOrder(
+  public lookupOrderByOperationNumber = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.lookupOrderByOperationNumber(
       String(request.query.operationNumber ?? ""),
+      request.vendorId,
+    );
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
+  public lookupOrderByOrderNumber = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.lookupOrderByOrderNumber(
+      String(request.query.orderNumber ?? ""),
       request.vendorId,
     );
     response.status(200).json({ data: unwrap(result), status: true });

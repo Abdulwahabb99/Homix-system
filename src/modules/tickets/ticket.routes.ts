@@ -8,7 +8,8 @@ import {
   ticketCreateSchema,
   ticketIdParamsSchema,
   ticketListQuerySchema,
-  ticketLookupQuerySchema,
+  ticketOperationLookupQuerySchema,
+  ticketOrderNumberLookupQuerySchema,
   ticketNoteParamsSchema,
   ticketNoteSchema,
   ticketUpdateSchema,
@@ -74,7 +75,7 @@ ticketRouter.get("/meta", asyncHandler(ticketController.getMeta));
 
 /**
  * @swagger
- * /tickets/orders/lookup:
+ * /tickets/orders/lookup/operation-number:
  *   get:
  *     security:
  *       - bearerAuth: []
@@ -121,9 +122,63 @@ ticketRouter.get("/meta", asyncHandler(ticketController.getMeta));
  *                   message: Order not found
  */
 ticketRouter.get(
-  "/orders/lookup",
-  validateRequest({ query: ticketLookupQuerySchema }),
-  asyncHandler(ticketController.lookupOrder),
+  "/orders/lookup/operation-number",
+  validateRequest({ query: ticketOperationLookupQuerySchema }),
+  asyncHandler(ticketController.lookupOrderByOperationNumber),
+);
+
+/**
+ * @swagger
+ * /tickets/orders/lookup/order-number:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Tickets]
+ *     summary: Lookup order by order number
+ *     description: Fetches the order information used to prefill a new ticket when the search is based on the order number.
+ *     parameters:
+ *       - in: query
+ *         name: orderNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "31668"
+ *     responses:
+ *       200:
+ *         description: Order lookup result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TicketLookupResponse'
+ *             examples:
+ *               found:
+ *                 value:
+ *                   status: true
+ *                   data:
+ *                     id: 12
+ *                     orderNumber: "31668"
+ *                     operationNumber: "3001"
+ *                     customerName: Lamiaa Saeid
+ *                     sellerName: ركنة للأثاث
+ *                     productName: غرفة نوم - دريسينج
+ *                     productSku: RKA-001
+ *       404:
+ *         description: Order not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notFound:
+ *                 value:
+ *                   status: false
+ *                   statusCode: 404
+ *                   message: Order not found
+ */
+ticketRouter.get(
+  "/orders/lookup/order-number",
+  validateRequest({ query: ticketOrderNumberLookupQuerySchema }),
+  asyncHandler(ticketController.lookupOrderByOrderNumber),
 );
 
 /**
