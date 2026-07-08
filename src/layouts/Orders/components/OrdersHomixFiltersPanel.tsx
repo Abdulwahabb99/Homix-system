@@ -382,9 +382,9 @@ export default function OrdersHomixFiltersPanel({
               </FieldBox>
             </Grid>
 
-            {/* حالة التصنيع */}
+            {/* حالة التأخير */}
             <Grid item xs={12} sm={6} md={12 / 5}>
-              <FieldBox label="حالة التصنيع">
+              <FieldBox label="حالة التأخير">
                 <MultiSelect
                   value={draftDelivery}
                   onChange={setDraftDelivery}

@@ -246,13 +246,13 @@ function OrderEdit() {
 
           <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
-              <InputLabel id="mfgStatus">حالة التصنيع</InputLabel>
+              <InputLabel id="mfgStatus">حالة التأخير</InputLabel>
               <Select<number>
                 fullWidth
                 labelId="mfgStatus"
                 id="mfgStatus-select"
                 value={manufactureStatus === "" ? "" : Number(manufactureStatus)}
-                label="حالة التصنيع"
+                label="حالة التأخير"
                 onChange={(e) => setManufactureStatus(Number(e.target.value))}
                 sx={{ height: 43 }}
               >

@@ -68,7 +68,7 @@ const menuProps = {
 };
 
 /**
- * تصفية: حالة الطلب، الموردون، الدفع، حالة التصنيع. (التاريخ يبقى في الصفحة مع useDateRange)
+ * تصفية: حالة الطلب، الموردون، الدفع، حالة التأخير. (التاريخ يبقى في الصفحة مع useDateRange)
  */
 function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, onReset }) {
   const [draftStatus, setDraftStatus] = useState(value?.orderStatus ?? []);
@@ -248,12 +248,12 @@ function OrdersFilterDialog({ open, onClose, isVendor, vendors, value, onApply, 
 
           <FormControl fullWidth sx={formControlSx}>
             <InputLabel id="of-del" shrink>
-              حالة التصنيع
+              حالة التأخير
             </InputLabel>
             <Select
               labelId="of-del"
               notched
-              label="حالة التصنيع"
+              label="حالة التأخير"
               multiple
               value={draftDelivery}
               onChange={(e) => setDraftDelivery(e.target.value)}

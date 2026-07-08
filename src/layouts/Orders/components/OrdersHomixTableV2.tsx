@@ -68,7 +68,7 @@ const BASE_COLS = [
   { key: "totalPrice",    label: "سعر البيع",      w: 76  },
   { key: "paymentStatus", label: "حالة الدفع",     w: 126 },
   { key: "delivery",      label: "التوصيل بواسطة", w: 112 },
-  { key: "mfgStatus",     label: "حالة التصنيع",   w: 125 },
+  { key: "mfgStatus",     label: "حالة التأخير",   w: 125 },
   { key: "createdAt",     label: "تاريخ الطلب",    w: 86  },
   { key: "poDate",        label: "تاريخ التصنيع",  w: 94  },
   { key: "days",          label: "عداد الأيام",    w: 92  },
@@ -675,7 +675,7 @@ export default function OrdersHomixTableV2({
                   {/* التوصيل بواسطة */}
                   <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
 
-                  {/* حالة التصنيع */}
+                  {/* حالة التأخير */}
                   <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>
 
                   {/* تاريخ الطلب */}

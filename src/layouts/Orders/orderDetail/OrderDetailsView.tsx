@@ -162,7 +162,7 @@ export default function OrderDetailsView({
   /* صورة المنتج المعروضة في نافذة التكبير (lightbox) — null = مغلقة */
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  /* خيارات «حالة التصنيع» من الـ meta (manufactureStatuses)؛ الثابت المحلي احتياطي فقط */
+  /* خيارات «حالة التأخير» من الـ meta (manufactureStatuses)؛ الثابت المحلي احتياطي فقط */
   const metaQuery = useOrdersMeta();
   const manufactureOptions = useMemo(() => {
     const fromMeta = metaQuery.data?.manufactureStatuses;
@@ -659,7 +659,7 @@ export default function OrderDetailsView({
                           </Box>
                           <Box sx={{ mt: 2 }}>
                             <Typography sx={{ fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 }}>
-                              حالة التصنيع (تشغيل الفعلي)
+                              حالة التأخير (تشغيل الفعلي)
                             </Typography>
                             <SelectComponent
                               id="order-manufacture-status"

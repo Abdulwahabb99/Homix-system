@@ -80,7 +80,7 @@ function BasicsInfoCard({ orderDetails }) {
               display="block"
               sx={{ fontSize: "0.77rem" }}
             >
-              حالة التصنيع
+              حالة التأخير
             </Typography>
             <Typography
               variant="body2"
