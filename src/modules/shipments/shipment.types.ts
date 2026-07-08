@@ -197,9 +197,21 @@ export type ShipmentDetailsResponse = {
     productName: string;
     quantity: number;
     size: string;
+    variant: {
+      color: string;
+      id: string;
+      inventoryQuantity: number | null;
+      material: string;
+      price: number;
+      size: string;
+      sku: string;
+      title: string;
+    };
     vendorName: string;
   }>;
   shipment: ShipmentListItem & {
+    deliveryStatus: number | null;
+    shippedFromInventory: boolean;
     shippingCompanyName: string;
   };
   timeline: ShipmentTimelineItem[];

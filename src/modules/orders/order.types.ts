@@ -196,9 +196,11 @@ export type OrderDetailsView = {
   };
   notes: OrderNote[];
   order: OrderListItem & {
+    deliveryStatus: number | null;
     deliveryDate: string | null;
     itemsCount: number;
     notes: string;
+    shippedFromInventory: boolean;
     shipmentType: string;
   };
   items: Array<{
@@ -213,6 +215,16 @@ export type OrderDetailsView = {
     sku: string;
     typeName: string;
     unitCost: number;
+    variant: {
+      color: string;
+      id: string;
+      inventoryQuantity: number | null;
+      material: string;
+      price: number;
+      size: string;
+      sku: string;
+      title: string;
+    };
     vendorId: number | null;
     vendorName: string;
   }>;

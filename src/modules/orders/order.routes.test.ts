@@ -379,11 +379,13 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.deliveryBy).toBe(1);
+    expect(response.body.data.order.deliveryStatus).toBe(3);
     expect(response.body.data.order.orderNumber).toBe("31668");
     expect(response.body.data.order.orderSource).toBe(2);
     expect(response.body.data.order.orderSourceLabel).toBe("اونلاين");
     expect(response.body.data.order.fine).toBe(0);
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
+    expect(response.body.data.order.shippedFromInventory).toBe(false);
     expect(response.body.data.order.itemsCount).toBe(1);
     expect(response.body.data.financial.fine).toBe(0);
     expect(response.body.data.timeline[0].eventType).toBe("notification_sent");
@@ -412,6 +414,14 @@ describe("orderRouter", () => {
     expect(response.body.data.statusHistory[2].isActive).toBe(false);
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
+    expect(response.body.data.items[0].variant).toEqual(expect.objectContaining({
+      color: "blue",
+      id: "",
+      material: "wood",
+      price: 0,
+      size: "100x100",
+      sku: "RKA-001",
+    }));
     expect(response.body.data.customer.id).toBe(5);
   });
 

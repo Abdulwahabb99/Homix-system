@@ -214,6 +214,17 @@ const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[string, "ASC" | "
   return databaseEntries.length > 0 ? databaseEntries : [["orderDate", "DESC"]];
 };
 
+const getOrderLineVariant = (lineValue: unknown): Record<string, unknown> => {
+  const line = toPlain(lineValue);
+  const product = toPlain(line.product);
+  const variants = Array.isArray(product.variants) ? product.variants.map((variant) => toPlain(variant)) : [];
+
+  return variants.find((variant) =>
+    toText(variant.sku) === toText(line.sku)
+    || toText(variant.shopifyId) === toText(line.variant_id)
+    || toText(variant.id) === toText(line.variant_id)) ?? {};
+};
+
 const resolveAggregateScope = (
   filters: OrderListQuery,
   vendorId?: number | null,
@@ -538,9 +549,11 @@ export class OrderRepository {
       notes,
       order: {
         ...summary,
+        deliveryStatus: toNumber(plainOrder.deliveryStatus) || null,
         deliveryDate: toIsoString(plainOrder.deliveryDate),
         itemsCount: orderLines.length,
         notes: toText(plainOrder.notes),
+        shippedFromInventory: Boolean(plainOrder.shippedFromInventory),
         shipmentType: toText(plainOrder.shipmentType),
       },
       items: orderLines.map((line) => {
@@ -548,6 +561,7 @@ export class OrderRepository {
         const product = toPlain(plainLine.product);
         const vendor = toPlain(product.vendor);
         const type = toPlain(product.type);
+        const variant = getOrderLineVariant(plainLine);
 
         return {
           color: toText(plainLine.color),
@@ -561,6 +575,16 @@ export class OrderRepository {
           sku: toText(plainLine.sku),
           typeName: toText(type.name),
           unitCost: toNumber(plainLine.unitCost),
+          variant: {
+            color: toText(variant.option1, toText(plainLine.color)),
+            id: toText(variant.shopifyId, toText(variant.id, toText(plainLine.variant_id))),
+            inventoryQuantity: toNumber(variant.inventory_quantity) || null,
+            material: toText(variant.option3, toText(plainLine.material)),
+            price: toNumber(variant.price),
+            size: toText(variant.option2, toText(plainLine.size)),
+            sku: toText(variant.sku, toText(plainLine.sku)),
+            title: toText(variant.title),
+          },
           vendorId: toNumber(vendor.id) || null,
           vendorName: toText(vendor.name),
         };

@@ -660,8 +660,17 @@ describe("shipmentRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
+    expect(response.body.data.shipment.deliveryStatus).toBe(2);
+    expect(response.body.data.shipment.shippedFromInventory).toBe(false);
     expect(response.body.data.shipment.shippingCompany).toBe(3);
     expect(response.body.data.shipment.shippingCompanyName).toBe("J&T");
+    expect(response.body.data.products[0].variant).toEqual(expect.objectContaining({
+      color: "رمادي",
+      id: "",
+      price: 0,
+      size: "200x300",
+      sku: "RKA-002",
+    }));
     expect(response.body.data.timeline[0].message).toBe("تم استلام الطلب");
   });
 

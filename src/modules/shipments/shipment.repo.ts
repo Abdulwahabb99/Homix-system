@@ -658,7 +658,6 @@ export class ShipmentRepository {
       order: [["createdAt", "ASC"]],
       where: { entityId: shipmentId, entityType: "order" },
     });
-
     return {
       customer: {
         address: toText(customer.address),
@@ -683,11 +682,23 @@ export class ShipmentRepository {
           productName: toText(product.title, toText(line.title)),
           quantity: toNumber(line.quantity),
           size: toText(line.size),
+          variant: {
+            color: toText(variant?.option2, toText(line.color)),
+            id: toText(variant?.shopifyId, toText(variant?.id, toText(line.variant_id))),
+            inventoryQuantity: toNumber(variant?.inventory_quantity) || null,
+            material: toText(variant?.option3),
+            price: toNumber(variant?.price),
+            size: toText(variant?.option1, toText(line.size)),
+            sku: toText(variant?.sku, toText(line.sku)),
+            title: toText(variant?.title),
+          },
           vendorName: toText(vendor.name),
         };
       }),
       shipment: {
         ...mapShipmentListItem(order),
+        deliveryStatus: toNullableNumber(order.deliveryStatus),
+        shippedFromInventory: Boolean(order.shippedFromInventory),
         shippingCompanyName: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany)),
       },
       timeline: mapTimeline(logs),

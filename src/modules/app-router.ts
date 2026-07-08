@@ -754,9 +754,11 @@ const swaggerOptions = {
                 {
                   type: "object",
                   properties: {
+                    deliveryStatus: { example: 3, nullable: true, type: "integer" },
                     deliveryDate: { example: "2026-05-05T00:00:00.000Z", nullable: true, type: "string", format: "date-time" },
                     itemsCount: { example: 1, type: "integer" },
                     notes: { example: "important note", type: "string" },
+                    shippedFromInventory: { example: false, type: "boolean" },
                     shipmentType: { example: "warehouse", type: "string" },
                   },
                 },
@@ -778,6 +780,20 @@ const swaggerOptions = {
                   sku: { example: "RKA-001", type: "string" },
                   typeName: { example: "غرفة نوم", type: "string" },
                   unitCost: { example: 900, type: "number" },
+                  variant: {
+                    type: "object",
+                    properties: {
+                      color: { example: "blue", type: "string" },
+                      id: { example: "445566", type: "string" },
+                      inventoryQuantity: { example: 3, nullable: true, type: "integer" },
+                      material: { example: "wood", type: "string" },
+                      price: { example: 16999, type: "number" },
+                      size: { example: "100x100", type: "string" },
+                      sku: { example: "RKA-001", type: "string" },
+                      title: { example: "Blue / 100x100 / Wood", type: "string" },
+                    },
+                    required: ["color", "id", "material", "price", "size", "sku", "title"],
+                  },
                   vendorId: { example: 3, nullable: true, type: "integer" },
                   vendorName: { example: "ركنة للأثاث", type: "string" },
                 },
@@ -1155,6 +1171,20 @@ const swaggerOptions = {
                       productName: { example: "كنبة شيب", type: "string" },
                       quantity: { example: 1, type: "integer" },
                       size: { example: "200x300", type: "string" },
+                      variant: {
+                        type: "object",
+                        properties: {
+                          color: { example: "رمادي", type: "string" },
+                          id: { example: "445566", type: "string" },
+                          inventoryQuantity: { example: 3, nullable: true, type: "integer" },
+                          material: { example: "", type: "string" },
+                          price: { example: 16999, type: "number" },
+                          size: { example: "200x300", type: "string" },
+                          sku: { example: "RKA-002", type: "string" },
+                          title: { example: "200x300 / رمادي", type: "string" },
+                        },
+                        required: ["color", "id", "material", "price", "size", "sku", "title"],
+                      },
                       vendorName: { example: "ركنة للأثاث", type: "string" },
                     },
                   },
@@ -1165,6 +1195,8 @@ const swaggerOptions = {
                     {
                       type: "object",
                       properties: {
+                        deliveryStatus: { example: 2, nullable: true, type: "integer" },
+                        shippedFromInventory: { example: true, type: "boolean" },
                         shippingCompanyName: { example: "J&T Express", type: "string" },
                       },
                     },
