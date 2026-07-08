@@ -366,6 +366,41 @@ const swaggerOptions = {
             vendorId: { example: 4, nullable: true, type: "integer" },
           },
         },
+        CustomerSummary: {
+          type: "object",
+          properties: {
+            address: { example: "الهرم - الجيزة", nullable: true, type: "string" },
+            address2: { example: "الدور الثالث", nullable: true, type: "string" },
+            email: { example: "abeer@example.com", nullable: true, type: "string" },
+            firstName: { example: "عبير", nullable: true, type: "string" },
+            id: { example: 5, type: "integer" },
+            lastName: { example: "ابوالمجيد", nullable: true, type: "string" },
+            phoneNumber: { example: "01155559646", nullable: true, type: "string" },
+            shopifyId: { example: "445566", nullable: true, type: "string" },
+            updatedAt: { example: "2026-07-08T12:00:00.000Z", nullable: true, type: "string", format: "date-time" },
+          },
+          required: ["id"],
+        },
+        CustomerUpdateRequest: {
+          type: "object",
+          properties: {
+            address: { example: "الهرم - الجيزة", nullable: true, type: "string" },
+            address2: { example: "الدور الثالث", nullable: true, type: "string" },
+            email: { example: "abeer@example.com", nullable: true, type: "string" },
+            firstName: { example: "عبير", nullable: true, type: "string" },
+            lastName: { example: "ابوالمجيد", nullable: true, type: "string" },
+            phoneNumber: { example: "01155559646", nullable: true, type: "string" },
+          },
+          minProperties: 1,
+        },
+        CustomerResponse: {
+          type: "object",
+          properties: {
+            data: { $ref: "#/components/schemas/CustomerSummary" },
+            status: { example: true, type: "boolean" },
+          },
+          required: ["data", "status"],
+        },
         VendorPayload: {
           type: "object",
           properties: {

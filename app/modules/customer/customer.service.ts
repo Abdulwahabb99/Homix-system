@@ -1,5 +1,9 @@
 const ShopifyHelper = require("../helpers/shopifyHelper") as typeof import("../helpers/shopifyHelper");
 const Customer = require("./customer.model") as typeof import("./customer.model");
+import { NotFoundError } from "../../../src/shared/errors";
+import type { Result } from "../../../src/shared/result";
+import { success } from "../../../src/shared/result";
+import type { CustomerUpdateInput } from "./customer.schemas";
 
 type CustomerAddress = {
   address1?: string;
@@ -31,12 +35,15 @@ type CustomerInput = {
 };
 
 type PersistedCustomer = {
+  address?: string | null;
+  address2?: string | null;
   email?: string | null;
   firstName?: string | null;
   id: number;
   lastName?: string | null;
   phoneNumber?: string | null;
   shopifyId?: string | null;
+  updatedAt?: string | Date | null;
   toJSON: () => PersistedCustomer;
 };
 
@@ -182,6 +189,38 @@ class CustomerService {
     })) as PersistedCustomer[];
 
     return createdCustomers.map((customer) => customer.toJSON());
+  }
+
+  public static async updateCustomer(
+    customerId: number,
+    payload: CustomerUpdateInput,
+  ): Promise<Result<Record<string, unknown>>> {
+    const customer = (await Customer.findByPk(customerId)) as
+      | (PersistedCustomer & { update: (values: Record<string, unknown>) => Promise<unknown> })
+      | null;
+
+    if (!customer) {
+      throw new NotFoundError("Customer not found");
+    }
+
+    const updatePayload = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== undefined),
+    );
+
+    await customer.update(updatePayload);
+    const plainCustomer = customer.toJSON();
+
+    return success({
+      address: plainCustomer.address ?? null,
+      address2: plainCustomer.address2 ?? null,
+      email: plainCustomer.email ?? null,
+      firstName: plainCustomer.firstName ?? null,
+      id: plainCustomer.id,
+      lastName: plainCustomer.lastName ?? null,
+      phoneNumber: plainCustomer.phoneNumber ?? null,
+      shopifyId: plainCustomer.shopifyId ?? null,
+      updatedAt: plainCustomer.updatedAt ?? null,
+    });
   }
 }
 
