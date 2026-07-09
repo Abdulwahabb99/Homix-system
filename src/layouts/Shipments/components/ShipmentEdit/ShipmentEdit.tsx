@@ -36,6 +36,7 @@ import {
 
 import { FONT } from "../ShipmentDetails/constants";
 import DetailCard from "../ShipmentDetails/components/DetailCard";
+import ShippingCompanySelect from "./ShippingCompanySelect";
 
 type Option = { value: string | number; label: string };
 
@@ -134,7 +135,6 @@ export default function ShipmentEdit() {
   const [shipmentStatus, setShipmentStatus] = useState<number | "">("");
   const [shipmentType, setShipmentType] = useState<string>("");
   const [governorate, setGovernorate] = useState<string>("");
-  const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [scheduleStatus, setScheduleStatus] = useState<number | "">("");
   const [shippingCompany, setShippingCompany] = useState("");
   const [shippingFees, setShippingFees] = useState("");
@@ -169,7 +169,6 @@ export default function ShipmentEdit() {
     })),
     governorate
   );
-  const deliveryByOptions = meta?.deliveryByOptions ?? [];
   const scheduleOptions = withCurrent(
     meta?.scheduleStatuses ?? [],
     scheduleStatus,
@@ -186,7 +185,7 @@ export default function ShipmentEdit() {
     setScheduleStatus(shipment.scheduleStatus != null ? Number(shipment.scheduleStatus) : "");
     setShipmentType(shipment.shipmentType ?? "");
     setGovernorate(shipment.governorate ?? "");
-    setShippingCompany(shipment.shippingCompany ?? "");
+    setShippingCompany(shipment.shippingCompany != null ? String(shipment.shippingCompany) : "");
     setShippingFees(shipment.shippingCost != null ? String(shipment.shippingCost) : "");
 
     setShippingReceiveDate(toYmd(shipment.receivedInWarehouseDate));
@@ -206,14 +205,6 @@ export default function ShipmentEdit() {
     setReceivedAmount("0");
   }, [data?.shipment?.id]);
 
-  // deliveryBy prefill depends on meta (label -> id), so resolve separately.
-  useEffect(() => {
-    const label = data?.shipment?.deliveryBy;
-    if (!label || deliveryByOptions.length === 0) return;
-    const match = deliveryByOptions.find((o) => o.label === label);
-    if (match) setDeliveryBy(Number(match.value));
-  }, [data?.shipment?.deliveryBy, deliveryByOptions.length]);
-
   const shipNumber = useMemo(() => {
     if (!data) return "";
     return data.shipment.shipmentNumber || `SH-${data.shipment.id}`;
@@ -225,9 +216,11 @@ export default function ShipmentEdit() {
     if (shipmentStatus !== "") body.shipmentStatus = Number(shipmentStatus);
     if (shipmentType) body.shipmentType = shipmentType;
     if (governorate) body.governorate = governorate;
-    if (deliveryBy !== "") body.deliveryBy = Number(deliveryBy);
     if (scheduleStatus !== "") body.scheduleStatus = Number(scheduleStatus);
-    if (shippingCompany.trim()) body.shippingCompany = shippingCompany.trim();
+    if (shippingCompany.trim()) {
+      const asNum = Number(shippingCompany);
+      body.shippingCompany = Number.isFinite(asNum) ? asNum : shippingCompany.trim();
+    }
     if (shippingFees.trim() !== "" && Number.isFinite(Number(shippingFees))) {
       body.shippingFees = Number(shippingFees);
     }
@@ -399,18 +392,7 @@ export default function ShipmentEdit() {
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                {...fieldBaseProps}
-                select
-                disabled={deliveryByOptions.length === 0}
-                label="شركات الشحن"
-                value={deliveryBy === "" ? "" : Number(deliveryBy)}
-                onChange={(e) => setDeliveryBy(Number(e.target.value))}
-              >
-                {deliveryByOptions.map((o) => (
-                  <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
-                ))}
-              </TextField>
+              <ShippingCompanySelect value={shippingCompany} onChange={setShippingCompany} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -425,9 +407,6 @@ export default function ShipmentEdit() {
                   <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
                 ))}
               </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField {...fieldBaseProps} label="شركة الشحن" value={shippingCompany} onChange={(e) => setShippingCompany(e.target.value)} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField {...fieldBaseProps} type="number" label="تكلفة الشحن" value={shippingFees} onChange={(e) => setShippingFees(e.target.value)} inputProps={{ min: 0 }} />

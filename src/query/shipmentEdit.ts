@@ -16,7 +16,7 @@ export interface UpdateShipmentPayload {
   governorate?: string;
   deliveryBy?: number;
   scheduleStatus?: number;
-  shippingCompany?: string;
+  shippingCompany?: number | string;
   shippingFees?: number;
   shippedFromInventory?: boolean;
   shippingReceiveDate?: string;
