@@ -137,14 +137,17 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
               {...rest}
               sx={{
                 display: "flex !important",
-                alignItems: "center",
-                justifyContent: "space-between",
+                alignItems: "center !important",
+                justifyContent: "space-between !important",
                 gap: "8px",
                 fontFamily: FONT,
                 fontSize: "12px",
               }}
             >
-              <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+              <Box
+                component="span"
+                sx={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
                 {option.name}
               </Box>
               <IconButton
@@ -155,7 +158,7 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
                   e.stopPropagation();
                   openEdit(option);
                 }}
-                sx={{ p: "3px", color: HX.tx3, "&:hover": { color: HX.accent } }}
+                sx={{ p: "3px", flexShrink: 0, color: HX.tx3, "&:hover": { color: HX.accent } }}
               >
                 <EditOutlinedIcon sx={{ fontSize: 15 }} />
               </IconButton>
