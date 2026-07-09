@@ -209,13 +209,13 @@ const AddOrderDetails = ({ open, onClose, customer, onConfirm }) => {
             </Select>
           </FormControl>
           <FormControl fullWidth style={{ margin: "10px 0" }}>
-            <InputLabel id="deliveryBy">التوصيل بواسطة</InputLabel>
+            <InputLabel id="deliveryBy">شركات الشحن</InputLabel>
             <Select
               fullWidth
               labelId="deliveryBy"
               id="deliveryBy-select"
               value={deliveryBy}
-              label="التوصيل بواسطة"
+              label="شركات الشحن"
               onChange={(e) => setDeliveryBy(e.target.value)}
               sx={{ height: 35 }}
             >

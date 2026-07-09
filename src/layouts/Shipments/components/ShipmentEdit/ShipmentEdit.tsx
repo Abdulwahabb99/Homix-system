@@ -403,7 +403,7 @@ export default function ShipmentEdit() {
                 {...fieldBaseProps}
                 select
                 disabled={deliveryByOptions.length === 0}
-                label="التوصيل بواسطة"
+                label="شركات الشحن"
                 value={deliveryBy === "" ? "" : Number(deliveryBy)}
                 onChange={(e) => setDeliveryBy(Number(e.target.value))}
               >

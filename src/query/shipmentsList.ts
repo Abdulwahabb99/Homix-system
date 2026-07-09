@@ -27,6 +27,8 @@ export interface ShipmentItem {
   shipmentTypeLabel: string;
   paymentStatus: number;
   paymentStatusLabel: string;
+  scheduleStatus: number | null;
+  scheduleStatusLabel: string;
   deliveryBy: string;
   amountToCollect: number;
   shippingCost: number;

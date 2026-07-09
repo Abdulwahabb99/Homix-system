@@ -96,7 +96,7 @@ function DeliveriesTab() {
               <th style={TH}>رقم الطلب</th>
               <th style={TH}>البائع</th>
               <th style={TH}>كود المنتج</th>
-              <th style={TH}>التوصيل بواسطة</th>
+              <th style={TH}>شركات الشحن</th>
               <th style={TH}>تاريخ التسليم</th>
               <th style={TH}>طريقة الدفع</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>

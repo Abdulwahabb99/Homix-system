@@ -162,11 +162,12 @@ export default function ShipmentsTable({
               <th style={TH}>حالة الشحنة</th>
               <th style={TH}>نوع الشحنة</th>
               <th style={TH}>حالة الدفع</th>
-              <th style={TH}>التوصيل بواسطة</th>
+              <th style={TH}>شركات الشحن</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ المطلوب</th>
               <th style={{ ...TH, textAlign: "center" }}>تكلفة الشحن</th>
               <th style={TH}>تاريخ الاستلام</th>
-              <th style={TH}>موعد التوصيل</th>
+              <th style={TH}>موعد الجدولة</th>
+              <th style={TH}>حالة الجدولة</th>
               <th style={TH}>تاريخ التوصيل</th>
               <th style={{ ...TH, textAlign: "center" }}>الأيام</th>
               {!isVendor && <th style={{ ...TH, textAlign: "center" }}>إجراءات</th>}
@@ -246,7 +247,7 @@ export default function ShipmentsTable({
                   }
                 </td>
 
-                {/* التوصيل بواسطة */}
+                {/* شركات الشحن */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
                     {s.deliveryBy || "—"}
@@ -280,10 +281,17 @@ export default function ShipmentsTable({
                   </Box>
                 </td>
 
-                {/* موعد التوصيل */}
+                {/* موعد الجدولة */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>
                     {fmtDate(s.scheduledDeliveryDate)}
+                  </Box>
+                </td>
+
+                {/* حالة الجدولة */}
+                <td style={TD}>
+                  <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
+                    {s.scheduleStatusLabel || "—"}
                   </Box>
                 </td>
 
