@@ -8,15 +8,18 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Paper,
   TextField,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../ShipmentDetails/constants";
 import {
   useShippingCompaniesQuery,
   useCreateShippingCompanyMutation,
+  useUpdateShippingCompanyMutation,
   type ShippingCompany,
 } from "query/shippingCompanies";
 
@@ -52,9 +55,14 @@ const acSx = {
 export default function ShippingCompanySelect({ value, onChange }: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
   const createMutation = useCreateShippingCompanyMutation();
+  const updateMutation = useUpdateShippingCompanyMutation();
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  /** null = وضع الإضافة، رقم = وضع تعديل شركة بهذا المعرّف */
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [nameInput, setNameInput] = useState("");
+
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   // القيمة الواردة قد تكون معرّفاً أو اسماً (بيانات قديمة) — طبّعها إلى معرّف بعد تحميل القائمة.
   useEffect(() => {
@@ -73,16 +81,34 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
     );
   }, [companies, value]);
 
-  const handleCreate = () => {
-    const name = newName.trim();
-    if (!name || createMutation.isPending) return;
-    createMutation.mutate(name, {
-      onSuccess: (created) => {
-        setAddOpen(false);
-        setNewName("");
-        if (created?.id != null) onChange(String(created.id));
-      },
-    });
+  const openAdd = () => {
+    setEditingId(null);
+    setNameInput("");
+    setDialogOpen(true);
+  };
+
+  const openEdit = (company: ShippingCompany) => {
+    setEditingId(company.id);
+    setNameInput(company.name);
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    const name = nameInput.trim();
+    if (!name || saving) return;
+    if (editingId != null) {
+      updateMutation.mutate(
+        { id: editingId, name },
+        { onSuccess: () => setDialogOpen(false) }
+      );
+    } else {
+      createMutation.mutate(name, {
+        onSuccess: (created) => {
+          setDialogOpen(false);
+          if (created?.id != null) onChange(String(created.id));
+        },
+      });
+    }
   };
 
   return (
@@ -99,16 +125,53 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
         noOptionsText="لا توجد شركات"
         loadingText="جارٍ التحميل…"
         sx={acSx}
-        PaperComponent={(props) => (
-          <Paper {...props} sx={{ fontFamily: FONT }}>
-            {props.children}
+        renderOption={(
+          liProps: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key },
+          option: ShippingCompany
+        ) => {
+          const { key, ...rest } = liProps;
+          return (
+            <Box
+              component="li"
+              key={key}
+              {...rest}
+              sx={{
+                display: "flex !important",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+                fontFamily: FONT,
+                fontSize: "12px",
+              }}
+            >
+              <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {option.name}
+              </Box>
+              <IconButton
+                size="small"
+                aria-label="تعديل شركة الشحن"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEdit(option);
+                }}
+                sx={{ p: "3px", color: HX.tx3, "&:hover": { color: HX.accent } }}
+              >
+                <EditOutlinedIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            </Box>
+          );
+        }}
+        PaperComponent={(paperProps: React.HTMLAttributes<HTMLElement>) => (
+          <Paper {...paperProps} sx={{ fontFamily: FONT }}>
+            {paperProps.children}
             <Box sx={{ borderTop: `1px solid ${HX.border}`, p: "5px" }}>
               <Button
                 fullWidth
                 startIcon={<AddIcon sx={{ fontSize: 17 }} />}
                 // منع فقدان التركيز الذي يغلق القائمة قبل تسجيل النقرة
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setAddOpen(true)}
+                onClick={openAdd}
                 sx={{
                   fontFamily: FONT,
                   fontSize: "12px",
@@ -129,9 +192,9 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
         )}
       />
 
-      <Dialog open={addOpen} onClose={() => setAddOpen(false)} dir="rtl">
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} dir="rtl">
         <DialogTitle sx={{ fontFamily: FONT, fontWeight: 800, fontSize: "15px" }}>
-          إضافة شركة شحن جديدة
+          {editingId != null ? "تعديل شركة الشحن" : "إضافة شركة شحن جديدة"}
         </DialogTitle>
         <DialogContent sx={{ pt: "8px !important", minWidth: 320 }}>
           <TextField
@@ -139,27 +202,33 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
             fullWidth
             size="small"
             label="اسم شركة الشحن"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreate();
+              if (e.key === "Enter") handleSubmit();
             }}
             sx={{ fontFamily: FONT, mt: "6px", "& .MuiInputBase-input": { fontFamily: FONT } }}
             InputLabelProps={{ shrink: true }}
           />
         </DialogContent>
         <DialogActions sx={{ px: "16px", pb: "12px" }}>
-          <Button onClick={() => setAddOpen(false)} sx={{ fontFamily: FONT, color: HX.tx2 }}>
+          <Button onClick={() => setDialogOpen(false)} sx={{ fontFamily: FONT, color: HX.tx2 }}>
             إلغاء
           </Button>
           <Button
-            onClick={handleCreate}
+            onClick={handleSubmit}
             variant="contained"
             disableElevation
-            disabled={!newName.trim() || createMutation.isPending}
+            disabled={!nameInput.trim() || saving}
             sx={{ fontFamily: FONT, fontWeight: 700, bgcolor: HX.accent, "&:hover": { bgcolor: "#4f46e5" } }}
           >
-            {createMutation.isPending ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : "إضافة"}
+            {saving ? (
+              <CircularProgress size={16} sx={{ color: "#fff" }} />
+            ) : editingId != null ? (
+              "حفظ"
+            ) : (
+              "إضافة"
+            )}
           </Button>
         </DialogActions>
       </Dialog>

@@ -49,3 +49,30 @@ export function useCreateShippingCompanyMutation() {
     },
   });
 }
+
+/** PUT /shipments/shipping-companies/{id} { name } → الشركة بعد التعديل (إن أعادها الخادم) */
+export async function updateShippingCompany(
+  id: number | string,
+  name: string
+): Promise<ShippingCompany | null> {
+  const { data } = await axiosRequest.put(`/shipments/shipping-companies/${id}`, { name });
+  const updated = data?.data?.item ?? data?.data ?? null;
+  return updated && typeof updated === "object" && updated.id != null
+    ? (updated as ShippingCompany)
+    : null;
+}
+
+export function useUpdateShippingCompanyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number | string; name: string }) =>
+      updateShippingCompany(id, name),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: shipmentKeys.shippingCompanies() });
+      NotificationMeassage("success", "تم تعديل شركة الشحن");
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر تعديل شركة الشحن");
+    },
+  });
+}
