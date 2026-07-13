@@ -13,6 +13,8 @@ import {
 import type { OrdersMeta } from "query/ordersMeta.api";
 import moment from "moment";
 import MultiSelect from "components/MultiSelect/MultiSelect";
+import { useShippingCompaniesQuery } from "query/shippingCompanies";
+import ShippingCompanySelect from "layouts/Shipments/components/ShipmentEdit/ShippingCompanySelect";
 
 export interface FiltersPanelValue {
   orderStatus: number[];
@@ -38,6 +40,9 @@ interface OrdersHomixFiltersPanelProps {
   /** الأولوية — معرّفاتها المحددة؛ تُطبَّق مباشرة عند النقر */
   priorityValue: string[];
   onPriorityChange: (next: string[]) => void;
+  /** شركة الشحن المحددة (معرّف كنص أو "")؛ تُطبَّق مباشرة عند الاختيار */
+  shippingCompanyValue: string;
+  onShippingCompanyChange: (id: string) => void;
   /** نطاق التاريخ — حقلان مستقلان بصيغة "YYYY-MM-DD" (فارغ = غير محدد) */
   startDate: string;
   endDate: string;
@@ -126,6 +131,8 @@ export default function OrdersHomixFiltersPanel({
   onReset,
   priorityValue,
   onPriorityChange,
+  shippingCompanyValue,
+  onShippingCompanyChange,
   startDate,
   endDate,
   onStartDateChange,
@@ -174,6 +181,13 @@ export default function OrdersHomixFiltersPanel({
     [meta?.deliveryByOptions]
   );
 
+  /* خيارات «شركات الشحن» من endpoint المشترك /shipments/shipping-companies */
+  const { data: shippingCompanies = [] } = useShippingCompaniesQuery();
+  const shippingCompanyOpts = useMemo(
+    () => shippingCompanies.map((c) => ({ value: c.id, label: c.name })),
+    [shippingCompanies]
+  );
+
   const priorityOpts = useMemo(
     () =>
       meta?.priorities?.length
@@ -215,6 +229,7 @@ export default function OrdersHomixFiltersPanel({
     draftUserId.length +
     (hasDateRange ? 1 : 0) +
     draftDeliveryBy.length +
+    (shippingCompanyValue ? 1 : 0) +
     priorityValue.length;
 
   const handleApply = () => {
@@ -308,6 +323,17 @@ export default function OrdersHomixFiltersPanel({
       label: `توصيل: ${deliveryByOpts.find((o) => o.id === id)?.label ?? id}`,
       onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
     })),
+    ...(shippingCompanyValue
+      ? [
+          {
+            label: `شركة الشحن: ${
+              shippingCompanyOpts.find((o) => String(o.value) === String(shippingCompanyValue))?.label ??
+              shippingCompanyValue
+            }`,
+            onRemove: () => onShippingCompanyChange(""),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -355,7 +381,7 @@ export default function OrdersHomixFiltersPanel({
 
       <Collapse in={open}>
 
-        {/* ── ROW 1 — الحالات (5 dropdowns) ── */}
+        {/* ── ROW 1 — الحالات (6 dropdowns) ── */}
         <Box sx={{ p: "14px 18px", borderBottom: `0.5px solid ${HX.border}` }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: "6px", mb: "10px" }}>
             <Box component="svg" viewBox="0 0 24 24"
@@ -370,7 +396,7 @@ export default function OrdersHomixFiltersPanel({
 
           <Grid container spacing="10px">
             {/* حالة الطلب */}
-            <Grid item xs={12} sm={6} md={12 / 5}>
+            <Grid item xs={12} sm={6} md={2}>
               <FieldBox label="حالة الطلب">
                 <MultiSelect
                   value={draftStatus}
@@ -383,7 +409,7 @@ export default function OrdersHomixFiltersPanel({
             </Grid>
 
             {/* حالة التأخير */}
-            <Grid item xs={12} sm={6} md={12 / 5}>
+            <Grid item xs={12} sm={6} md={2}>
               <FieldBox label="حالة التأخير">
                 <MultiSelect
                   value={draftDelivery}
@@ -397,7 +423,7 @@ export default function OrdersHomixFiltersPanel({
 
             {/* طريقة الدفع — hidden from vendor */}
             {!isVendor && (
-              <Grid item xs={12} sm={6} md={12 / 5}>
+              <Grid item xs={12} sm={6} md={2}>
                 <FieldBox label="طريقة الدفع">
                   <MultiSelect
                     value={draftPayment}
@@ -411,7 +437,7 @@ export default function OrdersHomixFiltersPanel({
             )}
 
             {/* التوصيل بواسطة — من الـ meta: deliveryByOptions */}
-            <Grid item xs={12} sm={6} md={12 / 5}>
+            <Grid item xs={12} sm={6} md={2}>
               <FieldBox label="التوصيل بواسطة">
                 <MultiSelect
                   value={draftDeliveryBy}
@@ -423,9 +449,21 @@ export default function OrdersHomixFiltersPanel({
               </FieldBox>
             </Grid>
 
+            {/* شركات الشحن — مكوّن ShippingCompanySelect المشترك (يتضمّن زر الإضافة والتعديل).
+                يُطبَّق مباشرة عند الاختيار — ليس ضمن مسوّدات «تطبيق الفلاتر».
+                هامش علوي على md ليحاذي حقله بقية الحقول (التي لها عنوان أعلاها). */}
+            <Grid item xs={12} sm={6} md={2}>
+              <Box sx={{ mt: { md: "19px" } }}>
+                <ShippingCompanySelect
+                  value={shippingCompanyValue}
+                  onChange={onShippingCompanyChange}
+                />
+              </Box>
+            </Grid>
+
             {/* المصنع / البائع — hidden from vendor */}
             {!isVendor && (
-              <Grid item xs={12} sm={6} md={12 / 5}>
+              <Grid item xs={12} sm={6} md={2}>
                 <FieldBox label="المصنع / البائع">
                   <MultiSelect
                     value={draftVendor}

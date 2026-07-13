@@ -13,6 +13,7 @@ export const ORDERS_LIST_PAGE_SIZE = 30;
  * @param {string} [p.deliveryStatusParam]
  * @param {string} [p.userIdParam]
  * @param {string} [p.deliveryByParam] معرفات «التوصيل بواسطة» من الـ meta مفصولة بفواصل
+ * @param {string} [p.shippingCompanyParam] معرفات «شركات الشحن» مفصولة بفواصل
  * @param {string} [p.priorityParam] معرفات «الأولوية» مفصولة بفواصل
  * @param {import("moment").Moment | null} [p.startDate]
  * @param {import("moment").Moment | null} [p.endDate]
@@ -29,6 +30,7 @@ function buildQueryString(p) {
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
   if (p.userIdParam)       query.set("userId",         p.userIdParam);
   if (p.deliveryByParam)   query.set("deliveryBy",     p.deliveryByParam);
+  if (p.shippingCompanyParam) query.set("shippingCompany", p.shippingCompanyParam);
   if (p.priorityParam)     query.set("priority",       p.priorityParam);
   if (p.operationCode)     query.set("operationCode",  p.operationCode);
   if (p.customerName)      query.set("customerName",   p.customerName);

@@ -157,6 +157,7 @@ function Orders() {
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
+  const shippingCompanyParam = searchParams.get("shippingCompany");
   const priorityParam = searchParams.get("priority");
   const sortKey = searchParams.get("sort") || "newest";
   const sortConfig = useMemo(
@@ -173,6 +174,7 @@ function Orders() {
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         srt: sortKey,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
@@ -182,7 +184,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, priorityParam, sortKey, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, shippingCompanyParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -200,6 +202,7 @@ function Orders() {
         ds: deliveryStatusParam || null,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         sd: rangeDateToIso(startDate),
         ed: rangeDateToIso(endDate),
@@ -215,6 +218,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      shippingCompanyParam,
       priorityParam,
       startDate,
       endDate,
@@ -232,6 +236,7 @@ function Orders() {
       paymentStatus: paymentStatusParam || undefined,
       deliveryStatus: deliveryStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
+      shippingCompany: shippingCompanyParam || undefined,
       userId: filterUserId || undefined,
       priority: priorityParam || undefined,
       startDate: rangeDateToIso(startDate) ?? undefined,
@@ -248,6 +253,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      shippingCompanyParam,
       priorityParam,
       startDate,
       endDate,
@@ -270,6 +276,7 @@ function Orders() {
           paymentStatusParam, deliveryStatusParam,
           userIdParam: filterUserId || undefined,
           deliveryByParam: deliveryByParam || undefined,
+          shippingCompanyParam: shippingCompanyParam || undefined,
           priorityParam: priorityParam || undefined,
           sortField: sortConfig.field,
           sortDir: sortConfig.dir,
@@ -385,6 +392,11 @@ function Orders() {
     setParams({ page: "1", priority: next });
   };
 
+  /* ── Shipping company: applies directly on selection (→ refetch) ── */
+  const handleShippingCompanyChange = (id: string) => {
+    setParams({ page: "1", shippingCompany: id || "" });
+  };
+
   /* ── Sort: يُرسَل للخادم عبر sort[field]=dir ── */
   const handleSortChange = (key: string) => {
     setParams({ page: "1", sort: key });
@@ -418,6 +430,7 @@ function Orders() {
       deliveryStatus: "",
       userId: "",
       deliveryBy: "",
+      shippingCompany: "",
       priority: "",
       startDate: "",
       endDate: "",
@@ -478,6 +491,7 @@ function Orders() {
       ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
       ...(filterUserId       && { userId:         filterUserId }),
       ...(deliveryByParam     && { deliveryBy:     deliveryByParam }),
+      ...(shippingCompanyParam && { shippingCompany: shippingCompanyParam }),
       ...(priorityParam       && { priority:       priorityParam }),
       ...(startDate          && { startDate:      rangeDateToIso(startDate) }),
       ...(endDate            && { endDate:        rangeDateToIso(endDate) }),
@@ -589,6 +603,8 @@ function Orders() {
                 onReset={handleFilterReset}
                 priorityValue={priorityList}
                 onPriorityChange={handlePriorityChange}
+                shippingCompanyValue={shippingCompanyParam || ""}
+                onShippingCompanyChange={handleShippingCompanyChange}
                 startDate={startDate ? startDate.format("YYYY-MM-DD") : ""}
                 endDate={endDate ? endDate.format("YYYY-MM-DD") : ""}
                 onStartDateChange={handleStartDateChange}
