@@ -305,7 +305,7 @@ export default function ShipmentsFiltersBar({
             )}
 
             <FilterSelect
-              label="شركات الشحن"
+              label="التوصيل بواسطة"
               value={vals.deliveryBy}
               options={deliveryByOptions}
               onChange={setSelect("deliveryBy")}

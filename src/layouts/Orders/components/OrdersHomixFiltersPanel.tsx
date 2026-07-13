@@ -20,7 +20,7 @@ export interface FiltersPanelValue {
   paymentStatus: string[];
   deliveryStatus: number[];
   userId: string[];
-  /** معرفات «شركات الشحن» من `deliveryByOptions` */
+  /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
 }
 
@@ -410,9 +410,9 @@ export default function OrdersHomixFiltersPanel({
               </Grid>
             )}
 
-            {/* شركات الشحن — من الـ meta: deliveryByOptions */}
+            {/* التوصيل بواسطة — من الـ meta: deliveryByOptions */}
             <Grid item xs={12} sm={6} md={12 / 5}>
-              <FieldBox label="شركات الشحن">
+              <FieldBox label="التوصيل بواسطة">
                 <MultiSelect
                   value={draftDeliveryBy}
                   onChange={setDraftDeliveryBy}

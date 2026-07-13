@@ -162,7 +162,7 @@ export default function ShipmentsTable({
               <th style={TH}>حالة الشحنة</th>
               <th style={TH}>نوع الشحنة</th>
               <th style={TH}>حالة الدفع</th>
-              <th style={TH}>شركات الشحن</th>
+              <th style={TH}>التوصيل بواسطة</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ المطلوب</th>
               <th style={{ ...TH, textAlign: "center" }}>تكلفة الشحن</th>
               <th style={TH}>تاريخ الاستلام</th>
@@ -247,7 +247,7 @@ export default function ShipmentsTable({
                   }
                 </td>
 
-                {/* شركات الشحن */}
+                {/* التوصيل بواسطة */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
                     {s.deliveryBy || "—"}

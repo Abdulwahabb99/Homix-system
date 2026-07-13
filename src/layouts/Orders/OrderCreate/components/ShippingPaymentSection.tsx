@@ -30,7 +30,7 @@ export default function ShippingPaymentSection(props: ShippingPaymentSectionProp
     <SectionCard title="الشحن والدفع" subtitle="تفاصيل الدفع والتوصيل والمبالغ" icon={<LocalShippingOutlinedIcon />} iconBg={HX.tealLight} iconColor={HX.teal}>
       <Box sx={grid2}>
         <SelectInput label="طريقة الدفع" required value={props.paymentStatus} onChange={props.setPaymentStatus} options={PAYMENT_OPTIONS} />
-        <SelectInput label="شركات الشحن" value={props.deliveryBy} onChange={props.setDeliveryBy} options={DELIVERY_BY_OPTIONS} />
+        <SelectInput label="التوصيل بواسطة" value={props.deliveryBy} onChange={props.setDeliveryBy} options={DELIVERY_BY_OPTIONS} />
       </Box>
 
       <Box sx={grid2}>

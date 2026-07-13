@@ -70,7 +70,7 @@ const BASE_COLS = [
   { key: "compCost",      label: "سعر التكلفة",    w: 81  },
   { key: "totalPrice",    label: "سعر البيع",      w: 76  },
   { key: "paymentStatus", label: "حالة الدفع",     w: 126 },
-  { key: "delivery",      label: "شركات الشحن", w: 112 },
+  { key: "delivery",      label: "التوصيل بواسطة", w: 112 },
   { key: "mfgStatus",     label: "حالة التأخير",   w: 125 },
   { key: "priority",      label: "الأولوية",       w: 96  },
   { key: "createdAt",     label: "تاريخ الطلب",    w: 86  },
@@ -683,7 +683,7 @@ export default function OrdersHomixTableV2({
                   {/* حالة الدفع */}
                   <td style={TD}><PaymentBadge status={order.paymentStatus} /></td>
 
-                  {/* شركات الشحن */}
+                  {/* التوصيل بواسطة */}
                   <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
 
                   {/* حالة التأخير */}
