@@ -15,6 +15,7 @@ import moment from "moment";
 import MultiSelect from "components/MultiSelect/MultiSelect";
 import { useShippingCompaniesQuery } from "query/shippingCompanies";
 import ShippingCompanySelect from "layouts/Shipments/components/ShipmentEdit/ShippingCompanySelect";
+import AppDatePicker from "components/AppDatePicker/AppDatePicker";
 
 export interface FiltersPanelValue {
   orderStatus: number[];
@@ -97,28 +98,10 @@ function priorityStyle(id: string) {
   return level ? PRIORITY_STYLE_BY_LEVEL[level] : { bg: HX.accentLight, color: HX.accent, dot: HX.accent };
 }
 
-/* حقل تاريخ أصلي مُنسَّق ليطابق بقية حقول الفلاتر. القيمة بصيغة "YYYY-MM-DD". */
+/* حقل تاريخ بتقويم عربي (AppDatePicker) — القيمة تبقى "YYYY-MM-DD" بأرقام لاتينية،
+   فلا يتغيّر أي منطق فلترة/تكامل؛ التغيير في واجهة التقويم فقط. */
 function DateInput({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
-  return (
-    <Box
-      component="input"
-      type="date"
-      value={value}
-      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-      sx={{
-        width: "100%", height: 34, boxSizing: "border-box",
-        px: "10px", borderRadius: "8px",
-        border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
-        color: value ? HX.tx : HX.tx3,
-        fontSize: "12.5px", fontFamily: "'Cairo',sans-serif",
-        outline: "none", cursor: "pointer",
-        transition: "border-color .15s, box-shadow .15s",
-        "&:hover": { borderColor: HX.accent },
-        "&:focus": { borderColor: HX.accent, boxShadow: `0 0 0 3px ${HX.accentLight}` },
-        "&::-webkit-calendar-picker-indicator": { cursor: "pointer", opacity: 0.55 },
-      }}
-    />
-  );
+  return <AppDatePicker value={value} onChange={onChange} />;
 }
 
 export default function OrdersHomixFiltersPanel({
