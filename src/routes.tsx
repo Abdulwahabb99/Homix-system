@@ -12,7 +12,7 @@ const ProtectedRoutes = React.lazy(
   () => import(/* webpackPrefetch: true */ "components/ProtectedRoutes/ProtectedRoutes")
 );
 const Financialreports = React.lazy(
-  () => import(/* webpackPrefetch: true */ "layouts/Financialreports/Financialreports")
+  () => import(/* webpackPrefetch: true */ "layouts/Financialreports")
 );
 const Factories = React.lazy(
   () => import(/* webpackPrefetch: true */ "layouts/Factories/Factories")
