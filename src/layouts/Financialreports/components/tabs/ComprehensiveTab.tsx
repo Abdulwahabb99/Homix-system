@@ -33,12 +33,12 @@ export default function ComprehensiveTab({ sellers }: { sellers: SettlementSelle
             { label: "الغرامات" },
           ]}
           rows={s.orders.map((o) => [
-            <OpId>{o.op}</OpId>,
-            <Muted>#{o.order}</Muted>,
-            <ProdCode>{o.code}</ProdCode>,
-            <Money value={o.dueSeller} tone="green" bold />,
-            <Money value={o.dueComp} tone="accent" bold />,
-            <FineCell value={o.fine} />,
+            <OpId key="op">{o.op}</OpId>,
+            <Muted key="order">#{o.order}</Muted>,
+            <ProdCode key="code">{o.code}</ProdCode>,
+            <Money key="seller" value={o.dueSeller} tone="green" bold />,
+            <Money key="comp" value={o.dueComp} tone="accent" bold />,
+            <FineCell key="fine" value={o.fine} />,
           ])}
         />
       </Box>

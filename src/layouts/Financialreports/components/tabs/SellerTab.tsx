@@ -32,13 +32,13 @@ export default function SellerTab({ sellers }: { sellers: SettlementSeller[] }) 
             { label: "طريقة الدفع" }, { label: "الغرامات" },
           ]}
           rows={s.orders.map((o) => [
-            <OpId>{o.op}</OpId>,
-            <Muted>#{o.order}</Muted>,
-            <ProdCode>{o.code}</ProdCode>,
-            <Money value={o.cost} />,
-            <Money value={o.collect} bold />,
-            <PayBadge pay={o.pay} />,
-            <FineCell value={o.fine} />,
+            <OpId key="op">{o.op}</OpId>,
+            <Muted key="order">#{o.order}</Muted>,
+            <ProdCode key="code">{o.code}</ProdCode>,
+            <Money key="cost" value={o.cost} />,
+            <Money key="collect" value={o.collect} bold />,
+            <PayBadge key="pay" pay={o.pay} />,
+            <FineCell key="fine" value={o.fine} />,
           ])}
         />
       </Box>
