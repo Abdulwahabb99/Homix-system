@@ -57,9 +57,9 @@ export interface UseFinancialSettlementsResult {
   isLoading: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function useFinancialSettlements(periodId?: string): UseFinancialSettlementsResult {
   // TODO(BE): استبدل بـ useQuery({ queryKey: ["financial-settlements", periodId], queryFn })
+  void periodId;
   const sellers = MOCK_SELLERS;
   const kpis = useMemo(() => aggregateKpis(sellers), [sellers]);
   return { sellers, kpis, isLoading: false };

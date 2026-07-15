@@ -17,7 +17,7 @@ const Financialreports = React.lazy(
 const Factories = React.lazy(
   () => import(/* webpackPrefetch: true */ "layouts/Factories/Factories")
 );
-const Users = React.lazy(() => import("./layouts/Users/Users"));
+const Users = React.lazy(() => import("./layouts/Users"));
 const Shipments = React.lazy(() => import("./layouts/Shipments/Shipments"));
 
 export const adminRoutes = [
