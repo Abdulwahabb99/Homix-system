@@ -75,6 +75,7 @@ VendorRouter.get("/:id", requirePermission("vendors_view"), VendorsController.ge
  *                 name: ركنة للأثاث
  *                 email: vendor@homix.com
  *                 password: Secret123!
+ *                 accountManager: 12
  *     responses:
  *       200:
  *         description: Vendor created successfully
@@ -114,6 +115,7 @@ VendorRouter.post("/", requirePermission("vendors_create"), VendorsController.cr
  *               value:
  *                 name: مصنع الموردن
  *                 email: supplier@homix.com
+ *                 accountManager: 12
  *     responses:
  *       200:
  *         description: Vendor updated successfully

@@ -10,6 +10,7 @@ const VENDOR_ROUTES_PATH = path.join(ROOT, "app/modules/vendor/vendor.routes.ts"
 describe("vendor routes", () => {
   it("returns vendor list", async () => {
     const router = loadModuleWithMocks<express.Router>(VENDOR_ROUTES_PATH, {
+      "../../middlewares/requirePermission": () => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
       "./vendor.controller": {
         changeActiveStatus: jest.fn(),
         createVendor: jest.fn(),
