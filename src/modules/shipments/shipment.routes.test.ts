@@ -468,8 +468,10 @@ describe("shipmentRouter", () => {
     expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
       expect.objectContaining({
         ...payload,
+        deliveryBy: 1,
         shippingCompany: "J&T",
         shippedFromInventory: true,
+        toBeCollected: 17064,
       }),
     ], true);
   });
@@ -495,7 +497,11 @@ describe("shipmentRouter", () => {
 
     expect(response.status).toBe(200);
     expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
-      expect.objectContaining(payload),
+      expect.objectContaining({
+        ...payload,
+        deliveryBy: 1,
+        toBeCollected: 16999,
+      }),
     ], true);
   });
 

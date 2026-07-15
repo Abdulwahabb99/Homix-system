@@ -305,13 +305,48 @@ const swaggerOptions = {
         UserSummary: {
           type: "object",
           properties: {
+            accountStatus: { example: "active", type: "string" },
+            accountStatusLabel: { example: "نشط", type: "string" },
+            activePermissionsCount: { example: 19, type: "integer" },
+            createdAt: { example: "2026-07-16T01:00:00.000Z", nullable: true, type: "string", format: "date-time" },
             email: { example: "admin@homix.com", type: "string" },
             firstName: { example: "Ahmed", type: "string" },
+            fullName: { example: "Ahmed Hesham", type: "string" },
             id: { example: 1, type: "integer" },
             isActive: { example: true, type: "boolean" },
+            lastPasswordChangeAt: { example: "2026-07-10T11:30:00.000Z", nullable: true, type: "string", format: "date-time" },
             lastName: { example: "Hesham", type: "string" },
-            userType: { example: "admin", type: "string" },
+            lastSeenAt: { example: "2026-07-16T01:20:00.000Z", nullable: true, type: "string", format: "date-time" },
+            permissions: {
+              additionalProperties: { type: "boolean" },
+              type: "object",
+            },
+            roleName: { example: "مدير", type: "string" },
+            status: { example: "online", type: "string" },
+            statusLabel: { example: "متصل الآن", type: "string" },
+            userType: { example: "1", type: "string" },
             vendorId: { example: 4, nullable: true, type: "integer" },
+          },
+        },
+        UserPermissionGroupItem: {
+          type: "object",
+          properties: {
+            enabled: { example: true, type: "boolean" },
+            key: { example: "orders_view", type: "string" },
+            label: { example: "عرض الطلبات", type: "string" },
+          },
+        },
+        UserPermissionGroupSummary: {
+          type: "object",
+          properties: {
+            activeCount: { example: 4, type: "integer" },
+            items: {
+              items: { $ref: "#/components/schemas/UserPermissionGroupItem" },
+              type: "array",
+            },
+            key: { example: "orders", type: "string" },
+            label: { example: "الطلبات", type: "string" },
+            totalCount: { example: 4, type: "integer" },
           },
         },
         UserListResponse: {
@@ -328,7 +363,120 @@ const swaggerOptions = {
         UserResponse: {
           type: "object",
           properties: {
-            data: { $ref: "#/components/schemas/UserSummary" },
+            data: {
+              allOf: [
+                { $ref: "#/components/schemas/UserSummary" },
+                {
+                  type: "object",
+                  properties: {
+                    bankAccountHolderName: { example: "محمود كمال عبدالله", type: "string" },
+                    bankAccountNumber: { example: "1234567890123456", type: "string" },
+                    bankAccountType: { example: "حساب جاري", type: "string" },
+                    bankName: { example: "بنك مصر", type: "string" },
+                    instaPayNumber: { example: "01032288941", type: "string" },
+                    jobTitle: { example: "مدير عمليات أول", type: "string" },
+                    permissionsSummary: {
+                      type: "object",
+                      properties: {
+                        activeCount: { example: 19, type: "integer" },
+                        groups: {
+                          items: { $ref: "#/components/schemas/UserPermissionGroupSummary" },
+                          type: "array",
+                        },
+                        totalCount: { example: 19, type: "integer" },
+                      },
+                    },
+                    activity: {
+                      items: {
+                        type: "object",
+                        properties: {
+                          action: { example: "status", type: "string" },
+                          actorName: { example: "Ahmed Hesham", type: "string" },
+                          createdAt: { example: "2026-07-16T01:30:00.000Z", nullable: true, type: "string", format: "date-time" },
+                          field: { example: "accountStatus", type: "string" },
+                          id: { example: 91, type: "integer" },
+                          message: { example: "تم تحديث حالة الحساب إلى موقوف", type: "string" },
+                        },
+                      },
+                      type: "array",
+                    },
+                    phoneNumber: { example: "01032288941", type: "string" },
+                    salary: { example: 12500, nullable: true, type: "number" },
+                    walletNumber: { example: "01032288941", type: "string" },
+                  },
+                },
+              ],
+            },
+            status: { example: true, type: "boolean" },
+            statusCode: { example: 200, type: "integer" },
+          },
+        },
+        UserMetaResponse: {
+          type: "object",
+          properties: {
+            data: {
+              type: "object",
+              properties: {
+                accountStatuses: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { example: "active", type: "string" },
+                      label: { example: "نشط", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+                permissionGroups: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      key: { example: "orders", type: "string" },
+                      label: { example: "الطلبات", type: "string" },
+                      permissions: {
+                        items: {
+                          type: "object",
+                          properties: {
+                            key: { example: "orders_view", type: "string" },
+                            label: { example: "عرض الطلبات", type: "string" },
+                          },
+                        },
+                        type: "array",
+                      },
+                    },
+                  },
+                  type: "array",
+                },
+                permissionTemplates: {
+                  additionalProperties: {
+                    additionalProperties: { type: "boolean" },
+                    type: "object",
+                  },
+                  type: "object",
+                },
+                roleSuggestions: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { example: "1", type: "string" },
+                      label: { example: "مدير", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+                userTypes: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { example: "1", type: "string" },
+                      key: { example: "ADMIN", type: "string" },
+                      label: { example: "مدير", type: "string" },
+                    },
+                  },
+                  type: "array",
+                },
+              },
+            },
             status: { example: true, type: "boolean" },
             statusCode: { example: 200, type: "integer" },
           },
@@ -359,11 +507,30 @@ const swaggerOptions = {
         UserUpsertRequest: {
           type: "object",
           properties: {
+            accountStatus: { example: "active", type: "string" },
+            bankAccountHolderName: { example: "محمود كمال عبدالله", type: "string" },
+            bankAccountNumber: { example: "1234567890123456", type: "string" },
+            bankAccountType: { example: "حساب جاري", type: "string" },
+            bankName: { example: "بنك مصر", type: "string" },
             email: { example: "ops@homix.com", type: "string" },
             firstName: { example: "Ibrahim", type: "string" },
+            fullName: { example: "Ibrahim Mahmoud", type: "string" },
+            instaPayNumber: { example: "01032288941", type: "string" },
+            jobTitle: { example: "مسؤول تشغيل", type: "string" },
+            lastName: { example: "Mahmoud", type: "string" },
+            name: { example: "Ibrahim Mahmoud", type: "string" },
             password: { example: "Secret123!", type: "string" },
-            userType: { example: "admin", type: "string" },
+            permissions: {
+              additionalProperties: { type: "boolean" },
+              type: "object",
+            },
+            phoneNumber: { example: "01032288941", type: "string" },
+            roleName: { example: "عمليات", type: "string" },
+            salary: { example: 7500, type: "number" },
+            status: { example: "online", type: "string" },
+            userType: { example: "3", type: "string" },
             vendorId: { example: 4, nullable: true, type: "integer" },
+            walletNumber: { example: "01032288941", type: "string" },
           },
         },
         CustomerSummary: {

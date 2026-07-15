@@ -5,7 +5,7 @@ import { USER_TYPES } from "../../../config/constants";
 import { DashboardAggregateService } from "../dashboard/dashboard-aggregate.service";
 import type { DashboardMetricSnapshot } from "../dashboard/dashboard.types";
 import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gateway";
-import { toText } from "./order.helpers";
+import { normalizeOrderMutationPayload, toPlain, toText } from "./order.helpers";
 import { OrderRepository } from "./order.repo";
 import type { LegacyOrderResponse, OrderDetailsResponse, OrderFinancialReportResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
 
@@ -56,8 +56,9 @@ export class OrderService {
   }
 
   public async createOrder(payload: OrderMutationPayload, user?: OrderRequestUser): Promise<Result<{ message: string }>> {
-    await this.legacyGateway.saveImportedOrders([payload], false, user);
-    await this.refreshAggregateForDates([payload.orderDate]);
+    const normalizedPayload = normalizeOrderMutationPayload(payload);
+    await this.legacyGateway.saveImportedOrders([normalizedPayload], false, user);
+    await this.refreshAggregateForDates([normalizedPayload.orderDate]);
     return success({ message: "Order created successfully" });
   }
 
@@ -72,8 +73,9 @@ export class OrderService {
 
   public async updateOrder(orderId: number, payload: OrderMutationPayload, user: OrderRequestUser): Promise<Result<unknown>> {
     const existingOrder = await this.orderRepository.findOrderEntity(orderId);
-    const response = ensureLegacySuccess(await this.legacyGateway.updateOrder(orderId, payload, user));
-    await this.refreshAggregateForDates([existingOrder ? this.getOrderDate(existingOrder) : null, payload.orderDate, this.getOrderDate(response.data)]);
+    const normalizedPayload = normalizeOrderMutationPayload(payload, toPlain(existingOrder));
+    const response = ensureLegacySuccess(await this.legacyGateway.updateOrder(orderId, normalizedPayload, user));
+    await this.refreshAggregateForDates([existingOrder ? this.getOrderDate(existingOrder) : null, normalizedPayload.orderDate, this.getOrderDate(response.data)]);
     return success(response.data ?? {});
   }
 

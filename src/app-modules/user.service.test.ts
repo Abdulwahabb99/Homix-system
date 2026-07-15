@@ -10,6 +10,7 @@ describe("UserService", () => {
     const service = loadModuleWithMocks<typeof import("../../app/modules/user/user.service")>(
       USER_SERVICE_PATH,
       {
+        "../logs/log.model": { create: jest.fn(), findAll: jest.fn().mockResolvedValue([]) },
         "../vendor/vendor.model": { sequelize: { transaction: jest.fn() } },
         "./user.model": {},
       },
@@ -31,6 +32,7 @@ describe("UserService", () => {
     const service = loadModuleWithMocks<typeof import("../../app/modules/user/user.service")>(
       USER_SERVICE_PATH,
       {
+        "../logs/log.model": { create: jest.fn(), findAll: jest.fn().mockResolvedValue([]) },
         "../vendor/vendor.model": { sequelize: { transaction: jest.fn() } },
         "./user.model": userModelMock,
       },
@@ -50,6 +52,7 @@ describe("UserService", () => {
     const service = loadModuleWithMocks<typeof import("../../app/modules/user/user.service")>(
       USER_SERVICE_PATH,
       {
+        "../logs/log.model": { create: jest.fn(), findAll: jest.fn().mockResolvedValue([]) },
         "../vendor/vendor.model": { sequelize: { transaction: jest.fn() } },
         "./user.model": userModelMock,
       },
@@ -66,5 +69,86 @@ describe("UserService", () => {
       status: false,
       statusCode: 400,
     });
+  });
+
+  it("maps extended profile fields and permissions when creating a user", async () => {
+    const createdUser = {
+      toJSON: () => ({
+        accountStatus: "active",
+        bankName: "بنك مصر",
+        createdAt: "2026-07-16T00:00:00.000Z",
+        email: "ops@homix.com",
+        firstName: "Ibrahim",
+        id: 5,
+        lastName: "Mahmoud",
+        permissions: { orders_view: true, orders_edit: true },
+        roleName: "عمليات",
+        userType: "3",
+      }),
+    };
+    const userModelMock = {
+      create: jest.fn().mockResolvedValue(createdUser),
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+    const service = loadModuleWithMocks<typeof import("../../app/modules/user/user.service")>(
+      USER_SERVICE_PATH,
+      {
+        "../logs/log.model": { create: jest.fn(), findAll: jest.fn().mockResolvedValue([]) },
+        "../vendor/vendor.model": { sequelize: { transaction: jest.fn() } },
+        "./user.model": userModelMock,
+      },
+    );
+
+    const response = await service.addUser({
+      accountStatus: "active",
+      bankName: "بنك مصر",
+      email: "Ops@homix.com",
+      fullName: "Ibrahim Mahmoud",
+      password: "secret",
+      roleName: "عمليات",
+      userType: "3",
+    });
+
+    expect(userModelMock.create).toHaveBeenCalledWith(expect.objectContaining({
+      accountStatus: "active",
+      bankName: "بنك مصر",
+      email: "ops@homix.com",
+      firstName: "Ibrahim",
+      lastName: "Mahmoud",
+      permissions: expect.objectContaining({
+        orders_create: true,
+        orders_edit: true,
+        orders_view: true,
+      }),
+      roleName: "عمليات",
+      userType: "3",
+    }));
+    expect(response.status).toBe(true);
+    expect(response.data).toEqual(expect.objectContaining({
+      activePermissionsCount: expect.any(Number),
+      bankName: "بنك مصر",
+      fullName: "Ibrahim Mahmoud",
+      roleName: "عمليات",
+    }));
+  });
+
+  it("returns user metadata for the users screen", async () => {
+    const service = loadModuleWithMocks<typeof import("../../app/modules/user/user.service")>(
+      USER_SERVICE_PATH,
+      {
+        "../logs/log.model": { create: jest.fn(), findAll: jest.fn().mockResolvedValue([]) },
+        "../vendor/vendor.model": { sequelize: { transaction: jest.fn() } },
+        "./user.model": {},
+      },
+    );
+
+    const response = await service.getMeta();
+
+    expect(response.status).toBe(true);
+    expect(response.data).toEqual(expect.objectContaining({
+      accountStatuses: expect.arrayContaining([expect.objectContaining({ id: "active" })]),
+      permissionGroups: expect.arrayContaining([expect.objectContaining({ key: "orders" })]),
+      permissionTemplates: expect.objectContaining({ admin: expect.any(Object) }),
+    }));
   });
 });

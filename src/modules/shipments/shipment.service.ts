@@ -4,6 +4,7 @@ import { success } from "../../shared/result";
 import type { Response } from "express";
 import { shipmentLegacyGateway } from "./shipment.legacy-gateway";
 import { ShipmentRepository } from "./shipment.repo";
+import { normalizeOrderMutationPayload } from "../orders/order.helpers";
 import type {
   DeliveryAccountsListQuery,
   DeliveryAccountsListResponse,
@@ -36,7 +37,10 @@ export class ShipmentService {
   public async createShipment(payload: ShipmentMutationPayload): Promise<Result<{ message: string }>> {
     const normalizedPayload = await this.shipmentRepository.normalizeShippingCompanyPayload(payload);
     await shipmentLegacyGateway.createShipment({
-      ...normalizedPayload,
+      ...normalizeOrderMutationPayload({
+        ...normalizedPayload,
+        shippedFromInventory: true,
+      }),
       shippedFromInventory: true,
     });
     return success({ message: "Shipment created successfully" });

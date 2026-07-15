@@ -17,6 +17,7 @@ import { OrderService } from "./order.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
 const isNotVendor = require("../../../app/middlewares/isNotVendor");
+const requirePermission = require("../../../app/middlewares/requirePermission");
 const fileUploadMiddleware = require("../../../config/fileUploadMiddleware");
 
 const orderRepository = new OrderRepository();
@@ -76,7 +77,7 @@ export const orderRouter = express.Router();
  *                       - id: 3
  *                         label: ركنة للأثاث
  */
-orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
+orderRouter.get("/meta", verifyToken, requirePermission("orders_view"), asyncHandler(orderController.getMeta));
 
 /**
  * @swagger
@@ -148,6 +149,7 @@ orderRouter.get("/meta", verifyToken, asyncHandler(orderController.getMeta));
 orderRouter.get(
   "/summary",
   verifyToken,
+  requirePermission("orders_view"),
   validateRequest({ query: orderSummaryQuerySchema }),
   asyncHandler(orderController.getSummary),
 );
@@ -265,7 +267,7 @@ orderRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-orderRouter.post("/", validateRequest({ body: orderMutationSchema }), asyncHandler(orderController.createOrder));
+orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateRequest({ body: orderMutationSchema }), asyncHandler(orderController.createOrder));
 
 /**
  * @swagger
@@ -297,7 +299,7 @@ orderRouter.post("/", validateRequest({ body: orderMutationSchema }), asyncHandl
  *             schema:
  *               $ref: '#/components/schemas/OrderFinancialReportResponse'
  */
-orderRouter.get("/financialReport", verifyToken, asyncHandler(orderController.financialReport));
+orderRouter.get("/financialReport", verifyToken, requirePermission("finance_view"), asyncHandler(orderController.financialReport));
 
 /**
  * @swagger
@@ -354,7 +356,7 @@ orderRouter.get("/financialReport", verifyToken, asyncHandler(orderController.fi
  *               type: string
  *               format: binary
  */
-orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrders));
+orderRouter.get("/export", verifyToken, requirePermission("finance_export"), asyncHandler(orderController.exportOrders));
 
 /**
  * @swagger
@@ -446,7 +448,7 @@ orderRouter.get("/export", verifyToken, asyncHandler(orderController.exportOrder
  *             schema:
  *               $ref: '#/components/schemas/OrderListResponse'
  */
-orderRouter.get("/", verifyToken, validateRequest({ query: orderListQuerySchema }), asyncHandler(orderController.listOrders));
+orderRouter.get("/", verifyToken, requirePermission("orders_view"), validateRequest({ query: orderListQuerySchema }), asyncHandler(orderController.listOrders));
 
 /**
  * @swagger
@@ -470,7 +472,7 @@ orderRouter.get("/", verifyToken, validateRequest({ query: orderListQuerySchema 
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.put("/bulk-update", verifyToken, validateRequest({ body: orderBulkUpdateSchema }), asyncHandler(orderController.bulkUpdate));
+orderRouter.put("/bulk-update", verifyToken, requirePermission("orders_edit"), validateRequest({ body: orderBulkUpdateSchema }), asyncHandler(orderController.bulkUpdate));
 
 /**
  * @swagger
@@ -488,7 +490,7 @@ orderRouter.put("/bulk-update", verifyToken, validateRequest({ body: orderBulkUp
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.post("/import", verifyToken, asyncHandler(orderController.importOrders));
+orderRouter.post("/import", verifyToken, requirePermission("orders_create"), asyncHandler(orderController.importOrders));
 
 /**
  * @swagger
@@ -512,7 +514,7 @@ orderRouter.post("/import", verifyToken, asyncHandler(orderController.importOrde
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.delete("/bulk-delete", verifyToken, isNotVendor, validateRequest({ body: orderBulkDeleteSchema }), asyncHandler(orderController.bulkDelete));
+orderRouter.delete("/bulk-delete", verifyToken, isNotVendor, requirePermission("orders_delete"), validateRequest({ body: orderBulkDeleteSchema }), asyncHandler(orderController.bulkDelete));
 
 /**
  * @swagger
@@ -541,7 +543,7 @@ orderRouter.delete("/bulk-delete", verifyToken, isNotVendor, validateRequest({ b
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-orderRouter.get("/:orderId", verifyToken, validateRequest({ params: orderIdParamsSchema }), asyncHandler(orderController.getOrderById));
+orderRouter.get("/:orderId", verifyToken, requirePermission("orders_view"), validateRequest({ params: orderIdParamsSchema }), asyncHandler(orderController.getOrderById));
 
 /**
  * @swagger
@@ -576,7 +578,7 @@ orderRouter.get("/:orderId", verifyToken, validateRequest({ params: orderIdParam
  *                 status:
  *                   type: boolean
  */
-orderRouter.put("/:orderId", verifyToken, validateRequest({ body: orderMutationSchema, params: orderIdParamsSchema }), asyncHandler(orderController.updateOrder));
+orderRouter.put("/:orderId", verifyToken, requirePermission("orders_edit"), validateRequest({ body: orderMutationSchema, params: orderIdParamsSchema }), asyncHandler(orderController.updateOrder));
 
 /**
  * @swagger
@@ -599,7 +601,7 @@ orderRouter.put("/:orderId", verifyToken, validateRequest({ body: orderMutationS
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.delete("/:orderId", verifyToken, isNotVendor, validateRequest({ params: orderIdParamsSchema }), asyncHandler(orderController.deleteOrder));
+orderRouter.delete("/:orderId", verifyToken, isNotVendor, requirePermission("orders_delete"), validateRequest({ params: orderIdParamsSchema }), asyncHandler(orderController.deleteOrder));
 
 /**
  * @swagger
@@ -638,7 +640,7 @@ orderRouter.delete("/:orderId", verifyToken, isNotVendor, validateRequest({ para
  *                 status:
  *                   type: boolean
  */
-orderRouter.put("/:orderId/notes/:noteId", verifyToken, validateRequest({ body: orderNoteSchema, params: orderNoteParamsSchema }), asyncHandler(orderController.updateNote));
+orderRouter.put("/:orderId/notes/:noteId", verifyToken, requirePermission("orders_edit"), validateRequest({ body: orderNoteSchema, params: orderNoteParamsSchema }), asyncHandler(orderController.updateNote));
 
 /**
  * @swagger
@@ -673,7 +675,7 @@ orderRouter.put("/:orderId/notes/:noteId", verifyToken, validateRequest({ body: 
  *                 status:
  *                   type: boolean
  */
-orderRouter.post("/:orderId/notes", verifyToken, validateRequest({ body: orderNoteSchema, params: orderIdParamsSchema }), asyncHandler(orderController.addNote));
+orderRouter.post("/:orderId/notes", verifyToken, requirePermission("orders_edit"), validateRequest({ body: orderNoteSchema, params: orderIdParamsSchema }), asyncHandler(orderController.addNote));
 
 /**
  * @swagger
@@ -700,7 +702,7 @@ orderRouter.post("/:orderId/notes", verifyToken, validateRequest({ body: orderNo
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.delete("/:orderId/notes/:noteId", verifyToken, validateRequest({ params: orderNoteParamsSchema }), asyncHandler(orderController.deleteNote));
+orderRouter.delete("/:orderId/notes/:noteId", verifyToken, requirePermission("orders_edit"), validateRequest({ params: orderNoteParamsSchema }), asyncHandler(orderController.deleteNote));
 
 /**
  * @swagger
@@ -743,4 +745,4 @@ orderRouter.delete("/:orderId/notes/:noteId", verifyToken, validateRequest({ par
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-orderRouter.post("/:orderId/notes/:noteId/upload", validateRequest({ params: orderNoteParamsSchema }), fileUploadMiddleware("note"), asyncHandler(orderController.uploadFiles));
+orderRouter.post("/:orderId/notes/:noteId/upload", verifyToken, requirePermission("orders_edit"), validateRequest({ params: orderNoteParamsSchema }), fileUploadMiddleware("note"), asyncHandler(orderController.uploadFiles));

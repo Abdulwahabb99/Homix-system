@@ -136,4 +136,5 @@ export const MANUFACTURE_STATUS_ARABIC = {
   3: "جاهز للشحن",
   4: "تم الشحن",
   5: "فشل في التوصيل",
+  6: "تم التوصيل",
 } as const;

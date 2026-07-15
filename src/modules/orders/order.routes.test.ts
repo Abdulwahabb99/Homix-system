@@ -255,9 +255,13 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith(
-      [payload],
+      [expect.objectContaining({
+        ...payload,
+        deliveryBy: 2,
+        toBeCollected: 16999,
+      })],
       false,
-      undefined,
+      { id: 1, userType: "1" },
     );
   });
 

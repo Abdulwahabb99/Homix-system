@@ -147,6 +147,7 @@ const MANUFACTURE_STATUS = {
   READY_FOR_DELIVERY: 3,
   DELIVERED: 4,
   FAILED_TO_DELIVER: 5,
+  DELIVERED_SUCCESSFULLY: 6,
 };
 
 const MANUFACTURE_STATUS_ARABIC = {
@@ -155,6 +156,7 @@ const MANUFACTURE_STATUS_ARABIC = {
   3: "جاهز للشحن",
   4: "تم الشحن",
   5: "فشل في التوصيل",
+  6: "تم التوصيل"
 };
 module.exports = {
   USER_TYPES,

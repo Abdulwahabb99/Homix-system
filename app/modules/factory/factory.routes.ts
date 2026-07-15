@@ -2,6 +2,7 @@ import express from "express";
 
 const fileUploadMiddleware = require("../../../config/fileUploadMiddleware") as typeof import("../../../config/fileUploadMiddleware");
 const FactoryController = require("./factory.controller") as typeof import("./factory.controller");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const FactoryRouter = express.Router();
 
@@ -31,7 +32,7 @@ const FactoryRouter = express.Router();
  *       401:
  *         description: Missing or invalid bearer token
  */
-FactoryRouter.get("/", FactoryController.getAll);
+FactoryRouter.get("/", requirePermission("factory_view"), FactoryController.getAll);
 /**
  * @swagger
  * /factories/{id}:
@@ -59,7 +60,7 @@ FactoryRouter.get("/", FactoryController.getAll);
  *       404:
  *         description: Factory not found
  */
-FactoryRouter.get("/:id", FactoryController.getOne);
+FactoryRouter.get("/:id", requirePermission("factory_view"), FactoryController.getOne);
 /**
  * @swagger
  * /factories:
@@ -92,7 +93,7 @@ FactoryRouter.get("/:id", FactoryController.getOne);
  *       401:
  *         description: Missing or invalid bearer token
  */
-FactoryRouter.post("/", FactoryController.create);
+FactoryRouter.post("/", requirePermission("factory_edit"), FactoryController.create);
 /**
  * @swagger
  * /factories/{id}:
@@ -131,7 +132,7 @@ FactoryRouter.post("/", FactoryController.create);
  *       404:
  *         description: Factory not found
  */
-FactoryRouter.put("/:id", FactoryController.update);
+FactoryRouter.put("/:id", requirePermission("factory_edit"), FactoryController.update);
 /**
  * @swagger
  * /factories/{id}:
@@ -159,7 +160,7 @@ FactoryRouter.put("/:id", FactoryController.update);
  *       404:
  *         description: Factory not found
  */
-FactoryRouter.delete("/:id", FactoryController.delete);
+FactoryRouter.delete("/:id", requirePermission("factory_delete"), FactoryController.delete);
 /**
  * @swagger
  * /factories/{id}/upload:
@@ -203,7 +204,7 @@ FactoryRouter.delete("/:id", FactoryController.delete);
  *       404:
  *         description: Factory not found
  */
-FactoryRouter.post("/:id/upload", fileUploadMiddleware("factory"), FactoryController.uploadFiles);
+FactoryRouter.post("/:id/upload", requirePermission("factory_edit"), fileUploadMiddleware("factory"), FactoryController.uploadFiles);
 /**
  * @swagger
  * /factories/{factoryId}/attachments/{attachmentId}:
@@ -236,6 +237,6 @@ FactoryRouter.post("/:id/upload", fileUploadMiddleware("factory"), FactoryContro
  *       404:
  *         description: Factory or attachment not found
  */
-FactoryRouter.delete("/:factoryId/attachments/:attachmentId", FactoryController.deleteAttachment);
+FactoryRouter.delete("/:factoryId/attachments/:attachmentId", requirePermission("factory_edit"), FactoryController.deleteAttachment);
 
 export = FactoryRouter;

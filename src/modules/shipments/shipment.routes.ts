@@ -30,6 +30,7 @@ import { ShipmentService } from "./shipment.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
 const isNotVendor = require("../../../app/middlewares/isNotVendor");
+const requirePermission = require("../../../app/middlewares/requirePermission");
 
 const shipmentRepository = new ShipmentRepository();
 const shipmentService = new ShipmentService(shipmentRepository);
@@ -56,7 +57,7 @@ shipmentRouter.use(verifyToken, isNotVendor);
  *             schema:
  *               $ref: '#/components/schemas/ShipmentMetaResponse'
  */
-shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
+shipmentRouter.get("/meta", requirePermission("ship_view"), asyncHandler(shipmentController.getMeta));
 
 /**
  * @swagger
@@ -160,6 +161,7 @@ shipmentRouter.get("/meta", asyncHandler(shipmentController.getMeta));
  */
 shipmentRouter.get(
   "/summary",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentSummaryQuerySchema }),
   asyncHandler(shipmentController.getSummary),
 );
@@ -210,7 +212,7 @@ shipmentRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ShipmentMessageResponse'
  */
-shipmentRouter.post("/", validateRequest({ body: shipmentCreateSchema }), asyncHandler(shipmentController.createShipment));
+shipmentRouter.post("/", requirePermission("ship_edit"), validateRequest({ body: shipmentCreateSchema }), asyncHandler(shipmentController.createShipment));
 
 /**
  * @swagger
@@ -253,12 +255,14 @@ shipmentRouter.post("/", validateRequest({ body: shipmentCreateSchema }), asyncH
  */
 shipmentRouter.get(
   "/shipping-companies",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentShippingCompaniesQuerySchema }),
   asyncHandler(shipmentController.listShippingCompanies),
 );
 
 shipmentRouter.post(
   "/shipping-companies",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentShippingCompanyMutationSchema }),
   asyncHandler(shipmentController.createShippingCompany),
 );
@@ -311,12 +315,14 @@ shipmentRouter.post(
  */
 shipmentRouter.put(
   "/shipping-companies/:shippingCompanyId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentShippingCompanyMutationSchema, params: shipmentShippingCompanyParamsSchema }),
   asyncHandler(shipmentController.updateShippingCompany),
 );
 
 shipmentRouter.delete(
   "/shipping-companies/:shippingCompanyId",
+  requirePermission("ship_edit"),
   validateRequest({ params: shipmentShippingCompanyParamsSchema }),
   asyncHandler(shipmentController.deleteShippingCompany),
 );
@@ -379,7 +385,7 @@ shipmentRouter.delete(
  *               type: string
  *               format: binary
  */
-shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
+shipmentRouter.get("/export", requirePermission("finance_export"), asyncHandler(shipmentController.exportShipments));
 
 /**
  * @swagger
@@ -459,18 +465,21 @@ shipmentRouter.get("/export", asyncHandler(shipmentController.exportShipments));
  */
 shipmentRouter.get(
   "/returns/vendor",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listVendorReturns),
 );
 
 shipmentRouter.post(
   "/returns/vendor",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentReturnMutationSchema }),
   asyncHandler(shipmentController.createVendorReturn),
 );
 
 shipmentRouter.put(
   "/returns/vendor/:returnId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateVendorReturn),
 );
@@ -582,18 +591,21 @@ shipmentRouter.put(
  */
 shipmentRouter.get(
   "/returns/customer",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listCustomerReturns),
 );
 
 shipmentRouter.post(
   "/returns/customer",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentReturnMutationSchema }),
   asyncHandler(shipmentController.createCustomerReturn),
 );
 
 shipmentRouter.put(
   "/returns/customer/:returnId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateCustomerReturn),
 );
@@ -709,12 +721,14 @@ shipmentRouter.put(
  */
 shipmentRouter.get(
   "/inventory",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentInventoryQuerySchema }),
   asyncHandler(shipmentController.listInventory),
 );
 
 shipmentRouter.post(
   "/inventory",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentInventoryMutationSchema }),
   asyncHandler(shipmentController.createInventoryItem),
 );
@@ -767,12 +781,14 @@ shipmentRouter.post(
  */
 shipmentRouter.put(
   "/inventory/:inventoryItemId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentInventoryMutationSchema.partial(), params: shipmentInventoryItemParamsSchema }),
   asyncHandler(shipmentController.updateInventoryItem),
 );
 
 shipmentRouter.delete(
   "/inventory/:inventoryItemId",
+  requirePermission("ship_edit"),
   validateRequest({ params: shipmentInventoryItemParamsSchema }),
   asyncHandler(shipmentController.deleteInventoryItem),
 );
@@ -823,6 +839,7 @@ shipmentRouter.delete(
  */
 shipmentRouter.get(
   "/accounts/deliveries",
+  requirePermission("finance_view"),
   validateRequest({ query: shipmentDeliveryAccountsQuerySchema }),
   asyncHandler(shipmentController.listDeliveryAccounts),
 );
@@ -883,18 +900,21 @@ shipmentRouter.get(
  */
 shipmentRouter.get(
   "/accounts/expenses",
+  requirePermission("finance_view"),
   validateRequest({ query: shipmentExpenseAccountsQuerySchema }),
   asyncHandler(shipmentController.listExpenseAccounts),
 );
 
 shipmentRouter.post(
   "/accounts/expenses",
+  requirePermission("finance_settle"),
   validateRequest({ body: shipmentExpenseMutationSchema }),
   asyncHandler(shipmentController.createExpenseAccount),
 );
 
 shipmentRouter.put(
   "/accounts/expenses/:expenseId",
+  requirePermission("finance_settle"),
   validateRequest({ body: shipmentExpenseMutationSchema.partial(), params: shipmentExpenseParamsSchema }),
   asyncHandler(shipmentController.updateExpenseAccount),
 );
@@ -948,6 +968,7 @@ shipmentRouter.put(
 
 shipmentRouter.delete(
   "/accounts/expenses/:expenseId",
+  requirePermission("finance_settle"),
   validateRequest({ params: shipmentExpenseParamsSchema }),
   asyncHandler(shipmentController.deleteExpenseAccount),
 );
@@ -987,6 +1008,7 @@ shipmentRouter.delete(
  */
 shipmentRouter.get(
   "/performance",
+  requirePermission("finance_view"),
   validateRequest({ query: shipmentPerformanceQuerySchema }),
   asyncHandler(shipmentController.getPerformance),
 );
@@ -1127,6 +1149,7 @@ shipmentRouter.get(
  */
 shipmentRouter.get(
   "/",
+  requirePermission("ship_view"),
   validateRequest({ query: shipmentListQuerySchema }),
   asyncHandler(shipmentController.listShipments),
 );
@@ -1197,24 +1220,28 @@ shipmentRouter.get(
  */
 shipmentRouter.get(
   "/:shipmentId",
+  requirePermission("ship_view"),
   validateRequest({ params: shipmentIdParamsSchema }),
   asyncHandler(shipmentController.getShipmentById),
 );
 
 shipmentRouter.put(
   "/:shipmentId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentMutationSchema, params: shipmentIdParamsSchema }),
   asyncHandler(shipmentController.updateShipment),
 );
 
 shipmentRouter.delete(
   "/:shipmentId",
+  requirePermission("ship_edit"),
   validateRequest({ params: shipmentIdParamsSchema }),
   asyncHandler(shipmentController.deleteShipment),
 );
 
 shipmentRouter.post(
   "/:shipmentId/notes",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentNoteSchema, params: shipmentIdParamsSchema }),
   asyncHandler(shipmentController.addNote),
 );
@@ -1250,6 +1277,7 @@ shipmentRouter.post(
 
 shipmentRouter.put(
   "/:shipmentId/notes/:noteId",
+  requirePermission("ship_edit"),
   validateRequest({ body: shipmentNoteSchema, params: shipmentNoteParamsSchema }),
   asyncHandler(shipmentController.updateNote),
 );
@@ -1313,6 +1341,7 @@ shipmentRouter.put(
 
 shipmentRouter.delete(
   "/:shipmentId/notes/:noteId",
+  requirePermission("ship_edit"),
   validateRequest({ params: shipmentNoteParamsSchema }),
   asyncHandler(shipmentController.deleteNote),
 );

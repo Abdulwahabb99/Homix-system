@@ -90,4 +90,54 @@ describe("OrderService", () => {
       ok: true,
     });
   });
+
+  it("defaults deliveryBy to vendor and recalculates amount to collect on create", async () => {
+    const legacyGateway = {
+      saveImportedOrders: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new OrderService({} as never, legacyGateway as never);
+
+    await service.createOrder({
+      downPayment: 200,
+      line_items: [{ price: 1000, quantity: 2 }],
+      shippingFees: 50,
+    });
+
+    expect(legacyGateway.saveImportedOrders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        deliveryBy: 2,
+        toBeCollected: 1850,
+      }),
+    ], false, undefined);
+  });
+
+  it("switches deliveryBy to homix and recalculates amount to collect on update when warehouse shipping is selected", async () => {
+    const repository = {
+      findOrderEntity: jest.fn().mockResolvedValue({
+        deliveryBy: 2,
+        downPayment: 100,
+        shipmentType: "separate",
+        shippedFromInventory: false,
+        shippingFees: 60,
+        subTotalPrice: 2000,
+        totalDiscounts: 150,
+      }),
+    } as never;
+    const legacyGateway = {
+      updateOrder: jest.fn().mockResolvedValue({ data: { id: 7 }, status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.updateOrder(7, { shipmentType: "warehouse" }, { id: 1 } as never);
+
+    expect(legacyGateway.updateOrder).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        deliveryBy: 1,
+        shipmentType: "warehouse",
+        toBeCollected: 1810,
+      }),
+      { id: 1 },
+    );
+  });
 });

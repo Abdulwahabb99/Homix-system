@@ -1,4 +1,5 @@
 import { NotFoundError, UnauthorizedError } from "../../shared/errors";
+import { shipmentLegacyGateway } from "./shipment.legacy-gateway";
 import { ShipmentService } from "./shipment.service";
 
 describe("ShipmentService", () => {
@@ -23,6 +24,27 @@ describe("ShipmentService", () => {
       data: { id: 9802, shipmentStatus: 3 },
       ok: true,
     });
+  });
+
+  it("forces deliveryBy to homix and recalculates amount to collect on shipment creation", async () => {
+    const repository = {
+      normalizeShippingCompanyPayload: jest.fn().mockResolvedValue({
+        line_items: [{ price: 1000, quantity: 2 }],
+        shippingFees: 50,
+      }),
+    } as never;
+    const createShipmentSpy = jest.spyOn(shipmentLegacyGateway, "createShipment").mockResolvedValue(undefined);
+
+    const service = new ShipmentService(repository);
+
+    await service.createShipment({} as never);
+
+    expect(createShipmentSpy).toHaveBeenCalledWith(expect.objectContaining({
+      deliveryBy: 1,
+      shippedFromInventory: true,
+      toBeCollected: 2050,
+    }));
+    createShipmentSpy.mockRestore();
   });
 
   it("creates a shipment note through the typed repository path", async () => {

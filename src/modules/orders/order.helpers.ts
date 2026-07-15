@@ -1,4 +1,4 @@
-import { DELIVERY_STATUS, ORDER_STATUS } from "../../../config/constants";
+import { DELIVERY_BY, DELIVERY_STATUS, ORDER_STATUS } from "../../../config/constants";
 import {
   DELIVERY_STATUS_PRIORITY_MAP,
   MANUFACTURE_STATUS_LABELS,
@@ -169,4 +169,66 @@ export const buildLogMessage = (log: PlainRecord): string => {
 
 export const getHistoryActorLabel = (userName: string): string => {
   return userName ? `بواسطة ${userName}` : "بواسطة نظام تلقائي";
+};
+
+const getLineItemsFinancials = (lineItems: unknown): { subTotalPrice: number; totalDiscounts: number } => {
+  if (!Array.isArray(lineItems)) {
+    return { subTotalPrice: 0, totalDiscounts: 0 };
+  }
+
+  return lineItems.reduce(
+    (summary, lineValue) => {
+      const line = toPlain(lineValue);
+      const quantity = toNumber(line.quantity) || 0;
+      const price = toNumber(line.price);
+      const directDiscount = toNumber(line.discount);
+      const discountAllocations = Array.isArray(line.discount_allocations)
+        ? line.discount_allocations.reduce((total, allocationValue) => total + toNumber(toPlain(allocationValue).amount), 0)
+        : 0;
+
+      return {
+        subTotalPrice: summary.subTotalPrice + (price * quantity),
+        totalDiscounts: summary.totalDiscounts + (directDiscount || discountAllocations),
+      };
+    },
+    { subTotalPrice: 0, totalDiscounts: 0 },
+  );
+};
+
+const resolveFinancialValue = (
+  payload: Record<string, unknown>,
+  existing: Record<string, unknown>,
+  key: "downPayment" | "shippingFees" | "subTotalPrice" | "totalDiscounts",
+): number => {
+  if (payload[key] !== undefined && payload[key] !== null && payload[key] !== "") {
+    return toNumber(payload[key]);
+  }
+
+  return toNumber(existing[key]);
+};
+
+export const normalizeOrderMutationPayload = (
+  payloadValue: Record<string, unknown>,
+  existingValue?: Record<string, unknown>,
+): Record<string, unknown> => {
+  const payload = { ...payloadValue };
+  const existing = existingValue ?? {};
+  const shippedFromInventory = payload.shippedFromInventory !== undefined
+    ? Boolean(payload.shippedFromInventory)
+    : Boolean(existing.shippedFromInventory);
+  const shipmentType = toText(payload.shipmentType, toText(existing.shipmentType)).trim();
+
+  payload.deliveryBy = shipmentType === "warehouse" || shippedFromInventory
+    ? DELIVERY_BY.HOMIX
+    : toNumber(payload.deliveryBy) || toNumber(existing.deliveryBy) || DELIVERY_BY.VENDOR;
+
+  const lineItemsFinancials = getLineItemsFinancials(payload.line_items);
+  const subTotalPrice = lineItemsFinancials.subTotalPrice || resolveFinancialValue(payload, existing, "subTotalPrice");
+  const totalDiscounts = lineItemsFinancials.totalDiscounts || resolveFinancialValue(payload, existing, "totalDiscounts");
+  const shippingFees = resolveFinancialValue(payload, existing, "shippingFees");
+  const downPayment = resolveFinancialValue(payload, existing, "downPayment");
+
+  payload.toBeCollected = subTotalPrice + shippingFees - totalDiscounts - downPayment;
+
+  return payload;
 };

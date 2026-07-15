@@ -8,6 +8,16 @@ const getId = (req: Request): string => {
 };
 
 class UserController {
+  public static async getMeta(_req: Request, res: Response): Promise<Response> {
+    try {
+      const meta = await UserService.getMeta();
+      return res.status(200).json(meta);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch user meta";
+      return res.status(500).json({ message });
+    }
+  }
+
   public static async getAllUsers(_req: Request, res: Response): Promise<Response> {
     try {
       const users = await UserService.getAdminUsers();
@@ -30,7 +40,7 @@ class UserController {
 
   public static async editUser(req: Request, res: Response): Promise<Response> {
     try {
-      const user = await UserService.editUser(getId(req), req.body as Record<string, unknown>);
+      const user = await UserService.editUser(getId(req), req.body as Record<string, unknown>, Number(req.user?.id ?? 0));
       return res.status(200).json(user);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to edit user";
@@ -38,9 +48,23 @@ class UserController {
     }
   }
 
+  public static async updateStatus(req: Request, res: Response): Promise<Response> {
+    try {
+      const user = await UserService.updateStatus(
+        getId(req),
+        String((req.body as { accountStatus?: string }).accountStatus ?? ""),
+        Number(req.user?.id ?? 0),
+      );
+      return res.status(user.statusCode).json(user);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update user status";
+      return res.status(500).json({ message });
+    }
+  }
+
   public static async deleteUser(req: Request, res: Response): Promise<Response> {
     try {
-      const user = await UserService.deleteUser(getId(req));
+      const user = await UserService.deleteUser(getId(req), Number(req.user?.id ?? 0));
       return res.status(200).json(user);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to delete user";

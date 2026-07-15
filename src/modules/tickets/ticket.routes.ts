@@ -2,6 +2,7 @@ import express from "express";
 
 import { asyncHandler, validateRequest } from "../../shared/http";
 import { TicketController } from "./ticket.controller";
+import { TICKET_STATUS } from "./ticket.constants";
 import { TicketRepository } from "./ticket.repo";
 import {
   ticketAttachmentParamsSchema,
@@ -18,6 +19,7 @@ import { TicketService } from "./ticket.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
 const isNotVendor = require("../../../app/middlewares/isNotVendor");
+const requirePermission = require("../../../app/middlewares/requirePermission");
 const fileUploadMiddleware = require("../../../config/fileUploadMiddleware");
 
 const ticketRepository = new TicketRepository();
@@ -27,6 +29,39 @@ const ticketController = new TicketController(ticketService);
 export const ticketRouter = express.Router();
 
 ticketRouter.use(verifyToken, isNotVendor);
+
+const requireTicketWritePermission: express.RequestHandler = (request, response, next) => {
+  const user = request.user as { permissions?: Record<string, boolean>; userType?: string } | undefined;
+  if (user?.userType === "1" || user?.permissions?.tickets_reply) {
+    return next();
+  }
+
+  return response.json({
+    status: false,
+    message: "Unauthorized",
+  });
+};
+
+const requireTicketUpdatePermission: express.RequestHandler = (request, response, next) => {
+  const user = request.user as { permissions?: Record<string, boolean>; userType?: string } | undefined;
+  if (user?.userType === "1") {
+    return next();
+  }
+
+  const nextStatus = Number((request.body as { status?: unknown })?.status);
+  if (nextStatus === TICKET_STATUS.CLOSED) {
+    if (user?.permissions?.tickets_close) {
+      return next();
+    }
+  } else if (user?.permissions?.tickets_reply) {
+    return next();
+  }
+
+  return response.json({
+    status: false,
+    message: "Unauthorized",
+  });
+};
 
 /**
  * @swagger
@@ -71,7 +106,7 @@ ticketRouter.use(verifyToken, isNotVendor);
  *       401:
  *         description: Missing or invalid bearer token
  */
-ticketRouter.get("/meta", asyncHandler(ticketController.getMeta));
+ticketRouter.get("/meta", requirePermission("tickets_view"), asyncHandler(ticketController.getMeta));
 
 /**
  * @swagger
@@ -123,6 +158,7 @@ ticketRouter.get("/meta", asyncHandler(ticketController.getMeta));
  */
 ticketRouter.get(
   "/orders/lookup/operation-number",
+  requirePermission("tickets_view"),
   validateRequest({ query: ticketOperationLookupQuerySchema }),
   asyncHandler(ticketController.lookupOrderByOperationNumber),
 );
@@ -177,6 +213,7 @@ ticketRouter.get(
  */
 ticketRouter.get(
   "/orders/lookup/order-number",
+  requirePermission("tickets_view"),
   validateRequest({ query: ticketOrderNumberLookupQuerySchema }),
   asyncHandler(ticketController.lookupOrderByOrderNumber),
 );
@@ -331,12 +368,14 @@ ticketRouter.get(
  */
 ticketRouter.get(
   "/",
+  requirePermission("tickets_view"),
   validateRequest({ query: ticketListQuerySchema }),
   asyncHandler(ticketController.listTickets),
 );
 
 ticketRouter.post(
   "/",
+  requireTicketWritePermission,
   validateRequest({ body: ticketCreateSchema }),
   asyncHandler(ticketController.createTicket),
 );
@@ -500,12 +539,14 @@ ticketRouter.post(
  */
 ticketRouter.get(
   "/:ticketId",
+  requirePermission("tickets_view"),
   validateRequest({ params: ticketIdParamsSchema }),
   asyncHandler(ticketController.getTicketById),
 );
 
 ticketRouter.patch(
   "/:ticketId",
+  requireTicketUpdatePermission,
   validateRequest({ body: ticketUpdateSchema, params: ticketIdParamsSchema }),
   asyncHandler(ticketController.updateTicket),
 );
@@ -558,6 +599,7 @@ ticketRouter.patch(
  */
 ticketRouter.post(
   "/:ticketId/notes",
+  requireTicketWritePermission,
   validateRequest({ body: ticketNoteSchema, params: ticketIdParamsSchema }),
   asyncHandler(ticketController.addNote),
 );
@@ -614,6 +656,7 @@ ticketRouter.post(
  */
 ticketRouter.put(
   "/:ticketId/notes/:noteId",
+  requireTicketWritePermission,
   validateRequest({ body: ticketNoteSchema, params: ticketNoteParamsSchema }),
   asyncHandler(ticketController.updateNote),
 );
@@ -653,6 +696,7 @@ ticketRouter.put(
  */
 ticketRouter.delete(
   "/:ticketId/notes/:noteId",
+  requireTicketWritePermission,
   validateRequest({ params: ticketNoteParamsSchema }),
   asyncHandler(ticketController.deleteNote),
 );
@@ -728,6 +772,7 @@ ticketRouter.delete(
  */
 ticketRouter.post(
   "/:ticketId/attachments/upload",
+  requireTicketWritePermission,
   validateRequest({ params: ticketIdParamsSchema }),
   fileUploadMiddleware("ticket"),
   asyncHandler(ticketController.addAttachments),
@@ -768,6 +813,7 @@ ticketRouter.post(
  */
 ticketRouter.delete(
   "/:ticketId/attachments/:attachmentId",
+  requireTicketWritePermission,
   validateRequest({ params: ticketAttachmentParamsSchema }),
   asyncHandler(ticketController.deleteAttachment),
 );

@@ -3,11 +3,30 @@ import express from "express";
 const AuthController = require("./AuthController") as typeof import("./AuthController");
 const UserController = require("./user.controller") as typeof import("./user.controller");
 const verifyToken = require("../../middlewares/protectApi") as typeof import("../../middlewares/protectApi");
-const isAdmin = require("../../middlewares/isAdmin") as typeof import("../../middlewares/isAdmin");
 const isNotVendor = require("../../middlewares/isNotVendor") as typeof import("../../middlewares/isNotVendor");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const UserRouter = express.Router();
 
+/**
+ * @swagger
+ * /users/meta:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Users
+ *     summary: Get user management metadata
+ *     description: Returns account statuses, permission groups, permission templates, and available role suggestions used by the users create/edit screens.
+ *     responses:
+ *       200:
+ *         description: Users metadata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserMetaResponse'
+ */
+UserRouter.get("/meta", verifyToken, isNotVendor, requirePermission("users_view"), UserController.getMeta);
 /**
  * @swagger
  * /users:
@@ -34,13 +53,15 @@ const UserRouter = express.Router();
  *                     - id: 1
  *                       firstName: Ahmed
  *                       lastName: Hesham
+ *                       fullName: Ahmed Hesham
  *                       email: admin@homix.com
- *                       userType: admin
+ *                       roleName: مدير
+ *                       status: online
  *                       isActive: true
  *       401:
  *         description: Missing or invalid bearer token
  */
-UserRouter.get("/", verifyToken, isNotVendor, UserController.getAllUsers);
+UserRouter.get("/", verifyToken, isNotVendor, requirePermission("users_view"), UserController.getAllUsers);
 /**
  * @swagger
  * /users/{id}:
@@ -68,7 +89,7 @@ UserRouter.get("/", verifyToken, isNotVendor, UserController.getAllUsers);
  *       404:
  *         description: User not found
  */
-UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
+UserRouter.get("/:id", verifyToken, isNotVendor, requirePermission("users_view"), UserController.getUser);
 /**
  * @swagger
  * /users/{id}:
@@ -95,7 +116,11 @@ UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
  *               value:
  *                 firstName: Ibrahim
  *                 email: ibrahim@homix.com
- *                 userType: admin
+ *                 roleName: مدير
+ *                 userType: "1"
+ *                 permissions:
+ *                   users_view: true
+ *                   users_manage: true
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -108,7 +133,7 @@ UserRouter.get("/:id", verifyToken, isNotVendor, UserController.getUser);
  *       404:
  *         description: User not found
  */
-UserRouter.put("/:id", verifyToken, isAdmin, UserController.editUser);
+UserRouter.put("/:id", verifyToken, isNotVendor, requirePermission("users_manage"), UserController.editUser);
 /**
  * @swagger
  * /users/login:
@@ -159,7 +184,16 @@ UserRouter.post("/login", AuthController.login);
  *                 firstName: Nour
  *                 email: nour@homix.com
  *                 password: Secret123!
- *                 userType: admin
+ *                 roleName: عمليات
+ *                 userType: "3"
+ *                 jobTitle: مسؤول متابعة طلبات
+ *                 salary: 7500
+ *                 phoneNumber: 01032288941
+ *                 accountStatus: active
+ *                 permissions:
+ *                   orders_view: true
+ *                   orders_edit: true
+ *                   orders_create: true
  *     responses:
  *       200:
  *         description: User created successfully
@@ -172,7 +206,42 @@ UserRouter.post("/login", AuthController.login);
  *       409:
  *         description: User already exists
  */
-UserRouter.post("/", verifyToken, isAdmin, AuthController.addUser);
+UserRouter.post("/", verifyToken, isNotVendor, requirePermission("users_manage"), AuthController.addUser);
+/**
+ * @swagger
+ * /users/{id}/status:
+ *   patch:
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Users
+ *     summary: Update user account status
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               accountStatus:
+ *                 type: string
+ *                 enum: [active, inactive, suspended]
+ *                 example: suspended
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ */
+UserRouter.patch("/:id/status", verifyToken, isNotVendor, requirePermission("users_manage"), UserController.updateStatus);
 /**
  * @swagger
  * /users/{id}:
@@ -200,6 +269,6 @@ UserRouter.post("/", verifyToken, isAdmin, AuthController.addUser);
  *       404:
  *         description: User not found
  */
-UserRouter.delete("/:id", verifyToken, isAdmin, UserController.deleteUser);
+UserRouter.delete("/:id", verifyToken, isNotVendor, requirePermission("users_manage"), UserController.deleteUser);
 
 export = UserRouter;

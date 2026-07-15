@@ -18,12 +18,23 @@ class AuthController {
   public static async addUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const user = await UserService.addUser(req.body as {
+        accountStatus?: string;
         email?: string;
         firstName?: string;
+        fullName?: string;
+        instaPayNumber?: string;
+        jobTitle?: string;
+        lastName?: string;
+        name?: string;
         password?: string;
+        permissions?: Record<string, boolean>;
+        phoneNumber?: string;
+        roleName?: string;
+        salary?: number;
+        status?: string;
         userType?: string;
         vendorId?: number;
-      });
+      }, Number(req.user?.id ?? 0));
 
       if (user.status === false) {
         return res.status(user.statusCode).json(user);

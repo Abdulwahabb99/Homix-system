@@ -4,9 +4,26 @@ import { Op } from "sequelize";
 
 import { env } from "../../../src/config/env";
 import { USER_TYPES } from "../../../config/constants";
+import {
+  buildUserActivityMessage,
+  mapUserDetail,
+  mapUserSummary,
+  normalizeAccountStatus,
+  normalizeEmail,
+  sanitizeUserPayload,
+  toPlainRecord,
+  toText,
+} from "./user.helpers";
+import {
+  USER_ACCOUNT_STATUSES,
+  USER_PERMISSION_GROUPS,
+  USER_PERMISSION_TEMPLATES,
+  USER_ROLE_LABELS,
+} from "./user.permissions";
 
 const User = require("./user.model") as typeof import("./user.model");
 const Vendor = require("../vendor/vendor.model") as typeof import("../vendor/vendor.model");
+const Log = require("../logs/log.model") as typeof import("../logs/log.model");
 
 type UserTypeValue = (typeof USER_TYPES)[keyof typeof USER_TYPES];
 
@@ -16,11 +33,18 @@ type UserRecord = {
   email: string;
   id: number;
   password?: string;
+  permissions?: Record<string, boolean>;
   restore: () => Promise<void>;
   toJSON: () => UserRecord;
   update: (payload: Record<string, unknown>) => Promise<UserRecord>;
   userType?: string;
   vendorId?: number | null;
+};
+
+type ActivityActor = {
+  firstName?: string;
+  id?: number;
+  lastName?: string;
 };
 
 type VendorRecord = {
@@ -36,11 +60,27 @@ type UserResponse = {
 };
 
 type AddUserInput = {
+  accountStatus?: string;
+  bankAccountHolderName?: string;
+  bankAccountNumber?: string;
+  bankAccountType?: string;
+  bankName?: string;
   email?: string;
   firstName?: string;
+  fullName?: string;
+  instaPayNumber?: string;
+  jobTitle?: string;
+  lastName?: string;
+  name?: string;
   password?: string;
+  permissions?: Record<string, boolean>;
+  phoneNumber?: string;
+  roleName?: string;
+  salary?: number;
+  status?: string;
   userType?: string;
   vendorId?: number;
+  walletNumber?: string;
 };
 
 type VendorUserUpdateInput = {
@@ -50,17 +90,50 @@ type VendorUserUpdateInput = {
   password?: string;
 };
 
-const toRecord = <TRecord>(value: TRecord | { toJSON: () => TRecord }): TRecord => {
-  return typeof (value as { toJSON?: () => TRecord }).toJSON === "function"
+const toRecord = <TRecord>(value: TRecord | { toJSON: () => TRecord }): TRecord => (
+  typeof (value as { toJSON?: () => TRecord }).toJSON === "function"
     ? (value as { toJSON: () => TRecord }).toJSON()
-    : (value as TRecord);
-};
-
-const normalizeEmail = (email: string): string => {
-  return String(email).toLowerCase();
-};
+    : (value as TRecord)
+);
 
 class UserService {
+  private static async createUserLog(userId: number, action: string, payload: { actorUserId?: number; field?: string; from?: string; to?: string } = {}): Promise<void> {
+    await Log.create({
+      action,
+      entityId: userId,
+      entityType: "user",
+      field: payload.field ?? null,
+      from: payload.from ?? null,
+      to: payload.to ?? null,
+      userId: payload.actorUserId ?? null,
+    });
+  }
+
+  private static async getUserActivity(userId: number): Promise<Array<Record<string, unknown>>> {
+    const logs = await Log.findAll({
+      limit: 15,
+      order: [["createdAt", "DESC"]],
+      where: { entityId: userId, entityType: "user" },
+    });
+    const plainLogs = logs.map((log: unknown) => toPlainRecord(log));
+    const actorIds = [...new Set(plainLogs.map((log: Record<string, unknown>) => Number(log.userId ?? 0)).filter(Boolean))];
+    const actors = actorIds.length
+      ? await User.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: actorIds } })
+      : [];
+    const actorNames = new Map(
+      actors.map((actor: ActivityActor) => [Number(actor.id ?? 0), [actor.firstName, actor.lastName].filter(Boolean).join(" ").trim()]),
+    );
+
+    return plainLogs.map((log: Record<string, unknown>) => ({
+      action: toText(log.action),
+      actorName: actorNames.get(Number(log.userId ?? 0)) ?? "",
+      createdAt: log.createdAt ?? null,
+      field: toText(log.field),
+      id: Number(log.id ?? 0),
+      message: buildUserActivityMessage(log),
+    }));
+  }
+
   public static async login(email?: string, password?: string): Promise<UserResponse> {
     if (!email || !password) {
       return {
@@ -91,6 +164,19 @@ class UserService {
       };
     }
 
+    const plainUser = toPlainRecord(user);
+    const accountStatus = normalizeAccountStatus(plainUser, toText(plainUser.accountStatus));
+    if (accountStatus !== USER_ACCOUNT_STATUSES.ACTIVE) {
+      return {
+        message: "User account is not active",
+        status: false,
+        statusCode: 403,
+      };
+    }
+
+    await user.update({ lastSeenAt: new Date() });
+    await UserService.createUserLog(user.id, "login", { actorUserId: user.id });
+
     const token = jwt.sign({ id: user.id }, env.JWT_SECRET, {
       expiresIn: "3d",
     });
@@ -98,14 +184,14 @@ class UserService {
     return {
       data: {
         token,
-        user,
+        user: mapUserDetail({ ...plainUser, lastSeenAt: new Date() }),
       },
       status: true,
       statusCode: 200,
     };
   }
 
-  public static async addUser(body: AddUserInput): Promise<UserResponse> {
+  public static async addUser(body: AddUserInput, actorUserId?: number): Promise<UserResponse> {
     const { email, password } = body;
 
     if (!email || !password) {
@@ -117,6 +203,7 @@ class UserService {
     }
 
     const existingUser = await User.findOne({
+      paranoid: false,
       where: { email: normalizeEmail(email) },
     });
     if (existingUser) {
@@ -135,15 +222,26 @@ class UserService {
       };
     }
 
+    const payload = sanitizeUserPayload({ ...body }, { isCreate: true });
+    if (!toText(payload.firstName)) {
+      return {
+        message: "First name is required",
+        status: false,
+        statusCode: 400,
+      };
+    }
+
     const hashedPassword = await bcrypt.hash(String(password), 10);
     const newUser = await User.create({
-      ...body,
+      ...payload,
       email: normalizeEmail(email),
+      lastPasswordChangeAt: new Date(),
       password: hashedPassword,
     });
+    await UserService.createUserLog(Number(newUser.id), "create", { actorUserId });
 
     return {
-      data: newUser,
+      data: mapUserDetail(newUser),
       status: true,
       statusCode: 200,
     };
@@ -160,13 +258,45 @@ class UserService {
     }
 
     return {
-      data: user,
+      data: {
+        ...mapUserDetail(user),
+        activity: await UserService.getUserActivity(Number(id)),
+      },
       status: true,
       statusCode: 200,
     };
   }
 
-  public static async editUser(id: string, body: Record<string, unknown>): Promise<UserResponse> {
+  public static async getMeta(): Promise<UserResponse> {
+    return {
+      data: {
+        accountStatuses: [
+          { id: USER_ACCOUNT_STATUSES.ACTIVE, label: "نشط" },
+          { id: USER_ACCOUNT_STATUSES.INACTIVE, label: "غير نشط" },
+          { id: USER_ACCOUNT_STATUSES.SUSPENDED, label: "موقوف" },
+        ],
+        permissionGroups: USER_PERMISSION_GROUPS,
+        permissionTemplates: USER_PERMISSION_TEMPLATES,
+        roleSuggestions: [
+          { id: "admin", label: "مدير" },
+          { id: "logistics", label: "لوجستي" },
+          { id: "ops", label: "عمليات" },
+          { id: "finance", label: "مالية" },
+          { id: "support", label: "دعم" },
+          { id: "vendor", label: "بائع" },
+        ],
+        userTypes: Object.entries(USER_TYPES).map(([key, value]) => ({
+          id: value,
+          key,
+          label: USER_ROLE_LABELS[value as keyof typeof USER_ROLE_LABELS] ?? key,
+        })),
+      },
+      status: true,
+      statusCode: 200,
+    };
+  }
+
+  public static async editUser(id: string, body: Record<string, unknown>, actorUserId?: number): Promise<UserResponse> {
     const user = (await User.findByPk(id)) as UserRecord | null;
     if (!user) {
       return {
@@ -176,14 +306,76 @@ class UserService {
       };
     }
 
-    const payload = { ...body };
+    const payload = sanitizeUserPayload(body, { current: toPlainRecord(user) });
+    if (typeof payload.email === "string") {
+      const existingUser = await User.findOne({
+        paranoid: false,
+        where: {
+          email: payload.email,
+          id: { [Op.ne]: Number(id) },
+        },
+      });
+
+      if (existingUser) {
+        return {
+          message: "User already exists",
+          status: false,
+          statusCode: 409,
+        };
+      }
+    }
+
+    if (!toText(payload.userType) || !Object.values(USER_TYPES).includes(String(payload.userType) as UserTypeValue)) {
+      return {
+        message: "Invalid user type",
+        status: false,
+        statusCode: 400,
+      };
+    }
+
     if (typeof payload.password === "string" && payload.password) {
       payload.password = await bcrypt.hash(payload.password, 10);
     }
 
     const updatedUser = await user.update(payload);
+    await UserService.createUserLog(Number(id), typeof body.password === "string" && body.password ? "password" : "update", {
+      actorUserId,
+      field: "profile",
+    });
     return {
-      data: updatedUser,
+      data: mapUserDetail(updatedUser),
+      status: true,
+      statusCode: 200,
+    };
+  }
+
+  public static async updateStatus(id: string, accountStatus: string, actorUserId?: number): Promise<UserResponse> {
+    const user = (await User.findByPk(id)) as UserRecord | null;
+    if (!user) {
+      return {
+        message: "User not found",
+        status: false,
+        statusCode: 404,
+      };
+    }
+
+    if (!Object.values(USER_ACCOUNT_STATUSES).includes(accountStatus as never)) {
+      return {
+        message: "Invalid account status",
+        status: false,
+        statusCode: 400,
+      };
+    }
+
+    const updatedUser = await user.update({ accountStatus });
+    await UserService.createUserLog(Number(id), "status", {
+      actorUserId,
+      field: "accountStatus",
+      from: toText(toPlainRecord(user).accountStatus),
+      to: accountStatus,
+    });
+    return {
+      data: mapUserDetail(updatedUser),
       status: true,
       statusCode: 200,
     };
@@ -197,7 +389,7 @@ class UserService {
     });
 
     return {
-      data: users,
+      data: users.map((user: UserRecord) => mapUserSummary(user)),
       status: true,
       statusCode: 200,
     };
@@ -206,7 +398,7 @@ class UserService {
   public static async getAllUsers(): Promise<UserResponse> {
     const users = await User.findAll();
     return {
-      data: users,
+      data: users.map((user: UserRecord) => mapUserSummary(user)),
       status: true,
       statusCode: 200,
     };
@@ -366,7 +558,7 @@ class UserService {
     }
   }
 
-  public static async deleteUser(id: string): Promise<UserResponse> {
+  public static async deleteUser(id: string, actorUserId?: number): Promise<UserResponse> {
     const user = (await User.findByPk(id)) as UserRecord | null;
     if (!user) {
       return {
@@ -376,6 +568,7 @@ class UserService {
       };
     }
 
+    await UserService.createUserLog(Number(id), "delete", { actorUserId });
     await user.destroy();
     return {
       message: "User deleted successfully",
