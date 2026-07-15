@@ -1,7 +1,7 @@
 import Icon from "@mui/material/Icon";
 import React, { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
-import Vendors from "layouts/Vendors/Vendors";
+import Vendors from "layouts/Vendors";
 const Products = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Products/Products"));
 const Dashboard = React.lazy(
   () => import(/* webpackPrefetch: true */ "claude/dashboard/HomixDashboardPage")
