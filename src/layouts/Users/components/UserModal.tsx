@@ -1,16 +1,14 @@
 /**
- * نافذة إضافة/تعديل مستخدم — بأسلوب modal التصميم، لكن بالحقول التي يدعمها الـ API فقط
- * (الاسم/البريد/كلمة المرور/الدور). لا مصفوفة صلاحيات (غير مدعومة من الـ BE).
+ * نافذة إضافة/تعديل مستخدم — بأسلوب modal التصميم (عناوين فوق الحقول، حقول native
+ * مطابقة لـ .minput/.mselect). بالحقول التي يدعمها الـ API فقط: الاسم/البريد/كلمة المرور/الدور.
  */
 import React, { useEffect, useState } from "react";
-import {
-  Box, Dialog, FormControl, Grid, IconButton, InputAdornment, InputLabel,
-  MenuItem, Select, TextField, Typography,
-} from "@mui/material";
+import { Box, Dialog, IconButton, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -20,17 +18,30 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../utils/styles";
 import { AppUser } from "../utils/types";
 
-const fieldSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: "9px", fontFamily: FONT, fontSize: "13px", bgcolor: HX.surface,
-    "& fieldset": { borderColor: HX.border },
-    "&:hover fieldset": { borderColor: HX.accent },
-    "&.Mui-focused fieldset": { borderColor: HX.accent, borderWidth: "1px" },
-  },
-  "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "13px", color: HX.tx2 },
-  "& .MuiInputLabel-root.Mui-focused": { color: HX.accent },
-  "& .MuiInputBase-input": { fontFamily: FONT, color: HX.tx },
+/* حقل مطابق لـ .minput / .mselect في التصميم */
+const controlSx = {
+  height: 34, px: "11px", width: "100%", boxSizing: "border-box",
+  border: `0.5px solid ${HX.border}`, borderRadius: "9px",
+  fontSize: "13px", fontFamily: FONT, color: HX.tx, bgcolor: HX.surface,
+  outline: "none", transition: ".15s",
+  "&:focus": { borderColor: HX.accent, boxShadow: "0 0 0 3px rgba(99,102,241,.08)" },
+  "&::placeholder": { color: HX.tx3 },
 } as const;
+
+const labelSx = { fontSize: "11.5px", fontWeight: 600, color: HX.tx2, fontFamily: FONT } as const;
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <Box component="label" sx={labelSx}>
+        {label}{required && <Box component="span" sx={{ color: HX.red }}> *</Box>}
+      </Box>
+      {children}
+    </Box>
+  );
+}
+
+const rowSx = { display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: "10px", mb: "12px" } as const;
 
 interface UserModalProps {
   open: boolean;
@@ -50,7 +61,7 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
   const [userType, setUserType] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // تعبئة الحقول عند الفتح (للتعديل نجلب السجل لأخذ كلمة المرور الحالية كما في الصفحة القديمة)
+  // تعبئة الحقول عند الفتح (للتعديل نجلب السجل لأخذ كلمة المرور الحالية كما في السلوك السابق)
   useEffect(() => {
     if (!open) return;
     setShowPassword(false);
@@ -110,7 +121,7 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
 
       {/* Body */}
       <Box sx={{ p: "20px" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "7px", mb: "12px" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "7px", mb: "14px" }}>
           <Box sx={{ width: 26, height: 26, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: HX.accentLight, color: HX.accent }}>
             <PersonOutlineIcon sx={{ fontSize: 15 }} />
           </Box>
@@ -119,43 +130,48 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
           </Typography>
         </Box>
 
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth size="small" label="الاسم الأول" value={firstName} onChange={(e) => setFirstName(e.target.value)} sx={fieldSx} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth size="small" label="اسم العائلة" value={lastName} onChange={(e) => setLastName(e.target.value)} sx={fieldSx} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField fullWidth size="small" label="البريد الإلكتروني" type="email" value={email} onChange={(e) => setEmail(e.target.value)} sx={fieldSx} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth size="small" label="كلمة المرور" type={showPassword ? "text" : "password"}
-              value={password} onChange={(e) => setPassword(e.target.value)} sx={fieldSx}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword((p) => !p)} edge="end" aria-label="إظهار كلمة المرور" size="small">
-                      {showPassword ? <VisibilityOff sx={{ fontSize: 18 }} /> : <Visibility sx={{ fontSize: 18 }} />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth size="small" sx={fieldSx}>
-              <InputLabel id="m-role">الدور</InputLabel>
-              <Select labelId="m-role" label="الدور" value={userType} onChange={(e) => setUserType(String(e.target.value))}
-                MenuProps={{ PaperProps: { sx: { fontFamily: FONT } } }}>
-                {USER_TYPES_VALUES.map((r) => (
-                  <MenuItem key={r.value} value={r.value} sx={{ fontFamily: FONT, fontSize: "13px" }}>{r.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
+        <Box sx={rowSx}>
+          <Field label="الاسم الأول" required>
+            <Box component="input" value={firstName} placeholder="الاسم الأول"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)} sx={controlSx} />
+          </Field>
+          <Field label="اسم العائلة">
+            <Box component="input" value={lastName} placeholder="اسم العائلة"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)} sx={controlSx} />
+          </Field>
+        </Box>
+
+        <Box sx={rowSx}>
+          <Field label="البريد الإلكتروني" required>
+            <Box component="input" type="email" value={email} placeholder="user@homix.com"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} sx={controlSx} />
+          </Field>
+          <Field label="كلمة المرور" required>
+            <Box sx={{ position: "relative" }}>
+              <Box component="input" type={showPassword ? "text" : "password"} value={password} placeholder="••••••••"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                sx={{ ...controlSx, paddingInlineEnd: "38px" }} />
+              <Box component="button" type="button" onClick={() => setShowPassword((p) => !p)} aria-label="إظهار كلمة المرور"
+                sx={{ position: "absolute", insetInlineEnd: "8px", top: 0, height: "100%", display: "flex", alignItems: "center",
+                  border: "none", background: "transparent", cursor: "pointer", color: HX.tx3, p: 0, "&:hover": { color: HX.accent } }}>
+                {showPassword ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
+              </Box>
+            </Box>
+          </Field>
+        </Box>
+
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: "10px" }}>
+          <Field label="الدور" required>
+            <Box component="select" value={userType}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUserType(e.target.value)}
+              sx={{ ...controlSx, cursor: "pointer", color: userType ? HX.tx : HX.tx3 }}>
+              <option value="">اختر الدور</option>
+              {USER_TYPES_VALUES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </Box>
+          </Field>
+        </Box>
       </Box>
 
       {/* Foot */}

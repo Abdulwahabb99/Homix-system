@@ -15,7 +15,6 @@ import AddEditFactory from "layouts/Factories/AddEditFactory";
 import ProtectedRoutes from "components/ProtectedRoutes/ProtectedRoutes";
 import Spinner from "components/Spinner/Spinner";
 import { vendorsRoutes } from "routes";
-import AddEditUser from "layouts/Users/AddEditUser";
 import { useDispatch } from "react-redux";
 import { setUser } from "store/slices/authSlice";
 import { clearUser } from "store/slices/authSlice";
@@ -316,22 +315,6 @@ export default function App() {
                   element={
                     <ProtectedRoutes>
                       <FactoryDetails />
-                    </ProtectedRoutes>
-                  }
-                />
-                <Route
-                  path="/users/add"
-                  element={
-                    <ProtectedRoutes>
-                      <AddEditUser type="add" />
-                    </ProtectedRoutes>
-                  }
-                />
-                <Route
-                  path="/users/edit/:id"
-                  element={
-                    <ProtectedRoutes>
-                      <AddEditUser type="edit" />
                     </ProtectedRoutes>
                   }
                 />
