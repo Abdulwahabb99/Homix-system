@@ -80,15 +80,17 @@ describe("OrderService", () => {
   });
 
   it("delegates financial report reads to the typed repository", async () => {
+    const getFinancialReport = jest.fn().mockResolvedValue({ summary: { totalSales: 3 } });
     const repository = {
-      getFinancialReport: jest.fn().mockResolvedValue({ ordersCount: 3, topTenProducts: [], topTenVendors: [] }),
-    } as never;
-    const service = new OrderService(repository, {} as never);
+      getFinancialReport,
+    };
+    const service = new OrderService(repository as never, {} as never);
 
-    await expect(service.financialReport(3, "2026-05-01", "2026-05-31")).resolves.toEqual({
-      data: { ordersCount: 3, topTenProducts: [], topTenVendors: [] },
+    await expect(service.financialReport({ billingDay: 13, vendorId: 3 }, 7)).resolves.toEqual({
+      data: { summary: { totalSales: 3 } },
       ok: true,
     });
+    expect(getFinancialReport).toHaveBeenCalledWith({ billingDay: 13, vendorId: 3 }, 7);
   });
 
   it("defaults deliveryBy to vendor and recalculates amount to collect on create", async () => {

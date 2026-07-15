@@ -1100,13 +1100,137 @@ const swaggerOptions = {
           type: "object",
           properties: {
             data: {
-              additionalProperties: true,
               type: "object",
-              example: {
-                totalCollected: 125000,
-                totalCommission: 17500,
-                totalOrders: 72,
+              properties: {
+                cycle: {
+                  type: "object",
+                  properties: {
+                    billingDay: { enum: [13, 28], type: "integer" },
+                    endDate: { example: "2026-07-13T20:59:59.999Z", format: "date-time", type: "string" },
+                    mode: { enum: ["billingCycle", "customRange"], type: "string" },
+                    referenceDate: { example: "2026-07-16T00:00:00.000Z", format: "date-time", type: "string" },
+                    startDate: { example: "2026-06-28T21:00:00.000Z", format: "date-time", type: "string" },
+                  },
+                  required: ["billingDay", "endDate", "mode", "referenceDate", "startDate"],
+                },
+                summary: {
+                  type: "object",
+                  properties: {
+                    companyDue: { example: 218640, type: "number" },
+                    fines: { example: 5500, type: "number" },
+                    totalSales: { example: 847320, type: "number" },
+                    vendorDue: { example: 623180, type: "number" },
+                    vendorsCount: { example: 4, type: "integer" },
+                  },
+                  required: ["companyDue", "fines", "totalSales", "vendorDue", "vendorsCount"],
+                },
+                fullInvoice: {
+                  type: "object",
+                  properties: {
+                    summary: {
+                      type: "object",
+                      properties: {
+                        collectionTotal: { example: 847320, type: "number" },
+                        companyDue: { example: 218640, type: "number" },
+                        fines: { example: 5500, type: "number" },
+                        ordersCount: { example: 13, type: "integer" },
+                        vendorDue: { example: 623180, type: "number" },
+                        warehouseCost: { example: 628680, type: "number" },
+                      },
+                      required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "warehouseCost"],
+                    },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          collectionTotal: { example: 79496, type: "number" },
+                          companyDue: { example: 23121, type: "number" },
+                          fines: { example: 1500, type: "number" },
+                          ordersCount: { example: 5, type: "integer" },
+                          vendorDue: { example: 54875, type: "number" },
+                          vendorId: { example: 3, nullable: true, type: "integer" },
+                          vendorName: { example: "ركنة للأثاث", type: "string" },
+                          warehouseCost: { example: 56375, type: "number" },
+                        },
+                        required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "vendorId", "vendorName", "warehouseCost"],
+                      },
+                    },
+                  },
+                  required: ["summary", "items"],
+                },
+                vendorDeliveries: {
+                  type: "object",
+                  properties: {
+                    summary: {
+                      type: "object",
+                      properties: {
+                        collectionTotal: { example: 148060, type: "number" },
+                        companyDue: { example: 38100, type: "number" },
+                        fines: { example: 2500, type: "number" },
+                        ordersCount: { example: 7, type: "integer" },
+                        vendorDue: { example: 107460, type: "number" },
+                        warehouseCost: { example: 109960, type: "number" },
+                      },
+                      required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "warehouseCost"],
+                    },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          collectionTotal: { example: 79496, type: "number" },
+                          companyDue: { example: 23121, type: "number" },
+                          fines: { example: 1500, type: "number" },
+                          ordersCount: { example: 5, type: "integer" },
+                          vendorDue: { example: 54875, type: "number" },
+                          vendorId: { example: 3, nullable: true, type: "integer" },
+                          vendorName: { example: "ركنة للأثاث", type: "string" },
+                          warehouseCost: { example: 56375, type: "number" },
+                        },
+                        required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "vendorId", "vendorName", "warehouseCost"],
+                      },
+                    },
+                  },
+                  required: ["summary", "items"],
+                },
+                warehouseDeliveries: {
+                  type: "object",
+                  properties: {
+                    summary: {
+                      type: "object",
+                      properties: {
+                        collectionTotal: { example: 699260, type: "number" },
+                        companyDue: { example: 180540, type: "number" },
+                        fines: { example: 3000, type: "number" },
+                        ordersCount: { example: 6, type: "integer" },
+                        vendorDue: { example: 515720, type: "number" },
+                        warehouseCost: { example: 518720, type: "number" },
+                      },
+                      required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "warehouseCost"],
+                    },
+                    items: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          collectionTotal: { example: 79496, type: "number" },
+                          companyDue: { example: 23121, type: "number" },
+                          fines: { example: 1500, type: "number" },
+                          ordersCount: { example: 5, type: "integer" },
+                          vendorDue: { example: 54875, type: "number" },
+                          vendorId: { example: 3, nullable: true, type: "integer" },
+                          vendorName: { example: "ركنة للأثاث", type: "string" },
+                          warehouseCost: { example: 56375, type: "number" },
+                        },
+                        required: ["collectionTotal", "companyDue", "fines", "ordersCount", "vendorDue", "vendorId", "vendorName", "warehouseCost"],
+                      },
+                    },
+                  },
+                  required: ["summary", "items"],
+                },
               },
+              required: ["cycle", "summary", "fullInvoice", "vendorDeliveries", "warehouseDeliveries"],
             },
             status: { example: true, type: "boolean" },
           },

@@ -31,6 +31,14 @@ export type OrderListQuery = {
 
 export type OrderSummaryQuery = Omit<OrderListQuery, "page" | "size">;
 
+export type OrderFinancialReportQuery = {
+  billingDay?: 13 | 28;
+  endDate?: string;
+  referenceDate?: string;
+  startDate?: string;
+  vendorId?: string | number;
+};
+
 export type OrderListItem = {
   code: string;
   customerName: string;
@@ -79,46 +87,49 @@ export type OrderSummaryResponse = {
   cards: OrderSummaryCard[];
 };
 
-export type OrderFinancialReportRankedItem = {
-  productId?: number;
-  productImage?: string;
-  productName?: string;
-  profit: number;
-  revenue: number;
-  sku?: string;
-  vendorId?: number;
-  vendorName?: string;
+export type OrderFinancialReportVendorRow = {
+  collectionTotal: number;
+  companyDue: number;
+  fines: number;
+  ordersCount: number;
+  vendorDue: number;
+  vendorId: number | null;
+  vendorName: string;
+  warehouseCost: number;
+};
+
+export type OrderFinancialReportSectionSummary = {
+  collectionTotal: number;
+  companyDue: number;
+  fines: number;
+  ordersCount: number;
+  vendorDue: number;
+  warehouseCost: number;
 };
 
 export type OrderFinancialReportSection = {
-  ordersCount: number;
-  subTotal: number;
-  totalCommission: number;
-  totalCost: number;
-  totalDiscount: number;
-  totalDownPayment: number;
-  totalPaid: number;
-  totalProfit: number;
-  totalRevenue: number;
-  totalTax: number;
-  totalToBeCollected: number;
+  items: OrderFinancialReportVendorRow[];
+  summary: OrderFinancialReportSectionSummary;
 };
 
 export type OrderFinancialReportResponse = {
-  DeliveredOrders: OrderFinancialReportSection;
-  ordersCount: number;
-  subTotal: number;
-  topTenProducts: OrderFinancialReportRankedItem[];
-  topTenVendors: OrderFinancialReportRankedItem[];
-  totalCommission: number;
-  totalCost: number;
-  totalDiscount: number;
-  totalDownPayment: number;
-  totalPaid: number;
-  totalProfit: number;
-  totalRevenue: number;
-  totalTax: number;
-  totalToBeCollected: number;
+  cycle: {
+    billingDay: 13 | 28;
+    endDate: string;
+    mode: "billingCycle" | "customRange";
+    referenceDate: string;
+    startDate: string;
+  };
+  fullInvoice: OrderFinancialReportSection;
+  summary: {
+    companyDue: number;
+    fines: number;
+    totalSales: number;
+    vendorDue: number;
+    vendorsCount: number;
+  };
+  vendorDeliveries: OrderFinancialReportSection;
+  warehouseDeliveries: OrderFinancialReportSection;
 };
 
 export type OrderMetaOption = {

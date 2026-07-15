@@ -7,7 +7,7 @@ import type { DashboardMetricSnapshot } from "../dashboard/dashboard.types";
 import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gateway";
 import { normalizeOrderMutationPayload, toPlain, toText } from "./order.helpers";
 import { OrderRepository } from "./order.repo";
-import type { LegacyOrderResponse, OrderDetailsResponse, OrderFinancialReportResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
+import type { LegacyOrderResponse, OrderDetailsResponse, OrderFinancialReportQuery, OrderFinancialReportResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
 
 const ensureLegacySuccess = <TData>(response: LegacyOrderResponse<TData>): LegacyOrderResponse<TData> => {
   if (response.status !== false) {
@@ -67,8 +67,8 @@ export class OrderService {
     return success({ message: "Orders imported successfully" });
   }
 
-  public async financialReport(vendorId: string | number | undefined, startDate?: string, endDate?: string): Promise<Result<OrderFinancialReportResponse>> {
-    return success(await this.orderRepository.getFinancialReport(vendorId, startDate, endDate));
+  public async financialReport(query: OrderFinancialReportQuery, vendorId?: number | null): Promise<Result<OrderFinancialReportResponse>> {
+    return success(await this.orderRepository.getFinancialReport(query, vendorId));
   }
 
   public async updateOrder(orderId: number, payload: OrderMutationPayload, user: OrderRequestUser): Promise<Result<unknown>> {

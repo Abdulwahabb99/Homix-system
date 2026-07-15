@@ -31,17 +31,9 @@ export class OrderController {
   };
 
   public financialReport = async (request: Request, response: Response): Promise<void> => {
-    const vendorId =
-      typeof request.query.vendorId === "string" || typeof request.query.vendorId === "number"
-        ? request.query.vendorId
-        : undefined;
     response.status(200).json({
       data: unwrap(
-        await this.orderService.financialReport(
-          request.vendorId ?? vendorId,
-          request.query.startDate as string | undefined,
-          request.query.endDate as string | undefined,
-        ),
+        await this.orderService.financialReport(request.query as never, request.vendorId),
       ),
       status: true,
     });

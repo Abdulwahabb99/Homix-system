@@ -11,6 +11,7 @@ import {
   ORDER_SOURCE,
   ORDER_STATUS_Arabic,
   PAYMENT_STATUS_ARABIC,
+  SHIPMENTS_STATUS,
 } from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_STATUS_LABELS, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
@@ -28,7 +29,7 @@ import {
   toPlain,
   toText,
 } from "./order.helpers";
-import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportRankedItem, OrderFinancialReportResponse, OrderFinancialReportSection, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse, OrderTimelineItem } from "./order.types";
+import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportQuery, OrderFinancialReportResponse, OrderFinancialReportSection, OrderFinancialReportSectionSummary, OrderFinancialReportVendorRow, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse, OrderTimelineItem } from "./order.types";
 
 const { sequelize } = require("../../infrastructure/database");
 const orderModel = require("../../../app/modules/order/order.model");
@@ -261,6 +262,114 @@ const canUseAggregateSummary = (filters: OrderListQuery, vendorId?: number | nul
 
   return Boolean(resolveAggregateScope(filters, vendorId));
 };
+
+const isValidDate = (value?: string): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  return moment(value).isValid();
+};
+
+const clampDayToMonth = (value: moment.Moment, dayOfMonth: number): moment.Moment =>
+  value.clone().date(Math.min(dayOfMonth, value.daysInMonth()));
+
+const resolveFinancialCycleRange = (
+  billingDayInput?: 13 | 28,
+  referenceDateInput?: string,
+): {
+  billingDay: 13 | 28;
+  end: moment.Moment;
+  reference: moment.Moment;
+  start: moment.Moment;
+} => {
+  const reference = isValidDate(referenceDateInput)
+    ? moment.tz(referenceDateInput, "Africa/Cairo")
+    : moment().tz("Africa/Cairo");
+
+  let cycleEnd: moment.Moment;
+  if (billingDayInput === 13 || billingDayInput === 28) {
+    const currentMonthEnd = clampDayToMonth(reference.clone(), billingDayInput).endOf("day");
+    cycleEnd = reference.isBefore(currentMonthEnd.clone().startOf("day"))
+      ? clampDayToMonth(reference.clone().subtract(1, "month"), billingDayInput).endOf("day")
+      : currentMonthEnd;
+  } else if (reference.date() >= 29) {
+    cycleEnd = clampDayToMonth(reference.clone(), 28).endOf("day");
+  } else if (reference.date() >= 14) {
+    cycleEnd = clampDayToMonth(reference.clone(), 13).endOf("day");
+  } else {
+    cycleEnd = clampDayToMonth(reference.clone().subtract(1, "month"), 28).endOf("day");
+  }
+
+  const billingDay = cycleEnd.date() === 13 ? 13 : 28;
+  const cycleStart = billingDay === 13
+    ? clampDayToMonth(cycleEnd.clone().subtract(1, "month"), 29).startOf("day")
+    : clampDayToMonth(cycleEnd.clone(), 14).startOf("day");
+
+  return {
+    billingDay,
+    end: cycleEnd,
+    reference,
+    start: cycleStart,
+  };
+};
+
+const createFinancialSummary = (): OrderFinancialReportSectionSummary => ({
+  collectionTotal: 0,
+  companyDue: 0,
+  fines: 0,
+  ordersCount: 0,
+  vendorDue: 0,
+  warehouseCost: 0,
+});
+
+const createFinancialRow = (vendorId: number | null, vendorName: string): OrderFinancialReportVendorRow => ({
+  collectionTotal: 0,
+  companyDue: 0,
+  fines: 0,
+  ordersCount: 0,
+  vendorDue: 0,
+  vendorId,
+  vendorName,
+  warehouseCost: 0,
+});
+
+const appendFinancialRow = (
+  summary: OrderFinancialReportSectionSummary,
+  row: OrderFinancialReportVendorRow,
+  values: {
+    collectionTotal: number;
+    companyDue: number;
+    fines: number;
+    ordersCount: number;
+    vendorDue: number;
+    warehouseCost: number;
+  },
+): void => {
+  summary.collectionTotal += values.collectionTotal;
+  summary.companyDue += values.companyDue;
+  summary.fines += values.fines;
+  summary.ordersCount += values.ordersCount;
+  summary.vendorDue += values.vendorDue;
+  summary.warehouseCost += values.warehouseCost;
+
+  row.collectionTotal += values.collectionTotal;
+  row.companyDue += values.companyDue;
+  row.fines += values.fines;
+  row.ordersCount += values.ordersCount;
+  row.vendorDue += values.vendorDue;
+  row.warehouseCost += values.warehouseCost;
+};
+
+const sortFinancialItems = (items: OrderFinancialReportVendorRow[]): OrderFinancialReportVendorRow[] =>
+  [...items].sort((left, right) => {
+    const salesDifference = right.collectionTotal - left.collectionTotal;
+    if (salesDifference !== 0) {
+      return salesDifference;
+    }
+
+    return left.vendorName.localeCompare(right.vendorName, "ar");
+  });
 
 const mapOrderSummary = (value: unknown): OrderListItem => {
   const order = toPlain(value);
@@ -740,23 +849,31 @@ export class OrderRepository {
     };
   }
 
-  public async getFinancialReport(vendorId: string | number | undefined, startDate?: string, endDate?: string): Promise<OrderFinancialReportResponse> {
-    const start = startDate
-      ? moment.tz(new Date(startDate), "Africa/Cairo").startOf("day").utc().toDate()
-      : moment().tz("Africa/Cairo").startOf("month").utc().toDate();
-    const end = endDate
-      ? moment.tz(new Date(endDate), "Africa/Cairo").endOf("day").utc().toDate()
-      : moment().tz("Africa/Cairo").endOf("day").utc().toDate();
+  public async getFinancialReport(query: OrderFinancialReportQuery, scopedVendorId?: number | null): Promise<OrderFinancialReportResponse> {
+    const hasCustomRange = isValidDate(query.startDate) && isValidDate(query.endDate);
+    const cycleRange = hasCustomRange
+      ? {
+        billingDay: 28 as const,
+        end: moment.tz(query.endDate, "Africa/Cairo").endOf("day"),
+        reference: isValidDate(query.referenceDate) ? moment.tz(query.referenceDate, "Africa/Cairo") : moment().tz("Africa/Cairo"),
+        start: moment.tz(query.startDate, "Africa/Cairo").startOf("day"),
+      }
+      : resolveFinancialCycleRange(
+        query.billingDay === 13 || query.billingDay === 28 ? query.billingDay : undefined,
+        query.referenceDate,
+      );
 
+    const effectiveVendorId = scopedVendorId ?? (query.vendorId && String(query.vendorId) !== "0" ? Number(query.vendorId) : null);
     const whereConditions: unknown[] = [
-      sequelize.where(sequelize.col("orderDate"), { [Op.gte]: start }),
-      sequelize.where(sequelize.col("orderDate"), { [Op.lte]: end }),
+      sequelize.where(sequelize.col("deliveryDate"), { [Op.gte]: cycleRange.start.utc().toDate() }),
+      sequelize.where(sequelize.col("deliveryDate"), { [Op.lte]: cycleRange.end.utc().toDate() }),
+      sequelize.where(sequelize.col("status"), { [Op.eq]: ORDER_STATUS.DELIVERED }),
     ];
 
-    if (vendorId && String(vendorId) !== "0") {
+    if (effectiveVendorId) {
       whereConditions.push(
         sequelize.where(sequelize.col("orderLines.product.vendor.id"), {
-          [Op.eq]: Number(vendorId),
+          [Op.eq]: effectiveVendorId,
         }),
       );
     }
@@ -777,129 +894,114 @@ export class OrderRepository {
           required: true,
         },
       ],
+      order: [["deliveryDate", "ASC"], ["id", "ASC"]],
       where: { [Op.and]: whereConditions },
     });
 
-    const delivered: OrderFinancialReportSection = {
-      ordersCount: 0,
-      subTotal: 0,
-      totalCommission: 0,
-      totalCost: 0,
-      totalDiscount: 0,
-      totalDownPayment: 0,
-      totalPaid: 0,
-      totalProfit: 0,
-      totalRevenue: 0,
-      totalTax: 0,
-      totalToBeCollected: 0,
-    };
+    const fullInvoiceSummary = createFinancialSummary();
+    const vendorDeliveriesSummary = createFinancialSummary();
+    const warehouseDeliveriesSummary = createFinancialSummary();
 
-    const topVendors = new Map<number, OrderFinancialReportRankedItem>();
-    const topProducts = new Map<number, OrderFinancialReportRankedItem>();
-
-    let ordersCount = 0;
-    let subTotal = 0;
-    let totalCommission = 0;
-    let totalCost = 0;
-    let totalDiscount = 0;
-    let totalDownPayment = 0;
-    let totalPaid = 0;
-    let totalTax = 0;
-    let totalToBeCollected = 0;
-    let shippingFees = 0;
+    const fullInvoiceRows = new Map<string, OrderFinancialReportVendorRow>();
+    const vendorDeliveryRows = new Map<string, OrderFinancialReportVendorRow>();
+    const warehouseDeliveryRows = new Map<string, OrderFinancialReportVendorRow>();
 
     for (const order of orders) {
       const plainOrder = toPlain(order);
-      const isDelivered = toNumber(plainOrder.status) === ORDER_STATUS.DELIVERED;
-      const orderSubTotal = toNumber(plainOrder.subTotalPrice);
-      const orderDiscount = toNumber(plainOrder.totalDiscounts);
-      const orderCost = toNumber(plainOrder.totalCost);
-      const orderPrice = toNumber(plainOrder.totalPrice);
-      const orderCommission = toNumber(plainOrder.commission);
-      const orderTax = toNumber(plainOrder.totalTax);
-      const orderProfit = orderPrice - orderCost - orderCommission - orderTax;
-      const orderDownPayment = toNumber(plainOrder.downPayment);
-      const orderToBeCollected = toNumber(plainOrder.toBeCollected);
-
-      if (isDelivered) {
-        delivered.ordersCount += 1;
-        delivered.subTotal += orderSubTotal;
-        delivered.totalCommission += orderCommission;
-        delivered.totalCost += orderCost;
-        delivered.totalDiscount += orderDiscount;
-        delivered.totalDownPayment += orderDownPayment;
-        delivered.totalPaid += orderPrice;
-        delivered.totalProfit += orderProfit;
-        delivered.totalRevenue += orderPrice;
-        delivered.totalTax += orderTax;
-        delivered.totalToBeCollected += orderToBeCollected;
-      }
-
       const orderLines = Array.isArray(plainOrder.orderLines) ? plainOrder.orderLines : [];
-      for (const line of orderLines) {
-        const plainLine = toPlain(line);
-        const product = toPlain(plainLine.product);
-        const vendor = toPlain(product.vendor);
-        const lineRevenue = toNumber(plainLine.price);
-        const lineProfit =
-          lineRevenue - toNumber(plainLine.cost) - toNumber(plainLine.commission) - toNumber(plainLine.tax);
-        const vendorIdNumber = toNumber(vendor.id);
-        const productIdNumber = toNumber(product.id);
+      const firstLine = orderLines.length > 0 ? toPlain(orderLines[0]) : {};
+      const vendor = toPlain(toPlain(firstLine.product).vendor);
+      const vendorId = toNumber(vendor.id) || null;
+      const vendorName = toText(vendor.name, "غير محدد");
+      const vendorKey = vendorId ? String(vendorId) : `unknown:${vendorName}`;
+      const collectionTotal = toNumber(plainOrder.totalPrice);
+      const fines = toNumber(plainOrder.fine);
+      const companyCommission = toNumber(plainOrder.commission);
+      const vendorDue = Math.max(
+        toNumber(plainOrder.totalVendorDue) || (collectionTotal - companyCommission - fines),
+        0,
+      );
+      const companyDue = Math.max(
+        toNumber(plainOrder.totalCompanyDue) || companyCommission,
+        0,
+      );
+      const warehouseCost = vendorDue + fines;
+      const isWarehouseDelivery =
+        Boolean(plainOrder.shippedFromInventory)
+        && toNumber(plainOrder.shipmentStatus) === SHIPMENTS_STATUS.DELIVERED;
+      const isVendorDelivery = !Boolean(plainOrder.shippedFromInventory);
 
-        if (vendorIdNumber) {
-          const vendorEntry = topVendors.get(vendorIdNumber) ?? {
-            profit: 0,
-            revenue: 0,
-            vendorId: vendorIdNumber,
-            vendorName: toText(vendor.name),
-          };
-          vendorEntry.profit += lineProfit;
-          vendorEntry.revenue += lineRevenue;
-          topVendors.set(vendorIdNumber, vendorEntry);
-        }
+      const fullRow = fullInvoiceRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
+      fullInvoiceRows.set(vendorKey, fullRow);
+      appendFinancialRow(fullInvoiceSummary, fullRow, {
+        collectionTotal,
+        companyDue,
+        fines,
+        ordersCount: 1,
+        vendorDue,
+        warehouseCost,
+      });
 
-        if (productIdNumber) {
-          const productEntry = topProducts.get(productIdNumber) ?? {
-            productId: productIdNumber,
-            productImage: toText(product.image),
-            productName: toText(product.title),
-            profit: 0,
-            revenue: 0,
-            sku: toText(plainLine.sku),
-          };
-          productEntry.profit += lineProfit;
-          productEntry.revenue += lineRevenue;
-          topProducts.set(productIdNumber, productEntry);
-        }
+      if (isVendorDelivery) {
+        const vendorRow = vendorDeliveryRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
+        vendorDeliveryRows.set(vendorKey, vendorRow);
+        appendFinancialRow(vendorDeliveriesSummary, vendorRow, {
+          collectionTotal,
+          companyDue,
+          fines,
+          ordersCount: 1,
+          vendorDue,
+          warehouseCost,
+        });
       }
 
-      ordersCount += 1;
-      totalCommission += orderCommission;
-      totalCost += orderCost;
-      totalDiscount += orderDiscount;
-      totalDownPayment += orderDownPayment;
-      totalPaid += orderPrice;
-      totalTax += orderTax;
-      subTotal += orderSubTotal;
-      totalToBeCollected += orderToBeCollected;
-      shippingFees += toNumber(plainOrder.shippingFees);
+      if (isWarehouseDelivery) {
+        const warehouseRow = warehouseDeliveryRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
+        warehouseDeliveryRows.set(vendorKey, warehouseRow);
+        appendFinancialRow(warehouseDeliveriesSummary, warehouseRow, {
+          collectionTotal,
+          companyDue,
+          fines,
+          ordersCount: 1,
+          vendorDue,
+          warehouseCost,
+        });
+      }
     }
 
+    const fullInvoice: OrderFinancialReportSection = {
+      items: sortFinancialItems([...fullInvoiceRows.values()]),
+      summary: fullInvoiceSummary,
+    };
+    const vendorDeliveries: OrderFinancialReportSection = {
+      items: sortFinancialItems([...vendorDeliveryRows.values()]),
+      summary: vendorDeliveriesSummary,
+    };
+    const warehouseDeliveries: OrderFinancialReportSection = {
+      items: sortFinancialItems([...warehouseDeliveryRows.values()]),
+      summary: warehouseDeliveriesSummary,
+    };
+
     return {
-      DeliveredOrders: delivered,
-      ordersCount,
-      subTotal,
-      topTenProducts: [...topProducts.values()].sort((left, right) => right.profit - left.profit).slice(0, 10),
-      topTenVendors: [...topVendors.values()].sort((left, right) => right.profit - left.profit).slice(0, 10),
-      totalCommission,
-      totalCost,
-      totalDiscount,
-      totalDownPayment,
-      totalPaid,
-      totalProfit: subTotal - totalDiscount + shippingFees - totalCost - totalCommission - totalTax,
-      totalRevenue: subTotal - totalDiscount + shippingFees,
-      totalTax,
-      totalToBeCollected,
+      cycle: {
+        billingDay: hasCustomRange
+          ? (query.billingDay === 13 || query.billingDay === 28 ? query.billingDay : cycleRange.billingDay)
+          : cycleRange.billingDay,
+        endDate: cycleRange.end.toISOString(),
+        mode: hasCustomRange ? "customRange" : "billingCycle",
+        referenceDate: cycleRange.reference.toISOString(),
+        startDate: cycleRange.start.toISOString(),
+      },
+      fullInvoice,
+      summary: {
+        companyDue: fullInvoice.summary.companyDue,
+        fines: fullInvoice.summary.fines,
+        totalSales: fullInvoice.summary.collectionTotal,
+        vendorDue: fullInvoice.summary.vendorDue,
+        vendorsCount: fullInvoice.items.length,
+      },
+      vendorDeliveries,
+      warehouseDeliveries,
     };
   }
 

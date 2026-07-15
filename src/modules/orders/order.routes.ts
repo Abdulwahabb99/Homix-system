@@ -6,6 +6,7 @@ import { OrderRepository } from "./order.repo";
 import {
   orderBulkDeleteSchema,
   orderBulkUpdateSchema,
+  orderFinancialReportQuerySchema,
   orderIdParamsSchema,
   orderListQuerySchema,
   orderMutationSchema,
@@ -276,7 +277,8 @@ orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateR
  *     security:
  *       - bearerAuth: []
  *     tags: [Orders]
- *     summary: Get the orders financial report
+ *     summary: Get invoice-based financial reports
+ *     description: Returns the split financial invoice for delivered vendor orders and delivered warehouse shipments. By default the endpoint resolves the latest closed billing cycle in Cairo time. You can also force a cycle using `billingDay=13|28`, or pass both `startDate` and `endDate` for a custom range based on `deliveryDate`.
  *     parameters:
  *       - in: query
  *         name: vendorId
@@ -286,11 +288,23 @@ orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateR
  *             - type: string
  *         description: Optional vendor override for admin requests.
  *       - in: query
+ *         name: billingDay
+ *         schema:
+ *           type: integer
+ *           enum: [13, 28]
+ *         description: Billing cycle closing day. `13` resolves the cycle from day 29 of the previous cycle month until day 13. `28` resolves the cycle from day 14 until day 28.
+ *       - in: query
+ *         name: referenceDate
+ *         schema: { type: string, format: date }
+ *         description: Optional reference date used to resolve the latest closed `billingDay` cycle.
+ *       - in: query
  *         name: startDate
  *         schema: { type: string, format: date }
+ *         description: Optional custom range start on `deliveryDate`. Must be paired with `endDate`.
  *       - in: query
  *         name: endDate
  *         schema: { type: string, format: date }
+ *         description: Optional custom range end on `deliveryDate`. Must be paired with `startDate`.
  *     responses:
  *       200:
  *         description: Financial report data
@@ -299,7 +313,13 @@ orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateR
  *             schema:
  *               $ref: '#/components/schemas/OrderFinancialReportResponse'
  */
-orderRouter.get("/financialReport", verifyToken, requirePermission("finance_view"), asyncHandler(orderController.financialReport));
+orderRouter.get(
+  "/financialReport",
+  verifyToken,
+  requirePermission("finance_view"),
+  validateRequest({ query: orderFinancialReportQuerySchema }),
+  asyncHandler(orderController.financialReport),
+);
 
 /**
  * @swagger

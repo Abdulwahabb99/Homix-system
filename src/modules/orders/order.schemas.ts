@@ -51,6 +51,14 @@ export const orderSummaryQuerySchema = orderListQuerySchema.omit({
   size: true,
 });
 
+export const orderFinancialReportQuerySchema = z.object({
+  billingDay: z.coerce.number().refine((value) => value === 13 || value === 28, "billingDay must be 13 or 28").optional(),
+  endDate: z.string().trim().optional(),
+  referenceDate: z.string().trim().optional(),
+  startDate: z.string().trim().optional(),
+  vendorId: z.union([z.coerce.number().int().positive(), z.string().trim().min(1)]).optional(),
+});
+
 export const orderMutationSchema = z.record(z.string(), z.unknown());
 
 export const orderBulkUpdateSchema = z.object({

@@ -304,6 +304,46 @@ describe("orderRouter", () => {
     );
   });
 
+  it("returns the invoice-style financial report grouped by vendor", async () => {
+    orderModel.findAll.mockResolvedValue([
+      makeOrder({
+        commission: "500",
+        deliveryDate: "2026-07-12T00:00:00.000Z",
+        fine: "100",
+        shippedFromInventory: false,
+        status: 5,
+        totalPrice: "3000",
+      }),
+      makeOrder({
+        commission: "700",
+        deliveryDate: "2026-07-10T00:00:00.000Z",
+        fine: "200",
+        id: 8,
+        orderNumber: "31669",
+        shipmentStatus: 4,
+        shippedFromInventory: true,
+        status: 5,
+        totalPrice: "5000",
+      }),
+    ]);
+
+    const response = await request(app).get("/orders/financialReport").query({
+      billingDay: 13,
+      referenceDate: "2026-07-16",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+    expect(response.body.data.cycle.billingDay).toBe(13);
+    expect(response.body.data.summary.totalSales).toBe(8000);
+    expect(response.body.data.summary.companyDue).toBe(1200);
+    expect(response.body.data.summary.fines).toBe(300);
+    expect(response.body.data.summary.vendorDue).toBe(6500);
+    expect(response.body.data.vendorDeliveries.summary.ordersCount).toBe(1);
+    expect(response.body.data.warehouseDeliveries.summary.ordersCount).toBe(1);
+    expect(response.body.data.fullInvoice.items[0].vendorName).toBe("ركنة للأثاث");
+  });
+
   it("returns orders list with legacy-compatible and view-friendly fields", async () => {
     const response = await request(app).get("/orders").query({ page: 1, size: 20 });
 
