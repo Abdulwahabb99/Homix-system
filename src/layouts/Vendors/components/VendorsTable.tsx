@@ -67,7 +67,7 @@ export default function VendorsTable({
               <th>اسم المورد</th>
               <th>البريد الإلكتروني</th>
               <th>مدة الشحن</th>
-              <th>الأونيت مانجر</th>
+              <th>الاكونت مانجر</th>
               <th style={{ textAlign: "center" }}>الحالة</th>
               <th aria-label="إجراءات" />
             </tr>

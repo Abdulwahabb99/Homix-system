@@ -9,7 +9,7 @@ export const PAGE_SIZE = 10;
 export const PAGE_TITLE = "الموردون";
 export const PAGE_SUBTITLE = "إدارة موردي ومنصات HOMIX Marketplace";
 
-/** بديل العرض للحقول غير المتوفرة من الـ API (الأونيت مانجر) */
+/** بديل العرض للحقول غير المتوفرة من الـ API (الاكونت مانجر) */
 export const PLACEHOLDER = "—";
 
 /** خيارات فلتر الحالة */

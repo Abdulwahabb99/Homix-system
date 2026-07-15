@@ -11,7 +11,7 @@ export interface Vendor {
   /** قد لا يوفّره الـ API — يُعرض فقط إن وُجد */
   phone?: string;
   user?: { email?: string } | null;
-  /** الأونيت مانجر — المعرّف (من قائمة المستخدمين) واسمه للعرض */
+  /** الاكونت مانجر — المعرّف (من قائمة المستخدمين) واسمه للعرض */
   accountManager?: number | string | null;
   accountManagerLabel?: string | null;
   [key: string]: unknown;

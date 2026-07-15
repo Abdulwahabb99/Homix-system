@@ -1,8 +1,8 @@
 /**
  * نافذة تعديل المورد — الحقول التي يقبلها الـ API:
- * البريد (للعرض فقط) · مدة الشحن (daysToDeliver) · كلمة المرور · الأونيت مانجر (accountManager)
+ * البريد (للعرض فقط) · مدة الشحن (daysToDeliver) · كلمة المرور · الاكونت مانجر (accountManager)
  * · الحالة (تبديل فوري عبر endpoint منفصل).
- * قائمة الأونيت مانجر = نفس مستخدمي «المسؤولين» (/users) مع تسمية «الأونيت مانجر».
+ * قائمة الاكونت مانجر = نفس مستخدمي «المسؤولين» (/users) مع تسمية «الاكونت مانجر».
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, CircularProgress, Dialog, IconButton, Typography } from "@mui/material";
@@ -62,7 +62,7 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
   const [showPassword, setShowPassword] = useState(false);
   const [active, setActive] = useState(false);
 
-  /* قائمة الأونيت مانجر = مستخدمو /users (نفس مصدر «المسؤولين») */
+  /* قائمة الاكونت مانجر = مستخدمو /users (نفس مصدر «المسؤولين») */
   const { data: users = [] } = useQuery({
     queryKey: userKeys.list(),
     queryFn: async () => {
@@ -145,11 +145,11 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
               </Box>
             </Box>
           </Field>
-          <Field label="الأونيت مانجر">
+          <Field label="الاكونت مانجر">
             <Box component="select" value={accountManager}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAccountManager(e.target.value)}
               sx={{ ...controlSx, cursor: "pointer", color: accountManager ? HX.tx : HX.tx3 }}>
-              <option value="">اختر الأونيت مانجر</option>
+              <option value="">اختر الاكونت مانجر</option>
               {amOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
             </Box>
           </Field>

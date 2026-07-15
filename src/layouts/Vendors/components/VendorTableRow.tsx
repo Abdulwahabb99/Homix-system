@@ -1,5 +1,5 @@
 /**
- * صف مورد: خلية المورد + البريد + مدة الشحن + الأونيت مانجر + الحالة (toggle) + إجراءات.
+ * صف مورد: خلية المورد + البريد + مدة الشحن + الاكونت مانجر + الحالة (toggle) + إجراءات.
  */
 import React from "react";
 import { Box } from "@mui/material";
@@ -62,7 +62,7 @@ export default function VendorTableRow({ vendor, checked, onToggleSelect, onTogg
       {/* مدة الشحن */}
       <td><ShipDurationBadge days={vendor.daysToDeliver} /></td>
 
-      {/* الأونيت مانجر */}
+      {/* الاكونت مانجر */}
       <td>
         {amLabel ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
