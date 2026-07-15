@@ -108,8 +108,8 @@ const adminMain: NavItem[] = [
 ];
 
 const adminManage: NavItem[] = [
-  { to: "/vendors", label: "الصُنّاع", icon: icons.makers, badge: "3", badgeType: "danger" },
-  { to: "/factories", label: "الموردين", icon: icons.suppliers },
+  { to: "/factories", label: "الصُنّاع", icon: icons.makers, badge: "3", badgeType: "danger" },
+  { to: "/vendors", label: "الموردين", icon: icons.suppliers },
   { to: "/users", label: "المستخدمين", icon: icons.users },
   { to: "/financialReports", label: "التقارير", icon: icons.reports },
 ];
