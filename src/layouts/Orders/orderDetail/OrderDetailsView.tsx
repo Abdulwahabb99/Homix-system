@@ -32,6 +32,7 @@ import {
   getOrderLineProductDescriptionPlainText,
 } from "./orderDetailNormalize";
 import { getOrderDetailPaymentLabel } from "./orderDetailPayment";
+import CustomerEditModal, { type CustomerFormValues } from "./CustomerEditModal";
 
 /** اسم صاحب التعليق — يدعم أشكال الـ API المختلفة (user / createdBy / author / userName)،
     ومع وجود userId فقط يُستخرج الاسم من قائمة المستخدمين. */
@@ -114,6 +115,8 @@ export type OrderDetailsViewProps = {
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
   changeDeliveryLocation: (shippedFromInventory: boolean) => void;
+  updateCustomer: (values: CustomerFormValues) => Promise<unknown>;
+  isUpdatingCustomer: boolean;
   updateComment: (noteId: number | string) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveFile: (index: number) => void;
@@ -141,7 +144,6 @@ export default function OrderDetailsView({
   orderTotalShipping,
   orderTotalToBeCollected,
   orderTotalCost,
-  orderId,
   isVendor,
   isAdmin,
   isAddingComment,
@@ -152,6 +154,8 @@ export default function OrderDetailsView({
   changeDeliveryStatus,
   changeAssignee,
   changeDeliveryLocation,
+  updateCustomer,
+  isUpdatingCustomer,
   updateComment,
   handleFileChange,
   handleRemoveFile,
@@ -161,6 +165,9 @@ export default function OrderDetailsView({
 }: OrderDetailsViewProps) {
   /* صورة المنتج المعروضة في نافذة التكبير (lightbox) — null = مغلقة */
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  /* نافذة تعديل بيانات العميل */
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
 
   /* خيارات «حالة التأخير» من الـ meta (manufactureStatuses)؛ الثابت المحلي احتياطي فقط */
   const metaQuery = useOrdersMeta();
@@ -248,6 +255,15 @@ export default function OrderDetailsView({
                     />
                   </Box>
                 </Modal>
+
+                {/* ——— نافذة تعديل بيانات العميل ——— */}
+                <CustomerEditModal
+                  open={customerModalOpen}
+                  customer={orderDetails?.customer}
+                  isSaving={isUpdatingCustomer}
+                  onClose={() => setCustomerModalOpen(false)}
+                  onSave={updateCustomer}
+                />
 
                 {/* ——— order strip ——— */}
                 <Box
@@ -997,7 +1013,7 @@ export default function OrderDetailsView({
                             {!isVendor ? (
                               <Button
                                 size="small"
-                                onClick={() => navigate(`/orders/edit/${orderId}`)}
+                                onClick={() => setCustomerModalOpen(true)}
                                 sx={{
                                   textTransform: "none",
                                   fontWeight: 600,

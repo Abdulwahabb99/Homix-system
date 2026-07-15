@@ -110,6 +110,39 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
+  /* تحديث بيانات العميل عبر PUT /customers/{customerId} — تحديث متفائل لبطاقة العميل.
+     يعيد Promise لتغلق النافذة عند النجاح فقط، ويرجع للحالة السابقة عند الفشل. */
+  const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false);
+  const updateCustomer = useCallback(
+    (values: { firstName: string; lastName: string; phoneNumber: string; address: string; email: string }) => {
+      const customerId = orderDetails?.customer?.id ?? orderDetails?.customer?.customerId;
+      if (customerId == null) {
+        NotificationMeassage("error", "لا يوجد معرّف للعميل");
+        return Promise.reject(new Error("missing customerId"));
+      }
+      const prev = orderDetails;
+      const nextCustomer = {
+        ...orderDetails.customer,
+        ...values,
+        name: `${values.firstName} ${values.lastName}`.trim(),
+      };
+      setOrderDetails((o: any) => ({ ...o, customer: nextCustomer }));
+      setIsUpdatingCustomer(true);
+      return axiosRequest
+        .put(`/customers/${customerId}`, values)
+        .then(() => {
+          NotificationMeassage("success", "تم تحديث بيانات العميل");
+        })
+        .catch((error) => {
+          setOrderDetails(prev);
+          NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ أثناء تحديث بيانات العميل"));
+          throw error;
+        })
+        .finally(() => setIsUpdatingCustomer(false));
+    },
+    [orderDetails]
+  );
+
   const onEdit = useCallback(
     (notes: string, cost: number, lineId: number, color: string, size: string, material: string, itemShipping: number, toBeCollected: number) => {
       axiosRequest
@@ -388,6 +421,8 @@ export function useOrderDetailsPage() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryLocation,
+    updateCustomer,
+    isUpdatingCustomer,
     onEdit,
     updateComment,
     deleteComment,
