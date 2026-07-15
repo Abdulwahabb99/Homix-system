@@ -9,12 +9,12 @@ import { Box } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
-import Spinner from "components/Spinner/Spinner";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useUserDetail } from "./hooks/useUserDetail";
 import { colSx, contentSx, gridSx } from "./utils/styles";
 import UserDetailBreadcrumb from "./components/UserDetailBreadcrumb";
 import UserDetailActions from "./components/UserDetailActions";
+import UserDetailsSkeleton from "./components/UserDetailsSkeleton";
 import UserPermissionsMatrix from "./components/UserPermissionsMatrix";
 import UserAccountInfo from "./components/UserAccountInfo";
 import UserJobInfo from "./components/UserJobInfo";
@@ -49,7 +49,7 @@ export default function UserDetails() {
       }
     >
       {isLoading || !user ? (
-        <Spinner />
+        <UserDetailsSkeleton />
       ) : (
         <Box sx={contentSx}>
           <Box sx={gridSx}>
