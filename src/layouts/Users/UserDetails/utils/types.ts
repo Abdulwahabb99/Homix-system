@@ -38,14 +38,6 @@ export interface PermissionSection {
   items: PermissionItem[];
 }
 
-/** بطاقة إحصائية في ترويسة الملف الشخصي */
-export interface ProfileStat {
-  value: string;
-  label: string;
-  /** لون القيمة (اختياري) */
-  color?: string;
-}
-
 /** نبرة عنصر سجل النشاط (تحدّد لون النقطة) */
 export type ActivityTone = "green" | "accent" | "teal" | "amber" | "blue";
 

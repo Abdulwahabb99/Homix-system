@@ -9,7 +9,6 @@ import {
   BankTransfer,
   PermissionSection,
   PermTone,
-  ProfileStat,
 } from "./types";
 
 /** زوايا الحواف (--r في التصميم) */
@@ -30,14 +29,6 @@ export const TONE_MAP: Record<PermTone, { bg: string; color: string }> = {
   teal: { bg: HX.tealLight, color: HX.teal },
   purple: { bg: HX.purpleLight, color: HX.purple },
 };
-
-/* ───────────────────────── إحصائيات الملف الشخصي (static) ───────────────────────── */
-export const PROFILE_STATS: ProfileStat[] = [
-  { value: "247", label: "طلب عالجها" },
-  { value: "18", label: "تذكرة أغلقها" },
-  { value: "19", label: "صلاحية نشطة" },
-  { value: "98%", label: "معدل النشاط", color: HX.green },
-];
 
 /* ───────────────────────── مصفوفة الصلاحيات (static) ───────────────────────── */
 export const PERMISSION_SECTIONS: PermissionSection[] = [

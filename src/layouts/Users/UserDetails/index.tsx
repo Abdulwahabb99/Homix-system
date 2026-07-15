@@ -15,7 +15,6 @@ import { useUserDetail } from "./hooks/useUserDetail";
 import { colSx, contentSx, gridSx } from "./utils/styles";
 import UserDetailBreadcrumb from "./components/UserDetailBreadcrumb";
 import UserDetailActions from "./components/UserDetailActions";
-import UserProfileHeader from "./components/UserProfileHeader";
 import UserPermissionsMatrix from "./components/UserPermissionsMatrix";
 import UserAccountInfo from "./components/UserAccountInfo";
 import UserJobInfo from "./components/UserJobInfo";
@@ -26,7 +25,7 @@ import UserModal from "../components/UserModal";
 export default function UserDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isLoading, name, initials, email, role, joined, isActive } = useUserDetail(id);
+  const { user, isLoading, name, email, role, joined, isActive } = useUserDetail(id);
 
   const [editOpen, setEditOpen] = useState(false);
 
@@ -53,15 +52,6 @@ export default function UserDetails() {
         <Spinner />
       ) : (
         <Box sx={contentSx}>
-          <UserProfileHeader
-            name={name}
-            email={email}
-            initials={initials}
-            role={role}
-            joined={joined}
-            isActive={isActive}
-          />
-
           <Box sx={gridSx}>
             {/* العمود الأيسر: مصفوفة الصلاحيات */}
             <Box sx={colSx}>
