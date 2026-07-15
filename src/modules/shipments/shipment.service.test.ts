@@ -41,6 +41,7 @@ describe("ShipmentService", () => {
 
     expect(createShipmentSpy).toHaveBeenCalledWith(expect.objectContaining({
       deliveryBy: 1,
+      priority: 1,
       shippedFromInventory: true,
       toBeCollected: 2050,
     }));
