@@ -35,6 +35,7 @@ type UserRecord = {
 
 type VendorCreateInput = {
   active?: boolean;
+  accountManager?: number | null;
   accountManagerUserId?: number | null;
   daysToDeliver?: number;
   email?: string;
@@ -66,6 +67,26 @@ const toUserSummary = (user?: UserRecord | null): { firstName: string; id: numbe
     id: user.id,
     lastName: user.lastName ?? "",
   };
+};
+
+const getAccountManagerUserId = (data: VendorCreateInput): number | null | undefined => {
+  if (Object.prototype.hasOwnProperty.call(data, "accountManagerUserId")) {
+    return data.accountManagerUserId ?? null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, "accountManager")) {
+    return data.accountManager ?? null;
+  }
+
+  return undefined;
+};
+
+const getAccountManagerLabel = (user?: UserRecord | null): string => {
+  if (!user?.id) {
+    return "";
+  }
+
+  return [user.firstName ?? "", user.lastName ?? ""].filter(Boolean).join(" ").trim();
 };
 
 const sanitizeVendorName = (name: string): string => {
@@ -108,10 +129,11 @@ class VendorsService {
 
   public static async create(data: VendorCreateInput): Promise<VendorResponse> {
     const transaction = await Vendor.sequelize.transaction();
+    const accountManagerUserId = getAccountManagerUserId(data);
 
     try {
-      if (data.accountManagerUserId) {
-        const accountManager = await User.findByPk(data.accountManagerUserId);
+      if (accountManagerUserId) {
+        const accountManager = await User.findByPk(accountManagerUserId);
         if (!accountManager) {
           await transaction.rollback();
           return {
@@ -123,7 +145,7 @@ class VendorsService {
       }
 
       let vendor = (await Vendor.create({
-        accountManagerUserId: data.accountManagerUserId ?? null,
+        accountManagerUserId: accountManagerUserId ?? null,
         name: data.name,
       })) as VendorRecord;
 
@@ -150,15 +172,19 @@ class VendorsService {
         return user;
       }
 
+      const accountManager = accountManagerUserId
+        ? ((await User.findByPk(accountManagerUserId)) as UserRecord | null)
+        : null;
+
       await transaction.commit();
       await VendorsService.notifyAdminsForNewVendor(plainVendor);
       return {
         data: {
           ...plainVendor,
           active: true,
-          accountManager: toUserSummary(data.accountManagerUserId
-            ? ((await User.findByPk(data.accountManagerUserId)) as UserRecord | null)
-            : null),
+          accountManager: toUserSummary(accountManager),
+          accountManagerLabel: getAccountManagerLabel(accountManager),
+          accountManagerUserId: accountManagerUserId ?? null,
         },
         message: "Vendor created successfully",
         status: true,
@@ -191,12 +217,14 @@ class VendorsService {
 
     const vendorData = vendor.toJSON();
     const user = await UserService.getUserByVendorId(id);
+    const accountManager = vendorData.accountManager ?? null;
 
     return {
       data: {
         ...vendorData,
         active: Boolean(user),
-        accountManager: toUserSummary(vendorData.accountManager),
+        accountManager: toUserSummary(accountManager),
+        accountManagerLabel: getAccountManagerLabel(accountManager),
         email: user?.email,
         user,
       },
@@ -215,8 +243,10 @@ class VendorsService {
       };
     }
 
-    if (data.accountManagerUserId) {
-      const accountManager = await User.findByPk(data.accountManagerUserId);
+    const accountManagerUserId = getAccountManagerUserId(data);
+
+    if (accountManagerUserId) {
+      const accountManager = await User.findByPk(accountManagerUserId);
       if (!accountManager) {
         return {
           message: "Account manager not found",
@@ -237,8 +267,8 @@ class VendorsService {
       name: data.name,
     };
 
-    if (Object.prototype.hasOwnProperty.call(data, "accountManagerUserId")) {
-      vendorPayload.accountManagerUserId = data.accountManagerUserId ?? null;
+    if (accountManagerUserId !== undefined) {
+      vendorPayload.accountManagerUserId = accountManagerUserId ?? null;
     }
 
     const vendor = await existingVendor.update(vendorPayload);
@@ -252,6 +282,7 @@ class VendorsService {
         ...updatedVendor,
         active: Boolean(user),
         accountManager: toUserSummary(accountManager),
+        accountManagerLabel: getAccountManagerLabel(accountManager),
         user,
       },
       message: "Vendor updated successfully",
@@ -335,6 +366,7 @@ class VendorsService {
           ...vendorData,
           active: Boolean(vendorData.user),
           accountManager: toUserSummary(vendorData.accountManager),
+          accountManagerLabel: getAccountManagerLabel(vendorData.accountManager),
         };
       }),
       status: true,

@@ -571,6 +571,7 @@ const swaggerOptions = {
         VendorPayload: {
           type: "object",
           properties: {
+            accountManager: { example: 12, nullable: true, type: "integer" },
             accountManagerUserId: { example: 12, nullable: true, type: "integer" },
             daysToDeliver: { example: 7, nullable: true, type: "integer" },
             email: { example: "vendor@homix.com", type: "string" },
@@ -583,6 +584,7 @@ const swaggerOptions = {
           type: "object",
           properties: {
             accountManager: { $ref: "#/components/schemas/UserSummary", nullable: true },
+            accountManagerLabel: { example: "Ahmed Hesham", type: "string" },
             accountManagerUserId: { example: 12, nullable: true, type: "integer" },
             daysToDeliver: { example: 7, nullable: true, type: "integer" },
             email: { example: "vendor@homix.com", type: "string" },
