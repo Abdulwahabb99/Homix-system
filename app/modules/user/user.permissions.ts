@@ -15,6 +15,13 @@ export const USER_ROLE_LABELS = {
 
 export const USER_PERMISSION_GROUPS = [
   {
+    key: "dashboard",
+    label: "لوحة التحكم",
+    permissions: [
+      { key: "dashboard_view", label: "عرض لوحة التحكم" },
+    ],
+  },
+  {
     key: "orders",
     label: "الطلبات",
     permissions: [
@@ -31,6 +38,43 @@ export const USER_PERMISSION_GROUPS = [
       { key: "factory_view", label: "عرض الصُنّاع" },
       { key: "factory_edit", label: "تعديل بيانات المصنع" },
       { key: "factory_delete", label: "حذف مصنع" },
+    ],
+  },
+  {
+    key: "products",
+    label: "المنتجات",
+    permissions: [
+      { key: "products_view", label: "عرض المنتجات" },
+      { key: "products_edit", label: "إضافة وتعديل المنتجات" },
+      { key: "products_import", label: "استيراد المنتجات" },
+    ],
+  },
+  {
+    key: "vendors",
+    label: "البائعين",
+    permissions: [
+      { key: "vendors_view", label: "عرض البائعين" },
+      { key: "vendors_create", label: "إنشاء بائع" },
+      { key: "vendors_edit", label: "تعديل البائعين" },
+      { key: "vendors_delete", label: "حذف البائعين" },
+    ],
+  },
+  {
+    key: "employees",
+    label: "الموظفين",
+    permissions: [
+      { key: "employees_view", label: "عرض الموظفين" },
+      { key: "employees_create", label: "إنشاء موظف" },
+      { key: "employees_edit", label: "تعديل الموظفين" },
+      { key: "employees_delete", label: "حذف الموظفين" },
+    ],
+  },
+  {
+    key: "customers",
+    label: "العملاء",
+    permissions: [
+      { key: "customers_view", label: "عرض العملاء" },
+      { key: "customers_edit", label: "تعديل العملاء" },
     ],
   },
   {
@@ -60,6 +104,14 @@ export const USER_PERMISSION_GROUPS = [
     ],
   },
   {
+    key: "notifications",
+    label: "الإشعارات",
+    permissions: [
+      { key: "notifications_view", label: "عرض الإشعارات" },
+      { key: "notifications_manage", label: "إدارة الإشعارات" },
+    ],
+  },
+  {
     key: "users",
     label: "المستخدمون والإعدادات",
     permissions: [
@@ -73,6 +125,7 @@ export const USER_PERMISSION_GROUPS = [
 
 export const USER_PERMISSION_TEMPLATES = {
   admin: {
+    dashboard_view: true,
     orders_view: true,
     orders_edit: true,
     orders_delete: true,
@@ -80,6 +133,19 @@ export const USER_PERMISSION_TEMPLATES = {
     factory_view: true,
     factory_edit: true,
     factory_delete: true,
+    products_view: true,
+    products_edit: true,
+    products_import: true,
+    vendors_view: true,
+    vendors_create: true,
+    vendors_edit: true,
+    vendors_delete: true,
+    employees_view: true,
+    employees_create: true,
+    employees_edit: true,
+    employees_delete: true,
+    customers_view: true,
+    customers_edit: true,
     ship_view: true,
     ship_edit: true,
     finance_view: true,
@@ -88,31 +154,46 @@ export const USER_PERMISSION_TEMPLATES = {
     tickets_view: true,
     tickets_reply: true,
     tickets_close: true,
+    notifications_view: true,
+    notifications_manage: true,
     users_view: true,
     users_manage: true,
     settings_view: true,
     settings_edit: true,
   },
   logistics: {
+    dashboard_view: true,
     ship_view: true,
     ship_edit: true,
     orders_view: true,
     factory_view: true,
+    notifications_view: true,
+    notifications_manage: true,
   },
   ops: {
+    dashboard_view: true,
     orders_view: true,
     orders_edit: true,
     orders_create: true,
     factory_view: true,
+    products_view: true,
+    vendors_view: true,
+    customers_view: true,
+    customers_edit: true,
     ship_view: true,
     tickets_view: true,
     tickets_reply: true,
+    notifications_view: true,
+    notifications_manage: true,
   },
   finance: {
+    dashboard_view: true,
     finance_view: true,
     finance_export: true,
     finance_settle: true,
     orders_view: true,
+    notifications_view: true,
+    notifications_manage: true,
   },
   none: {},
 } as const;
@@ -134,6 +215,14 @@ export const getPermissionTemplateForUserType = (userType?: string, roleName?: s
 
   if (userType === USER_TYPES.OPERATION) {
     return { ...USER_PERMISSION_TEMPLATES.ops };
+  }
+
+  if (userType === USER_TYPES.VENDOR) {
+    return {
+      dashboard_view: true,
+      notifications_manage: true,
+      notifications_view: true,
+    };
   }
 
   return { ...USER_PERMISSION_TEMPLATES.none };

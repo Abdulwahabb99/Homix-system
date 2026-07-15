@@ -19,8 +19,7 @@ import {
   getDaysSince,
   getDeliveryPriorityLabel,
   getHistoryActorLabel,
-  getOrderPriority,
-  getOrderPriorityFromDeliveryStatus,
+  resolveOrderPriority,
   getStatusLabel,
   getManufactureLabel,
   getPaymentLabel,
@@ -377,7 +376,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
   const product = toPlain(orderLine.product);
   const vendor = toPlain(product.vendor);
   const user = toPlain(order.user);
-  const priority = getOrderPriorityFromDeliveryStatus(order.deliveryStatus, order.expectedDeliveryDate);
+  const priority = resolveOrderPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
     code: toText(order.code),
@@ -386,6 +385,8 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     deliveryBy: toNumber(order.deliveryBy) || null,
     deliveryPriority: priority,
     deliveryPriorityLabel: getDeliveryPriorityLabel(priority),
+    priority,
+    priorityLabel: getDeliveryPriorityLabel(priority),
     expectedDeliveryDate: toIsoString(order.expectedDeliveryDate),
     fine: toNumber(order.fine),
     id: toNumber(order.id),
@@ -806,7 +807,7 @@ export class OrderRepository {
       if (ORDER_SUMMARY_STATUS_GROUPS.inProgress.includes(status)) counts.inProgressOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.delivered.includes(status)) counts.deliveredOrders += 1;
       if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += 1;
-      if (getOrderPriorityFromDeliveryStatus(plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === 3 && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
+      if (resolveOrderPriority(plainOrder.priority, plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === 3 && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
     }
 
     return counts;

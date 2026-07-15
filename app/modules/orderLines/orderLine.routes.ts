@@ -3,7 +3,7 @@ import express from "express";
 const verifyToken = require("../../middlewares/protectApi") as typeof import("../../middlewares/protectApi");
 const OrderLineController = require("./orderLine.controller") as typeof import("./orderLine.controller");
 const IsNotLogistic = require("../../middlewares/isNotLogistic") as typeof import("../../middlewares/isNotLogistic");
-const isAdmin = require("../../middlewares/isAdmin") as typeof import("../../middlewares/isAdmin");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const OrderLineRouter = express.Router();
 
@@ -47,7 +47,7 @@ const OrderLineRouter = express.Router();
  *       404:
  *         description: Order line not found
  */
-OrderLineRouter.put("/:orderLineId", verifyToken, IsNotLogistic, OrderLineController.updateOrderLine);
+OrderLineRouter.put("/:orderLineId", verifyToken, IsNotLogistic, requirePermission("orders_edit"), OrderLineController.updateOrderLine);
 /**
  * @swagger
  * /orderLines/{orderLineId}/notes/{noteId}:
@@ -86,7 +86,7 @@ OrderLineRouter.put("/:orderLineId", verifyToken, IsNotLogistic, OrderLineContro
  *       404:
  *         description: Order line or note not found
  */
-OrderLineRouter.put("/:orderLineId/notes/:noteId", verifyToken, isAdmin, OrderLineController.updateNote);
+OrderLineRouter.put("/:orderLineId/notes/:noteId", verifyToken, requirePermission("orders_edit"), OrderLineController.updateNote);
 /**
  * @swagger
  * /orderLines/{orderLineId}/notes:
@@ -120,7 +120,7 @@ OrderLineRouter.put("/:orderLineId/notes/:noteId", verifyToken, isAdmin, OrderLi
  *       404:
  *         description: Order line not found
  */
-OrderLineRouter.post("/:orderLineId/notes", verifyToken, IsNotLogistic, OrderLineController.addNote);
+OrderLineRouter.post("/:orderLineId/notes", verifyToken, IsNotLogistic, requirePermission("orders_edit"), OrderLineController.addNote);
 /**
  * @swagger
  * /orderLines/{orderLineId}/notes/{noteId}:
@@ -153,6 +153,6 @@ OrderLineRouter.post("/:orderLineId/notes", verifyToken, IsNotLogistic, OrderLin
  *       404:
  *         description: Order line or note not found
  */
-OrderLineRouter.delete("/:orderLineId/notes/:noteId", verifyToken, isAdmin, OrderLineController.deleteNote);
+OrderLineRouter.delete("/:orderLineId/notes/:noteId", verifyToken, requirePermission("orders_edit"), OrderLineController.deleteNote);
 
 export = OrderLineRouter;

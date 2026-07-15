@@ -2,6 +2,7 @@ import express from "express";
 
 const productsController = require("./product.controller") as typeof import("./product.controller");
 const verifyToken = require("../../middlewares/protectApi") as typeof import("../../middlewares/protectApi");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const ProductsRouter = express.Router();
 
@@ -35,7 +36,7 @@ const ProductsRouter = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
-ProductsRouter.post("/", productsController.createProduct);
+ProductsRouter.post("/", verifyToken, requirePermission("products_edit"), productsController.createProduct);
 
 /**
  * @swagger
@@ -57,7 +58,7 @@ ProductsRouter.post("/", productsController.createProduct);
  *       401:
  *         description: Missing or invalid bearer token
  */
-ProductsRouter.get("/types", verifyToken, productsController.getProductsTypes);
+ProductsRouter.get("/types", verifyToken, requirePermission("products_view"), productsController.getProductsTypes);
 
 /**
  * @swagger
@@ -112,7 +113,7 @@ ProductsRouter.get("/types", verifyToken, productsController.getProductsTypes);
  *       401:
  *         description: Missing or invalid bearer token
  */
-ProductsRouter.get("/", verifyToken, productsController.getProducts);
+ProductsRouter.get("/", verifyToken, requirePermission("products_view"), productsController.getProducts);
 
 /**
  * @swagger
@@ -141,7 +142,7 @@ ProductsRouter.get("/", verifyToken, productsController.getProducts);
  *       404:
  *         description: Product not found
  */
-ProductsRouter.get("/:id", verifyToken, productsController.getProduct);
+ProductsRouter.get("/:id", verifyToken, requirePermission("products_view"), productsController.getProduct);
 
 /**
  * @swagger
@@ -169,6 +170,6 @@ ProductsRouter.get("/:id", verifyToken, productsController.getProduct);
  *       401:
  *         description: Missing or invalid bearer token
  */
-ProductsRouter.post("/import", verifyToken, productsController.importProducts);
+ProductsRouter.post("/import", verifyToken, requirePermission("products_import"), productsController.importProducts);
 
 export = ProductsRouter;

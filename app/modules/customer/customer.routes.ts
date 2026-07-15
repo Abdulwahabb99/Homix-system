@@ -5,6 +5,7 @@ import { asyncHandler, validateRequest } from "../../../src/shared/http";
 import { customerIdParamsSchema, customerUpdateSchema } from "./customer.schemas";
 
 const CustomerController = require("./customer.controller") as typeof import("./customer.controller");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const CustomerRouter = express.Router();
 
@@ -54,6 +55,7 @@ const CustomerRouter = express.Router();
  */
 CustomerRouter.put(
   "/:customerId",
+  requirePermission("customers_edit"),
   validateRequest({ body: customerUpdateSchema, params: customerIdParamsSchema }),
   asyncHandler(CustomerController.updateCustomer),
 );

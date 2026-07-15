@@ -1,4 +1,5 @@
 import {
+  SHIPMENT_PRIORITY_KEYS,
   SHIPMENT_FINAL_STATUSES,
   SHIPMENT_PRIORITY,
   SHIPMENT_PRIORITY_LABELS,
@@ -140,6 +141,19 @@ export const getShipmentPriority = (
   }
 
   return null;
+};
+
+export const resolveShipmentPriority = (
+  priority: unknown,
+  deliveryStatus: unknown,
+  expectedDeliveryDate: unknown,
+): number => {
+  const explicitPriority = toNumber(priority);
+  if (SHIPMENT_PRIORITY_KEYS.includes(explicitPriority as typeof SHIPMENT_PRIORITY_KEYS[number])) {
+    return explicitPriority;
+  }
+
+  return getShipmentPriority(deliveryStatus, expectedDeliveryDate) ?? SHIPMENT_PRIORITY.ON_SCHEDULE;
 };
 
 export const getShipmentPriorityLabel = (priority: unknown): string => {

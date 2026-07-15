@@ -35,8 +35,8 @@ import {
   buildUserName,
   getDaysBetween,
   getShipmentAgingDays,
-  getShipmentPriority,
   getShipmentPriorityLabel,
+  resolveShipmentPriority,
   getShipmentStatusLabel,
   getShipmentTypeLabel,
   getVariantBySku,
@@ -289,7 +289,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
   const shippingCompanyRecord = toPlain(order.shippingCompanyRecord);
   const deliveryBy = toNullableNumber(order.deliveryBy);
   const shippingCompanyName = toText(shippingCompanyRecord.name, toText(order.shippingCompany));
-  const deliveryPriority = getShipmentPriority(order.deliveryStatus, order.expectedDeliveryDate);
+  const deliveryPriority = resolveShipmentPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
     amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
@@ -299,6 +299,8 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     deliveryBy: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
     deliveryPriority,
     deliveryPriorityLabel: getShipmentPriorityLabel(deliveryPriority),
+    priority: deliveryPriority,
+    priorityLabel: getShipmentPriorityLabel(deliveryPriority),
     deliveryDate: toIsoString(order.deliveryDate),
     governorate: toText(order.governorate),
     id: toNumber(order.id),

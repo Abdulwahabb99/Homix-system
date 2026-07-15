@@ -7,6 +7,7 @@ import { emptyNotificationPayloadSchema } from "./notification.schemas";
 import { NotificationService } from "./notification.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
+const requirePermission = require("../../../app/middlewares/requirePermission");
 
 const notificationRepository = new NotificationRepository();
 const notificationService = new NotificationService(notificationRepository);
@@ -47,6 +48,7 @@ export const notificationRouter = express.Router();
 notificationRouter.get(
   "/",
   verifyToken,
+  requirePermission("notifications_view"),
   asyncHandler(notificationController.getNotifications),
 );
 
@@ -88,6 +90,7 @@ notificationRouter.get(
 notificationRouter.delete(
   "/",
   verifyToken,
+  requirePermission("notifications_manage"),
   validateRequest({ body: emptyNotificationPayloadSchema }),
   asyncHandler(notificationController.clearNotifications),
 );
@@ -130,6 +133,7 @@ notificationRouter.delete(
 notificationRouter.put(
   "/",
   verifyToken,
+  requirePermission("notifications_manage"),
   validateRequest({ body: emptyNotificationPayloadSchema }),
   asyncHandler(notificationController.markAsRead),
 );

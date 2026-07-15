@@ -94,6 +94,7 @@ export const shipmentCreateSchema = z.object({
   orderDate: dateString.optional().nullable(),
   paymentStatus: z.coerce.number().int().positive().optional().nullable(),
   PoDate: dateString.optional().nullable(),
+  priority: z.coerce.number().int().min(1).max(3).optional().nullable(),
   receivedAmount: z.coerce.number().min(0).optional(),
   scheduleStatus: z.coerce.number().int().positive().optional().nullable(),
   shipmentStatus: z.coerce.number().int().positive().optional().nullable(),

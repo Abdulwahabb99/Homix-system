@@ -140,6 +140,7 @@ const makeOrder = (overrides: Record<string, unknown> = {}) => ({
   deliveryBy: 1,
   deliveryDate: "2026-05-05T00:00:00.000Z",
   deliveryStatus: 3,
+  priority: 3,
   downPayment: "200",
   expectedDeliveryDate: "2026-05-06T00:00:00.000Z",
   id: 7,
@@ -258,6 +259,7 @@ describe("orderRouter", () => {
       [expect.objectContaining({
         ...payload,
         deliveryBy: 2,
+        priority: 1,
         toBeCollected: 16999,
       })],
       false,
@@ -350,6 +352,8 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0].deliveryBy).toBe(1);
+    expect(response.body.data.items[0].priority).toBe(3);
+    expect(response.body.data.items[0].priorityLabel).toBe("مستعجل جدا");
     expect(response.body.data.items[0].operationNumber).toBe("3001");
     expect(response.body.data.items[0].orderSource).toBe(2);
     expect(response.body.data.items[0].orderSourceLabel).toBe("اونلاين");
@@ -392,19 +396,15 @@ describe("orderRouter", () => {
   });
 
   it("supports multiple priority filters", async () => {
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
     orderModel.findAndCountAll.mockResolvedValue({
       count: 2,
       rows: [
         makeOrder(),
         {
           ...makeOrder(),
-          deliveryStatus: 1,
-          expectedDeliveryDate: nextWeek.toISOString(),
           id: 8,
           orderNumber: "31669",
+          priority: 1,
         },
       ],
     });
@@ -425,10 +425,10 @@ describe("orderRouter", () => {
     }));
   });
 
-  it("sorts orders by computed priority in memory", async () => {
+  it("sorts orders by manual priority in memory", async () => {
     orderModel.findAll.mockResolvedValue([
-      { ...makeOrder(), code: "3002", deliveryStatus: 1, id: 8, orderNumber: "31669" },
-      { ...makeOrder(), code: "3003", deliveryStatus: 3, id: 9, orderNumber: "31670" },
+      { ...makeOrder(), code: "3002", id: 8, orderNumber: "31669", priority: 1 },
+      { ...makeOrder(), code: "3003", id: 9, orderNumber: "31670", priority: 3 },
     ]);
 
     const response = await request(app).get("/orders").query({ page: 1, size: 20, sort: { priority: -1 } });
@@ -445,6 +445,8 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.deliveryBy).toBe(1);
     expect(response.body.data.order.deliveryStatus).toBe(3);
+    expect(response.body.data.order.priority).toBe(3);
+    expect(response.body.data.order.priorityLabel).toBe("مستعجل جدا");
     expect(response.body.data.order.orderNumber).toBe("31668");
     expect(response.body.data.order.orderSource).toBe(2);
     expect(response.body.data.order.orderSourceLabel).toBe("اونلاين");

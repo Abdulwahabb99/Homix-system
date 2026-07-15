@@ -221,6 +221,11 @@ orderRouter.get(
  *               orderSource:
  *                 type: integer
  *                 example: 1
+ *               priority:
+ *                 type: integer
+ *                 enum: [1, 2, 3]
+ *                 description: Manual priority. `1` = بالمدة, `2` = مستعجل, `3` = مستعجل جدا.
+ *                 example: 1
  *               expectedDeliveryDate:
  *                 type: string
  *                 format: date-time
@@ -455,7 +460,7 @@ orderRouter.get("/export", verifyToken, requirePermission("finance_export"), asy
  *         schema: { type: integer, enum: [-1, 1] }
  *       - in: query
  *         name: sort[priority]
- *         description: Sort by computed delivery priority.
+ *         description: Sort by manual priority.
  *         schema: { type: integer, enum: [-1, 1] }
  *       - in: query
  *         name: deliveryStatus

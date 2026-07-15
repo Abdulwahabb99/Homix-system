@@ -128,6 +128,7 @@ const makeShipment = (overrides: Record<string, unknown> = {}) => ({
   expectedDeliveryDate: null,
   governorate: "الجيزة",
   id: 9802,
+  priority: 2,
   notes: "shipment note",
   orderSource: 1,
   scheduleStatus: 1,
@@ -578,6 +579,8 @@ describe("shipmentRouter", () => {
         customerName: "عبير ابوالمجيد",
         deliveryPriority: 2,
         deliveryPriorityLabel: "مستعجل",
+        priority: 2,
+        priorityLabel: "مستعجل",
         operationNumber: "3002",
         orderSource: 1,
         orderSourceLabel: "شو رووم",
@@ -610,22 +613,15 @@ describe("shipmentRouter", () => {
     );
   });
 
-  it("filters shipments by computed priority", async () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
+  it("filters shipments by manual priority", async () => {
     orderModel.findAll.mockResolvedValue([
       makeShipment({
-        deliveryStatus: 2,
-        expectedDeliveryDate: tomorrow.toISOString(),
         id: 9802,
+        priority: 2,
       }),
       makeShipment({
-        deliveryStatus: 1,
-        expectedDeliveryDate: nextWeek.toISOString(),
         id: 9803,
+        priority: 1,
       }),
     ]);
 
@@ -646,10 +642,10 @@ describe("shipmentRouter", () => {
     }));
   });
 
-  it("sorts shipments by computed priority in memory", async () => {
+  it("sorts shipments by manual priority in memory", async () => {
     orderModel.findAll.mockResolvedValue([
-      makeShipment({ code: "3003", deliveryStatus: 1, id: 9803, orderNumber: "31668" }),
-      makeShipment({ code: "3004", deliveryStatus: 3, id: 9804, orderNumber: "31669" }),
+      makeShipment({ code: "3003", id: 9803, orderNumber: "31668", priority: 1 }),
+      makeShipment({ code: "3004", id: 9804, orderNumber: "31669", priority: 3 }),
     ]);
 
     const response = await request(app).get("/shipments").query({ page: 1, size: 20, sort: { priority: -1 } });
@@ -690,6 +686,8 @@ describe("shipmentRouter", () => {
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
     expect(response.body.data.shipment.deliveryStatus).toBe(2);
+    expect(response.body.data.shipment.priority).toBe(2);
+    expect(response.body.data.shipment.priorityLabel).toBe("مستعجل");
     expect(response.body.data.shipment.shippedFromInventory).toBe(false);
     expect(response.body.data.shipment.shippingCompany).toBe(3);
     expect(response.body.data.shipment.shippingCompanyName).toBe("J&T");

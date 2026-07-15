@@ -8,6 +8,7 @@ import { dashboardDateRangeSchema } from "./dashboard.schemas";
 import { DashboardService } from "./dashboard.service";
 
 const verifyToken = require("../../../app/middlewares/protectApi");
+const requirePermission = require("../../../app/middlewares/requirePermission");
 
 const dashboardRepository = new DashboardRepository();
 const dashboardService = new DashboardService(dashboardRepository);
@@ -95,6 +96,7 @@ export const dashboardRouter = express.Router();
 dashboardRouter.get(
   "/cards",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getCards),
 );
@@ -143,6 +145,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/cards/:cardKey",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({
     params: dashboardCardParamSchema,
     query: dashboardDateRangeSchema,
@@ -201,6 +204,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/performance",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getPerformance),
 );
@@ -245,6 +249,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/activities",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getActivities),
 );
@@ -292,6 +297,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/latest-orders",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getLatestOrders),
 );
@@ -336,6 +342,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/leaderboard",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getLeaderboard),
 );
@@ -381,6 +388,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/quick-actions",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getQuickActions),
 );
@@ -428,6 +436,7 @@ dashboardRouter.get(
 dashboardRouter.get(
   "/sales-distribution",
   verifyToken,
+  requirePermission("dashboard_view"),
   validateRequest({ query: dashboardDateRangeSchema }),
   asyncHandler(dashboardController.getSalesDistribution),
 );

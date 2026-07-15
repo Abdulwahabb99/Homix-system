@@ -1,6 +1,7 @@
 import express from "express";
 
 const VendorsController = require("./vendor.controller") as typeof import("./vendor.controller");
+const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const VendorRouter = express.Router();
 
@@ -24,7 +25,7 @@ const VendorRouter = express.Router();
  *       401:
  *         description: Missing or invalid bearer token
  */
-VendorRouter.get("/", VendorsController.getVendors);
+VendorRouter.get("/", requirePermission("vendors_view"), VendorsController.getVendors);
 /**
  * @swagger
  * /vendors/{id}:
@@ -52,7 +53,7 @@ VendorRouter.get("/", VendorsController.getVendors);
  *       404:
  *         description: Vendor not found
  */
-VendorRouter.get("/:id", VendorsController.getOneVendor);
+VendorRouter.get("/:id", requirePermission("vendors_view"), VendorsController.getOneVendor);
 /**
  * @swagger
  * /vendors:
@@ -86,7 +87,7 @@ VendorRouter.get("/:id", VendorsController.getOneVendor);
  *       409:
  *         description: Vendor already exists
  */
-VendorRouter.post("/", VendorsController.createVendor);
+VendorRouter.post("/", requirePermission("vendors_create"), VendorsController.createVendor);
 /**
  * @swagger
  * /vendors/{id}:
@@ -125,7 +126,7 @@ VendorRouter.post("/", VendorsController.createVendor);
  *       404:
  *         description: Vendor not found
  */
-VendorRouter.put("/:id", VendorsController.updateVendor);
+VendorRouter.put("/:id", requirePermission("vendors_edit"), VendorsController.updateVendor);
 /**
  * @swagger
  * /vendors/{id}:
@@ -153,7 +154,7 @@ VendorRouter.put("/:id", VendorsController.updateVendor);
  *       404:
  *         description: Vendor not found
  */
-VendorRouter.delete("/:id", VendorsController.deleteVendor);
+VendorRouter.delete("/:id", requirePermission("vendors_delete"), VendorsController.deleteVendor);
 /**
  * @swagger
  * /vendors/{id}/activeStatus:
@@ -187,6 +188,6 @@ VendorRouter.delete("/:id", VendorsController.deleteVendor);
  *       404:
  *         description: Vendor not found
  */
-VendorRouter.put("/:id/activeStatus", VendorsController.changeActiveStatus);
+VendorRouter.put("/:id/activeStatus", requirePermission("vendors_edit"), VendorsController.changeActiveStatus);
 
 export = VendorRouter;

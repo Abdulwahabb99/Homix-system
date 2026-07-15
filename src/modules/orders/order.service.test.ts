@@ -108,6 +108,7 @@ describe("OrderService", () => {
     expect(legacyGateway.saveImportedOrders).toHaveBeenCalledWith([
       expect.objectContaining({
         deliveryBy: 2,
+        priority: 1,
         toBeCollected: 1850,
       }),
     ], false, undefined);

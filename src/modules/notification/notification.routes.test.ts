@@ -3,7 +3,7 @@ import request from "supertest";
 
 jest.mock("../../../app/middlewares/protectApi", () => {
   return (_request: express.Request, _response: express.Response, next: express.NextFunction) => {
-    _request.user = { id: 7 };
+    _request.user = { id: 7, userType: "1" };
     next();
   };
 });

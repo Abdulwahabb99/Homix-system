@@ -2,6 +2,7 @@ import { DELIVERY_BY, DELIVERY_STATUS, ORDER_STATUS } from "../../../config/cons
 import {
   DELIVERY_STATUS_PRIORITY_MAP,
   MANUFACTURE_STATUS_LABELS,
+  ORDER_PRIORITY,
   ORDER_DELIVERY_PRIORITY,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -81,6 +82,20 @@ export const getDeliveryStatusValue = (expectedDeliveryDate: unknown): number | 
 export const getOrderPriority = (expectedDeliveryDate: unknown): OrderPriorityKey | null => {
   const deliveryStatus = getDeliveryStatusValue(expectedDeliveryDate);
   return deliveryStatus ? DELIVERY_STATUS_PRIORITY_MAP[deliveryStatus] ?? null : null;
+};
+
+export const resolveOrderPriority = (
+  priority: unknown,
+  deliveryStatus?: unknown,
+  expectedDeliveryDate?: unknown,
+): OrderPriorityKey => {
+  const explicitPriority = toNumber(priority);
+  if (explicitPriority && Object.values(ORDER_PRIORITY).includes(explicitPriority as OrderPriorityKey)) {
+    return explicitPriority as OrderPriorityKey;
+  }
+
+  const derivedPriority = getOrderPriorityFromDeliveryStatus(deliveryStatus, expectedDeliveryDate);
+  return derivedPriority ?? ORDER_PRIORITY.ON_SCHEDULE;
 };
 
 export const getOrderPriorityFromDeliveryStatus = (
@@ -221,6 +236,11 @@ export const normalizeOrderMutationPayload = (
   payload.deliveryBy = shipmentType === "warehouse" || shippedFromInventory
     ? DELIVERY_BY.HOMIX
     : toNumber(payload.deliveryBy) || toNumber(existing.deliveryBy) || DELIVERY_BY.VENDOR;
+  payload.priority = resolveOrderPriority(
+    payload.priority ?? existing.priority,
+    payload.deliveryStatus ?? existing.deliveryStatus,
+    payload.expectedDeliveryDate ?? existing.expectedDeliveryDate,
+  );
 
   const lineItemsFinancials = getLineItemsFinancials(payload.line_items);
   const subTotalPrice = lineItemsFinancials.subTotalPrice || resolveFinancialValue(payload, existing, "subTotalPrice");

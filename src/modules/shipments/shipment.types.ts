@@ -133,6 +133,8 @@ export type ShipmentListItem = {
   deliveryBy: string;
   deliveryPriority: number | null;
   deliveryPriorityLabel: string;
+  priority: number | null;
+  priorityLabel: string;
   deliveryDate: string | null;
   orderSource: number | null;
   orderSourceLabel: string;

@@ -202,6 +202,7 @@ shipmentRouter.get(
  *               shippingReceiveDate: 2026-06-18T00:00:00.000Z
  *               deliveryDate: 2026-06-20T00:00:00.000Z
  *               deliveryBy: 1
+ *               priority: 1
  *               shippingFees: 65
  *               toBeCollected: 29998
  *     responses:
@@ -1105,7 +1106,7 @@ shipmentRouter.get(
  *           enum: [-1, 1]
  *       - in: query
  *         name: sort[priority]
- *         description: Sort by computed delivery priority.
+ *         description: Sort by manual priority.
  *         schema:
  *           type: integer
  *           enum: [-1, 1]

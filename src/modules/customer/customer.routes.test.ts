@@ -6,6 +6,7 @@ const customerModel = {
 };
 
 jest.mock("../../../app/modules/customer/customer.model", () => customerModel);
+jest.mock("../../../app/middlewares/requirePermission", () => () => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next());
 
 import { errorMiddleware } from "../../shared/http";
 import CustomerRouter = require("../../../app/modules/customer/customer.routes");

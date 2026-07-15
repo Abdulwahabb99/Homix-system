@@ -9,6 +9,7 @@ const {
   SHIPMENT_SCHEDULE_STATUS,
   SHIPMENTS_STATUS,
 } = require("../../../config/constants");
+const { ORDER_PRIORITY } = require("../../../src/modules/orders/order.constants");
 const OrderLine = require("../orderLines/orderline.model");
 const Customer = require("../customer/customer.model");
 const User = require("../user/user.model");
@@ -143,6 +144,14 @@ const Order = sequelize.define(
         isIn: [Object.values(DELIVERY_STATUS)],
       },
     },
+    priority: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: ORDER_PRIORITY.ON_SCHEDULE,
+      validate: {
+        isIn: [Object.values(ORDER_PRIORITY)],
+      },
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -256,6 +265,9 @@ const Order = sequelize.define(
       },
       {
         fields: ["paymentStatus"],
+      },
+      {
+        fields: ["priority"],
       },
       {
         fields: ["deliveryStatus"],
