@@ -84,9 +84,10 @@ export function roleBadgeSx(bg: string, color: string): SxProps<Theme> {
 }
 
 /* ── أزرار الإجراءات (.abt) ── */
-export type ActBtnVariant = "edit" | "delete";
+export type ActBtnVariant = "view" | "edit" | "delete";
 export function actBtnSx(variant: ActBtnVariant): SxProps<Theme> {
   const map = {
+    view:   { bg: HX.accentLight, color: HX.accent, hover: HX.accent },
     edit:   { bg: HX.blueLight, color: HX.blue, hover: HX.blue },
     delete: { bg: HX.redLight,  color: HX.red,  hover: HX.red },
   }[variant];

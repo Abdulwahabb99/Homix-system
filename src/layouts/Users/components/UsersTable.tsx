@@ -20,6 +20,7 @@ interface UsersTableProps {
   pageCount: number;
   onPageChange: (page: number) => void;
   isLoading: boolean;
+  onView: (user: AppUser) => void;
   onEdit: (user: AppUser) => void;
   onDelete: (user: AppUser) => void;
   onExport?: () => void;
@@ -28,7 +29,7 @@ interface UsersTableProps {
 const COLS = 6;
 
 export default function UsersTable({
-  rows, total, page, pageCount, onPageChange, isLoading, onEdit, onDelete, onExport,
+  rows, total, page, pageCount, onPageChange, isLoading, onView, onEdit, onDelete, onExport,
 }: UsersTableProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -90,6 +91,7 @@ export default function UsersTable({
                   user={u}
                   checked={selected.has(String(u.id))}
                   onToggle={() => toggleOne(String(u.id))}
+                  onView={() => onView(u)}
                   onEdit={() => onEdit(u)}
                   onDelete={() => onDelete(u)}
                 />

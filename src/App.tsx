@@ -37,6 +37,7 @@ import {
 } from "shared/functions/sessionGuard";
 
 const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
+const UserDetails = React.lazy(() => import("layouts/Users/UserDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));
 const ShipmentDetails = React.lazy(() => import("layouts/Shipments/components/ShipmentDetails"));
@@ -315,6 +316,14 @@ export default function App() {
                   element={
                     <ProtectedRoutes>
                       <FactoryDetails />
+                    </ProtectedRoutes>
+                  }
+                />
+                <Route
+                  path="/users/:id"
+                  element={
+                    <ProtectedRoutes>
+                      <UserDetails />
                     </ProtectedRoutes>
                   }
                 />

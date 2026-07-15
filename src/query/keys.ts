@@ -24,6 +24,7 @@ export const vendorKeys = {
 export const userKeys = {
   all: () => ["users"],
   list: () => [...userKeys.all(), "list"],
+  detail: (id: number | string) => [...userKeys.all(), "detail", String(id)],
 };
 
 export const shipmentKeys = {

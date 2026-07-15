@@ -4,6 +4,7 @@
  */
 import React, { useState } from "react";
 import { Box } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { useUsers } from "./hooks/useUsers";
@@ -23,12 +24,14 @@ export default function Users() {
     kpis, isLoading, deleteUser,
   } = useUsers();
 
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<AppUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
 
   const openAdd = () => { setEditUser(null); setModalOpen(true); };
   const openEdit = (u: AppUser) => { setEditUser(u); setModalOpen(true); };
+  const openView = (u: AppUser) => navigate(`/users/${u.id}`);
 
   const confirmDelete = () => {
     if (deleteTarget) deleteUser(deleteTarget.id);
@@ -63,6 +66,7 @@ export default function Users() {
           pageCount={pageCount}
           onPageChange={setPage}
           isLoading={isLoading}
+          onView={openView}
           onEdit={openEdit}
           onDelete={(u) => setDeleteTarget(u)}
         />

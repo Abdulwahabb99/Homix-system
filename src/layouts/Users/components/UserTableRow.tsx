@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { Box } from "@mui/material";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { HX } from "layouts/Orders/ordersHomixTheme";
@@ -21,11 +22,12 @@ interface UserTableRowProps {
   user: AppUser;
   checked: boolean;
   onToggle: () => void;
+  onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export default function UserTableRow({ user, checked, onToggle, onEdit, onDelete }: UserTableRowProps) {
+export default function UserTableRow({ user, checked, onToggle, onView, onEdit, onDelete }: UserTableRowProps) {
   const name = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || PLACEHOLDER;
   return (
     <tr>
@@ -33,10 +35,13 @@ export default function UserTableRow({ user, checked, onToggle, onEdit, onDelete
         <input type="checkbox" checked={checked} onChange={onToggle} />
       </td>
       <td>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "9px" }}>
+        <Box
+          onClick={onView}
+          sx={{ display: "flex", alignItems: "center", gap: "9px", cursor: "pointer", "&:hover .u-name": { color: HX.accent } }}
+        >
           <Box sx={{ ...(userAvatarSx as object), background: roleMeta(user.userType).gradient }}>{initials(user)}</Box>
           <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT }}>{name}</Box>
+            <Box className="u-name" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT, transition: ".15s" }}>{name}</Box>
             <Box sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT, mt: "1px" }}>{user.email || PLACEHOLDER}</Box>
           </Box>
         </Box>
@@ -46,6 +51,9 @@ export default function UserTableRow({ user, checked, onToggle, onEdit, onDelete
       <td><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3, fontFamily: FONT }}>{PLACEHOLDER}</Box></td>
       <td>
         <Box sx={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
+          <Box component="button" type="button" title="عرض" onClick={onView} sx={actBtnSx("view")}>
+            <VisibilityOutlinedIcon />
+          </Box>
           <Box component="button" type="button" title="تعديل" onClick={onEdit} sx={actBtnSx("edit")}>
             <EditOutlinedIcon />
           </Box>
