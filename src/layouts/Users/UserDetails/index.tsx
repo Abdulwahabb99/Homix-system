@@ -58,7 +58,7 @@ export default function UserDetails() {
           <Box sx={gridSx}>
             {/* العمود الأيسر: مصفوفة الصلاحيات */}
             <Box sx={colSx}>
-              <UserPermissionsMatrix summary={permissionsSummary} />
+              <UserPermissionsMatrix summary={permissionsSummary} userId={user.id} />
             </Box>
 
             {/* العمود الأيمن: بيانات الحساب + وظيفية + التحويل + سجل النشاط */}

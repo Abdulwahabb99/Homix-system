@@ -335,3 +335,44 @@ export const breadcrumbCurSx: SxProps<Theme> = {
   fontWeight: 700,
   fontFamily: FONT,
 };
+
+/* ────────────────── تعديل الصلاحيات ────────────────── */
+/* زر التعديل بجوار شارة العدّاد في ترويسة مصفوفة الصلاحيات */
+export const permEditBtnSx: SxProps<Theme> = {
+  width: 26,
+  height: 26,
+  borderRadius: "7px",
+  border: `0.5px solid ${HX.border}`,
+  bgcolor: HX.surface2,
+  color: HX.tx2,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: ".15s",
+  "& svg": { fontSize: 14 },
+  "&:hover": { borderColor: HX.accent, color: HX.accent, bgcolor: HX.accentLight },
+};
+
+/* صف صلاحية داخل نافذة التعديل (عنوان + مفتاح تبديل) */
+export const permEditRowSx: SxProps<Theme> = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  p: "8px 16px",
+  borderBottom: `0.5px solid ${HX.border}`,
+  "&:last-of-type": { borderBottom: "none" },
+};
+export const permEditRowLabelSx: SxProps<Theme> = {
+  fontSize: "12.5px",
+  fontWeight: 500,
+  color: HX.tx,
+  flex: 1,
+  fontFamily: FONT,
+};
+
+/* مفتاح التبديل بلون الأكسنت */
+export const permSwitchSx: SxProps<Theme> = {
+  "& .MuiSwitch-switchBase.Mui-checked": { color: HX.accent },
+  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: `${HX.accent} !important`, opacity: 1 },
+};

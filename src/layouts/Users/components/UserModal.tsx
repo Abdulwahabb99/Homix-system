@@ -1,12 +1,14 @@
 /**
  * نافذة إضافة/تعديل مستخدم — بأسلوب modal التصميم (عناوين فوق الحقول، حقول native
- * مطابقة لـ .minput/.mselect). بالحقول التي يدعمها الـ API فقط: الاسم/البريد/كلمة المرور/الدور.
+ * مطابقة لـ .minput/.mselect). أقسام: البيانات الأساسية + بيانات وظيفية ومالية + بيانات التحويل.
  */
 import React, { useEffect, useState } from "react";
 import { Box, Dialog, IconButton, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,7 +43,33 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
+/** ترويسة قسم داخل النموذج (أيقونة + عنوان صغير) */
+function SectionHead({ icon, title, mt }: { icon: React.ReactNode; title: string; mt?: boolean }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: "7px", mb: "14px", mt: mt ? "18px" : 0 }}>
+      <Box sx={{ width: 26, height: 26, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: HX.accentLight, color: HX.accent, "& svg": { fontSize: 15 } }}>
+        {icon}
+      </Box>
+      <Typography sx={{ fontSize: "10px", fontWeight: 700, color: HX.tx3, letterSpacing: "1px", fontFamily: FONT }}>
+        {title}
+      </Typography>
+    </Box>
+  );
+}
+
 const rowSx = { display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: "10px", mb: "12px" } as const;
+
+/** حقل نصّي بسيط لتقليل التكرار */
+function TextField({ label, value, onChange, placeholder, type = "text", required }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean;
+}) {
+  return (
+    <Field label={label} required={required}>
+      <Box component="input" type={type} value={value} placeholder={placeholder ?? label}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)} sx={controlSx} />
+    </Field>
+  );
+}
 
 interface UserModalProps {
   open: boolean;
@@ -50,10 +78,13 @@ interface UserModalProps {
   onClose: () => void;
 }
 
+const str = (v: unknown) => (v == null ? "" : String(v));
+
 export default function UserModal({ open, editUser, onClose }: UserModalProps) {
   const queryClient = useQueryClient();
   const isEdit = Boolean(editUser);
 
+  // البيانات الأساسية
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,22 +92,58 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
   const [userType, setUserType] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // تعبئة الحقول عند الفتح (للتعديل نجلب السجل لأخذ كلمة المرور الحالية كما في السلوك السابق)
+  // بيانات وظيفية ومالية
+  const [jobTitle, setJobTitle] = useState("");
+  const [salary, setSalary] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  // بيانات التحويل
+  const [bankName, setBankName] = useState("");
+  const [bankAccountType, setBankAccountType] = useState("");
+  const [bankAccountHolderName, setBankAccountHolderName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [walletNumber, setWalletNumber] = useState("");
+  const [instaPayNumber, setInstaPayNumber] = useState("");
+
+  /** تعبئة كل الحقول من سجل مستخدم */
+  const fill = (u: Record<string, unknown>) => {
+    setFirstName(str(u.firstName));
+    setLastName(str(u.lastName));
+    setEmail(str(u.email));
+    setUserType(str(u.userType));
+    setJobTitle(str(u.jobTitle));
+    setSalary(u.salary == null ? "" : String(u.salary));
+    setPhoneNumber(str(u.phoneNumber));
+    setBankName(str(u.bankName));
+    setBankAccountType(str(u.bankAccountType));
+    setBankAccountHolderName(str(u.bankAccountHolderName));
+    setBankAccountNumber(str(u.bankAccountNumber));
+    setWalletNumber(str(u.walletNumber));
+    setInstaPayNumber(str(u.instaPayNumber));
+  };
+
+  // تعبئة الحقول عند الفتح (للتعديل نجلب السجل الكامل لأخذ كلمة المرور والحقول الإضافية)
   useEffect(() => {
     if (!open) return;
     setShowPassword(false);
     if (editUser) {
-      setFirstName(String(editUser.firstName ?? ""));
-      setLastName(String(editUser.lastName ?? ""));
-      setEmail(String(editUser.email ?? ""));
-      setUserType(String(editUser.userType ?? ""));
+      fill(editUser as Record<string, unknown>);
       setPassword("");
       axiosRequest
         .get(`/users/${editUser.id}`)
-        .then(({ data }) => { if (data?.data?.password != null) setPassword(String(data.data.password)); })
+        .then(({ data }) => {
+          const d = (data?.data ?? data) as Record<string, unknown>;
+          if (d) {
+            fill(d);
+            if (d.password != null) setPassword(String(d.password));
+          }
+        })
         .catch(() => { /* التعبئة الأساسية كافية */ });
     } else {
       setFirstName(""); setLastName(""); setEmail(""); setPassword(""); setUserType("");
+      setJobTitle(""); setSalary(""); setPhoneNumber("");
+      setBankName(""); setBankAccountType(""); setBankAccountHolderName("");
+      setBankAccountNumber(""); setWalletNumber(""); setInstaPayNumber("");
     }
   }, [open, editUser]);
 
@@ -87,6 +154,7 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
         : axiosRequest.post(`/users`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.list() });
+      if (isEdit) queryClient.invalidateQueries({ queryKey: userKeys.detail(editUser!.id) });
       NotificationMeassage("success", isEdit ? "تم تعديل المستخدم بنجاح" : "تم اضافة مستخدم بنجاح");
       onClose();
     },
@@ -97,7 +165,23 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
     if (!firstName.trim()) { NotificationMeassage("error", "الاسم مطلوب"); return; }
     if (!email.trim()) { NotificationMeassage("error", "البريد الإلكتروني مطلوب"); return; }
     if (!userType) { NotificationMeassage("error", "الدور مطلوب"); return; }
-    saveMutation.mutate({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password, userType });
+    const salaryTrimmed = salary.trim();
+    saveMutation.mutate({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      password,
+      userType,
+      jobTitle: jobTitle.trim(),
+      salary: salaryTrimmed === "" ? null : (Number.isNaN(Number(salaryTrimmed)) ? salaryTrimmed : Number(salaryTrimmed)),
+      phoneNumber: phoneNumber.trim(),
+      bankName: bankName.trim(),
+      bankAccountType: bankAccountType.trim(),
+      bankAccountHolderName: bankAccountHolderName.trim(),
+      bankAccountNumber: bankAccountNumber.trim(),
+      walletNumber: walletNumber.trim(),
+      instaPayNumber: instaPayNumber.trim(),
+    });
   };
 
   return (
@@ -119,33 +203,18 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
         </IconButton>
       </Box>
 
-      {/* Body */}
-      <Box sx={{ p: "20px" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "7px", mb: "14px" }}>
-          <Box sx={{ width: 26, height: 26, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: HX.accentLight, color: HX.accent }}>
-            <PersonOutlineIcon sx={{ fontSize: 15 }} />
-          </Box>
-          <Typography sx={{ fontSize: "10px", fontWeight: 700, color: HX.tx3, letterSpacing: "1px", fontFamily: FONT }}>
-            البيانات الأساسية
-          </Typography>
+      {/* Body (scrollable) */}
+      <Box sx={{ p: "20px", maxHeight: "68vh", overflowY: "auto" }}>
+        {/* البيانات الأساسية */}
+        <SectionHead icon={<PersonOutlineIcon />} title="البيانات الأساسية" />
+
+        <Box sx={rowSx}>
+          <TextField label="الاسم الأول" required value={firstName} onChange={setFirstName} placeholder="الاسم الأول" />
+          <TextField label="اسم العائلة" value={lastName} onChange={setLastName} placeholder="اسم العائلة" />
         </Box>
 
         <Box sx={rowSx}>
-          <Field label="الاسم الأول" required>
-            <Box component="input" value={firstName} placeholder="الاسم الأول"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)} sx={controlSx} />
-          </Field>
-          <Field label="اسم العائلة">
-            <Box component="input" value={lastName} placeholder="اسم العائلة"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)} sx={controlSx} />
-          </Field>
-        </Box>
-
-        <Box sx={rowSx}>
-          <Field label="البريد الإلكتروني" required>
-            <Box component="input" type="email" value={email} placeholder="user@homix.com"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} sx={controlSx} />
-          </Field>
+          <TextField label="البريد الإلكتروني" required type="email" value={email} onChange={setEmail} placeholder="user@homix.com" />
           <Field label="كلمة المرور" required>
             <Box sx={{ position: "relative" }}>
               <Box component="input" type={showPassword ? "text" : "password"} value={password} placeholder="••••••••"
@@ -171,6 +240,29 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
               ))}
             </Box>
           </Field>
+          <TextField label="رقم الهاتف" value={phoneNumber} onChange={setPhoneNumber} placeholder="01xxxxxxxxx" />
+        </Box>
+
+        {/* بيانات وظيفية ومالية */}
+        <SectionHead icon={<WorkOutlineIcon />} title="بيانات وظيفية ومالية" mt />
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: "10px" }}>
+          <TextField label="الوظيفة" value={jobTitle} onChange={setJobTitle} placeholder="مثال: مدير عمليات" />
+          <TextField label="الراتب (شهرياً)" type="number" value={salary} onChange={setSalary} placeholder="0" />
+        </Box>
+
+        {/* بيانات التحويل */}
+        <SectionHead icon={<AccountBalanceIcon />} title="بيانات التحويل" mt />
+        <Box sx={rowSx}>
+          <TextField label="اسم البنك" value={bankName} onChange={setBankName} placeholder="مثال: بنك مصر" />
+          <TextField label="نوع الحساب" value={bankAccountType} onChange={setBankAccountType} placeholder="مثال: حساب جاري" />
+        </Box>
+        <Box sx={rowSx}>
+          <TextField label="اسم صاحب الحساب" value={bankAccountHolderName} onChange={setBankAccountHolderName} placeholder="الاسم كما في البنك" />
+          <TextField label="رقم الحساب" value={bankAccountNumber} onChange={setBankAccountNumber} placeholder="رقم الحساب البنكي" />
+        </Box>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: "10px" }}>
+          <TextField label="المحفظة" value={walletNumber} onChange={setWalletNumber} placeholder="رقم المحفظة" />
+          <TextField label="InstaPay" value={instaPayNumber} onChange={setInstaPayNumber} placeholder="رقم/عنوان InstaPay" />
         </Box>
       </Box>
 
