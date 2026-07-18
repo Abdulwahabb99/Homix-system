@@ -25,7 +25,7 @@ import {
 } from "../utils/styles";
 import { permGroupIcon, permItemIcon } from "../utils/icons";
 import { GROUP_TONE, GROUP_TONE_FALLBACK, TONE_MAP } from "../utils/constants";
-import { PermissionsSummary } from "../utils/types";
+import { PermissionsSummary, UserDetail } from "../utils/types";
 
 interface PermissionsEditModalProps {
   open: boolean;
@@ -62,8 +62,8 @@ export default function PermissionsEditModal({ open, onClose, userId, summary }:
     });
 
   const saveMutation = useMutation({
-    mutationFn: (permissions: Record<string, boolean>) =>
-      axiosRequest.put(`/users/${userId}`, { permissions }),
+    mutationFn: (payload: Record<string, unknown>) =>
+      axiosRequest.put(`/users/${userId}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.detail(userId) });
       queryClient.invalidateQueries({ queryKey: userKeys.list() });
@@ -72,6 +72,20 @@ export default function PermissionsEditModal({ open, onClose, userId, summary }:
     },
     onError: () => NotificationMeassage("error", "حدث خطأ"),
   });
+
+  // إرسال الصلاحيات مع بيانات هوية المستخدم (من كاش الاستعلام) كما في مثال الـ endpoint
+  const handleSave = () => {
+    const cached = queryClient.getQueryData<UserDetail>(userKeys.detail(userId));
+    const payload: Record<string, unknown> = { permissions: perms };
+    if (cached) {
+      payload.firstName = cached.firstName;
+      payload.lastName = cached.lastName;
+      payload.email = cached.email;
+      payload.roleName = cached.roleName;
+      payload.userType = cached.userType;
+    }
+    saveMutation.mutate(payload);
+  };
 
   return (
     <Dialog
@@ -152,7 +166,7 @@ export default function PermissionsEditModal({ open, onClose, userId, summary }:
           sx={{ px: "14px", height: 32, border: `0.5px solid ${HX.border}`, borderRadius: "8px", fontSize: "12px", fontWeight: 600, fontFamily: FONT, cursor: "pointer", bgcolor: "transparent", color: HX.tx2, "&:hover": { borderColor: HX.red, color: HX.red } }}>
           إلغاء
         </Box>
-        <Box component="button" type="button" onClick={() => saveMutation.mutate(perms)}
+        <Box component="button" type="button" onClick={handleSave}
           sx={{ display: "inline-flex", alignItems: "center", gap: "5px", px: "18px", height: 32, border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: 700, fontFamily: FONT, cursor: "pointer", bgcolor: HX.accent, color: "#fff", opacity: saveMutation.isPending ? 0.7 : 1, "&:hover": { bgcolor: "#5254e0" }, "& svg": { fontSize: 15 } }}>
           <CheckIcon /> حفظ الصلاحيات
         </Box>
