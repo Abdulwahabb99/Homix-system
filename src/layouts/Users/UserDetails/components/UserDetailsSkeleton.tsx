@@ -21,9 +21,11 @@ import {
   permSectionSx,
   tlItemSx,
 } from "../utils/styles";
-import { PERMISSION_SECTIONS } from "../utils/constants";
 
 const DIVIDER = `0.5px solid ${HX.border}`;
+
+/** أعداد عناصر المجموعات (تقريبية للهيكل فقط، تطابق شكل permissionsSummary) */
+const SKELETON_GROUP_SIZES = [1, 4, 3, 3, 4, 4, 2, 2, 3, 3, 2, 4];
 
 /* ترويسة بطاقة: أيقونة + عنوان (+ عنصر يمين اختياري) */
 function CardHeadSkeleton({ right, titleWidth = 110 }: { right?: React.ReactNode; titleWidth?: number }) {
@@ -75,18 +77,17 @@ export default function UserDetailsSkeleton() {
               titleWidth={70}
               right={<Skeleton variant="rounded" width={92} height={22} sx={{ borderRadius: "6px" }} />}
             />
-            {PERMISSION_SECTIONS.map((section) => {
-              const n = section.items.length;
+            {SKELETON_GROUP_SIZES.map((n, gi) => {
               const lastRowStart = n % 2 === 0 ? n - 2 : n - 1;
               return (
-                <Box key={section.key} sx={permSectionSx}>
+                <Box key={gi} sx={permSectionSx}>
                   <Box sx={permSecHeadSx}>
                     <Skeleton variant="rounded" width={26} height={26} sx={{ borderRadius: "7px", flexShrink: 0 }} />
                     <Skeleton width={120} height={14} sx={{ flex: 1 }} />
                     <Skeleton variant="rounded" width={34} height={18} sx={{ borderRadius: "5px" }} />
                   </Box>
                   <Box sx={permItemsSx}>
-                    {section.items.map((_, i) => (
+                    {Array.from({ length: n }, (_, i) => (
                       <Box
                         key={i}
                         sx={{

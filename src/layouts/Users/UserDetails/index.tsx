@@ -1,8 +1,7 @@
 /**
  * تفاصيل المستخدم — الصفحة الرفيعة: تُنسّق جلب البيانات (GET /users/:id) وتوزّعها
  * على المكوّنات المقسّمة، بتصميم مطابق لـ homix_user_detail.html.
- * البيانات الحقيقية: الاسم/البريد/الدور/الحالة. الأقسام الثابتة (الصلاحيات/سجل النشاط/
- * بيانات التحويل/الإحصائيات) تُقرأ من ملف الثوابت لحين ربط الـ BE مستقبلاً.
+ * كل الأقسام مدفوعة ببيانات حقيقية من الـ API (الحساب/الصلاحيات المجمّعة/التحويل/سجل النشاط).
  */
 import React, { useState } from "react";
 import { Box } from "@mui/material";
@@ -25,7 +24,11 @@ import UserModal from "../components/UserModal";
 export default function UserDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isLoading, name, email, role, joined, isActive } = useUserDetail(id);
+  const {
+    user, isLoading, name, email, role, joined,
+    statusLabel, statusOnline, lastPasswordChange,
+    permissionsSummary, activity, bank, job,
+  } = useUserDetail(id);
 
   const [editOpen, setEditOpen] = useState(false);
 
@@ -55,15 +58,22 @@ export default function UserDetails() {
           <Box sx={gridSx}>
             {/* العمود الأيسر: مصفوفة الصلاحيات */}
             <Box sx={colSx}>
-              <UserPermissionsMatrix />
+              <UserPermissionsMatrix summary={permissionsSummary} />
             </Box>
 
             {/* العمود الأيمن: بيانات الحساب + وظيفية + التحويل + سجل النشاط */}
             <Box sx={colSx}>
-              <UserAccountInfo email={email} role={role} joined={joined} isActive={isActive} />
-              <UserJobInfo />
-              <UserBankTransfer />
-              <UserActivityTimeline />
+              <UserAccountInfo
+                email={email}
+                role={role}
+                joined={joined}
+                statusLabel={statusLabel}
+                statusOnline={statusOnline}
+                lastPasswordChange={lastPasswordChange}
+              />
+              <UserJobInfo job={job} />
+              <UserBankTransfer bank={bank} />
+              <UserActivityTimeline activity={activity} />
             </Box>
           </Box>
         </Box>

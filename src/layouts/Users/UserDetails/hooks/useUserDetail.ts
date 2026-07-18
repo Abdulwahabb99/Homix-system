@@ -1,7 +1,6 @@
 /**
- * منطق صفحة تفاصيل المستخدم: جلب `GET /users/:id` (نفس الـ API المستخدم في نافذة التعديل).
- * يعيد بيانات المستخدم + مشتقّاتها (الاسم/الأحرف الأولى/تاريخ الانضمام). أقسام الصلاحيات
- * وسجل النشاط وبيانات التحويل ثابتة حالياً وتُقرأ من ملف الثوابت لحين ربط الـ BE.
+ * منطق صفحة تفاصيل المستخدم: جلب `GET /users/:id` واشتقاق كل ما تعرضه المكوّنات
+ * من الاستجابة الحقيقية (الاسم/الدور/الحالة/الصلاحيات المجمّعة/سجل النشاط/البنك/الوظيفة).
  */
 import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,17 +8,17 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { userKeys } from "query/keys";
 import { roleMeta } from "../../utils/constants";
-import { AppUser } from "../utils/types";
-import { ACCOUNT_STATIC, PLACEHOLDER } from "../utils/constants";
+import { ACTIVITY_TONE, ACTIVITY_TONE_FALLBACK, PLACEHOLDER } from "../utils/constants";
+import { ActivityView, BankInfo, JobInfo, PermissionsSummary, UserDetail } from "../utils/types";
 
-async function fetchUser(id: string): Promise<AppUser | null> {
+async function fetchUser(id: string): Promise<UserDetail | null> {
   const { data } = await axiosRequest.get(`/users/${id}`);
-  return (data?.data ?? data) as AppUser | null;
+  return (data?.data ?? data) as UserDetail | null;
 }
 
 /**
  * الـ API قد يعيد userType كرمز رقمي ("1".."4") أو كاسم نصّي ("admin"...).
- * نوحّده إلى الرمز الرقمي المعتمد في بقية التطبيق قبل حساب بيانات الدور.
+ * نوحّده إلى الرمز الرقمي المعتمد في بقية التطبيق قبل حساب ألوان الدور.
  */
 const ROLE_ALIASES: Record<string, string> = {
   admin: "1",
@@ -34,26 +33,60 @@ function normalizeUserType(userType: unknown): string {
   return ROLE_ALIASES[raw] ?? raw;
 }
 
-function fullName(u?: AppUser | null): string {
+function fullName(u?: UserDetail | null): string {
   if (!u) return PLACEHOLDER;
-  return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || PLACEHOLDER;
+  const name = (u.fullName ?? "").trim() || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+  return name || PLACEHOLDER;
 }
 
-function initials(u?: AppUser | null): string {
-  if (!u) return "؟";
-  const parts = [u.firstName, u.lastName].filter(Boolean) as string[];
-  const src = parts.length ? parts : String(u.email ?? "؟").split("@");
-  return src.slice(0, 2).map((w) => (w?.[0] ?? "").toUpperCase()).join("") || "؟";
+function initials(name: string): string {
+  if (!name || name === PLACEHOLDER) return "؟";
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => (w?.[0] ?? "").toUpperCase())
+    .join("") || "؟";
 }
 
-/** تنسيق تاريخ الانضمام من createdAt إن وُجد، وإلا القيمة الافتراضية الثابتة */
-function joinedLabel(u?: AppUser | null): string {
-  const raw = (u?.createdAt ?? u?.created_at) as string | undefined;
-  if (!raw) return ACCOUNT_STATIC.joinedFallback;
+/** تنسيق تاريخ ميلادي عربي (يوم شهر سنة) */
+function formatDate(raw?: string | null): string {
+  if (!raw) return PLACEHOLDER;
   const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return ACCOUNT_STATIC.joinedFallback;
+  if (Number.isNaN(d.getTime())) return PLACEHOLDER;
   return d.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
 }
+
+/** وقت نسبي عربي ("قبل ٥ دقائق") من تاريخ ISO */
+function relativeTime(raw?: string | null): string {
+  if (!raw) return PLACEHOLDER;
+  const then = new Date(raw).getTime();
+  if (Number.isNaN(then)) return PLACEHOLDER;
+  const diffSec = Math.round((Date.now() - then) / 1000);
+  const rtf = new Intl.RelativeTimeFormat("ar-EG", { numeric: "auto" });
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["year", 31536000],
+    ["month", 2592000],
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60],
+  ];
+  for (const [unit, secs] of units) {
+    if (Math.abs(diffSec) >= secs) return rtf.format(-Math.floor(diffSec / secs), unit);
+  }
+  return rtf.format(-diffSec, "second");
+}
+
+/** راتب: رقم → "12,500 ج.م / شهرياً"، نص غير فارغ كما هو، وإلا بديل */
+function formatSalary(salary?: number | string | null): string {
+  if (salary == null || salary === "") return PLACEHOLDER;
+  const n = Number(salary);
+  if (!Number.isNaN(n) && String(salary).trim() !== "") {
+    return `${n.toLocaleString("en-US")} ج.م / شهرياً`;
+  }
+  return String(salary);
+}
+
+const orDash = (v?: string | null) => (v && String(v).trim() !== "" ? String(v) : PLACEHOLDER);
 
 export function useUserDetail(id?: string) {
   const {
@@ -71,18 +104,57 @@ export function useUserDetail(id?: string) {
     if (isError) NotificationMeassage("error", "حدث خطأ");
   }, [isError]);
 
-  const derived = useMemo(
-    () => ({
-      name: fullName(user),
-      initials: initials(user),
-      email: user?.email || PLACEHOLDER,
-      role: roleMeta(normalizeUserType(user?.userType)),
-      joined: joinedLabel(user),
-      /** حالة الحساب الحقيقية من الـ API (تُستخدم لشارة الحالة وحلقة الاتصال) */
-      isActive: user?.isActive !== false && user != null,
-    }),
-    [user]
-  );
+  return useMemo(() => {
+    const name = fullName(user);
+    const role = { ...roleMeta(normalizeUserType(user?.userType)) };
+    if (user?.roleName) role.label = user.roleName;
 
-  return { user, isLoading, isError, ...derived };
+    const permissionsSummary: PermissionsSummary =
+      user?.permissionsSummary ?? { activeCount: 0, totalCount: 0, groups: [] };
+
+    const activity: ActivityView[] = (user?.activity ?? []).map((a) => ({
+      id: a.id,
+      action: a.action,
+      message: a.message,
+      detail: (a.field ?? "").trim(),
+      time: relativeTime(a.createdAt),
+      tone: ACTIVITY_TONE[a.action] ?? ACTIVITY_TONE_FALLBACK,
+    }));
+
+    const bank: BankInfo = {
+      bankName: orDash(user?.bankName),
+      accountType: orDash(user?.bankAccountType),
+      accountName: orDash(user?.bankAccountHolderName),
+      accountNumber: orDash(user?.bankAccountNumber),
+      wallet: orDash(user?.walletNumber),
+      instaPay: orDash(user?.instaPayNumber),
+    };
+
+    const job: JobInfo = {
+      jobTitle: orDash(user?.jobTitle),
+      salary: formatSalary(user?.salary),
+    };
+
+    return {
+      user,
+      isLoading,
+      isError,
+      name,
+      initials: initials(name),
+      email: orDash(user?.email),
+      phone: orDash(user?.phoneNumber),
+      role,
+      isActive: user?.isActive !== false && user != null,
+      statusLabel: user?.statusLabel || (user?.status === "online" ? "متصل الآن" : "غير متصل"),
+      statusOnline: user?.status === "online",
+      accountStatusLabel: user?.accountStatusLabel || (user?.isActive === false ? "موقوف" : "نشط"),
+      joined: formatDate(user?.createdAt),
+      lastPasswordChange: user?.lastPasswordChangeAt ? relativeTime(user.lastPasswordChangeAt) : PLACEHOLDER,
+      lastSeen: relativeTime(user?.lastSeenAt),
+      permissionsSummary,
+      activity,
+      bank,
+      job,
+    };
+  }, [user, isLoading, isError]);
 }

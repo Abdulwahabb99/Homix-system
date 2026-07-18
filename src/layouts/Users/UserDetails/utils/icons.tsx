@@ -1,40 +1,50 @@
 /**
  * خرائط الأيقونات (MUI) المستخدمة في صفحة تفاصيل المستخدم — مفصولة عن المكوّنات
- * لإبقائها تصريحية. كل مفتاح يطابق نوعاً معرّفاً في types.ts.
+ * لإبقائها تصريحية. مفاتيح المجموعات/الإجراءات تطابق ما يعيده الـ API.
  */
 import React from "react";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import AddOutlinedIcon from "@mui/icons-material/Add";
+import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import CheckOutlinedIcon from "@mui/icons-material/Check";
+import CheckIcon from "@mui/icons-material/Check";
 import ReplyOutlinedIcon from "@mui/icons-material/ReplyOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import FactoryOutlinedIcon from "@mui/icons-material/FactoryOutlined";
+import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
-import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import { ActivityEntry, InfoRow, PermActionKind, PermissionSection } from "./types";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import HistoryIcon from "@mui/icons-material/History";
+import { InfoRow, PermActionKind } from "./types";
+import { permActionFromKey } from "./constants";
 
 /** أيقونة إجراء الصلاحية */
 export function permActionIcon(action: PermActionKind): React.ReactNode {
   const map: Record<PermActionKind, React.ReactNode> = {
     view: <VisibilityOutlinedIcon />,
     edit: <EditOutlinedIcon />,
-    create: <AddOutlinedIcon />,
+    create: <AddIcon />,
     delete: <DeleteOutlineIcon />,
     export: <FileDownloadOutlinedIcon />,
-    check: <CheckOutlinedIcon />,
+    check: <CheckIcon />,
     reply: <ReplyOutlinedIcon />,
     shield: <ShieldOutlinedIcon />,
     settings: <SettingsOutlinedIcon />,
@@ -42,15 +52,26 @@ export function permActionIcon(action: PermActionKind): React.ReactNode {
   return map[action];
 }
 
-/** أيقونة قسم الصلاحيات حسب المفتاح */
-export function permSectionIcon(key: PermissionSection["key"]): React.ReactNode {
+/** أيقونة عنصر صلاحية من مفتاحه مباشرة (orders_view → عين) */
+export function permItemIcon(key: string): React.ReactNode {
+  return permActionIcon(permActionFromKey(key));
+}
+
+/** أيقونة مجموعة الصلاحيات حسب المفتاح */
+export function permGroupIcon(key: string): React.ReactNode {
   const map: Record<string, React.ReactNode> = {
+    dashboard: <GridViewOutlinedIcon />,
     orders: <Inventory2OutlinedIcon />,
-    factories: <FactoryOutlinedIcon />,
-    shipping: <LocalShippingOutlinedIcon />,
+    factory: <FactoryOutlinedIcon />,
+    products: <ShoppingBagOutlinedIcon />,
+    vendors: <StorefrontOutlinedIcon />,
+    employees: <BadgeOutlinedIcon />,
+    customers: <PeopleAltOutlinedIcon />,
+    ship: <LocalShippingOutlinedIcon />,
     finance: <PaymentsOutlinedIcon />,
     tickets: <ConfirmationNumberOutlinedIcon />,
-    users: <GroupOutlinedIcon />,
+    notifications: <NotificationsNoneOutlinedIcon />,
+    users: <ManageAccountsOutlinedIcon />,
   };
   return map[key] ?? <ShieldOutlinedIcon />;
 }
@@ -65,18 +86,23 @@ export function infoRowIcon(icon: InfoRow["icon"]): React.ReactNode {
     lock: <LockOutlinedIcon />,
     briefcase: <WorkOutlineIcon />,
     money: <PaymentsOutlinedIcon />,
+    phone: <PhoneOutlinedIcon />,
   };
   return map[icon];
 }
 
-/** أيقونة عنصر سجل النشاط */
-export function activityIcon(icon: ActivityEntry["icon"]): React.ReactNode {
-  const map: Record<ActivityEntry["icon"], React.ReactNode> = {
-    check: <CheckOutlinedIcon />,
-    factory: <FactoryOutlinedIcon />,
-    ticket: <ChatBubbleOutlineIcon />,
-    money: <PaymentsOutlinedIcon />,
+/** أيقونة عنصر سجل النشاط حسب نوع الحدث */
+export function activityIcon(action: string): React.ReactNode {
+  const map: Record<string, React.ReactNode> = {
+    login: <LoginIcon />,
+    logout: <LogoutIcon />,
+    create: <AddIcon />,
+    update: <EditOutlinedIcon />,
     edit: <EditOutlinedIcon />,
+    delete: <DeleteOutlineIcon />,
+    settle: <CheckIcon />,
+    close: <CheckIcon />,
+    reply: <ReplyOutlinedIcon />,
   };
-  return map[icon];
+  return map[action] ?? <HistoryIcon />;
 }

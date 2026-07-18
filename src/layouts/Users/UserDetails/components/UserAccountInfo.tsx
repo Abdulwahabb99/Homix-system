@@ -1,13 +1,12 @@
 /**
- * بطاقة بيانات الحساب: البريد/الدور/الحالة حقيقية من الـ API؛
- * «آخر تغيير لكلمة المرور» ثابتة حالياً.
+ * بطاقة بيانات الحساب: البريد/الدور/الحالة/تاريخ الانضمام/آخر تغيير لكلمة المرور —
+ * كلها من الـ API.
  */
 import React from "react";
 import { Box } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../utils/styles";
-import { ACCOUNT_STATIC } from "../utils/constants";
 import { RoleMeta } from "../../utils/constants";
 import DetailCard from "./DetailCard";
 import InfoRowItem from "./InfoRowItem";
@@ -16,11 +15,20 @@ interface UserAccountInfoProps {
   email: string;
   role: RoleMeta;
   joined: string;
-  isActive: boolean;
+  statusLabel: string;
+  statusOnline: boolean;
+  lastPasswordChange: string;
 }
 
-export default function UserAccountInfo({ email, role, joined, isActive }: UserAccountInfoProps) {
-  const statusColor = isActive ? HX.green : HX.red;
+export default function UserAccountInfo({
+  email,
+  role,
+  joined,
+  statusLabel,
+  statusOnline,
+  lastPasswordChange,
+}: UserAccountInfoProps) {
+  const statusColor = statusOnline ? HX.green : HX.tx3;
   return (
     <DetailCard title="بيانات الحساب" icon={<PersonOutlineIcon />}>
       <InfoRowItem
@@ -49,7 +57,7 @@ export default function UserAccountInfo({ email, role, joined, isActive }: UserA
         value={
           <Box component="span" sx={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <Box component="span" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: statusColor }} />
-            {isActive ? "نشط" : "موقوف"}
+            {statusLabel}
           </Box>
         }
       />
@@ -58,7 +66,7 @@ export default function UserAccountInfo({ email, role, joined, isActive }: UserA
         icon="lock"
         tone="accent"
         label="آخر تغيير لكلمة المرور"
-        value={<Box component="span" sx={{ fontSize: "12px" }}>{ACCOUNT_STATIC.lastPasswordChange}</Box>}
+        value={<Box component="span" sx={{ fontSize: "12px" }}>{lastPasswordChange}</Box>}
       />
     </DetailCard>
   );
