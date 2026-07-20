@@ -1,19 +1,19 @@
 /**
  * التقارير المالية — تسويات الصناع (دورة الفوترة).
- * الصفحة رفيعة: تُنسّق الحالة وتوزّع البيانات على المكوّنات المقسّمة.
- * البيانات ثابتة حالياً عبر `useFinancialSettlements` (جاهزة لربط الـ BE لاحقاً).
+ * الصفحة رفيعة: تُنسّق الحالة (يوم الفوترة/التبويب) وتوزّع بيانات الـ BE على
+ * المكوّنات المقسّمة عبر `useFinancialSettlements` (GET /orders/financialReport).
  */
 import React, { useState } from "react";
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 
 import { useFinancialSettlements } from "./hooks/useFinancialSettlements";
-import { PAGE_TITLE, PAGE_SUBTITLE, DEFAULT_PERIOD_ID, DEFAULT_TAB } from "./utils/constants";
+import { PAGE_TITLE, PAGE_SUBTITLE, DEFAULT_BILLING_DAY, DEFAULT_TAB } from "./utils/constants";
 import { tabsWrapSx, FONT } from "./utils/styles";
-import { SettlementTabKey } from "./utils/types";
+import { BillingDay, SettlementTabKey } from "./utils/types";
 
 import FinancialPeriodBar from "./components/FinancialPeriodBar";
 import FinancialKpiRow from "./components/FinancialKpiRow";
@@ -36,11 +36,23 @@ const primaryBtnSx = {
   transition: ".15s", "&:hover": { bgcolor: "#5254e0" }, "& svg": { fontSize: 15 },
 } as const;
 
+const stateBoxSx = {
+  display: "flex", alignItems: "center", justifyContent: "center",
+  gap: "10px", p: "48px 18px", fontSize: "13px", fontFamily: FONT, color: HX.tx2,
+} as const;
+
 export default function Financialreports() {
-  const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID);
+  const [billingDay, setBillingDay] = useState<BillingDay>(DEFAULT_BILLING_DAY);
   const [tab, setTab] = useState<SettlementTabKey>(DEFAULT_TAB);
 
-  const { sellers, kpis } = useFinancialSettlements(periodId);
+  const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay);
+
+  const activeSellers = sections[tab];
+  const counts: Record<SettlementTabKey, number> = {
+    warehouse: sections.warehouse.length,
+    seller: sections.seller.length,
+    comprehensive: sections.comprehensive.length,
+  };
 
   // TODO(BE): ربط أزرار التصدير/الفاتورة اليدوية بنقاط النهاية عند توفّرها.
   const actions = (
@@ -57,17 +69,35 @@ export default function Financialreports() {
     </Box>
   );
 
+  let tabContent: React.ReactNode;
+  if (isLoading) {
+    tabContent = (
+      <Box sx={stateBoxSx}>
+        <CircularProgress size={20} sx={{ color: HX.accent }} />
+        جارٍ تحميل التقرير…
+      </Box>
+    );
+  } else if (isError) {
+    tabContent = <Box sx={{ ...stateBoxSx, color: HX.red }}>تعذّر تحميل التقرير — حاول مرة أخرى.</Box>;
+  } else if (activeSellers.length === 0) {
+    tabContent = <Box sx={stateBoxSx}>لا توجد بيانات لهذه الدورة.</Box>;
+  } else if (tab === "warehouse") {
+    tabContent = <WarehouseTab sellers={activeSellers} />;
+  } else if (tab === "seller") {
+    tabContent = <SellerTab sellers={activeSellers} />;
+  } else {
+    tabContent = <ComprehensiveTab sellers={activeSellers} />;
+  }
+
   return (
     <DashboardLayout pageTitle={PAGE_TITLE} pageSubtitle={PAGE_SUBTITLE} pageActions={actions}>
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "16px", fontFamily: FONT }}>
-        <FinancialPeriodBar value={periodId} onChange={setPeriodId} />
+        <FinancialPeriodBar billingDay={billingDay} onChange={setBillingDay} cycle={cycle} />
         <FinancialKpiRow kpis={kpis} />
 
         <Box sx={tabsWrapSx}>
-          <FinancialTabs active={tab} onChange={setTab} count={sellers.length} />
-          {tab === "warehouse" && <WarehouseTab sellers={sellers} />}
-          {tab === "seller" && <SellerTab sellers={sellers} />}
-          {tab === "comprehensive" && <ComprehensiveTab sellers={sellers} />}
+          <FinancialTabs active={tab} onChange={setTab} counts={counts} />
+          {tabContent}
         </Box>
       </Box>
     </DashboardLayout>

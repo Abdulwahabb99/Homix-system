@@ -41,6 +41,12 @@ export const shipmentKeys = {
   performance: (filtersKey: string) => [...shipmentKeys.all(), "performance", filtersKey] as const,
 };
 
+export const financialKeys = {
+  all: () => ["financial"] as const,
+  /** تقرير دورة الفوترة — مفتاح حسب يوم الفوترة (13 / 28) */
+  report: (billingDay: number | string) => [...financialKeys.all(), "report", String(billingDay)] as const,
+};
+
 export const ticketKeys = {
   all: () => ["tickets"] as const,
   meta: () => [...ticketKeys.all(), "meta"] as const,

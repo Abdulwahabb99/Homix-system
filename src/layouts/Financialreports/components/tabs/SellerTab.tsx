@@ -1,15 +1,14 @@
 /**
- * تبويب «تسويات البائع» — التحصيل والمستحق للبائع وطريقة الدفع والغرامات.
+ * تبويب «تسويات البائع» — التحصيل والمستحق للبائع والغرامات لكل مورّد.
+ * التفاصيل تعرض تفكيك مجاميع المورّد (endpoint التقرير لا يوفّر تفصيل الطلبات).
  */
 import React from "react";
-import { Box } from "@mui/material";
 import { money } from "../../utils/calc";
 import { SellerTotals, SettlementSeller } from "../../utils/types";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
-import DetailTable from "../DetailTable";
 import DetailTotalsRow from "../DetailTotalsRow";
-import { Amount, AmountFine, OpId, Muted, ProdCode, Money, PayBadge, FineCell } from "../SettlementCells";
+import { Amount, AmountFine } from "../SettlementCells";
 
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
 
@@ -24,24 +23,6 @@ export default function SellerTab({ sellers }: { sellers: SettlementSeller[] }) 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
       <DetailHeaderBar title={`تفاصيل تسويات البائع — ${s.name}`} onExport={() => {}} />
-      <Box sx={{ overflowX: "auto" }}>
-        <DetailTable
-          columns={[
-            { label: "رقم العملية" }, { label: "رقم الطلب" }, { label: "كود المنتج" },
-            { label: "سعر التكلفة" }, { label: "المبلغ المطلوب تحصيله" },
-            { label: "طريقة الدفع" }, { label: "الغرامات" },
-          ]}
-          rows={s.orders.map((o) => [
-            <OpId key="op">{o.op}</OpId>,
-            <Muted key="order">#{o.order}</Muted>,
-            <ProdCode key="code">{o.code}</ProdCode>,
-            <Money key="cost" value={o.cost} />,
-            <Money key="collect" value={o.collect} bold />,
-            <PayBadge key="pay" pay={o.pay} />,
-            <FineCell key="fine" value={o.fine} />,
-          ])}
-        />
-      </Box>
       <DetailTotalsRow
         items={[
           { label: "إجمالي التحصيل", value: money(t.collect) },

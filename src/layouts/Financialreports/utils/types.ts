@@ -1,45 +1,45 @@
 /**
  * أنواع بيانات صفحة التقارير المالية (تسويات الصناع).
- * البيانات ثابتة حالياً؛ هذه الأنواع تُمثّل شكل استجابة الـ BE المستقبلية أيضاً
- * حتى يكون الاستبدال لاحقاً في `hooks/useFinancialSettlements` فقط.
+ * تُمثّل شكل البيانات بعد التطبيع من `query/financialReport` (مستوى المورّد).
+ * ملاحظة: endpoint التقرير يُرجع مجاميع لكل مورّد فقط — لا تفصيل للطلبات فرداً.
  */
 
-/** طريقة الدفع لكل طلب */
+/** طريقة الدفع لكل طلب (تبقى للخلايا العامة القابلة لإعادة الاستخدام) */
 export type PayMethod = "cod" | "online";
 
-/** سطر طلب داخل تسوية صانع */
-export interface SettlementOrder {
-  /** رقم العملية — OP-2401 */
-  op: string;
-  /** رقم الطلب — 31668 */
-  order: string;
-  /** كود المنتج — RKA-001 */
-  code: string;
-  /** سعر التكلفة */
-  cost: number;
-  /** المبلغ المطلوب تحصيله */
-  collect: number;
-  /** طريقة الدفع */
-  pay: PayMethod;
+/** يوم الفوترة المتاح من الـ BE */
+export type BillingDay = 13 | 28;
+
+/** مجاميع مورّد واحد كما تصل من الـ BE (بدون تفصيل الطلبات) */
+export interface VendorRow {
+  vendorId: number;
+  vendorName: string;
+  /** عدد الطلبات ضمن الدورة */
+  ordersCount: number;
+  /** تكلفة المخزن */
+  warehouseCost: number;
+  /** إجمالي المبلغ المُحصّل */
+  collectionTotal: number;
   /** الغرامات */
-  fine: number;
+  fines: number;
   /** المستحق للبائع */
-  dueSeller: number;
+  vendorDue: number;
   /** المستحق للشركة */
-  dueComp: number;
+  companyDue: number;
 }
 
-/** صانع مع طلباته ضمن دورة الفوترة */
+/** صانع/مورّد للعرض في الجدول — هوية العرض + مجاميعه */
 export interface SettlementSeller {
   id: string;
   name: string;
-  /** التصنيف — «غرف نوم • صالة» */
+  /** التصنيف — غير متوفّر من الـ BE حالياً (يُترك فارغاً) */
   cat: string;
-  /** تدرّج لوني لصورة الحرف (avatar) */
+  /** تدرّج لوني لصورة الحرف (avatar) — مُشتق محلياً */
   color: string;
-  /** الحرف/الحروف داخل الـ avatar */
+  /** الحرف داخل الـ avatar — مُشتق من الاسم */
   initials: string;
-  orders: SettlementOrder[];
+  /** مجاميع المورّد (تُشتق منها SellerTotals) */
+  row: VendorRow;
 }
 
 /** إجماليات صانع واحد — تُحسب في `utils/calc` */
@@ -58,13 +58,15 @@ export interface SellerTotals {
   totalCombined: number;
 }
 
-/** مؤشرات أعلى الصفحة (KPIs) — تُشتق من قائمة الصناع */
+/** مؤشرات أعلى الصفحة (KPIs) — تُشتق من الملخّص العام للـ BE */
 export interface FinancialKpis {
   sellersCount: number;
   totalSales: number;
   totalDueSeller: number;
   totalDueComp: number;
   totalFine: number;
+  /** إجمالي عدد الطلبات في الدورة (من الفاتورة الشاملة) */
+  ordersCount: number;
   lateSellersCount: number;
   /** نسبة مستحق البائعين من الإجمالي (%) */
   dueSellerPct: number;

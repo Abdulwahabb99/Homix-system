@@ -4,26 +4,31 @@
  */
 import { formatMoneyEgpInteger } from "shared/formatMoney";
 import { CURRENCY } from "./constants";
-import { FinancialKpis, SellerTotals, SettlementSeller } from "./types";
+import { SellerTotals, SettlementSeller } from "./types";
 
 /** مبلغ منسّق بأرقام لاتينية + لاحقة العملة — «12,999 ج.م» */
 export function money(value: unknown): string {
   return `${formatMoneyEgpInteger(value)} ${CURRENCY}`;
 }
 
-const sum = <T>(arr: T[], pick: (x: T) => number) =>
-  arr.reduce((acc, x) => acc + (Number(pick(x)) || 0), 0);
+/** نسبة مئوية بخانة عشرية واحدة (part من whole) */
+export function pct(part: number, whole: number): number {
+  return whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0;
+}
 
-/** إجماليات صانع واحد */
+/**
+ * إجماليات صانع واحد — تُشتق مباشرةً من مجاميع المورّد القادمة من الـ BE
+ * (لا جمع لطلبات فردية؛ الـ endpoint يُرجع المجاميع جاهزة).
+ */
 export function sellerTotals(seller: SettlementSeller): SellerTotals {
-  const { orders } = seller;
-  const cost = sum(orders, (o) => o.cost);
-  const collect = sum(orders, (o) => o.collect);
-  const fine = sum(orders, (o) => o.fine);
-  const dueSeller = sum(orders, (o) => o.dueSeller);
-  const dueComp = sum(orders, (o) => o.dueComp);
+  const r = seller.row;
+  const cost = Number(r.warehouseCost) || 0;
+  const collect = Number(r.collectionTotal) || 0;
+  const fine = Number(r.fines) || 0;
+  const dueSeller = Number(r.vendorDue) || 0;
+  const dueComp = Number(r.companyDue) || 0;
   return {
-    orders: orders.length,
+    orders: Number(r.ordersCount) || 0,
     cost,
     collect,
     fine,
@@ -32,26 +37,5 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
     netRequired: cost - fine,
     netAfterFine: dueSeller - fine,
     totalCombined: dueSeller + dueComp,
-  };
-}
-
-/** مؤشرات أعلى الصفحة مُجمّعة من كل الصناع */
-export function aggregateKpis(sellers: SettlementSeller[]): FinancialKpis {
-  const totals = sellers.map(sellerTotals);
-  const totalSales = sum(totals, (t) => t.collect);
-  const totalDueSeller = sum(totals, (t) => t.dueSeller);
-  const totalDueComp = sum(totals, (t) => t.dueComp);
-  const totalFine = sum(totals, (t) => t.fine);
-  const lateSellersCount = totals.filter((t) => t.fine > 0).length;
-  const pct = (part: number) => (totalSales > 0 ? Math.round((part / totalSales) * 1000) / 10 : 0);
-  return {
-    sellersCount: sellers.length,
-    totalSales,
-    totalDueSeller,
-    totalDueComp,
-    totalFine,
-    lateSellersCount,
-    dueSellerPct: pct(totalDueSeller),
-    dueCompPct: pct(totalDueComp),
   };
 }

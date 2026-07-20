@@ -9,7 +9,6 @@ import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlin
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { money } from "../utils/calc";
-import { SALES_TREND_BADGE } from "../utils/constants";
 import { FinancialKpis } from "../utils/types";
 import FinancialKpiCard, { FinancialKpiCardProps } from "./FinancialKpiCard";
 
@@ -20,7 +19,7 @@ export default function FinancialKpiRow({ kpis }: { kpis: FinancialKpis }) {
       topRight: `${kpis.sellersCount} صناع`,
       value: money(kpis.totalSales), valueColor: HX.tx,
       label: "إجمالي مبيعات الدورة (ج.م)",
-      badge: SALES_TREND_BADGE, badgeBg: HX.accentLight, badgeColor: HX.accent,
+      badge: `${kpis.ordersCount} طلب في الدورة`, badgeBg: HX.accentLight, badgeColor: HX.accent,
     },
     {
       icon: <PaymentsOutlinedIcon />, iconBg: HX.greenLight, iconColor: HX.green,

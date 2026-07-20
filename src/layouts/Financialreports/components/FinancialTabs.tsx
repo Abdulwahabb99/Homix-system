@@ -19,11 +19,11 @@ const TAB_ICON: Record<SettlementTabKey, React.ReactNode> = {
 interface FinancialTabsProps {
   active: SettlementTabKey;
   onChange: (key: SettlementTabKey) => void;
-  /** عدّاد كل تبويب (عدد الصناع عادةً) */
-  count: number;
+  /** عدّاد كل تبويب (عدد الموردين ضمن قسمه) */
+  counts: Record<SettlementTabKey, number>;
 }
 
-export default function FinancialTabs({ active, onChange, count }: FinancialTabsProps) {
+export default function FinancialTabs({ active, onChange, counts }: FinancialTabsProps) {
   return (
     <Box sx={tabsHeadSx}>
       {TABS.map((t) => {
@@ -32,7 +32,7 @@ export default function FinancialTabs({ active, onChange, count }: FinancialTabs
           <Box key={t.key} onClick={() => onChange(t.key)} sx={tabSx(isActive)}>
             {TAB_ICON[t.key]}
             {t.label}
-            <Box component="span" sx={tabCountSx(isActive)}>{count}</Box>
+            <Box component="span" sx={tabCountSx(isActive)}>{counts[t.key]}</Box>
           </Box>
         );
       })}
