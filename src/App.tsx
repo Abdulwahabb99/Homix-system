@@ -96,7 +96,9 @@ export default function App() {
 
   const playNotificationSound = () => {
     const audio = new Audio("/Notification.wav");
-    audio.play();
+    // play() rejects when the browser blocks autoplay — swallow it so it
+    // doesn't surface as an unhandled promise rejection.
+    audio.play().catch(() => {});
   };
 
   const rtlCache = useMemo(
