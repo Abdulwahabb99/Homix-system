@@ -344,6 +344,12 @@ describe("orderRouter", () => {
     expect(response.body.data.vendorDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.warehouseDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.fullInvoice.items[0].vendorName).toBe("ركنة للأثاث");
+    const findAllWhere = orderModel.findAll.mock.calls[0]?.[0]?.where as Record<PropertyKey, unknown>;
+    const andKey = Object.getOwnPropertySymbols(findAllWhere)[0];
+    const conditions = andKey && Array.isArray(findAllWhere[andKey])
+      ? findAllWhere[andKey] as Array<Record<PropertyKey, unknown>>
+      : [];
+    expect(conditions).toContainEqual(expect.objectContaining({ [Op.eq]: 5 }));
   });
 
   it("returns orders list with legacy-compatible and view-friendly fields", async () => {

@@ -866,9 +866,9 @@ export class OrderRepository {
 
     const effectiveVendorId = scopedVendorId ?? (query.vendorId && String(query.vendorId) !== "0" ? Number(query.vendorId) : null);
     const whereConditions: unknown[] = [
-      sequelize.where(sequelize.col("deliveryDate"), { [Op.gte]: cycleRange.start.utc().toDate() }),
-      sequelize.where(sequelize.col("deliveryDate"), { [Op.lte]: cycleRange.end.utc().toDate() }),
-      sequelize.where(sequelize.col("status"), { [Op.eq]: ORDER_STATUS.DELIVERED }),
+      sequelize.where(sequelize.col("Order.deliveryDate"), { [Op.gte]: cycleRange.start.utc().toDate() }),
+      sequelize.where(sequelize.col("Order.deliveryDate"), { [Op.lte]: cycleRange.end.utc().toDate() }),
+      sequelize.where(sequelize.col("Order.status"), { [Op.eq]: ORDER_STATUS.DELIVERED }),
     ];
 
     if (effectiveVendorId) {
