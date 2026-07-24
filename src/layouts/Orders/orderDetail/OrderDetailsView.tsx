@@ -223,22 +223,34 @@ export default function OrderDetailsView({
                 <Modal
                   open={Boolean(previewImage)}
                   onClose={() => setPreviewImage(null)}
-                  sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}
+                  BackdropProps={{ sx: { bgcolor: "rgba(0,0,0,0.9)" } }}
+                  sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: { xs: 2, sm: 3 } }}
                 >
-                  <Box sx={{ position: "relative", outline: "none", maxWidth: "94vw", maxHeight: "92vh" }}>
+                  <Box
+                    sx={{
+                      position: "relative",
+                      display: "inline-flex",
+                      outline: "none",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                    }}
+                  >
                     <IconButton
                       onClick={() => setPreviewImage(null)}
                       aria-label="إغلاق"
                       sx={{
                         position: "absolute",
                         top: 8,
-                        right: 8,
-                        bgcolor: "rgba(255,255,255,0.92)",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                        "&:hover": { bgcolor: "#fff" },
+                        insetInlineEnd: 8,
+                        width: 40,
+                        height: 40,
+                        zIndex: 1,
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "#fff",
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 20, color: "#0f172a" }} />
+                      <CloseIcon sx={{ fontSize: 22 }} />
                     </IconButton>
                     <Box
                       component="img"
@@ -246,8 +258,10 @@ export default function OrderDetailsView({
                       alt=""
                       sx={{
                         display: "block",
-                        maxWidth: "94vw",
-                        maxHeight: "92vh",
+                        width: "auto",
+                        height: "auto",
+                        maxWidth: { xs: "65vw", sm: "420px" },
+                        maxHeight: { xs: "60vh", sm: "80vh" },
                         objectFit: "contain",
                         borderRadius: "12px",
                         boxShadow: "0 12px 48px rgba(0,0,0,0.5)",

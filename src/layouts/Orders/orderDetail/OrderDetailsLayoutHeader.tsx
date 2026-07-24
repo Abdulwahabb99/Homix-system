@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import PictureAsPdf from "@mui/icons-material/PictureAsPdf";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
@@ -65,15 +65,17 @@ export default function OrderDetailsLayoutHeader({
           <Button
             variant="outlined"
             size="small"
-            startIcon={<PictureAsPdf sx={{ fontSize: 15 }} />}
             onClick={onDownloadInvoice}
             disabled={invoicePdfLoading}
+            aria-label="الفاتورة"
             sx={{
               textTransform: "none",
               fontWeight: 700,
               fontSize: "0.78rem",
               height: 34,
-              px: 2,
+              minWidth: { xs: 34, sm: "auto" },
+              px: { xs: 0, sm: 2 },
+              gap: { sm: 0.75 },
               borderRadius: "9px",
               color: "#92400e",
               border: "0.5px solid rgba(245,158,11,0.2)",
@@ -81,7 +83,10 @@ export default function OrderDetailsLayoutHeader({
               "&:hover": { bgcolor: OD.amber, color: "#fff", borderColor: OD.amber },
             }}
           >
-            {invoicePdfLoading ? "جارٍ التحميل…" : "الفاتورة"}
+            <PictureAsPdf sx={{ fontSize: 15 }} />
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              {invoicePdfLoading ? "جارٍ التحميل…" : "الفاتورة"}
+            </Box>
           </Button>
           <Stack
             direction="row"
