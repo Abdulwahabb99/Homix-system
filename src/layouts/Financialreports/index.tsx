@@ -4,7 +4,7 @@
  * المكوّنات المقسّمة عبر `useFinancialSettlements` (GET /orders/financialReport).
  */
 import React, { useState } from "react";
-import { Box, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -17,6 +17,7 @@ import { BillingDay, SettlementTabKey } from "./utils/types";
 
 import FinancialPeriodBar from "./components/FinancialPeriodBar";
 import FinancialKpiRow from "./components/FinancialKpiRow";
+import FinancialReportsSkeleton from "./components/FinancialReportsSkeleton";
 import FinancialTabs from "./components/FinancialTabs";
 import WarehouseTab from "./components/tabs/WarehouseTab";
 import SellerTab from "./components/tabs/SellerTab";
@@ -70,14 +71,7 @@ export default function Financialreports() {
   );
 
   let tabContent: React.ReactNode;
-  if (isLoading) {
-    tabContent = (
-      <Box sx={stateBoxSx}>
-        <CircularProgress size={20} sx={{ color: HX.accent }} />
-        جارٍ تحميل التقرير…
-      </Box>
-    );
-  } else if (isError) {
+  if (isError) {
     tabContent = <Box sx={{ ...stateBoxSx, color: HX.red }}>تعذّر تحميل التقرير — حاول مرة أخرى.</Box>;
   } else if (activeSellers.length === 0) {
     tabContent = <Box sx={stateBoxSx}>لا توجد بيانات لهذه الدورة.</Box>;
@@ -92,13 +86,19 @@ export default function Financialreports() {
   return (
     <DashboardLayout pageTitle={PAGE_TITLE} pageSubtitle={PAGE_SUBTITLE} pageActions={actions}>
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "16px", fontFamily: FONT }}>
-        <FinancialPeriodBar billingDay={billingDay} onChange={setBillingDay} cycle={cycle} />
-        <FinancialKpiRow kpis={kpis} />
+        {isLoading ? (
+          <FinancialReportsSkeleton />
+        ) : (
+          <>
+            <FinancialPeriodBar billingDay={billingDay} onChange={setBillingDay} cycle={cycle} />
+            <FinancialKpiRow kpis={kpis} />
 
-        <Box sx={tabsWrapSx}>
-          <FinancialTabs active={tab} onChange={setTab} counts={counts} />
-          {tabContent}
-        </Box>
+            <Box sx={tabsWrapSx}>
+              <FinancialTabs active={tab} onChange={setTab} counts={counts} />
+              {tabContent}
+            </Box>
+          </>
+        )}
       </Box>
     </DashboardLayout>
   );
