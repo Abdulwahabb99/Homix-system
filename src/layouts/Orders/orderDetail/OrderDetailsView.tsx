@@ -459,6 +459,11 @@ export default function OrderDetailsView({
                                   <Typography sx={{ fontSize: "0.875rem", fontWeight: 800, color: OD.tx, mb: 0.75, lineHeight: 1.4 }}>
                                     {order?.title}
                                   </Typography>
+                                  {order?.variant?.title && order.variant.title !== "Default Title" ? (
+                                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 500, color: OD.tx2, mb: 1, lineHeight: 1.5 }}>
+                                      {order.variant.title}
+                                    </Typography>
+                                  ) : null}
                                   <Typography sx={{ fontSize: "1.125rem", fontWeight: 900, color: OD.accent, mb: 1 }}>
                                     {unitPrice != null ? Number(unitPrice).toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}{" "}
                                     <Box component="span" sx={{ fontSize: "0.75rem", fontWeight: 500, color: OD.tx3 }}>

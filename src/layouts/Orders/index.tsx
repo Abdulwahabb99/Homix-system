@@ -628,7 +628,7 @@ function Orders() {
               onSelectionModelChange={(m) => setSelectionModel(m)}
               onEdit={(row) => { setSelectedEditOrder(row as any); setIsEditModalOpen(true); }}
               onDelete={(row) => { setSelectedEditOrder(row as any); setIsDeleteModalOpen(true); }}
-              onView={(orderId) => navigate(`/orders/${orderId}`)}
+              onView={(orderId) => window.open(`/orders/${orderId}`, "_blank", "noopener,noreferrer")}
               onBulkEdit={() => setIsBulkEditModalOpen(true)}
               onBulkDelete={() => setIsBulkDeleteModalOpen(true)}
               page={gridPage0}
