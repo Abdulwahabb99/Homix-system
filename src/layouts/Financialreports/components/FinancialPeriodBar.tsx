@@ -24,6 +24,9 @@ function formatDate(iso: string | null): string {
     day: "numeric",
     month: "long",
     year: "numeric",
+    // بحدود دورة الفوترة بتوقيت القاهرة؛ الـ BE يرسلها كـ UTC مُحاذاة لمنتصف
+    // ليل القاهرة، فنُثبّت المنطقة الزمنية كي يظهر التاريخ نفسه لأي متصفّح.
+    timeZone: "Africa/Cairo",
   }).format(d);
 }
 
