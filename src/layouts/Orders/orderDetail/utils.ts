@@ -13,6 +13,19 @@ export function formatMoney(value: unknown): string {
   return Number(value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/**
+ * رابط مرفق الملاحظة كامل: يسبق المسار النسبي (مثل "uploads/note/x.png")
+ * بعنوان الـ API الأساسي → `${BASE}/uploads/note/x.png`. الروابط المطلقة أصلاً
+ * (http/https) أو معاينات blob/data تُعاد كما هي.
+ */
+export function resolveAttachmentUrl(url: unknown): string | null {
+  if (url == null || url === "") return null;
+  const s = String(url);
+  if (/^(https?:|blob:|data:)/i.test(s)) return s;
+  const base = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
+  return `${base}/${s.replace(/^\/+/, "")}`;
+}
+
 /** اسم صاحب التعليق — يدعم أشكال الـ API المختلفة (user / createdBy / author / userName)،
     ومع وجود userId فقط يُستخرج الاسم من قائمة المستخدمين. */
 export function resolveCommenterName(comment: any, users: any[]): string {

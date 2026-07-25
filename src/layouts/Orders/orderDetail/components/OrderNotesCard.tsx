@@ -9,7 +9,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { OD } from "../odTheme";
-import { resolveCommenterName, getInitials } from "../utils";
+import { resolveCommenterName, getInitials, resolveAttachmentUrl } from "../utils";
 import { COMMENT_IMAGE_ACCEPT, COMMENT_AVATAR_GRADIENTS } from "../constants";
 import SectionCard from "./SectionCard";
 
@@ -77,11 +77,7 @@ export default function OrderNotesCard({
             {comments.map((comment, index) => {
               const commentMaker = resolveCommenterName(comment, users);
               const initials = getInitials(commentMaker);
-              const imageUrl = comment?.attachments?.[0]?.url
-                ? comment.isEdited
-                  ? comment.attachments[0].url
-                  : `${process.env.REACT_APP_API_URL}/${comment.attachments[0].url}`
-                : null;
+              const imageUrl = resolveAttachmentUrl(comment?.attachments?.[0]?.url);
               const grad = COMMENT_AVATAR_GRADIENTS[index % 2];
 
               return (
