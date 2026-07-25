@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AddIcon from "@mui/icons-material/Add";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
@@ -207,23 +206,6 @@ export default function InventoryPanel() {
           <option value="">حالة المخزون</option>
           <option value="available">متوفر</option>
           <option value="out">نفذ</option>
-        </Box>
-
-        <Box sx={{ mr: "auto", display: "flex", gap: "6px" }}>
-          <Box
-            component="button"
-            type="button"
-            sx={{
-              display: "flex", alignItems: "center", gap: "5px",
-              px: "14px", height: 32, borderRadius: "8px", border: "none",
-              bgcolor: HX.accent, color: "#fff", cursor: "pointer",
-              fontSize: "12px", fontFamily: FONT, fontWeight: 700,
-              transition: ".15s", "&:hover": { bgcolor: "#4f46e5" },
-            }}
-          >
-            <FilterAltIcon sx={{ fontSize: 14 }} />
-            تطبيق
-          </Box>
         </Box>
       </Box>
 

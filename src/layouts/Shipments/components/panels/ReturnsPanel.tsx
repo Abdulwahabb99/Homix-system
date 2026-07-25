@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import moment from "moment";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
@@ -251,14 +250,35 @@ export default function ReturnsPanel() {
     ? (meta?.vendorReturnStatuses   ?? [])
     : (meta?.customerReturnStatuses ?? []);
 
-  const handleApply = () => {
-    setApplied({ ...filters });
+  // الفلاتر تُطبَّق مباشرة عند التغيير: القوائم فوراً، وحقول النص بعد توقّف الكتابة.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const commit = (next: FilterState) => {
+    setApplied(next);
     setVendorPage(1);
     setCustomerPage(1);
+  };
+  const applyNow = (next: FilterState) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    commit(next);
+  };
+  const applyDebounced = (next: FilterState) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => commit(next), 500);
+  };
+  const setText = (field: keyof FilterState) => (v: string) => {
+    const next = { ...filters, [field]: v };
+    setFilters(next);
+    applyDebounced(next);
+  };
+  const setSelect = (field: keyof FilterState) => (v: string) => {
+    const next = { ...filters, [field]: v };
+    setFilters(next);
+    applyNow(next);
   };
 
   const handleTabChange = (id: "vendor" | "customer") => {
     if (id === activeTab) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setActiveTab(id);
     setFilters(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
@@ -325,40 +345,24 @@ export default function ReturnsPanel() {
         <SearchInput
           placeholder="بحث برقم الطلب..."
           value={filters.orderNumber}
-          onChange={(v) => setFilters((p) => ({ ...p, orderNumber: v }))}
+          onChange={setText("orderNumber")}
         />
         <SearchInput
           placeholder="بحث برقم العملية..."
           value={filters.operationCode}
-          onChange={(v) => setFilters((p) => ({ ...p, operationCode: v }))}
+          onChange={setText("operationCode")}
         />
         <FilterSelect
           label="حالة المرتجع"
           value={filters.status}
           options={statusOptions}
-          onChange={(v) => setFilters((p) => ({ ...p, status: v }))}
+          onChange={setSelect("status")}
         />
         <SearchInput
           placeholder="اسم البائع..."
           value={filters.sellerName}
-          onChange={(v) => setFilters((p) => ({ ...p, sellerName: v }))}
+          onChange={setText("sellerName")}
         />
-        <Box
-          component="button"
-          type="button"
-          onClick={handleApply}
-          sx={{
-            display: "inline-flex", alignItems: "center", gap: "5px",
-            px: "16px", height: 34, borderRadius: "8px",
-            border: "none", bgcolor: HX.accent, color: "#fff",
-            cursor: "pointer", fontSize: "12px", fontFamily: FONT,
-            fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0,
-            transition: ".15s", "&:hover": { bgcolor: "#4f46e5" },
-          }}
-        >
-          <FilterAltIcon sx={{ fontSize: 15 }} />
-          تطبيق
-        </Box>
       </Box>
 
       {/* Table */}
