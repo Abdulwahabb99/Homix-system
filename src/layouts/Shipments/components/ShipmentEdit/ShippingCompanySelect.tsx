@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import type { SxProps, Theme } from "@mui/material/styles";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../ShipmentDetails/constants";
 import {
@@ -27,6 +28,8 @@ type Props = {
   /** معرّف الشركة المختارة (كنص) أو "" */
   value: string;
   onChange: (id: string) => void;
+  /** أنماط إضافية تُدمج فوق المظهر الافتراضي (مثلاً لتصغير الارتفاع داخل الفلاتر) */
+  sx?: SxProps<Theme>;
 };
 
 // نفس مظهر الحقول في نموذج التعديل: زوايا 10px، نص 12px، حد HX يتحوّل accent عند التركيز.
@@ -52,7 +55,7 @@ const acSx = {
   },
 } as const;
 
-export default function ShippingCompanySelect({ value, onChange }: Props) {
+export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
   const createMutation = useCreateShippingCompanyMutation();
   const updateMutation = useUpdateShippingCompanyMutation();
@@ -124,7 +127,7 @@ export default function ShippingCompanySelect({ value, onChange }: Props) {
         onChange={(_, opt) => onChange(opt ? String(opt.id) : "")}
         noOptionsText="لا توجد شركات"
         loadingText="جارٍ التحميل…"
-        sx={acSx}
+        sx={[acSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>}
         renderOption={(
           liProps: React.HTMLAttributes<HTMLLIElement> & { key?: React.Key },
           option: ShippingCompany

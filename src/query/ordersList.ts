@@ -30,6 +30,7 @@ function buildQueryString(p) {
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
   if (p.userIdParam)       query.set("userId",         p.userIdParam);
   if (p.deliveryByParam)   query.set("deliveryBy",     p.deliveryByParam);
+  if (p.orderSourceParam)  query.set("orderSource",    p.orderSourceParam);
   if (p.shippingCompanyParam) query.set("shippingCompany", p.shippingCompanyParam);
   if (p.priorityParam)     query.set("priority",       p.priorityParam);
   if (p.operationCode)     query.set("operationCode",  p.operationCode);

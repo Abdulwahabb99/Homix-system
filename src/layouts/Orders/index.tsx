@@ -81,6 +81,11 @@ function Orders() {
     if (!raw) return [];
     return raw.split(",").map((s) => Number(s.trim())).filter((n) => !isNaN(n));
   }, [searchParams]);
+  const orderSourceList = useMemo(() => {
+    const raw = searchParams.get("orderSource");
+    if (!raw) return [];
+    return raw.split(",").map((s) => Number(s.trim())).filter((n) => !isNaN(n));
+  }, [searchParams]);
   const deliveryStatusList = useMemo(() => {
     const raw = searchParams.get("deliveryStatus");
     if (!raw) return [];
@@ -157,6 +162,7 @@ function Orders() {
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
+  const orderSourceParam = searchParams.get("orderSource");
   const shippingCompanyParam = searchParams.get("shippingCompany");
   const priorityParam = searchParams.get("priority");
   const sortKey = searchParams.get("sort") || "newest";
@@ -174,6 +180,7 @@ function Orders() {
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        osrc: orderSourceParam || null,
         sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         srt: sortKey,
@@ -184,7 +191,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, shippingCompanyParam, priorityParam, sortKey, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam, shippingCompanyParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -202,6 +209,7 @@ function Orders() {
         ds: deliveryStatusParam || null,
         u: filterUserId || null,
         db: deliveryByParam || null,
+        osrc: orderSourceParam || null,
         sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         sd: rangeDateToIso(startDate),
@@ -218,6 +226,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      orderSourceParam,
       shippingCompanyParam,
       priorityParam,
       startDate,
@@ -236,6 +245,7 @@ function Orders() {
       paymentStatus: paymentStatusParam || undefined,
       deliveryStatus: deliveryStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
+      orderSource: orderSourceParam || undefined,
       shippingCompany: shippingCompanyParam || undefined,
       userId: filterUserId || undefined,
       priority: priorityParam || undefined,
@@ -253,6 +263,7 @@ function Orders() {
       deliveryStatusParam,
       filterUserId,
       deliveryByParam,
+      orderSourceParam,
       shippingCompanyParam,
       priorityParam,
       startDate,
@@ -276,6 +287,7 @@ function Orders() {
           paymentStatusParam, deliveryStatusParam,
           userIdParam: filterUserId || undefined,
           deliveryByParam: deliveryByParam || undefined,
+          orderSourceParam: orderSourceParam || undefined,
           shippingCompanyParam: shippingCompanyParam || undefined,
           priorityParam: priorityParam || undefined,
           sortField: sortConfig.field,
@@ -411,6 +423,7 @@ function Orders() {
     deliveryStatus: number[];
     userId: string[];
     deliveryBy: number[];
+    orderSource: number[];
   }) => {
     setParams({
       page:           "1",
@@ -420,6 +433,7 @@ function Orders() {
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
       userId:         d.userId?.length ? d.userId : "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
+      orderSource:    d.orderSource?.length ? d.orderSource.map(String).join(",") : "",
     });
   };
 
@@ -432,6 +446,7 @@ function Orders() {
       deliveryStatus: "",
       userId: "",
       deliveryBy: "",
+      orderSource: "",
       shippingCompany: "",
       priority: "",
       startDate: "",
@@ -600,6 +615,7 @@ function Orders() {
                   deliveryStatus: deliveryStatusList,
                   userId:         userIdList,
                   deliveryBy:     deliveryByList,
+                  orderSource:    orderSourceList,
                 }}
                 onApply={handleApplyFilters}
                 onReset={handleFilterReset}

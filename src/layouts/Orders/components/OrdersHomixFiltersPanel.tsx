@@ -25,6 +25,8 @@ export interface FiltersPanelValue {
   userId: string[];
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
+  /** معرفات «مصدر الطلب» من `orderSources` */
+  orderSource: number[];
 }
 
 interface User { id: string | number; firstName?: string; lastName?: string }
@@ -164,6 +166,11 @@ export default function OrdersHomixFiltersPanel({
     [meta?.deliveryByOptions]
   );
 
+  const orderSourceOpts = useMemo(
+    () => meta?.orderSources ?? [],
+    [meta?.orderSources]
+  );
+
   /* خيارات «شركات الشحن» من endpoint المشترك /shipments/shipping-companies */
   const { data: shippingCompanies = [] } = useShippingCompaniesQuery();
   const shippingCompanyOpts = useMemo(
@@ -186,6 +193,7 @@ export default function OrdersHomixFiltersPanel({
   const [draftVendor,   setDraftVendor]   = useState<string[]>((value.selectedVendor ?? []).map(String));
   const [draftUserId,   setDraftUserId]   = useState<string[]>((value.userId ?? []).map(String));
   const [draftDeliveryBy, setDraftDeliveryBy] = useState<number[]>(value.deliveryBy ?? []);
+  const [draftOrderSource, setDraftOrderSource] = useState<number[]>(value.orderSource ?? []);
 
   const hasDateRange = Boolean(startDate) || Boolean(endDate);
 
@@ -202,6 +210,7 @@ export default function OrdersHomixFiltersPanel({
     setDraftVendor((value.selectedVendor ?? []).map(String));
     setDraftUserId((value.userId ?? []).map(String));
     setDraftDeliveryBy(value.deliveryBy ?? []);
+    setDraftOrderSource(value.orderSource ?? []);
   }, [valueKey]);
 
   const totalActive =
@@ -212,6 +221,7 @@ export default function OrdersHomixFiltersPanel({
     draftUserId.length +
     (hasDateRange ? 1 : 0) +
     draftDeliveryBy.length +
+    draftOrderSource.length +
     (shippingCompanyValue ? 1 : 0) +
     priorityValue.length;
 
@@ -223,6 +233,7 @@ export default function OrdersHomixFiltersPanel({
       deliveryStatus: draftDelivery,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
+      orderSource:    draftOrderSource,
     });
   };
 
@@ -238,6 +249,7 @@ export default function OrdersHomixFiltersPanel({
     deliveryStatus: value.deliveryStatus ?? [],
     userId:         (value.userId ?? []).map(String),
     deliveryBy:     value.deliveryBy ?? [],
+    orderSource:    value.orderSource ?? [],
   });
 
   const handleDropdownClose = () => {
@@ -248,6 +260,7 @@ export default function OrdersHomixFiltersPanel({
       deliveryStatus: draftDelivery,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
+      orderSource:    draftOrderSource,
     });
     if (draftKey === committedKey) return;
     handleApply();
@@ -260,6 +273,7 @@ export default function OrdersHomixFiltersPanel({
     setDraftVendor([]);
     setDraftUserId([]);
     setDraftDeliveryBy([]);
+    setDraftOrderSource([]);
     onReset();
   };
 
@@ -305,6 +319,10 @@ export default function OrdersHomixFiltersPanel({
     ...draftDeliveryBy.map((id) => ({
       label: `توصيل: ${deliveryByOpts.find((o) => o.id === id)?.label ?? id}`,
       onRemove: () => setDraftDeliveryBy((p) => p.filter((x) => x !== id)),
+    })),
+    ...draftOrderSource.map((id) => ({
+      label: `مصدر: ${orderSourceOpts.find((o) => o.id === id)?.label ?? id}`,
+      onRemove: () => setDraftOrderSource((p) => p.filter((x) => x !== id)),
     })),
     ...(shippingCompanyValue
       ? [
@@ -432,6 +450,19 @@ export default function OrdersHomixFiltersPanel({
               </FieldBox>
             </Grid>
 
+            {/* مصدر الطلب — من الـ meta: orderSources (شو رووم / اونلاين …) */}
+            <Grid item xs={12} sm={6} md={2}>
+              <FieldBox label="مصدر الطلب">
+                <MultiSelect
+                  value={draftOrderSource}
+                  onChange={setDraftOrderSource}
+                  onClose={handleDropdownClose}
+                  options={orderSourceOpts.map((o) => ({ value: o.id, label: o.label }))}
+                  placeholder="الكل"
+                />
+              </FieldBox>
+            </Grid>
+
             {/* شركات الشحن — مكوّن ShippingCompanySelect المشترك (يتضمّن زر الإضافة والتعديل).
                 يُطبَّق مباشرة عند الاختيار — ليس ضمن مسوّدات «تطبيق الفلاتر».
                 هامش علوي على md ليحاذي حقله بقية الحقول (التي لها عنوان أعلاها). */}
@@ -440,6 +471,15 @@ export default function OrdersHomixFiltersPanel({
                 <ShippingCompanySelect
                   value={shippingCompanyValue}
                   onChange={onShippingCompanyChange}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      minHeight: "34px",
+                      height: 34,
+                      py: 0,
+                      borderRadius: "8px",
+                    },
+                    "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
+                  }}
                 />
               </Box>
             </Grid>

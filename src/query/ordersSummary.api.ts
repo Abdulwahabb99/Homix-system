@@ -19,6 +19,7 @@ export type OrdersSummaryParams = {
   manufactureStatus?: string | null;
   paymentStatus?: string | null;
   deliveryBy?: string | null;
+  orderSource?: string | null;
   shippingCompany?: string | null;
   userId?: number | string | null;
   startDate?: string | null;
@@ -68,6 +69,7 @@ export function buildOrdersSummarySearchParams(params: OrdersSummaryParams): str
   appendKnownString(qs, "manufactureStatus", params.manufactureStatus);
   appendKnownString(qs, "paymentStatus", params.paymentStatus);
   appendKnownString(qs, "deliveryBy", params.deliveryBy);
+  appendKnownString(qs, "orderSource", params.orderSource);
   appendKnownString(qs, "shippingCompany", params.shippingCompany);
   appendKnownString(qs, "startDate", params.startDate);
   appendKnownString(qs, "endDate", params.endDate);
