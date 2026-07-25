@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
+import { useOrdersMeta } from "query/ordersMeta.api";
 import axiosRequest from "shared/functions/axiosRequest";
 import moment from "moment";
 import {
@@ -30,6 +31,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const [orderStatus, setOrderStatus] = useState(data.status);
   const [commission, setCommission] = useState(data.commission);
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
+  const [orderSource, setOrderSource] = useState(data.orderSource ?? "");
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
@@ -53,6 +55,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
       setUsers(newUsers);
     });
   }, []);
+
+  const { data: ordersMeta } = useOrdersMeta();
+  const orderSourceOptions = ordersMeta?.orderSources ?? [];
 
   const administratorAutocompleteProps = getUserSelectAutocompleteConfig(35);
 
@@ -95,6 +100,26 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               {PAYMENT_STATUS.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="orderSource">مصدر الطلب</InputLabel>
+            <Select
+              fullWidth
+              labelId="orderSource"
+              id="orderSource-select"
+              value={orderSource}
+              label="مصدر الطلب"
+              onChange={(e) => setOrderSource(e.target.value)}
+              sx={{ height: 35 }}
+            >
+              {orderSourceOptions.map((option) => {
+                return (
+                  <MenuItem key={option.id} value={option.id}>
                     {option.label}
                   </MenuItem>
                 );
@@ -254,7 +279,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               administrator,
               shippedFromInventory,
               totalCompanyDue,
-              expectedDeliveryDate
+              expectedDeliveryDate,
+              orderSource
             )
           }
           variant="contained"

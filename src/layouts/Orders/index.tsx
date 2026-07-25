@@ -346,7 +346,8 @@ function Orders() {
   const onEditConfirm = (
     id: any, orderSt: any, commission: any, totalVendorDue: any, pay: any,
     downPayment: any, toBeCollected: any, shippingFees: any, selectedV: any,
-    administrator: any, shippedFromInventory: any, totalCompanyDue: any, expectedDeliveryDate: any
+    administrator: any, shippedFromInventory: any, totalCompanyDue: any, expectedDeliveryDate: any,
+    orderSource: any
   ) => {
     setIsSubmitting(true);
     axiosRequest
@@ -355,6 +356,7 @@ function Orders() {
         ...(expectedDeliveryDate && expectedDeliveryDate !== "Invalid date" && { expectedDeliveryDate }),
         ...(selectedV && { vendorId: selectedV }),
         ...(administrator && { userId: administrator }),
+        ...(orderSource !== "" && orderSource != null && { orderSource }),
         commission, paymentStatus: pay, downPayment, shippingFees,
         toBeCollected, shippedFromInventory, totalVendorDue, totalCompanyDue,
       })

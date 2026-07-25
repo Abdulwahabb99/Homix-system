@@ -27,6 +27,8 @@ export interface OrdersMeta {
   /** خيارات «التوصيل بواسطة» (هوميكس / بائع …) */
   deliveryByOptions: OrdersMetaIdLabel[];
   manufactureStatuses: OrdersMetaIdLabel[];
+  /** مصادر الطلب (شو رووم / اونلاين …) */
+  orderSources: OrdersMetaIdLabel[];
   paymentStatuses: OrdersMetaIdLabel[];
   priorities: OrdersMetaPriority[];
   statuses: OrdersMetaIdLabel[];
@@ -93,6 +95,7 @@ function emptyOrdersMeta(): OrdersMeta {
     assignees: [],
     deliveryByOptions: [],
     manufactureStatuses: [],
+    orderSources: [],
     paymentStatuses: [],
     priorities: [],
     statuses: [],
@@ -110,6 +113,7 @@ export function mapApiToOrdersMeta(raw: Record<string, unknown>): OrdersMeta {
     manufactureStatuses: mapIdLabelOptions(
       raw.manufactureStatuses ?? raw.manufacture_statuses
     ),
+    orderSources: mapIdLabelOptions(raw.orderSources ?? raw.order_sources),
     paymentStatuses: mapIdLabelOptions(raw.paymentStatuses ?? raw.payment_statuses),
     priorities: mapPriorities(
       raw.priorities ?? raw.deliveryPriorities ?? raw.delivery_priorities
