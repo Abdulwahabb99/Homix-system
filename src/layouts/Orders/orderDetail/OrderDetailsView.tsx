@@ -1,8 +1,3 @@
-/**
- * صفحة تفاصيل الطلب — منسّق رفيع: يوزّع بيانات الطلب على بطاقات مقسّمة
- * (شريط علوي، منتجات، حالة، ملاحظات، عميل، مالية، إجراءات، سجل أحداث).
- * المنطق المشترك في `utils`/`hooks`، والثوابت في `constants`، والأنماط في `styles`.
- */
 import React, { useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { Box, Stack } from "@mui/material";
