@@ -5,7 +5,7 @@ import { Box } from "@mui/material";
 import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
-import PdfDataMobile from "./PdfDataMobile";
+import OrderInvoiceDocument from "./orderInvoice/OrderInvoiceDocument";
 import { downloadOrderInvoicePdf } from "./utils/invoicePdf";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
@@ -101,7 +101,7 @@ function OrderDetails() {
             background: "#fff",
           }}
         >
-          <PdfDataMobile ref={componentRef} orderDetails={orderDetails} />
+          <OrderInvoiceDocument ref={componentRef} orderDetails={orderDetails} />
         </div>
       )}
       <DashboardLayout

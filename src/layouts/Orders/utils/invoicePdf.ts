@@ -11,10 +11,12 @@ function sanitizeFileBaseName(name: string): string {
 /** انتظار خط عربي قبل الرسم داخل الـ canvas حتى لا تسقط على خط بدون أشكال */
 async function waitForInvoiceFonts(): Promise<void> {
   if (typeof document === "undefined" || !document.fonts) return;
-  const stack = "16px Noto Sans Arabic";
-  const weights = ["400", "600", "700"] as const;
+  const families = ["Cairo", "Noto Sans Arabic"];
+  const weights = ["400", "600", "700", "800"] as const;
   try {
-    await Promise.all(weights.map((w) => document.fonts.load(`${w} ${stack}`)));
+    await Promise.all(
+      families.flatMap((f) => weights.map((w) => document.fonts.load(`${w} 16px ${f}`)))
+    );
   } catch {
     // continue — سيُستخدم الاحتياطي
   }

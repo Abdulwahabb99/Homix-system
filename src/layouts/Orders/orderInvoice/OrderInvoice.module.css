@@ -1,0 +1,115 @@
+/* فاتورة الطلب — تصميم HOMIX (منقول من قالب homix_invoice).
+   يُلتقط هذا العنصر إلى PDF عبر html2pdf، لذا لا توجد أنماط طباعة/أدوات هنا. */
+
+.invoiceRoot {
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  direction: rtl;
+  color: #111827;
+  font-size: 13px;
+  background: #ffffff;
+}
+.invoiceRoot * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.paper {
+  width: 700px;
+  max-width: 700px;
+  margin: 0 auto;
+  background: #fff;
+  border: 0.5px solid #eef0f5;
+  border-radius: 16px;
+  overflow: hidden;
+  direction: rtl;
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  color: #111827;
+  font-size: 13px;
+}
+
+/* ── HEADER ── */
+.invHead { display: grid; grid-template-columns: 1fr auto; align-items: start; padding: 28px 32px 22px; border-bottom: 0.5px solid #f0f2f5; }
+.headLeft { display: flex; flex-direction: column; gap: 4px; }
+.invType { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 2px; }
+.invNumBig { font-size: 22px; font-weight: 900; color: #111827; letter-spacing: -0.5px; }
+.invNumBig span { color: #6366f1; }
+.invStatus { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(245,158,11,0.1); color: #92400e; border: 0.5px solid rgba(245,158,11,0.25); width: fit-content; }
+.invStatus::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }
+.logoImg { height: 44px; width: auto; display: block; border-radius: 6px; }
+
+/* ── META BAR ── */
+.metaBar { display: flex; align-items: center; gap: 0; padding: 0 32px; border-bottom: 0.5px solid #f0f2f5; }
+.metaItem { display: flex; flex-direction: column; padding: 12px 20px 12px 0; border-left: 0.5px solid #f0f2f5; margin-left: 20px; }
+.metaItem:last-child { border-left: none; margin-left: 0; }
+.metaItem:first-child { padding-right: 0; }
+.metaLbl { font-size: 9.5px; font-weight: 700; color: #9ca3af; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
+.metaVal { font-size: 12.5px; font-weight: 700; color: #111827; }
+.metaValPending { color: #f59e0b; }
+
+/* ── ADDRESSES ── */
+.addrRow { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 0.5px solid #f0f2f5; }
+.addrCell { padding: 18px 32px; }
+.addrCell:first-child { border-left: 0.5px solid #f0f2f5; }
+.addrCellLabel { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6366f1; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.addrCell:last-child .addrCellLabel { color: #6b7280; }
+.addrCellLabel svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; }
+.addrName { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 5px; }
+.addrLine { font-size: 11.5px; color: #6b7280; line-height: 1.6; }
+.ltr { direction: ltr; unicode-bidi: embed; }
+
+/* ── ITEMS ── */
+.itemsSecHead { padding: 14px 32px 10px; font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #9ca3af; border-bottom: 0.5px solid #f0f2f5; }
+.itemsTable { width: 100%; border-collapse: collapse; }
+.itemsTable thead tr { background: #f8f9ff; }
+.itemsTable th { padding: 10px 16px; font-size: 10.5px; font-weight: 700; color: #6366f1; text-align: right; letter-spacing: 0.3px; border-bottom: 0.5px solid rgba(99,102,241,0.1); }
+.itemsTable th:first-child { padding-right: 32px; }
+.itemsTable th:last-child { padding-left: 32px; text-align: left; }
+.itemsTable th.c { text-align: center; }
+.itemsTable td { padding: 15px 16px; border-bottom: 0.5px solid #f7f8fa; vertical-align: middle; }
+.itemsTable td:first-child { padding-right: 32px; }
+.itemsTable td:last-child { padding-left: 32px; text-align: left; font-size: 14px; font-weight: 800; color: #111827; }
+.itemsTable td.c { text-align: center; color: #6b7280; font-size: 13px; font-weight: 600; }
+.itemsTable tr:last-child td { border-bottom: none; }
+.prodCell { display: flex; align-items: center; gap: 11px; }
+.prodThumb { width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg,#f3f4f6,#e9eaf0); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; border: 0.5px solid #e5e7eb; overflow: hidden; }
+.prodThumb img { width: 100%; height: 100%; object-fit: cover; }
+.prodNm { font-size: 13px; font-weight: 700; color: #111827; line-height: 1.4; }
+.prodCode { font-size: 10.5px; color: #9ca3af; font-family: monospace; margin-top: 3px; letter-spacing: 0.3px; }
+
+/* ── SUMMARY + SIGNATURE ── */
+.bottomGrid { display: grid; grid-template-columns: 1fr 1fr; border-top: 0.5px solid #f0f2f5; }
+.sumBlock { padding: 18px 32px; border-left: 0.5px solid #f0f2f5; }
+.sumBlockTitle { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #9ca3af; margin-bottom: 10px; }
+.sr { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 0.5px dashed #f3f4f6; }
+.sr:last-child { border-bottom: none; }
+.srLbl { font-size: 12px; color: #6b7280; font-weight: 500; }
+.srVal { font-size: 12.5px; font-weight: 600; color: #374151; }
+.srVal.muted { color: #d1d5db; font-weight: 400; }
+.sr.total { border-top: 0.5px solid #e5e7eb; margin-top: 6px; padding-top: 8px; border-bottom: none; }
+.sr.total .srLbl { font-weight: 700; color: #111827; font-size: 13px; }
+.sr.total .srVal { font-weight: 900; color: #111827; font-size: 15px; }
+.sr.remain { background: rgba(99,102,241,0.05); margin: 6px -4px 0; padding: 8px 4px; border-radius: 7px; border: none; }
+.sr.remain .srLbl { font-weight: 800; color: #6366f1; font-size: 13px; }
+.sr.remain .srVal { font-weight: 900; color: #6366f1; font-size: 16px; }
+
+.sigBlock { padding: 18px 32px; }
+.sigBlockTitle { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #9ca3af; margin-bottom: 10px; }
+.sigCanvasWrap { border: 0.5px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fafafa; }
+.sigCanvas { display: block; width: 100%; height: 90px; }
+.sigFooter { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-top: 0.5px solid #f3f4f6; background: #fff; }
+.sigName { font-size: 11.5px; font-weight: 700; color: #111827; }
+.sigDate { font-size: 10px; color: #9ca3af; }
+
+/* ── DECLARATION ── */
+.declWrap { padding: 14px 32px; border-top: 0.5px solid #f0f2f5; background: #fafbff; }
+.declInner { display: flex; flex-direction: column; gap: 7px; }
+.declItem { display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px; border-radius: 8px; background: #fff; border: 0.5px solid #e5e7eb; }
+.declIco { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.declIco svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.declText { font-size: 11.5px; color: #374151; line-height: 1.7; font-weight: 500; }
+.declText strong { font-weight: 800; color: #111827; }
+
+/* ── FOOTER ── */
+.invFooter { padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; border-top: 0.5px solid #f0f2f5; background: #fafafa; }
+.footerBrandWrap { display: flex; align-items: center; gap: 10px; }
+.footerLogo { height: 24px; width: auto; border-radius: 4px; }
+.footerBrand { font-size: 12.5px; color: #6b7280; }
+.footerBrand strong { color: #111827; }
+.footerNote { font-size: 11px; color: #9ca3af; }
