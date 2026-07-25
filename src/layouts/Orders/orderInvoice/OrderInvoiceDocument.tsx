@@ -128,7 +128,9 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
               </div>
               <div className={styles.addrName}>{getCustomerDisplayName(customer)}</div>
               {customer?.phoneNumber ? (
-                <div className={`${styles.addrLine} ${styles.ltr}`}>{customer.phoneNumber}</div>
+                <div className={styles.addrLine}>
+                  <span className={styles.ltr}>{customer.phoneNumber}</span>
+                </div>
               ) : null}
               {customer?.address ? <div className={styles.addrLine}>{customer.address}</div> : null}
               {customer?.address2 ? <div className={styles.addrLine}>{customer.address2}</div> : null}
@@ -142,7 +144,9 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
                 البائع
               </div>
               <div className={styles.addrName}>{INVOICE_SELLER.name}</div>
-              <div className={`${styles.addrLine} ${styles.ltr}`}>{INVOICE_SELLER.phone}</div>
+              <div className={styles.addrLine}>
+                <span className={styles.ltr}>{INVOICE_SELLER.phone}</span>
+              </div>
               <div className={styles.addrLine}>{INVOICE_SELLER.address}</div>
             </div>
           </div>
@@ -177,7 +181,9 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
                         <div>
                           <div className={styles.prodNm}>{item.title}</div>
                           {item.sku ? (
-                            <div className={`${styles.prodCode} ${styles.ltr}`}>{item.sku}</div>
+                            <div className={styles.prodCode}>
+                              <span className={styles.ltr}>{item.sku}</span>
+                            </div>
                           ) : null}
                         </div>
                       </div>
