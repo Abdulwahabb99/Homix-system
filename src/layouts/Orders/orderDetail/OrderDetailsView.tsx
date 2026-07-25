@@ -694,7 +694,7 @@ export default function OrderDetailsView({
                           </Box>
                           <Box sx={{ mt: 2 }}>
                             <Typography sx={{ fontSize: "0.69rem", fontWeight: 700, color: OD.tx3, mb: 0.75 }}>
-                              حالة التأخير (تشغيل الفعلي)
+                              حالة التصنيع
                             </Typography>
                             <SelectComponent
                               id="order-manufacture-status"
