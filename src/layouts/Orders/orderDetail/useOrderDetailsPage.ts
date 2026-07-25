@@ -110,6 +110,15 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
+  /* تعديل «المبلغ المطلوب تحصيله» inline من بطاقة التفاصيل المالية */
+  const changeToBeCollected = useCallback(
+    (toBeCollected: number) => {
+      updateOrderField({ toBeCollected });
+      setOrderTotalToBeCollected(toBeCollected);
+    },
+    [updateOrderField]
+  );
+
   /* تحديث بيانات العميل عبر PUT /customers/{customerId} — تحديث متفائل لبطاقة العميل.
      يعيد Promise لتغلق النافذة عند النجاح فقط، ويرجع للحالة السابقة عند الفشل. */
   const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false);
@@ -421,6 +430,7 @@ export function useOrderDetailsPage() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryLocation,
+    changeToBeCollected,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,

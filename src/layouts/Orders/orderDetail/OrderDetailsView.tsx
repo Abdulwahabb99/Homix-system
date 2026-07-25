@@ -115,6 +115,7 @@ export type OrderDetailsViewProps = {
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
   changeDeliveryLocation: (shippedFromInventory: boolean) => void;
+  changeToBeCollected: (value: number) => void;
   updateCustomer: (values: CustomerFormValues) => Promise<unknown>;
   isUpdatingCustomer: boolean;
   updateComment: (noteId: number | string) => void;
@@ -154,6 +155,7 @@ export default function OrderDetailsView({
   changeDeliveryStatus,
   changeAssignee,
   changeDeliveryLocation,
+  changeToBeCollected,
   updateCustomer,
   isUpdatingCustomer,
   updateComment,
@@ -165,6 +167,10 @@ export default function OrderDetailsView({
 }: OrderDetailsViewProps) {
   /* صورة المنتج المعروضة في نافذة التكبير (lightbox) — null = مغلقة */
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  /* تعديل «المبلغ المطلوب تحصيله» inline داخل بطاقة التفاصيل المالية */
+  const [collectEditing, setCollectEditing] = useState(false);
+  const [collectDraft, setCollectDraft] = useState("");
 
   /* نافذة تعديل بيانات العميل */
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -627,7 +633,7 @@ export default function OrderDetailsView({
 
                             {/* حالة التسليم */}
                             <Box>
-                              <Typography sx={statusFieldLabelSx}>حالة التسليم</Typography>
+                              <Typography sx={statusFieldLabelSx}>حالة التأخير</Typography>
                               <SelectComponent
                                 id="order-delivery-status"
                                 options={deliveryStatusOptions}
@@ -1206,13 +1212,76 @@ export default function OrderDetailsView({
                                 {row("تكلفة الشحن", fmt(ship, true))}
                                 {row("الخصم", fmt(disc, true))}
                                 {row("جدية الشراء", fmt(down, true))}
-                                {row(
-                                  "المبلغ المطلوب تحصيله",
-                                  <Typography component="span" sx={{ fontWeight: 900, fontSize: "0.94rem", color: OD.accent }}>
-                                    {Number(collect).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
-                                  </Typography>,
-                                  true
-                                )}
+                                {(() => {
+                                  const startEditCollect = () => {
+                                    setCollectDraft(String(collect));
+                                    setCollectEditing(true);
+                                  };
+                                  const cancelEditCollect = () => setCollectEditing(false);
+                                  const saveCollect = () => {
+                                    const n = Number(collectDraft);
+                                    if (!Number.isFinite(n) || n < 0) {
+                                      NotificationMeassage("error", "أدخل رقماً صحيحاً");
+                                      return;
+                                    }
+                                    if (n !== collect) changeToBeCollected(n);
+                                    setCollectEditing(false);
+                                  };
+
+                                  const collectNode = collectEditing ? (
+                                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                                      <TextField
+                                        autoFocus
+                                        type="number"
+                                        size="small"
+                                        value={collectDraft}
+                                        onChange={(e) => setCollectDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") saveCollect();
+                                          if (e.key === "Escape") cancelEditCollect();
+                                        }}
+                                        inputProps={{
+                                          min: 0,
+                                          style: { textAlign: "center", fontWeight: 800, width: 90, padding: "5px 6px" },
+                                        }}
+                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", bgcolor: OD.sur } }}
+                                      />
+                                      <IconButton size="small" onClick={saveCollect} aria-label="حفظ" sx={{ color: OD.green }}>
+                                        <CheckIcon sx={{ fontSize: 18 }} />
+                                      </IconButton>
+                                      <IconButton size="small" onClick={cancelEditCollect} aria-label="إلغاء" sx={{ color: OD.red }}>
+                                        <CloseIcon sx={{ fontSize: 18 }} />
+                                      </IconButton>
+                                    </Stack>
+                                  ) : (
+                                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                                      {!isVendor && (
+                                        <IconButton
+                                          size="small"
+                                          onClick={startEditCollect}
+                                          aria-label="تعديل المبلغ المطلوب تحصيله"
+                                          sx={{ color: OD.tx3, "&:hover": { color: OD.accent } }}
+                                        >
+                                          <EditIcon sx={{ fontSize: 15 }} />
+                                        </IconButton>
+                                      )}
+                                      <Typography
+                                        component="span"
+                                        onClick={!isVendor ? startEditCollect : undefined}
+                                        sx={{
+                                          fontWeight: 900,
+                                          fontSize: "0.94rem",
+                                          color: OD.accent,
+                                          cursor: !isVendor ? "pointer" : "default",
+                                        }}
+                                      >
+                                        {Number(collect).toLocaleString("en-US", { maximumFractionDigits: 0 })} ج.م
+                                      </Typography>
+                                    </Stack>
+                                  );
+
+                                  return row("المبلغ المطلوب تحصيله", collectNode, true);
+                                })()}
                               </>
                             );
                           })()}
