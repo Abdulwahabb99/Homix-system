@@ -11,6 +11,9 @@ const {
 const { sequelize } = require("../../../src/infrastructure/database") as typeof import("../../../src/infrastructure/database");
 const Attachment = require("../attachments/attachment.model") as typeof import("../attachments/attachment.model");
 const Factory = require("./factory.model") as typeof import("./factory.model");
+const FACTORY_STATUS_LABELS = FACTORY_STATUS_ARABIC as Record<number, string>;
+const FACTORY_DOCUMENT_TYPE_LABELS = FACTORY_DOCUMENT_TYPE_ARABIC as Record<number, string>;
+const FACTORY_DOCUMENT_STATUS_LABELS = FACTORY_DOCUMENT_STATUS_ARABIC as Record<number, string>;
 
 type FactoryRecord = {
   createdAt?: Date | string | null;
@@ -136,25 +139,27 @@ const getFactoryStatusLabel = (value: unknown): string => {
     return "غير محدد";
   }
 
-  return FACTORY_STATUS_ARABIC[statusId] ?? "غير محدد";
+  return FACTORY_STATUS_LABELS[statusId] ?? "غير محدد";
 };
 
 const getDocumentTypeLabel = (value: unknown): string => {
   const typeId = normalizeNumber(value);
+  const fallbackLabel = FACTORY_DOCUMENT_TYPE_LABELS[FACTORY_DOCUMENT_TYPE.OTHER] ?? "أخرى";
   if (!typeId) {
-    return FACTORY_DOCUMENT_TYPE_ARABIC[FACTORY_DOCUMENT_TYPE.OTHER];
+    return fallbackLabel;
   }
 
-  return FACTORY_DOCUMENT_TYPE_ARABIC[typeId] ?? FACTORY_DOCUMENT_TYPE_ARABIC[FACTORY_DOCUMENT_TYPE.OTHER];
+  return FACTORY_DOCUMENT_TYPE_LABELS[typeId] ?? fallbackLabel;
 };
 
 const getDocumentStatusLabel = (value: unknown): string => {
   const statusId = normalizeNumber(value);
+  const fallbackLabel = FACTORY_DOCUMENT_STATUS_LABELS[FACTORY_DOCUMENT_STATUS.PENDING_REVIEW] ?? "قيد المراجعة";
   if (!statusId) {
-    return FACTORY_DOCUMENT_STATUS_ARABIC[FACTORY_DOCUMENT_STATUS.PENDING_REVIEW];
+    return fallbackLabel;
   }
 
-  return FACTORY_DOCUMENT_STATUS_ARABIC[statusId] ?? FACTORY_DOCUMENT_STATUS_ARABIC[FACTORY_DOCUMENT_STATUS.PENDING_REVIEW];
+  return FACTORY_DOCUMENT_STATUS_LABELS[statusId] ?? fallbackLabel;
 };
 
 const parseArrayInput = (value: unknown): string[] => {
@@ -356,6 +361,23 @@ const buildWhereClause = (filters: FactoryFilters) => {
   return andConditions.length > 0 ? { [Op.and]: andConditions } : {};
 };
 
+const getWhereAndConditions = (whereClause: unknown): unknown[] => {
+  if (!whereClause || typeof whereClause !== "object") {
+    return [];
+  }
+
+  const withAnd = whereClause as { and?: unknown[]; [Op.and]?: unknown[] };
+  if (Array.isArray(withAnd[Op.and])) {
+    return withAnd[Op.and] ?? [];
+  }
+
+  if (Array.isArray(withAnd.and)) {
+    return withAnd.and;
+  }
+
+  return [];
+};
+
 class FactoryService {
   public static async deleteAttachment(factoryId: string, attachmentId: string): Promise<FactoryResponse> {
     const factory = await Factory.findByPk(factoryId);
@@ -450,6 +472,7 @@ class FactoryService {
     const page = Math.max(Number(filters.page ?? DEFAULT_PAGE), DEFAULT_PAGE);
     const size = Math.max(Number(filters.size ?? DEFAULT_SIZE), 1);
     const whereClause = buildWhereClause(filters);
+    const baseAndConditions = getWhereAndConditions(whereClause);
     const order = resolveFactoryOrder(filters.sort);
 
     const result = await Factory.findAndCountAll({
@@ -472,7 +495,7 @@ class FactoryService {
       where: {
         ...whereClause,
         [Op.and]: [
-          ...((whereClause as PlainRecord)[Op.and] as unknown[] ?? []),
+          ...baseAndConditions,
           {
             status: {
               [Op.in]: factoryStatusStorageValues(FACTORY_STATUS.ONLINE),
@@ -486,7 +509,7 @@ class FactoryService {
       where: {
         ...whereClause,
         [Op.and]: [
-          ...((whereClause as PlainRecord)[Op.and] as unknown[] ?? []),
+          ...baseAndConditions,
           {
             status: {
               [Op.in]: factoryStatusStorageValues(FACTORY_STATUS.OFFLINE),
@@ -497,7 +520,7 @@ class FactoryService {
     });
 
     const items = Array.isArray(result.rows) ? result.rows.map(mapFactorySummary) : [];
-    const specialties = new Set(items.map((item) => item.specialty).filter(Boolean));
+    const specialties = new Set(items.map((item: { specialty: string }) => item.specialty).filter(Boolean));
 
     return {
       items,
