@@ -342,8 +342,10 @@ export type PerformanceChartItem = {
 export type PerformanceDeliveryProviderItem = {
   averageDeliveryDays: number;
   deliveredOrdersCount: number;
-  deliveryBy: string;
+  deliveryBy: number | null;
+  deliveryByLabel: string;
   returnsCount: number;
+  shippingCompanyName: string;
   successRate: number;
   totalGmv: number;
 };

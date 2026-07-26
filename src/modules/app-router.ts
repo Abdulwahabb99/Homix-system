@@ -1847,8 +1847,10 @@ const swaggerOptions = {
                     properties: {
                       averageDeliveryDays: { example: 2.8, type: "number" },
                       deliveredOrdersCount: { example: 42, type: "integer" },
-                      deliveryBy: { example: "بوسطة", type: "string" },
+                      deliveryBy: { example: 1, nullable: true, type: "integer" },
+                      deliveryByLabel: { example: "هوميكس", type: "string" },
                       returnsCount: { example: 3, type: "integer" },
+                      shippingCompanyName: { example: "J&T", type: "string" },
                       successRate: { example: 94, type: "number" },
                       totalGmv: { example: 181400, type: "number" },
                     },

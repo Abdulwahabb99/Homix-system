@@ -1352,7 +1352,14 @@ export class ShipmentRepository {
 
     const items: ShipmentListItem[] = orders.map((order: unknown) => mapShipmentListItem(order));
     const chartMap = new Map<string, number>();
-    const providerMap = new Map<string, { deliveredOrdersCount: number; totalDays: number; totalGmv: number }>();
+    const providerMap = new Map<string, {
+      deliveredOrdersCount: number;
+      deliveryBy: number | null;
+      deliveryByLabel: string;
+      shippingCompanyName: string;
+      totalDays: number;
+      totalGmv: number;
+    }>();
 
     for (const item of items) {
       const deliveryDate = item.deliveryDate ? new Date(item.deliveryDate) : null;
@@ -1363,8 +1370,15 @@ export class ShipmentRepository {
         : "غير محدد";
       chartMap.set(label, (chartMap.get(label) ?? 0) + 1);
 
-      const providerKey = item.deliveryBy || "غير محدد";
-      const providerValue = providerMap.get(providerKey) ?? { deliveredOrdersCount: 0, totalDays: 0, totalGmv: 0 };
+      const providerKey = `${item.deliveryBy ?? "null"}::${item.shippingCompanyName || ""}`;
+      const providerValue = providerMap.get(providerKey) ?? {
+        deliveredOrdersCount: 0,
+        deliveryBy: item.deliveryBy,
+        deliveryByLabel: item.deliveryByLabel,
+        shippingCompanyName: item.shippingCompanyName,
+        totalDays: 0,
+        totalGmv: 0,
+      };
       providerValue.deliveredOrdersCount += 1;
       providerValue.totalDays += item.daysCounter ?? 0;
       providerValue.totalGmv += item.amountToCollect;
@@ -1387,13 +1401,15 @@ export class ShipmentRepository {
         deliveredOrdersCount,
         totalGmv,
       },
-      providers: Array.from(providerMap.entries()).map(([deliveryBy, providerValue]) => ({
+      providers: Array.from(providerMap.values()).map((providerValue) => ({
         averageDeliveryDays: providerValue.deliveredOrdersCount > 0
           ? Math.round((providerValue.totalDays / providerValue.deliveredOrdersCount) * 10) / 10
           : 0,
         deliveredOrdersCount: providerValue.deliveredOrdersCount,
-        deliveryBy,
+        deliveryBy: providerValue.deliveryBy,
+        deliveryByLabel: providerValue.deliveryByLabel,
         returnsCount: 0,
+        shippingCompanyName: providerValue.shippingCompanyName,
         successRate: 100,
         totalGmv: providerValue.totalGmv,
       })),

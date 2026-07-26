@@ -920,7 +920,11 @@ describe("shipmentRouter", () => {
         totalGmv: 29998,
       }),
     );
-    expect(response.body.data.providers[0].deliveryBy).toBe("J&T");
+    expect(response.body.data.providers[0]).toEqual(expect.objectContaining({
+      deliveryBy: 1,
+      deliveryByLabel: "هوميكس",
+      shippingCompanyName: "J&T",
+    }));
   });
 
   it("accepts ISO date filters for shipment performance", async () => {
