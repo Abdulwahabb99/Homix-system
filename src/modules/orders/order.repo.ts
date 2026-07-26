@@ -523,16 +523,18 @@ export class OrderRepository {
       return { attachments: Array.isArray(plainNote.attachments) ? plainNote.attachments.map((attachment) => ({ createdAt: toIsoString(toPlain(attachment).createdAt) ?? "", description: toText(toPlain(attachment).description), id: toNumber(toPlain(attachment).id), name: toText(toPlain(attachment).name), url: toText(toPlain(attachment).url) })) : [], createdAt: toIsoString(plainNote.createdAt) ?? "", id: toNumber(plainNote.id), text: toText(plainNote.text), userName: `${toText(toPlain(plainNote.user).firstName)} ${toText(toPlain(plainNote.user).lastName)}`.trim() };
     }) : [];
     const logs = await logModel.findAll({ order: [["createdAt", "DESC"]], where: { entityId: orderId, entityType: "order" } });
-    const users = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
+    const usersResult = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
+    const users = Array.isArray(usersResult) ? usersResult : [];
     const userNames = new Map(users.map((user: unknown) => { const plainUser = toPlain(user); return [toNumber(plainUser.id), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()]; }));
     const vendorIds = logs
       .map((log: unknown) => toPlain(log))
       .filter((log: Record<string, unknown>) => toText(log.field) === "vendorId")
       .flatMap((log: Record<string, unknown>) => [toNumber(log.from), toNumber(log.to)])
       .filter((id: number) => id > 0);
-    const vendors = vendorIds.length > 0
+    const vendorsResult = vendorIds.length > 0
       ? await vendorModel.findAll({ attributes: ["id", "name"], where: { id: { [Op.in]: vendorIds } } })
       : [];
+    const vendors = Array.isArray(vendorsResult) ? vendorsResult : [];
     const vendorNamesById = Object.fromEntries(vendors.map((vendor: unknown) => {
       const plainVendor = toPlain(vendor);
       return [String(toNumber(plainVendor.id)), toText(plainVendor.name)];

@@ -107,6 +107,12 @@ const noteModel = jest.requireMock("../../../app/modules/notes/notes.model") as 
   create: jest.Mock;
   findByPk: jest.Mock;
 };
+const userModel = jest.requireMock("../../../app/modules/user/user.model") as {
+  findAll: jest.Mock;
+};
+const logModel = jest.requireMock("../../../app/modules/logs/log.model") as {
+  findAll: jest.Mock;
+};
 
 const app = express();
 app.set("query parser", "extended");
@@ -203,6 +209,7 @@ describe("shipmentRouter", () => {
       updatedAt: "2026-05-15T11:00:00.000Z",
       user: { firstName: "Ahmed", id: 1, lastName: "Hesham" },
     });
+    userModel.findAll.mockResolvedValue([{ firstName: "Ahmed", id: 1, lastName: "Hesham" }]);
     noteModel.findByPk.mockResolvedValue(null);
     shipmentReturnModel.findAll.mockResolvedValue([]);
     shipmentReturnModel.findOne.mockResolvedValue(null);
@@ -739,6 +746,35 @@ describe("shipmentRouter", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.shipment.deliveryStatus).toBe(1);
+  });
+
+  it("renders shipment timeline updates with Arabic field/value labels", async () => {
+    logModel.findAll.mockResolvedValueOnce([
+      {
+        action: "update",
+        createdAt: "2026-07-20T01:00:00.000Z",
+        field: "paymentStatus",
+        id: 501,
+        to: "1",
+        userId: 1,
+      },
+      {
+        action: "update",
+        createdAt: "2026-07-20T01:05:00.000Z",
+        field: "shippedFromInventory",
+        id: 502,
+        to: "true",
+        userId: 1,
+      },
+    ]);
+
+    const response = await request(app).get("/shipments/9802");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.timeline[0].message).toBe("تم تحديث حالة الدفع إلى الدفع عند الاستلام");
+    expect(response.body.data.timeline[0].userName).toBe("Ahmed Hesham");
+    expect(response.body.data.timeline[1].message).toBe("تم تحديث الشحن من المخزون إلى نعم");
+    expect(response.body.data.timeline[1].userName).toBe("Ahmed Hesham");
   });
 
   it("returns vendor returns list", async () => {

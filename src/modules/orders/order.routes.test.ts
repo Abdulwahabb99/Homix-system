@@ -564,6 +564,26 @@ describe("orderRouter", () => {
     expect(response.body.data.order.deliveryStatus).toBe(1);
   });
 
+  it("renders order timeline updates with Arabic field/value labels", async () => {
+    logModel.findAll.mockResolvedValueOnce([
+      {
+        action: "update",
+        createdAt: "2026-07-20T01:00:00.000Z",
+        field: "status",
+        from: "2",
+        id: 8,
+        to: "1",
+        userId: 1,
+      },
+    ]);
+
+    const response = await request(app).get("/orders/7");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.timeline[0].message).toBe("تم تحديث حالة الطلب إلى معلق");
+    expect(response.body.data.timeline[0].userName).toBe("Sara Mohamed");
+  });
+
   it("caps status history at the order current status", async () => {
     logModel.findAll.mockResolvedValueOnce([
       {

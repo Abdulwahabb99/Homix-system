@@ -414,14 +414,20 @@ const mapShipmentNote = (noteValue: unknown) => {
   } satisfies ShipmentNote;
 };
 
-const mapTimeline = (logs: unknown[]) =>
+const mapTimeline = (
+  logs: unknown[],
+  userNamesById: Record<string, string> = {},
+  vendorNamesById: Record<string, string> = {},
+  shippingCompanyNamesById: Record<string, string> = {},
+) =>
   logs.map((logValue) => {
     const log = toPlain(logValue);
+    const userName = userNamesById[String(toNumber(log.userId))] ?? "";
     return {
       changedAt: toIsoString(log.createdAt) ?? "",
       id: toNumber(log.id),
-      message: buildLogMessage(log),
-      userName: "",
+      message: buildLogMessage(log, { shippingCompanyNamesById, userNamesById, vendorNamesById }),
+      userName,
     };
   });
 
@@ -677,6 +683,41 @@ export class ShipmentRepository {
       order: [["createdAt", "ASC"]],
       where: { entityId: shipmentId, entityType: "order" },
     });
+    const usersResult = await userModel.findAll({
+      attributes: ["firstName", "id", "lastName"],
+      where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } },
+    });
+    const users = Array.isArray(usersResult) ? usersResult : [];
+    const userNamesById = Object.fromEntries(users.map((user: unknown) => {
+      const plainUser = toPlain(user);
+      return [String(toNumber(plainUser.id)), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()];
+    }));
+    const vendorIds = logs
+      .map((log: unknown) => toPlain(log))
+      .filter((log: Record<string, unknown>) => toText(log.field) === "vendorId")
+      .flatMap((log: Record<string, unknown>) => [toNumber(log.from), toNumber(log.to)])
+      .filter((id: number) => id > 0);
+    const vendorsResult = vendorIds.length > 0
+      ? await vendorModel.findAll({ attributes: ["id", "name"], where: { id: { [Op.in]: vendorIds } } })
+      : [];
+    const vendors = Array.isArray(vendorsResult) ? vendorsResult : [];
+    const vendorNamesById = Object.fromEntries(vendors.map((vendor: unknown) => {
+      const plainVendor = toPlain(vendor);
+      return [String(toNumber(plainVendor.id)), toText(plainVendor.name)];
+    }));
+    const shippingCompanyIds = logs
+      .map((log: unknown) => toPlain(log))
+      .filter((log: Record<string, unknown>) => toText(log.field) === "shippingCompany")
+      .flatMap((log: Record<string, unknown>) => [toNumber(log.from), toNumber(log.to)])
+      .filter((id: number) => id > 0);
+    const shippingCompaniesResult = shippingCompanyIds.length > 0
+      ? await shippingCompanyModel.findAll({ attributes: ["id", "name"], where: { id: { [Op.in]: shippingCompanyIds } } })
+      : [];
+    const shippingCompanies = Array.isArray(shippingCompaniesResult) ? shippingCompaniesResult : [];
+    const shippingCompanyNamesById = Object.fromEntries(shippingCompanies.map((company: unknown) => {
+      const plainCompany = toPlain(company);
+      return [String(toNumber(plainCompany.id)), toText(plainCompany.name)];
+    }));
     return {
       customer: {
         address: toText(customer.address),
@@ -719,7 +760,7 @@ export class ShipmentRepository {
         shippedFromInventory: Boolean(order.shippedFromInventory),
         shippingCompanyName: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany)),
       },
-      timeline: mapTimeline(logs),
+      timeline: mapTimeline(logs, userNamesById, vendorNamesById, shippingCompanyNamesById),
       vendor: {
         name: toText(firstVendor.name),
       },
