@@ -191,9 +191,15 @@ export function DaysCounterBadge({ days, active }: { days: string | number | nul
 
 /* ─── DELIVERY BY BADGE ─── */
 /**
- * «التوصيل بواسطة» — النص من `deliveryByLabel` كما يرده الـ API. الـ boolean
- * يُستخدم للّون فقط (ويبقى بديلاً للنص إن لم تُرسل التسمية).
+ * «التوصيل بواسطة» — النص من `deliveryByLabel` كما يرده الـ API، والـ boolean
+ * يحدّد اللون (ويبقى بديلاً للنص إن لم تُرسل التسمية).
  */
+const deliveryByConfig = {
+  inventory: { bg: HX.blueLight, color: "#1e40af", dot: HX.blue },      // المخزن / هوميكس
+  vendor:    { bg: HX.greenLight, color: "#065f46", dot: HX.green },    // البائع
+  unknown:   { bg: "rgba(100,100,100,0.10)", color: "#374151", dot: "#9ca3af" },
+} as const;
+
 export function DeliveryByBadge({
   fromInventory,
   label,
@@ -202,21 +208,16 @@ export function DeliveryByBadge({
   label?: string | null;
 }) {
   const text = (label ?? "").trim();
-  if (!text && (fromInventory === null || fromInventory === undefined)) {
+  const unknown = fromInventory === null || fromInventory === undefined;
+  if (!text && unknown) {
     return <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>;
   }
-  return (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex", alignItems: "center", gap: "4px",
-        fontSize: "12px", color: fromInventory ? HX.blue : HX.green,
-        fontWeight: 500,
-      }}
-    >
-      {text || (fromInventory ? "المخزن" : "البائع")}
-    </Box>
-  );
+  const cfg = unknown
+    ? deliveryByConfig.unknown
+    : fromInventory
+      ? deliveryByConfig.inventory
+      : deliveryByConfig.vendor;
+  return <Bdg {...cfg} label={text || (fromInventory ? "المخزن" : "البائع")} />;
 }
 
 /* ─── FINE BADGE ─── */
