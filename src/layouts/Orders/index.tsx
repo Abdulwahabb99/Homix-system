@@ -359,7 +359,7 @@ function Orders() {
     id: any, orderSt: any, commission: any, totalVendorDue: any, pay: any,
     downPayment: any, toBeCollected: any, shippingFees: any, selectedV: any,
     administrator: any, shippedFromInventory: any, totalCompanyDue: any, expectedDeliveryDate: any,
-    orderSource: any
+    orderSource: any, deliveryBy: any
   ) => {
     setIsSubmitting(true);
     axiosRequest
@@ -369,6 +369,7 @@ function Orders() {
         ...(selectedV && { vendorId: selectedV }),
         ...(administrator && { userId: administrator }),
         ...(orderSource !== "" && orderSource != null && { orderSource }),
+        ...(deliveryBy !== "" && deliveryBy != null && { deliveryBy }),
         commission, paymentStatus: pay, downPayment, shippingFees,
         toBeCollected, shippedFromInventory, totalVendorDue, totalCompanyDue,
       })

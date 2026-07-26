@@ -32,6 +32,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const [commission, setCommission] = useState(data.commission);
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
   const [orderSource, setOrderSource] = useState(data.orderSource ?? "");
+  const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
@@ -58,6 +59,21 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
 
   const { data: ordersMeta } = useOrdersMeta();
   const orderSourceOptions = ordersMeta?.orderSources ?? [];
+  const deliveryByOptions = ordersMeta?.deliveryByOptions ?? [];
+
+  /**
+   * الـ API يُرجع «التوصيل بواسطة» كتسمية ("هوميكس" / "بائع") ويستقبل معرّفاً،
+   * فنطبّع القيمة الواردة على معرّف الـ meta بعد وصول القائمة.
+   */
+  useEffect(() => {
+    if (deliveryBy !== "" || !deliveryByOptions.length) return;
+    const raw = data.deliveryBy;
+    if (raw == null || raw === "") return;
+    const byId = deliveryByOptions.find((o) => String(o.id) === String(raw));
+    const byLabel = deliveryByOptions.find((o) => o.label === String(raw).trim());
+    const match = byId ?? byLabel;
+    if (match) setDeliveryBy(match.id);
+  }, [deliveryByOptions, data.deliveryBy, deliveryBy]);
 
   const administratorAutocompleteProps = getUserSelectAutocompleteConfig(35);
 
@@ -140,6 +156,26 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               {vendors.map((option) => {
                 return (
                   <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="deliveryBy">التوصيل بواسطة</InputLabel>
+            <Select
+              fullWidth
+              labelId="deliveryBy"
+              id="deliveryBy-select"
+              value={deliveryBy}
+              label="التوصيل بواسطة"
+              onChange={(e) => setDeliveryBy(Number(e.target.value))}
+              sx={{ height: 35 }}
+            >
+              {deliveryByOptions.map((option) => {
+                return (
+                  <MenuItem key={option.id} value={option.id}>
                     {option.label}
                   </MenuItem>
                 );
@@ -280,7 +316,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               shippedFromInventory,
               totalCompanyDue,
               expectedDeliveryDate,
-              orderSource
+              orderSource,
+              deliveryBy
             )
           }
           variant="contained"

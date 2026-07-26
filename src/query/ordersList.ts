@@ -84,6 +84,8 @@ function mapListItemRow(row) {
     PoDate: row.expectedDeliveryDate ?? undefined,
     createdAt: row.orderDate,
     shippedFromInventory: inferShippedFromInventory(row.deliveryBy),
+    /** خام كما يرده الـ API (تسمية أو معرّف) — نموذج التعديل يطبّعه عبر الـ meta */
+    deliveryBy: row.deliveryBy,
     vendorId: row.vendorId,
     vendorName: row.vendorName,
     userId: row.userId,
@@ -137,6 +139,7 @@ function mapOrderRow(order) {
     expectedDeliveryDate: order.expectedDeliveryDate,
     type: order.orderLines[0]?.product?.type?.name,
     shippedFromInventory: order.shippedFromInventory,
+    deliveryBy: order.deliveryBy,
     vendorId: order.vendorId,
   };
 }
