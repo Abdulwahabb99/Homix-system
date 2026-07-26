@@ -18,6 +18,30 @@ const PREFIX = "H";
 const CUSTOM_PREFIX = "CU";
 const ExcelJS = require("exceljs");
 
+const EXPORT_SORT_FIELDS = new Set([
+  "orderDate",
+  "priority",
+  "subTotalPrice",
+  "totalPrice",
+]);
+
+const resolveExportSort = (sort, fallbackField = "orderDate") => {
+  if (!sort || typeof sort !== "object" || Array.isArray(sort)) {
+    return [[fallbackField, "DESC"]];
+  }
+
+  for (const [field, rawDirection] of Object.entries(sort)) {
+    if (!EXPORT_SORT_FIELDS.has(field)) {
+      continue;
+    }
+
+    const direction = Number(rawDirection) === 1 ? "ASC" : "DESC";
+    return [[field, direction]];
+  }
+
+  return [[fallbackField, "DESC"]];
+};
+
 class ShipmentService {
   static async getShipments({
     page = 1,
@@ -376,6 +400,7 @@ class ShipmentService {
       endDate,
       vendorUser,
       paymentStatus,
+      sort,
     }
   ) {
     let whereClause = {
@@ -528,6 +553,7 @@ class ShipmentService {
       }
     }
     whereClause = whereClause[Op.and].length ? whereClause : {};
+    const exportOrder = resolveExportSort(sort);
 
     res.setHeader(
       "Content-Type",
@@ -687,7 +713,7 @@ class ShipmentService {
           },
         ],
         where: whereClause,
-        order: [["orderDate", "DESC"]],
+        order: exportOrder,
         offset,
         limit: CHUNK_SIZE,
         subQuery: false,

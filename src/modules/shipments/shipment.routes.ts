@@ -6,6 +6,7 @@ import { ShipmentRepository } from "./shipment.repo";
 import {
   shipmentCreateSchema,
   shipmentDeliveryAccountsQuerySchema,
+  shipmentExportQuerySchema,
   shipmentExpenseMutationSchema,
   shipmentExpenseParamsSchema,
   shipmentExpenseAccountsQuerySchema,
@@ -386,7 +387,12 @@ shipmentRouter.delete(
  *               type: string
  *               format: binary
  */
-shipmentRouter.get("/export", requirePermission("finance_export"), asyncHandler(shipmentController.exportShipments));
+shipmentRouter.get(
+  "/export",
+  requirePermission("finance_export"),
+  validateRequest({ query: shipmentExportQuerySchema }),
+  asyncHandler(shipmentController.exportShipments),
+);
 
 /**
  * @swagger

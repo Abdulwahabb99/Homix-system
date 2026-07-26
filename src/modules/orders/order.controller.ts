@@ -39,6 +39,10 @@ export class OrderController {
     });
   };
 
+  public exportFinancialReport = async (request: Request, response: Response): Promise<void> => {
+    await this.orderService.exportFinancialReport(response, request.query as never, request.vendorId);
+  };
+
   public updateOrder = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.orderService.updateOrder(Number(request.params.orderId), request.body, request.user ?? { id: 0 })), status: true });
   };

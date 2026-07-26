@@ -6,6 +6,7 @@ import { OrderRepository } from "./order.repo";
 import {
   orderBulkDeleteSchema,
   orderBulkUpdateSchema,
+  orderExportQuerySchema,
   orderFinancialReportQuerySchema,
   orderIdParamsSchema,
   orderListQuerySchema,
@@ -328,6 +329,51 @@ orderRouter.get(
 
 /**
  * @swagger
+ * /orders/financialReport/export:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Orders]
+ *     summary: Export invoice-based financial report to Excel
+ *     description: Downloads the same split financial invoice data as `/orders/financialReport` in Excel format.
+ *     parameters:
+ *       - in: query
+ *         name: vendorId
+ *         schema:
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *       - in: query
+ *         name: billingDay
+ *         schema: { type: integer, enum: [13, 28] }
+ *       - in: query
+ *         name: referenceDate
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *     responses:
+ *       200:
+ *         description: Excel file
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+orderRouter.get(
+  "/financialReport/export",
+  verifyToken,
+  requirePermission("finance_export"),
+  validateRequest({ query: orderFinancialReportQuerySchema }),
+  asyncHandler(orderController.exportFinancialReport),
+);
+
+/**
+ * @swagger
  * /orders/export:
  *   get:
  *     security:
@@ -381,7 +427,13 @@ orderRouter.get(
  *               type: string
  *               format: binary
  */
-orderRouter.get("/export", verifyToken, requirePermission("finance_export"), asyncHandler(orderController.exportOrders));
+orderRouter.get(
+  "/export",
+  verifyToken,
+  requirePermission("finance_export"),
+  validateRequest({ query: orderExportQuerySchema }),
+  asyncHandler(orderController.exportOrders),
+);
 
 /**
  * @swagger

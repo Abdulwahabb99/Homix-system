@@ -3,6 +3,9 @@ import { z } from "zod";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, ORDER_PRIORITY_KEYS } from "./order.constants";
 
 const csvNumberString = z.string().trim().min(1);
+const dateString = z.string().trim().refine((value) => !Number.isNaN(new Date(value).getTime()), {
+  message: "Invalid date value",
+});
 const csvPriorityString = z.string().trim().min(1).refine(
   (value) => value.split(",").every((item) => ORDER_PRIORITY_KEYS.includes(Number(item.trim()) as typeof ORDER_PRIORITY_KEYS[number])),
   "Invalid priority value",
@@ -27,7 +30,7 @@ export const orderListQuerySchema = z.object({
   customerName: z.string().trim().optional(),
   deliveryBy: csvNumberString.optional(),
   deliveryStatus: csvNumberString.optional(),
-  endDate: z.string().trim().optional(),
+  endDate: dateString.optional(),
   manufactureStatus: csvNumberString.optional(),
   operationCode: z.string().trim().optional(),
   orderSource: csvNumberString.optional(),
@@ -38,7 +41,7 @@ export const orderListQuerySchema = z.object({
   productCode: z.string().trim().optional(),
   sort: sortSchema,
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
-  startDate: z.string().trim().optional(),
+  startDate: dateString.optional(),
   status: csvNumberString.optional(),
   userId: z.coerce.number().int().positive().optional(),
   vendorId: csvNumberString.optional(),
@@ -53,10 +56,17 @@ export const orderSummaryQuerySchema = orderListQuerySchema.omit({
 
 export const orderFinancialReportQuerySchema = z.object({
   billingDay: z.coerce.number().refine((value) => value === 13 || value === 28, "billingDay must be 13 or 28").optional(),
-  endDate: z.string().trim().optional(),
-  referenceDate: z.string().trim().optional(),
-  startDate: z.string().trim().optional(),
+  endDate: dateString.optional(),
+  referenceDate: dateString.optional(),
+  startDate: dateString.optional(),
   vendorId: z.union([z.coerce.number().int().positive(), z.string().trim().min(1)]).optional(),
+});
+
+export const orderExportQuerySchema = orderListQuerySchema.omit({
+  page: true,
+  size: true,
+}).extend({
+  financialStatus: z.string().trim().optional(),
 });
 
 export const orderMutationSchema = z.record(z.string(), z.unknown());

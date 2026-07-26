@@ -124,6 +124,30 @@ const calculateAmountToCollect = ({
   );
 };
 
+const EXPORT_SORT_FIELDS = new Set([
+  "orderDate",
+  "priority",
+  "subTotalPrice",
+  "totalPrice",
+]);
+
+const resolveExportSort = (sort, fallbackField = "orderDate") => {
+  if (!sort || typeof sort !== "object" || Array.isArray(sort)) {
+    return [[fallbackField, "DESC"]];
+  }
+
+  for (const [field, rawDirection] of Object.entries(sort)) {
+    if (!EXPORT_SORT_FIELDS.has(field)) {
+      continue;
+    }
+
+    const direction = Number(rawDirection) === 1 ? "ASC" : "DESC";
+    return [[field, direction]];
+  }
+
+  return [[fallbackField, "DESC"]];
+};
+
 class OrderService {
   static async importOrders(parameters, fromImport) {
     const fields = [];
@@ -823,6 +847,7 @@ class OrderService {
       endDate,
       vendorUser,
       paymentStatus,
+      sort,
     },
   ) {
     let whereClause = {
@@ -971,6 +996,7 @@ class OrderService {
       }
     }
     whereClause = whereClause[Op.and].length ? whereClause : {};
+    const exportOrder = resolveExportSort(sort);
 
     res.setHeader(
       "Content-Type",
@@ -1119,7 +1145,7 @@ class OrderService {
           },
         ],
         where: whereClause,
-        order: [["orderDate", "DESC"]],
+        order: exportOrder,
         offset,
         limit: CHUNK_SIZE,
         subQuery: false,

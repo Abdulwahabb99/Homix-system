@@ -8,6 +8,10 @@ import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gate
 import { normalizeOrderMutationPayload, toPlain, toText } from "./order.helpers";
 import { OrderRepository } from "./order.repo";
 import type { LegacyOrderResponse, OrderDetailsResponse, OrderFinancialReportQuery, OrderFinancialReportResponse, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderMutationPayload, OrderRequestUser, OrderSummaryResponse } from "./order.types";
+import type { Response } from "express";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const ExcelJS = require("exceljs");
 
 const ensureLegacySuccess = <TData>(response: LegacyOrderResponse<TData>): LegacyOrderResponse<TData> => {
   if (response.status !== false) {
@@ -178,6 +182,71 @@ export class OrderService {
 
   public async exportOrders(response: unknown, payload: OrderMutationPayload): Promise<void> {
     await this.legacyGateway.exportOrders(response, payload);
+  }
+
+  public async exportFinancialReport(response: Response, query: OrderFinancialReportQuery, vendorId?: number | null): Promise<void> {
+    const report = await this.orderRepository.getFinancialReport(query, vendorId);
+    response.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    response.setHeader("Content-Disposition", "attachment; filename=financial-report.xlsx");
+
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: response });
+    const summarySheet = workbook.addWorksheet("summary");
+    summarySheet.columns = [
+      { header: "البند", key: "label", width: 30 },
+      { header: "القيمة", key: "value", width: 22 },
+    ];
+    [
+      { label: "بداية الدورة", value: report.cycle.startDate },
+      { label: "نهاية الدورة", value: report.cycle.endDate },
+      { label: "نوع الدورة", value: report.cycle.mode },
+      { label: "إجمالي المبيعات", value: report.summary.totalSales },
+      { label: "مستحق البائعين", value: report.summary.vendorDue },
+      { label: "مستحق الشركة", value: report.summary.companyDue },
+      { label: "الغرامات", value: report.summary.fines },
+      { label: "عدد البائعين", value: report.summary.vendorsCount },
+    ].forEach((row) => {
+      summarySheet.addRow(row);
+    });
+    summarySheet.commit();
+
+    const addSectionSheet = (
+      name: string,
+      section: OrderFinancialReportResponse["fullInvoice"],
+    ): void => {
+      const worksheet = workbook.addWorksheet(name);
+      worksheet.columns = [
+        { header: "البائع", key: "vendorName", width: 28 },
+        { header: "عدد الطلبات", key: "ordersCount", width: 18 },
+        { header: "إجمالي التحصيل", key: "collectionTotal", width: 18 },
+        { header: "مستحق البائع", key: "vendorDue", width: 18 },
+        { header: "مستحق الشركة", key: "companyDue", width: 18 },
+        { header: "تكلفة المخزن", key: "warehouseCost", width: 18 },
+        { header: "الغرامات", key: "fines", width: 18 },
+      ];
+
+      section.items.forEach((item) => worksheet.addRow(item));
+      worksheet.addRow({});
+      worksheet.addRow({
+        collectionTotal: section.summary.collectionTotal,
+        companyDue: section.summary.companyDue,
+        fines: section.summary.fines,
+        ordersCount: section.summary.ordersCount,
+        vendorDue: section.summary.vendorDue,
+        vendorName: "الإجمالي",
+        warehouseCost: section.summary.warehouseCost,
+      });
+      worksheet.commit();
+    };
+
+    addSectionSheet("full-invoice", report.fullInvoice);
+    addSectionSheet("vendor-deliveries", report.vendorDeliveries);
+    addSectionSheet("warehouse-deliveries", report.warehouseDeliveries);
+
+    await workbook.commit();
+    response.end();
   }
 
   private getBulkOrderDate(payload: OrderMutationPayload): unknown {

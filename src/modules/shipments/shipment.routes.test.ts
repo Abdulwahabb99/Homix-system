@@ -607,6 +607,43 @@ describe("shipmentRouter", () => {
     );
   });
 
+  it("forwards shipment export requests to the legacy exporter", async () => {
+    legacyShipmentService.exportShipments.mockImplementation(async (res: express.Response) => {
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.status(200).end("ok");
+    });
+
+    const response = await request(app).get("/shipments/export").query({
+      sort: { orderDate: -1 },
+      orderNumber: "31667",
+      startDate: "2026-05-01",
+      endDate: "2026-05-02",
+    });
+
+    expect(response.status).toBe(200);
+    expect(legacyShipmentService.exportShipments).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        endDate: "2026-05-02",
+        orderNumber: "31667",
+        sort: { orderDate: -1 },
+        startDate: "2026-05-01",
+      }),
+    );
+    expect(String(response.headers["content-type"])).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+  });
+
+  it("rejects invalid shipment export date filters", async () => {
+    const response = await request(app).get("/shipments/export").query({
+      startDate: "not-a-date",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+  });
+
   it("filters shipments by schedule status", async () => {
     const response = await request(app).get("/shipments").query({ page: 1, scheduleStatus: "1", size: 20 });
 

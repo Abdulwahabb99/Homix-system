@@ -69,6 +69,25 @@ export const shipmentSummaryQuerySchema = shipmentListQuerySchema.omit({
   size: true,
 });
 
+export const shipmentExportQuerySchema = shipmentListQuerySchema.omit({
+  customerName: true,
+  customerPhone: true,
+  deliveryBy: true,
+  deliveryDateFrom: true,
+  deliveryDateTo: true,
+  operationCode: true,
+  orderSource: true,
+  page: true,
+  priority: true,
+  scheduleStatus: true,
+  shipmentNumber: true,
+  shipmentStatus: true,
+  shipmentType: true,
+  size: true,
+}).extend({
+  financialStatus: z.string().trim().optional(),
+});
+
 const shipmentCreateLineItemSchema = z.object({
   price: z.coerce.number().nonnegative(),
   quantity: z.coerce.number().int().positive(),

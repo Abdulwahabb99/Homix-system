@@ -419,6 +419,55 @@ describe("orderRouter", () => {
     expect(response.body.data.totalCount).toBe(1);
   });
 
+  it("forwards order export requests to the legacy exporter", async () => {
+    legacyOrderService.exportOrders.mockImplementation(async (res: express.Response) => {
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.status(200).end("ok");
+    });
+
+    const response = await request(app).get("/orders/export").query({
+      sort: { orderDate: -1 },
+      orderNumber: "31668",
+      startDate: "2026-05-01",
+      endDate: "2026-05-02",
+    });
+
+    expect(response.status).toBe(200);
+    expect(legacyOrderService.exportOrders).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        endDate: "2026-05-02",
+        orderNumber: "31668",
+        sort: { orderDate: -1 },
+        startDate: "2026-05-01",
+      }),
+    );
+    expect(String(response.headers["content-type"])).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+  });
+
+  it("rejects invalid order export date filters", async () => {
+    const response = await request(app).get("/orders/export").query({
+      startDate: "not-a-date",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns a financial report export workbook", async () => {
+    const response = await request(app)
+      .get("/orders/financialReport/export")
+      .query({ billingDay: 28, referenceDate: "2026-07-26" });
+
+    expect(response.status).toBe(200);
+    expect(String(response.headers["content-type"])).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(String(response.headers["content-disposition"])).toContain("financial-report.xlsx");
+  });
+
   it("applies orderSource filter to the orders query", async () => {
     const response = await request(app).get("/orders").query({ orderSource: "2", page: 1, size: 20 });
 
