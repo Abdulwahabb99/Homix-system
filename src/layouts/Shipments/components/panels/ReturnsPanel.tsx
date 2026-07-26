@@ -114,11 +114,117 @@ function SkeletonRows() {
   );
 }
 
+/** خلايا الأعمدة — التسمية تأتي من تعريف كل تبويب، فنفس الخلية تُستخدم بعنوان مختلف. */
+const CELL = {
+  operationNumber: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>
+        {item.operationNumber || "—"}
+      </Box>
+    ),
+  },
+  orderNumber: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.accent }}>
+        {item.orderNumber || "—"}
+      </Box>
+    ),
+  },
+  sellerName: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.tx }}>
+        {item.sellerName || "—"}
+      </Box>
+    ),
+  },
+  reason: {
+    tdStyle: { maxWidth: 200 } as React.CSSProperties,
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontSize: "12px", color: HX.tx2, display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {item.reason || "—"}
+      </Box>
+    ),
+  },
+  returnDate: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.returnDate)}</Box>
+    ),
+  },
+  daysCounter: {
+    center: true,
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        minWidth: 28, height: 22, px: "6px", borderRadius: "100px",
+        fontSize: "11px", fontWeight: 700, fontFamily: FONT,
+        bgcolor: HX.amberLight, color: HX.amber,
+      }}>
+        {item.daysCounter ?? "—"}
+      </Box>
+    ),
+  },
+  returnTypeLabel: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>
+        {item.returnTypeLabel || "—"}
+      </Box>
+    ),
+  },
+  status: {
+    render: (item: ReturnItem) => (
+      <Box component="span" sx={{
+        display: "inline-flex", alignItems: "center", px: "8px", py: "3px",
+        borderRadius: "100px", fontSize: "11px", fontWeight: 600, fontFamily: FONT,
+        bgcolor: HX.purpleLight, color: HX.purple,
+      }}>
+        {item.statusLabel || "—"}
+      </Box>
+    ),
+  },
+};
+
+type CellKey = keyof typeof CELL;
+
+interface ReturnColumn {
+  key: CellKey;
+  label: string;
+  center?: boolean;
+  tdStyle?: React.CSSProperties;
+  render: (item: ReturnItem) => React.ReactNode;
+}
+
+function buildColumns(defs: { key: CellKey; label: string }[]): ReturnColumn[] {
+  return defs.map((d) => ({ ...CELL[d.key], key: d.key, label: d.label }));
+}
+
+const VENDOR_COLUMNS = buildColumns([
+  { key: "daysCounter",     label: "الأيام" },
+  { key: "operationNumber", label: "رقم العملية" },
+  { key: "orderNumber",     label: "رقم الطلب" },
+  { key: "reason",          label: "السبب" },
+  { key: "returnDate",      label: "تاريخ الإرجاع" },
+  { key: "sellerName",      label: "البائع" },
+  { key: "returnTypeLabel", label: "نوع الإرجاع" },
+  { key: "status",          label: "الحالة" },
+]);
+
+/** ترتيب أعمدة مرتجعات العملاء — بلا عمود «نوع الإرجاع». */
+const CUSTOMER_COLUMNS = buildColumns([
+  { key: "operationNumber", label: "رقم العملية" },
+  { key: "orderNumber",     label: "رقم الطلب" },
+  { key: "sellerName",      label: "اسم البائع" },
+  { key: "reason",          label: "سبب السحب" },
+  { key: "returnDate",      label: "تاريخ السحب" },
+  { key: "daysCounter",     label: "عدد الأيام" },
+  { key: "status",          label: "حالة السحب" },
+]);
+
 function ReturnsTable({
-  items, isLoading, isFetching, page, totalPages, totalCount, onPageChange, onEdit,
+  items, isLoading, isFetching, page, totalPages, totalCount, onPageChange, columns, onEdit,
 }: {
   items: ReturnItem[]; isLoading: boolean; isFetching: boolean;
   page: number; totalPages: number; totalCount: number; onPageChange: (p: number) => void;
+  columns: ReturnColumn[];
   /** عند تمريرها يظهر عمود التعديل — مرتجعات العملاء فقط */
   onEdit?: (item: ReturnItem) => void;
 }) {
@@ -138,14 +244,9 @@ function ReturnsTable({
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
           <thead>
             <tr>
-              <th style={{ ...TH, textAlign: "center" }}>الأيام</th>
-              <th style={TH}>رقم العملية</th>
-              <th style={TH}>رقم الطلب</th>
-              <th style={TH}>السبب</th>
-              <th style={TH}>تاريخ الإرجاع</th>
-              <th style={TH}>البائع</th>
-              <th style={TH}>نوع الإرجاع</th>
-              <th style={TH}>الحالة</th>
+              {columns.map((c) => (
+                <th key={c.key} style={c.center ? { ...TH, textAlign: "center" } : TH}>{c.label}</th>
+              ))}
               {onEdit && <th style={{ ...TH, textAlign: "center" }}>تعديل</th>}
             </tr>
           </thead>
@@ -157,49 +258,14 @@ function ReturnsTable({
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = HX.accentLight; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
               >
-                <td style={{ ...TD, textAlign: "center" }}>
-                  <Box component="span" sx={{
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    minWidth: 28, height: 22, px: "6px", borderRadius: "100px",
-                    fontSize: "11px", fontWeight: 700, fontFamily: FONT,
-                    bgcolor: HX.amberLight, color: HX.amber,
-                  }}>
-                    {item.daysCounter ?? "—"}
-                  </Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>
-                    {item.operationNumber || "—"}
-                  </Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.accent }}>
-                    {item.orderNumber || "—"}
-                  </Box>
-                </td>
-                <td style={{ ...TD, maxWidth: 200 }}>
-                  <Box component="span" sx={{ fontSize: "12px", color: HX.tx2, display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {item.reason || "—"}
-                  </Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.returnDate)}</Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.tx }}>{item.sellerName || "—"}</Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.returnTypeLabel || "—"}</Box>
-                </td>
-                <td style={TD}>
-                  <Box component="span" sx={{
-                    display: "inline-flex", alignItems: "center", px: "8px", py: "3px",
-                    borderRadius: "100px", fontSize: "11px", fontWeight: 600, fontFamily: FONT,
-                    bgcolor: HX.purpleLight, color: HX.purple,
-                  }}>
-                    {item.statusLabel || "—"}
-                  </Box>
-                </td>
+                {columns.map((c) => (
+                  <td
+                    key={c.key}
+                    style={{ ...TD, ...(c.center ? { textAlign: "center" as const } : null), ...c.tdStyle }}
+                  >
+                    {c.render(item)}
+                  </td>
+                ))}
                 {onEdit && (
                   <td style={{ ...TD, textAlign: "center" }}>
                     <Tooltip title="تعديل المرتجع" placement="top">
@@ -404,6 +470,7 @@ export default function ReturnsPanel() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        columns={activeTab === "vendor" ? VENDOR_COLUMNS : CUSTOMER_COLUMNS}
         onEdit={activeTab === "customer" ? setEditItem : undefined}
       />
 

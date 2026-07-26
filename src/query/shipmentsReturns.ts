@@ -11,6 +11,7 @@ export interface ReturnItem {
   reason: string;
   returnDate: string | null;
   sellerName: string;
+  returnType?: number | null;
   returnTypeLabel: string;
   statusLabel: string;
   /** معرّف الحالة — يُستخدم لتعبئة نموذج التعديل. غير مضمون في كل استجابة. */
