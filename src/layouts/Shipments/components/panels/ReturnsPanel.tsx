@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
-import { Box, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, FormControl, InputLabel, MenuItem, Select, Tooltip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import moment from "moment";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
@@ -12,6 +13,7 @@ import {
   type ReturnItem,
   type ReturnsParams,
 } from "query/shipmentsReturns";
+import EditCustomerReturnModal from "./EditCustomerReturnModal";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -113,10 +115,12 @@ function SkeletonRows() {
 }
 
 function ReturnsTable({
-  items, isLoading, isFetching, page, totalPages, totalCount, onPageChange,
+  items, isLoading, isFetching, page, totalPages, totalCount, onPageChange, onEdit,
 }: {
   items: ReturnItem[]; isLoading: boolean; isFetching: boolean;
   page: number; totalPages: number; totalCount: number; onPageChange: (p: number) => void;
+  /** عند تمريرها يظهر عمود التعديل — مرتجعات العملاء فقط */
+  onEdit?: (item: ReturnItem) => void;
 }) {
   if (isLoading) return <SkeletonRows />;
 
@@ -142,6 +146,7 @@ function ReturnsTable({
               <th style={TH}>البائع</th>
               <th style={TH}>نوع الإرجاع</th>
               <th style={TH}>الحالة</th>
+              {onEdit && <th style={{ ...TH, textAlign: "center" }}>تعديل</th>}
             </tr>
           </thead>
           <tbody>
@@ -195,6 +200,26 @@ function ReturnsTable({
                     {item.statusLabel || "—"}
                   </Box>
                 </td>
+                {onEdit && (
+                  <td style={{ ...TD, textAlign: "center" }}>
+                    <Tooltip title="تعديل المرتجع" placement="top">
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => onEdit(item)}
+                        sx={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 28, height: 28, borderRadius: "7px",
+                          border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
+                          color: HX.tx2, cursor: "pointer", transition: ".15s",
+                          "&:hover": { bgcolor: HX.accentLight, borderColor: HX.accentBorder, color: HX.accent },
+                        }}
+                      >
+                        <EditOutlinedIcon sx={{ fontSize: 15 }} />
+                      </Box>
+                    </Tooltip>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -227,6 +252,7 @@ export default function ReturnsPanel() {
   const [applied, setApplied]         = useState<FilterState>(EMPTY_FILTERS);
   const [vendorPage, setVendorPage]   = useState(1);
   const [customerPage, setCustomerPage] = useState(1);
+  const [editItem, setEditItem]       = useState<ReturnItem | null>(null);
 
   const { data: meta } = useShipmentsMetaQuery();
 
@@ -279,6 +305,7 @@ export default function ReturnsPanel() {
   const handleTabChange = (id: "vendor" | "customer") => {
     if (id === activeTab) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    setEditItem(null);
     setActiveTab(id);
     setFilters(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
@@ -374,6 +401,14 @@ export default function ReturnsPanel() {
         totalPages={totalPages}
         totalCount={totalCount}
         onPageChange={setPage}
+        onEdit={activeTab === "customer" ? setEditItem : undefined}
+      />
+
+      <EditCustomerReturnModal
+        open={editItem !== null}
+        onClose={() => setEditItem(null)}
+        item={editItem}
+        statusOptions={meta?.customerReturnStatuses ?? []}
       />
     </Box>
   );

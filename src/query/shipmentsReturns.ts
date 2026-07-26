@@ -1,5 +1,6 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { shipmentKeys } from "./keys";
 
 export interface ReturnItem {
@@ -12,6 +13,8 @@ export interface ReturnItem {
   sellerName: string;
   returnTypeLabel: string;
   statusLabel: string;
+  /** معرّف الحالة — يُستخدم لتعبئة نموذج التعديل. غير مضمون في كل استجابة. */
+  status?: number | null;
 }
 
 export interface ReturnsListResponse {
@@ -78,5 +81,35 @@ export function useCustomerReturnsQuery(params: ReturnsParams) {
     queryFn:  () => fetchCustomerReturns(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+/** PUT /shipments/returns/customer/{returnId} — تحديث مرتجع العميل. */
+export interface UpdateCustomerReturnPayload {
+  /** أحد معرّفات customerReturnStatuses من /shipments/meta */
+  status: number;
+}
+
+export async function putCustomerReturn(
+  returnId: number | string,
+  body: UpdateCustomerReturnPayload
+): Promise<void> {
+  await axiosRequest.put(`/shipments/returns/customer/${returnId}`, body);
+}
+
+export function useUpdateCustomerReturnMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { returnId: number | string; body: UpdateCustomerReturnPayload }) =>
+      putCustomerReturn(vars.returnId, vars.body),
+    onSuccess: async () => {
+      // يشمل قوائم المرتجعات وعدّادات التبويبات في الـ meta
+      await queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+      NotificationMeassage("success", "تم تحديث حالة المرتجع");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء تحديث المرتجع");
+    },
   });
 }
