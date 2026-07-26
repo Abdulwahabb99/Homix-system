@@ -80,7 +80,7 @@ const BASE_COLS = [
 
 const ADMIN_COLS = [
   { key: "admin", label: "المسئول", w: 116 },
-  { key: "type",  label: "النوع",   w: 84  },
+  { key: "type",  label: "النوع",   w: 150 },
 ] as const;
 
 const ACTIONS_COL = { key: "actions", label: "", w: 92 } as const;
@@ -229,6 +229,7 @@ interface Order {
   type?: string;
   userId?: string | number;
   shippedFromInventory?: boolean;
+  deliveryByLabel?: string;
   vendorId?: string | number;
   vendorName?: string;
   userNameFromApi?: string;
@@ -684,7 +685,12 @@ export default function OrdersHomixTableV2({
                   <td style={TD}><PaymentBadge status={order.paymentStatus} /></td>
 
                   {/* التوصيل بواسطة */}
-                  <td style={TD}><DeliveryByBadge fromInventory={order.shippedFromInventory} /></td>
+                  <td style={TD}>
+                    <DeliveryByBadge
+                      fromInventory={order.shippedFromInventory}
+                      label={order.deliveryByLabel}
+                    />
+                  </td>
 
                   {/* حالة التأخير */}
                   <td style={TD}><DeliveryStatusBadge status={order.deliveryStatus} /></td>

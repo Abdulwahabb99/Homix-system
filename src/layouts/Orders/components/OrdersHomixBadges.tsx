@@ -190,8 +190,19 @@ export function DaysCounterBadge({ days, active }: { days: string | number | nul
 }
 
 /* ─── DELIVERY BY BADGE ─── */
-export function DeliveryByBadge({ fromInventory }: { fromInventory: boolean | null | undefined }) {
-  if (fromInventory === null || fromInventory === undefined) {
+/**
+ * «التوصيل بواسطة» — النص من `deliveryByLabel` كما يرده الـ API. الـ boolean
+ * يُستخدم للّون فقط (ويبقى بديلاً للنص إن لم تُرسل التسمية).
+ */
+export function DeliveryByBadge({
+  fromInventory,
+  label,
+}: {
+  fromInventory: boolean | null | undefined;
+  label?: string | null;
+}) {
+  const text = (label ?? "").trim();
+  if (!text && (fromInventory === null || fromInventory === undefined)) {
     return <Box component="span" sx={{ color: HX.tx3, fontSize: "11.5px" }}>—</Box>;
   }
   return (
@@ -203,7 +214,7 @@ export function DeliveryByBadge({ fromInventory }: { fromInventory: boolean | nu
         fontWeight: 500,
       }}
     >
-      {fromInventory ? "المخزن" : "البائع"}
+      {text || (fromInventory ? "المخزن" : "البائع")}
     </Box>
   );
 }

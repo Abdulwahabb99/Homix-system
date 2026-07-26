@@ -149,6 +149,7 @@ interface Order {
   type?: string;
   userId?: string | number;
   shippedFromInventory?: boolean;
+  deliveryByLabel?: string;
   vendorId?: string | number;
   vendorName?: string;
   userNameFromApi?: string;
@@ -387,7 +388,7 @@ export default function OrdersHomixMobileList({
               <OrderStatusBadge status={order.status} />
               <OrderSourceBadge label={order.orderSourceLabel} />
               <PaymentBadge status={order.paymentStatus} />
-              <DeliveryByBadge fromInventory={order.shippedFromInventory} />
+              <DeliveryByBadge fromInventory={order.shippedFromInventory} label={order.deliveryByLabel} />
               <DeliveryStatusBadge status={order.deliveryStatus} />
               <PriorityValueBadge priority={order.deliveryPriority} label={order.deliveryPriorityLabel} />
               <DaysCounterBadge days={daysLabel} active={order.status === 2} />

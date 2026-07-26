@@ -83,9 +83,12 @@ function mapListItemRow(row) {
     paymentStatus: row.paymentStatus,
     PoDate: row.expectedDeliveryDate ?? undefined,
     createdAt: row.orderDate,
-    shippedFromInventory: inferShippedFromInventory(row.deliveryBy),
-    /** خام كما يرده الـ API (تسمية أو معرّف) — نموذج التعديل يطبّعه عبر الـ meta */
+    // الاستنتاج من التسمية أولاً — `deliveryBy` قد يكون معرّفاً رقمياً لا نصاً
+    shippedFromInventory: inferShippedFromInventory(row.deliveryByLabel ?? row.deliveryBy),
+    /** المعرّف — يُستخدم لتعبئة نموذج التعديل */
     deliveryBy: row.deliveryBy,
+    /** التسمية المعروضة كما يرسلها الـ API ("هوميكس" / "بائع") */
+    deliveryByLabel: row.deliveryByLabel,
     vendorId: row.vendorId,
     vendorName: row.vendorName,
     userId: row.userId,
@@ -140,6 +143,7 @@ function mapOrderRow(order) {
     type: order.orderLines[0]?.product?.type?.name,
     shippedFromInventory: order.shippedFromInventory,
     deliveryBy: order.deliveryBy,
+    deliveryByLabel: order.deliveryByLabel,
     vendorId: order.vendorId,
   };
 }

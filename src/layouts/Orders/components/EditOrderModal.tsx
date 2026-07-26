@@ -62,18 +62,18 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const deliveryByOptions = ordersMeta?.deliveryByOptions ?? [];
 
   /**
-   * الـ API يُرجع «التوصيل بواسطة» كتسمية ("هوميكس" / "بائع") ويستقبل معرّفاً،
-   * فنطبّع القيمة الواردة على معرّف الـ meta بعد وصول القائمة.
+   * «التوصيل بواسطة» يأتي كمعرّف في `deliveryBy` وكنص في `deliveryByLabel`،
+   * والـ API يستقبل معرّفاً — فنطبّع أيّهما وصل على معرّف الـ meta بعد تحميل القائمة.
    */
   useEffect(() => {
     if (deliveryBy !== "" || !deliveryByOptions.length) return;
-    const raw = data.deliveryBy;
-    if (raw == null || raw === "") return;
-    const byId = deliveryByOptions.find((o) => String(o.id) === String(raw));
-    const byLabel = deliveryByOptions.find((o) => o.label === String(raw).trim());
+    const byId = deliveryByOptions.find((o) => String(o.id) === String(data.deliveryBy ?? ""));
+    const byLabel = deliveryByOptions.find(
+      (o) => o.label === String(data.deliveryByLabel ?? "").trim()
+    );
     const match = byId ?? byLabel;
     if (match) setDeliveryBy(match.id);
-  }, [deliveryByOptions, data.deliveryBy, deliveryBy]);
+  }, [deliveryByOptions, data.deliveryBy, data.deliveryByLabel, deliveryBy]);
 
   const administratorAutocompleteProps = getUserSelectAutocompleteConfig(35);
 
