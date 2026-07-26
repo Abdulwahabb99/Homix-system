@@ -57,7 +57,11 @@ class FactoryController {
           statusCode: 404,
         });
       }
-      return res.status(200).json(factory);
+      return res.status(200).json({
+        data: factory,
+        status: true,
+        statusCode: 200,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch factory";
       return next(new AppError(message, 500));
