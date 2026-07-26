@@ -190,6 +190,7 @@ const makeOrder = (overrides: Record<string, unknown> = {}) => ({
   totalCost: "1200",
   totalDiscounts: "100",
   totalPrice: "2299",
+  userId: 1,
   user: { firstName: "Sara", lastName: "Mohamed" },
   ...overrides,
 });

@@ -176,6 +176,7 @@ const makeShipment = (overrides: Record<string, unknown> = {}) => ({
   shippingReceiveDate: "2026-05-12T00:00:00.000Z",
   toBeCollected: "29998",
   totalPrice: "29998",
+  userId: 1,
   updatedAt: "2026-05-15T12:00:00.000Z",
   ...overrides,
 });
