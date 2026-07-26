@@ -821,6 +821,7 @@ const swaggerOptions = {
               nullable: true,
               type: "integer",
             },
+            deliveryByLabel: { example: "هوميكس", type: "string" },
             deliveryStatus: { example: 3, nullable: true, type: "integer" },
             deliveryPriority: { enum: [1, 2, 3], nullable: true, type: "integer" },
             deliveryPriorityLabel: { example: "بالمدة", type: "string" },

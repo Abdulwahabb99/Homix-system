@@ -9,6 +9,7 @@
     "db:setup-order-source": "tsx src/scripts/setup-order-source.ts",
     "db:setup-order-priority": "tsx src/scripts/setup-order-priority.ts",
     "db:add-ticket-fks": "tsx src/scripts/add-ticket-foreign-keys.ts",
+    "db:recalculate-order-fines": "tsx src/scripts/recalculate-order-fines.ts",
     "db:backfill-user-permissions": "tsx src/scripts/backfill-user-permissions.ts",
     "db:migrate-shipping-companies": "tsx src/scripts/migrate-shipping-companies.ts",
     "db:plan-constraints": "tsx src/scripts/plan-db-constraint-hardening.ts",

@@ -49,6 +49,7 @@ export type OrderListItem = {
   priority: OrderPriorityKey | null;
   priorityLabel: string;
   deliveryBy: number | null;
+  deliveryByLabel: string;
   expectedDeliveryDate: string | null;
   fine: number;
   id: number;
@@ -63,9 +64,11 @@ export type OrderListItem = {
   paymentStatusLabel: string;
   productCode: string;
   productImage: string;
+  itemType: string;
   productName: string;
   status: number | null;
   statusLabel: string;
+  toBeCollected: number;
   totalCost: number;
   totalPrice: number;
   userName: string;

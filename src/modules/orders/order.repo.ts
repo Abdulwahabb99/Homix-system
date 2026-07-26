@@ -373,6 +373,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
   const orderLine = Array.isArray(order.orderLines) ? toPlain(order.orderLines[0]) : {};
   const product = toPlain(orderLine.product);
   const vendor = toPlain(product.vendor);
+  const type = toPlain(product.type);
   const user = toPlain(order.user);
   const priority = resolveOrderPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
@@ -381,6 +382,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     customerName: `${toText(toPlain(order.customer).firstName)} ${toText(toPlain(order.customer).lastName)}`.trim(),
     daysSinceOrder: getDaysSince(order.orderDate),
     deliveryBy: toNumber(order.deliveryBy) || null,
+    deliveryByLabel: DELIVERY_BY_ARABIC[toNumber(order.deliveryBy) as keyof typeof DELIVERY_BY_ARABIC] ?? "",
     deliveryPriority: priority,
     deliveryPriorityLabel: getDeliveryPriorityLabel(priority),
     deliveryStatus: resolveDeliveryStatus(order.deliveryStatus, order.expectedDeliveryDate),
@@ -400,9 +402,11 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     paymentStatusLabel: getPaymentLabel(order.paymentStatus),
     productCode: toText(orderLine.sku),
     productImage: toText(product.image),
+    itemType: toText(type.name),
     productName: toText(product.title, toText(orderLine.title)),
     status: toNumber(order.status) || null,
     statusLabel: getStatusLabel(order.status),
+    toBeCollected: toNumber(order.toBeCollected),
     totalCost: toNumber(order.totalCost),
     totalPrice: toNumber(order.totalPrice),
     userName: `${toText(user.firstName)} ${toText(user.lastName)}`.trim(),

@@ -39,29 +39,75 @@ const normalizeNumber = (value) => {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 };
 
-const calculateExceededDays = (orderDate, daysToDeliver, endDate = new Date()) => {
-  const deliveryWindow = normalizeNumber(daysToDeliver);
-  if (!orderDate || deliveryWindow <= 0) {
-    return 0;
-  }
-
-  const startMoment = moment(orderDate);
+const calculateExceededDays = ({
+  orderDate,
+  daysToDeliver,
+  expectedDeliveryDate,
+  endDate = new Date(),
+}) => {
   const endMoment = moment(endDate);
-  if (!startMoment.isValid() || !endMoment.isValid()) {
+  if (!endMoment.isValid()) {
     return 0;
   }
 
-  return Math.max(0, endMoment.startOf("day").diff(startMoment.startOf("day"), "days") - deliveryWindow);
+  const deliveryWindow = normalizeNumber(daysToDeliver);
+  if (orderDate && deliveryWindow > 0) {
+    const startMoment = moment(orderDate);
+    if (startMoment.isValid()) {
+      return Math.max(
+        0,
+        endMoment.startOf("day").diff(startMoment.startOf("day"), "days")
+          - deliveryWindow,
+      );
+    }
+  }
+
+  if (expectedDeliveryDate) {
+    const expectedMoment = moment(expectedDeliveryDate);
+    if (expectedMoment.isValid()) {
+      return Math.max(
+        0,
+        endMoment.startOf("day").diff(expectedMoment.startOf("day"), "days"),
+      );
+    }
+  }
+
+  return 0;
 };
 
-const calculateOrderFine = ({ baseAmount, daysToDeliver, orderDate, endDate = new Date() }) => {
-  const exceededDays = calculateExceededDays(orderDate, daysToDeliver, endDate);
+const calculateOrderFine = ({
+  baseAmount,
+  daysToDeliver,
+  orderDate,
+  expectedDeliveryDate,
+  endDate = new Date(),
+}) => {
+  const exceededDays = calculateExceededDays({
+    daysToDeliver,
+    endDate,
+    expectedDeliveryDate,
+    orderDate,
+  });
   if (exceededDays < 1) {
     return 0;
   }
 
   const amount = normalizeNumber(baseAmount);
   return Math.round(amount * 0.01 * exceededDays * 100) / 100;
+};
+
+const calculateOrderFineForRecord = (orderLike, endDate = new Date()) => {
+  const firstOrderLine = Array.isArray(orderLike.orderLines)
+    ? orderLike.orderLines[0]
+    : null;
+
+  return calculateOrderFine({
+    baseAmount: orderLike.subTotalPrice,
+    daysToDeliver: firstOrderLine?.product?.vendor?.daysToDeliver,
+    endDate,
+    expectedDeliveryDate: orderLike.expectedDeliveryDate,
+    orderDate: orderLike.orderDate,
+  });
 };
 
 class OrderService {
@@ -326,7 +372,14 @@ class OrderService {
           orderSource:
             order.orderSource
             || (order.id ? ORDER_SOURCE.ONLINE : ORDER_SOURCE.SHOWROOM),
-          fine: 0,
+          fine: calculateOrderFine({
+            baseAmount: subTotalPrice,
+            daysToDeliver: vendor?.daysToDeliver,
+            expectedDeliveryDate: vendor?.daysToDeliver
+              ? moment().add(vendor.daysToDeliver, "days").toDate()
+              : null,
+            orderDate: order.created_at || new Date(),
+          }),
           userId: vendor?.accountManagerUserId || null,
         };
         // status: order.status || null,
@@ -344,6 +397,13 @@ class OrderService {
           !obj.deliveryDate
         ) {
           obj.deliveryDate = new Date();
+          obj.fine = calculateOrderFine({
+            baseAmount: subTotalPrice,
+            daysToDeliver: vendor?.daysToDeliver,
+            endDate: obj.deliveryDate,
+            expectedDeliveryDate: obj.expectedDeliveryDate,
+            orderDate: obj.orderDate,
+          });
         }
         if (order.financialStatus) {
           obj.financialStatus = order.financialStatus;
@@ -1376,7 +1436,30 @@ class OrderService {
     };
   }
   static async updateOrder(orderId, orderData, user) {
-    const order = await Order.findByPk(orderId);
+    const order = await Order.findByPk(orderId, {
+      include: [
+        {
+          model: OrderLine,
+          as: "orderLines",
+          required: false,
+          include: [
+            {
+              model: Product,
+              as: "product",
+              required: false,
+              include: [
+                {
+                  model: Vendor,
+                  as: "vendor",
+                  required: false,
+                  attributes: ["daysToDeliver"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
     const logs = [];
     if (!order) {
       return {
@@ -1504,6 +1587,24 @@ class OrderService {
         Number(subTotal) + Number(shippingFees) - Number(totalDiscounts);
     }
 
+    const nextStatus = Number(orderData.status || order.status) || null;
+    const nextDeliveryDate = orderData.deliveryDate || order.deliveryDate || null;
+    const nextExpectedDeliveryDate =
+      orderData.expectedDeliveryDate || order.expectedDeliveryDate || null;
+    const shouldFreezeFine =
+      nextStatus === ORDER_STATUS.DELIVERED
+      || nextStatus === ORDER_STATUS.CANCELED
+      || nextStatus === ORDER_STATUS.IN_INVENTORY;
+
+    orderData.fine = calculateOrderFineForRecord(
+      {
+        ...order.toJSON(),
+        ...orderData,
+        expectedDeliveryDate: nextExpectedDeliveryDate,
+      },
+      shouldFreezeFine ? (nextDeliveryDate || new Date()) : new Date(),
+    );
+
     await order.update(orderData);
     await Log.bulkCreate(logs);
     const returnedOrder = await Order.findOne({
@@ -1566,6 +1667,8 @@ class OrderService {
   static async BulkUpdate(body, user) {
     const { orderIds, orderData } = body;
     const logs = [];
+    const normalizedOrderIds = orderIds.map((id) => Number(id));
+    let orders = [];
     Object.keys(orderData).forEach(
       (key) =>
         (orderData[key] === undefined ||
@@ -1578,12 +1681,34 @@ class OrderService {
       if (orderData.status == ORDER_STATUS.IN_PROGRESS) {
         orderData.PoDate = new Date();
       }
-      const orders = await Order.findAll({
+      orders = await Order.findAll({
         where: {
           id: {
-            [Op.in]: orderIds.map((id) => Number(id)),
+            [Op.in]: normalizedOrderIds,
           },
         },
+        include: [
+          {
+            model: OrderLine,
+            as: "orderLines",
+            required: false,
+            include: [
+              {
+                model: Product,
+                as: "product",
+                required: false,
+                include: [
+                  {
+                    model: Vendor,
+                    as: "vendor",
+                    required: false,
+                    attributes: ["daysToDeliver"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       });
       for (const order of orders) {
         Object.keys(orderData).forEach((key) =>
@@ -1598,6 +1723,24 @@ class OrderService {
           }),
         );
         if (Number(order.status) !== Number(orderData.status)) {
+          if (
+            Number(orderData.status) === ORDER_STATUS.DELIVERED &&
+            !orderData.deliveryDate &&
+            !order.deliveryDate
+          ) {
+            orderData.deliveryDate = new Date();
+          }
+
+          orderData.fine = calculateOrderFineForRecord(
+            {
+              ...order.toJSON(),
+              ...orderData,
+            },
+            Number(orderData.status) === ORDER_STATUS.DELIVERED
+              ? (orderData.deliveryDate || new Date())
+              : new Date(),
+          );
+
           await OrderService.sendNotification(
             order.id,
             order.orderNumber,
@@ -1615,16 +1758,66 @@ class OrderService {
           );
         }
       }
-
     }
 
-    await Order.update(orderData, {
-      where: {
-        id: {
-          [Op.in]: orderIds,
+    if (!orders.length) {
+      orders = await Order.findAll({
+        where: {
+          id: {
+            [Op.in]: normalizedOrderIds,
+          },
         },
-      },
-    });
+        include: [
+          {
+            model: OrderLine,
+            as: "orderLines",
+            required: false,
+            include: [
+              {
+                model: Product,
+                as: "product",
+                required: false,
+                include: [
+                  {
+                    model: Vendor,
+                    as: "vendor",
+                    required: false,
+                    attributes: ["daysToDeliver"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    for (const order of orders) {
+      const perOrderData = { ...orderData };
+      const nextStatus = Number(perOrderData.status || order.status) || null;
+      if (
+        nextStatus === ORDER_STATUS.DELIVERED &&
+        !perOrderData.deliveryDate &&
+        !order.deliveryDate
+      ) {
+        perOrderData.deliveryDate = new Date();
+      }
+
+      const shouldFreezeFine =
+        nextStatus === ORDER_STATUS.DELIVERED
+        || nextStatus === ORDER_STATUS.CANCELED
+        || nextStatus === ORDER_STATUS.IN_INVENTORY;
+
+      perOrderData.fine = calculateOrderFineForRecord(
+        {
+          ...order.toJSON(),
+          ...perOrderData,
+        },
+        shouldFreezeFine ? (perOrderData.deliveryDate || new Date()) : new Date(),
+      );
+
+      await order.update(perOrderData);
+    }
     await Log.bulkCreate(logs);
 
     return {
@@ -1892,7 +2085,15 @@ class OrderService {
 
   static async recalculateDailyFines() {
     const activeOrders = await Order.findAll({
-      attributes: ["id", "fine", "orderDate", "status", "subTotalPrice"],
+      attributes: [
+        "id",
+        "fine",
+        "orderDate",
+        "status",
+        "subTotalPrice",
+        "expectedDeliveryDate",
+        "deliveryDate",
+      ],
       include: [
         {
           model: OrderLine,
@@ -1925,14 +2126,7 @@ class OrderService {
     let updatedCount = 0;
 
     for (const order of activeOrders) {
-      const firstOrderLine = Array.isArray(order.orderLines)
-        ? order.orderLines[0]
-        : null;
-      const nextFine = calculateOrderFine({
-        baseAmount: order.subTotalPrice,
-        daysToDeliver: firstOrderLine?.product?.vendor?.daysToDeliver,
-        orderDate: order.orderDate,
-      });
+      const nextFine = calculateOrderFineForRecord(order, new Date());
 
       if (normalizeNumber(order.fine) === nextFine) {
         continue;

@@ -257,11 +257,11 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith(
       [expect.objectContaining({
-        ...payload,
         deliveryBy: 2,
-        orderSource: 1,
         priority: 1,
+        subTotalPrice: 16999,
         toBeCollected: 16999,
+        totalDiscounts: 0,
       })],
       false,
       { id: 1, userType: "1" },
@@ -404,6 +404,7 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0].deliveryBy).toBe(1);
+    expect(response.body.data.items[0].deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.items[0].deliveryStatus).toBe(3);
     expect(response.body.data.items[0].priority).toBe(3);
     expect(response.body.data.items[0].priorityLabel).toBe("مستعجل جدا");
@@ -517,6 +518,7 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.order.deliveryBy).toBe(1);
+    expect(response.body.data.order.deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.order.deliveryStatus).toBe(3);
     expect(response.body.data.order.priority).toBe(3);
     expect(response.body.data.order.priorityLabel).toBe("مستعجل جدا");
