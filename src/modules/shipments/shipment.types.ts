@@ -350,10 +350,20 @@ export type PerformanceDeliveryProviderItem = {
   totalGmv: number;
 };
 
+export type PerformanceVendorItem = {
+  averageDeliveryDays: number;
+  deliveredOrdersCount: number;
+  returnsCount: number;
+  sellerName: string;
+  successRate: number;
+  totalGmv: number;
+};
+
 export type PerformanceResponse = {
   chart: PerformanceChartItem[];
   overview: PerformanceOverview;
   providers: PerformanceDeliveryProviderItem[];
+  vendors: PerformanceVendorItem[];
 };
 
 export type LegacyShipmentResponse<TData = unknown> = {

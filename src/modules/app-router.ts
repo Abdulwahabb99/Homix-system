@@ -1857,6 +1857,20 @@ const swaggerOptions = {
                   },
                   type: "array",
                 },
+                vendors: {
+                  items: {
+                    type: "object",
+                    properties: {
+                      averageDeliveryDays: { example: 2.8, type: "number" },
+                      deliveredOrdersCount: { example: 42, type: "integer" },
+                      returnsCount: { example: 3, type: "integer" },
+                      sellerName: { example: "ركنة للأثاث", type: "string" },
+                      successRate: { example: 94, type: "number" },
+                      totalGmv: { example: 181400, type: "number" },
+                    },
+                  },
+                  type: "array",
+                },
               },
             },
             status: { example: true, type: "boolean" },

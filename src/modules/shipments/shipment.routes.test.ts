@@ -925,6 +925,9 @@ describe("shipmentRouter", () => {
       deliveryByLabel: "هوميكس",
       shippingCompanyName: "J&T",
     }));
+    expect(response.body.data.vendors[0]).toEqual(expect.objectContaining({
+      sellerName: "ركنة للأثاث",
+    }));
   });
 
   it("accepts ISO date filters for shipment performance", async () => {

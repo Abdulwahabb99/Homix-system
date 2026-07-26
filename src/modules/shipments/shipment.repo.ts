@@ -1360,6 +1360,12 @@ export class ShipmentRepository {
       totalDays: number;
       totalGmv: number;
     }>();
+    const vendorMap = new Map<string, {
+      deliveredOrdersCount: number;
+      sellerName: string;
+      totalDays: number;
+      totalGmv: number;
+    }>();
 
     for (const item of items) {
       const deliveryDate = item.deliveryDate ? new Date(item.deliveryDate) : null;
@@ -1383,6 +1389,18 @@ export class ShipmentRepository {
       providerValue.totalDays += item.daysCounter ?? 0;
       providerValue.totalGmv += item.amountToCollect;
       providerMap.set(providerKey, providerValue);
+
+      const vendorKey = item.sellerName || "غير محدد";
+      const vendorValue = vendorMap.get(vendorKey) ?? {
+        deliveredOrdersCount: 0,
+        sellerName: item.sellerName || "غير محدد",
+        totalDays: 0,
+        totalGmv: 0,
+      };
+      vendorValue.deliveredOrdersCount += 1;
+      vendorValue.totalDays += item.daysCounter ?? 0;
+      vendorValue.totalGmv += item.amountToCollect;
+      vendorMap.set(vendorKey, vendorValue);
     }
 
     const deliveredOrdersCount = items.length;
@@ -1412,6 +1430,16 @@ export class ShipmentRepository {
         shippingCompanyName: providerValue.shippingCompanyName,
         successRate: 100,
         totalGmv: providerValue.totalGmv,
+      })),
+      vendors: Array.from(vendorMap.values()).map((vendorValue) => ({
+        averageDeliveryDays: vendorValue.deliveredOrdersCount > 0
+          ? Math.round((vendorValue.totalDays / vendorValue.deliveredOrdersCount) * 10) / 10
+          : 0,
+        deliveredOrdersCount: vendorValue.deliveredOrdersCount,
+        returnsCount: 0,
+        sellerName: vendorValue.sellerName,
+        successRate: 100,
+        totalGmv: vendorValue.totalGmv,
       })),
     };
   }
