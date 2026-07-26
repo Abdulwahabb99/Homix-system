@@ -15,7 +15,7 @@ const Financialreports = React.lazy(
   () => import(/* webpackPrefetch: true */ "layouts/Financialreports")
 );
 const Factories = React.lazy(
-  () => import(/* webpackPrefetch: true */ "layouts/Factories/Factories")
+  () => import(/* webpackPrefetch: true */ "layouts/Factories")
 );
 const Users = React.lazy(() => import("./layouts/Users"));
 const Shipments = React.lazy(() => import("./layouts/Shipments/Shipments"));
