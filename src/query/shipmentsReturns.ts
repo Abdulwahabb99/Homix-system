@@ -15,6 +15,8 @@ export interface ReturnItem {
   statusLabel: string;
   /** معرّف الحالة — يُستخدم لتعبئة نموذج التعديل. غير مضمون في كل استجابة. */
   status?: number | null;
+  /** معرّف الطلب الرقمي — مطلوب في جسم التحديث. غير مضمون في كل استجابة. */
+  orderId?: number | null;
 }
 
 export interface ReturnsListResponse {
@@ -86,6 +88,10 @@ export function useCustomerReturnsQuery(params: ReturnsParams) {
 
 /** PUT /shipments/returns/customer/{returnId} — تحديث مرتجع العميل. */
 export interface UpdateCustomerReturnPayload {
+  orderId?: number;
+  reason?: string;
+  /** ISO — مثال: "2026-05-18T00:00:00.000Z" */
+  returnDate?: string;
   /** أحد معرّفات customerReturnStatuses من /shipments/meta */
   status: number;
 }
