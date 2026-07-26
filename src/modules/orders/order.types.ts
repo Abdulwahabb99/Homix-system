@@ -220,6 +220,7 @@ export type OrderDetailsView = {
     color: string;
     id: number;
     image: string;
+    itemType: string;
     material: string;
     productId: number | null;
     productName: string;

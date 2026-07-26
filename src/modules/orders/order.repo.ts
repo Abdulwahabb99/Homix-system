@@ -677,6 +677,7 @@ export class OrderRepository {
           color: toText(plainLine.color),
           id: toNumber(plainLine.id),
           image: toText(product.image),
+          itemType: toText(type.name),
           material: toText(plainLine.material),
           productId: toNumber(product.id) || null,
           productName: toText(product.title, toText(plainLine.title)),

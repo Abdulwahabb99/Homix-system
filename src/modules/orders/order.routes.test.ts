@@ -486,6 +486,7 @@ describe("orderRouter", () => {
     expect(response.body.data.statusHistory[2].status).toBe(3);
     expect(response.body.data.statusHistory[2].isActive).toBe(false);
     expect(response.body.data.items[0].productName).toBe("ركنة للأثاث");
+    expect(response.body.data.items[0].itemType).toBe("غرفة نوم");
     expect(response.body.data.items[0].vendorName).toBe("ركنة للأثاث");
     expect(response.body.data.items[0].variant).toEqual(expect.objectContaining({
       color: "blue",

@@ -977,6 +977,7 @@ const swaggerOptions = {
                   color: { example: "blue", type: "string" },
                   id: { example: 18, type: "integer" },
                   image: { example: "https://example.com/product.png", type: "string" },
+                  itemType: { example: "غرفة نوم", type: "string" },
                   material: { example: "wood", type: "string" },
                   productId: { example: 33, nullable: true, type: "integer" },
                   productName: { example: "ركنة للأثاث", type: "string" },
