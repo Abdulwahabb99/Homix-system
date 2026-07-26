@@ -339,6 +339,12 @@ class OrderService {
         if (obj.status) {
           obj.status = order.status;
         }
+        if (
+          Number(obj.status) === ORDER_STATUS.DELIVERED &&
+          !obj.deliveryDate
+        ) {
+          obj.deliveryDate = new Date();
+        }
         if (order.financialStatus) {
           obj.financialStatus = order.financialStatus;
         }
@@ -1442,6 +1448,13 @@ class OrderService {
       if (Number(order.status) !== Number(orderData.status)) {
         if (orderData.status == ORDER_STATUS.IN_PROGRESS) {
           orderData.PoDate = new Date();
+        }
+        if (
+          Number(orderData.status) === ORDER_STATUS.DELIVERED &&
+          !orderData.deliveryDate &&
+          !order.deliveryDate
+        ) {
+          orderData.deliveryDate = new Date();
         }
         await OrderService.sendNotification(
           orderId,

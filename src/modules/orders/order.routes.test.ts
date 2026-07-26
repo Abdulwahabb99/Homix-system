@@ -383,6 +383,21 @@ describe("orderRouter", () => {
     expect(conditions).toContainEqual(expect.objectContaining({ [Op.eq]: 5 }));
   });
 
+  it("resolves billingDay 28 to the July 14, 2026 through July 28, 2026 cycle for a July 26, 2026 reference date", async () => {
+    orderModel.findAll.mockResolvedValue([]);
+
+    const response = await request(app).get("/orders/financialReport").query({
+      billingDay: 28,
+      referenceDate: "2026-07-26",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe(true);
+    expect(response.body.data.cycle.billingDay).toBe(28);
+    expect(response.body.data.cycle.startDate).toBe("2026-07-13T21:00:00.000Z");
+    expect(response.body.data.cycle.endDate).toBe("2026-07-28T20:59:59.999Z");
+  });
+
   it("returns orders list with legacy-compatible and view-friendly fields", async () => {
     const response = await request(app).get("/orders").query({ page: 1, size: 20 });
 

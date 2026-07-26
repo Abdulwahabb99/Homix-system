@@ -283,7 +283,7 @@ orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateR
  *       - bearerAuth: []
  *     tags: [Orders]
  *     summary: Get invoice-based financial reports
- *     description: Returns the split financial invoice for delivered vendor orders and delivered warehouse shipments. By default the endpoint resolves the latest closed billing cycle in Cairo time. You can also force a cycle using `billingDay=13|28`, or pass both `startDate` and `endDate` for a custom range based on `deliveryDate`.
+ *     description: Returns the split financial invoice for delivered vendor orders and delivered warehouse shipments. By default the endpoint resolves the latest closed billing cycle in Cairo time. When `billingDay=13|28` is provided, the endpoint resolves that cycle within the reference month in Cairo time. You can also pass both `startDate` and `endDate` for a custom range based on `deliveryDate`.
  *     parameters:
  *       - in: query
  *         name: vendorId
@@ -301,7 +301,7 @@ orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateR
  *       - in: query
  *         name: referenceDate
  *         schema: { type: string, format: date }
- *         description: Optional reference date used to resolve the latest closed `billingDay` cycle.
+ *         description: Optional reference date used to resolve the requested `billingDay` cycle within that month.
  *       - in: query
  *         name: startDate
  *         schema: { type: string, format: date }

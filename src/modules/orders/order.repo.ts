@@ -289,10 +289,7 @@ const resolveFinancialCycleRange = (
 
   let cycleEnd: moment.Moment;
   if (billingDayInput === 13 || billingDayInput === 28) {
-    const currentMonthEnd = clampDayToMonth(reference.clone(), billingDayInput).endOf("day");
-    cycleEnd = reference.isBefore(currentMonthEnd.clone().startOf("day"))
-      ? clampDayToMonth(reference.clone().subtract(1, "month"), billingDayInput).endOf("day")
-      : currentMonthEnd;
+    cycleEnd = clampDayToMonth(reference.clone(), billingDayInput).endOf("day");
   } else if (reference.date() >= 29) {
     cycleEnd = clampDayToMonth(reference.clone(), 28).endOf("day");
   } else if (reference.date() >= 14) {
@@ -883,9 +880,14 @@ export class OrderRepository {
       );
 
     const effectiveVendorId = scopedVendorId ?? (query.vendorId && String(query.vendorId) !== "0" ? Number(query.vendorId) : null);
+    const effectiveDeliveryDate = sequelize.fn(
+      "coalesce",
+      sequelize.col("Order.deliveryDate"),
+      sequelize.col("Order.updatedAt"),
+    );
     const whereConditions: unknown[] = [
-      sequelize.where(sequelize.col("Order.deliveryDate"), { [Op.gte]: cycleRange.start.utc().toDate() }),
-      sequelize.where(sequelize.col("Order.deliveryDate"), { [Op.lte]: cycleRange.end.utc().toDate() }),
+      sequelize.where(effectiveDeliveryDate, { [Op.gte]: cycleRange.start.utc().toDate() }),
+      sequelize.where(effectiveDeliveryDate, { [Op.lte]: cycleRange.end.utc().toDate() }),
       sequelize.where(sequelize.col("Order.status"), { [Op.eq]: ORDER_STATUS.DELIVERED }),
     ];
 
