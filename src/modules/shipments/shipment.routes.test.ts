@@ -583,6 +583,7 @@ describe("shipmentRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
+        assigneeId: 1,
         customerName: "عبير ابوالمجيد",
         deliveryBy: 1,
         deliveryByLabel: "هوميكس",
@@ -719,6 +720,7 @@ describe("shipmentRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
+    expect(response.body.data.shipment.assigneeId).toBe(1);
     expect(response.body.data.shipment.deliveryBy).toBe(1);
     expect(response.body.data.shipment.deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.shipment.deliveryStatus).toBe(3);

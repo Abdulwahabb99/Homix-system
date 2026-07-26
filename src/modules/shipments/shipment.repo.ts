@@ -289,6 +289,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
   const deliveryPriority = resolveShipmentPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
+    assigneeId: toNullableNumber(order.userId),
     amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
     customerName: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
     customerPhone: toText(customer.phoneNumber),

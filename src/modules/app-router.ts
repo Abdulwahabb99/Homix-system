@@ -811,6 +811,7 @@ const swaggerOptions = {
         OrderListItem: {
           type: "object",
           properties: {
+            assigneeId: { example: 1, nullable: true, type: "integer" },
             code: { example: "3001", type: "string" },
             customerName: { example: "Lamiaa Saeid", type: "string" },
             daysSinceOrder: { example: 3, nullable: true, type: "integer" },
@@ -928,6 +929,7 @@ const swaggerOptions = {
         OrderDetailsView: {
           type: "object",
           properties: {
+            assigneeId: { example: 1, nullable: true, type: "integer" },
             assigneeName: { example: "Sara Mohamed", type: "string" },
             customer: {
               type: "object",
@@ -1413,6 +1415,7 @@ const swaggerOptions = {
         ShipmentListItem: {
           type: "object",
           properties: {
+            assigneeId: { example: 1, nullable: true, type: "integer" },
             amountToCollect: { example: 12999, type: "number" },
             customerName: { example: "Lamiaa Saeid", type: "string" },
             customerPhone: { example: "01155559646", type: "string" },

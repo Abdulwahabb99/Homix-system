@@ -378,6 +378,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
   const priority = resolveOrderPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
+    assigneeId: toNumber(order.userId) || null,
     code: toText(order.code),
     customerName: `${toText(toPlain(order.customer).firstName)} ${toText(toPlain(order.customer).lastName)}`.trim(),
     daysSinceOrder: getDaysSince(order.orderDate),
@@ -665,6 +666,7 @@ export class OrderRepository {
       });
 
     const view: OrderDetailsView = {
+      assigneeId: toNumber(plainOrder.userId) || null,
       assigneeName: `${toText(toPlain(plainOrder.user).firstName)} ${toText(toPlain(plainOrder.user).lastName)}`.trim(),
       customer: {
         address: toText(customer.address),

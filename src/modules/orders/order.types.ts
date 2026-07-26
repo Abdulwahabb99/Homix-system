@@ -40,6 +40,7 @@ export type OrderFinancialReportQuery = {
 };
 
 export type OrderListItem = {
+  assigneeId: number | null;
   code: string;
   customerName: string;
   daysSinceOrder: number | null;
@@ -193,6 +194,7 @@ export type OrderStatusHistoryItem = {
 };
 
 export type OrderDetailsView = {
+  assigneeId: number | null;
   assigneeName: string;
   customer: {
     id: number | null;

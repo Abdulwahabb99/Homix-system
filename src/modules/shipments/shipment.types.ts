@@ -127,6 +127,7 @@ export type ShipmentSummaryResponse = {
 };
 
 export type ShipmentListItem = {
+  assigneeId: number | null;
   amountToCollect: number;
   customerName: string;
   customerPhone: string;
