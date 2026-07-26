@@ -390,10 +390,19 @@ export const normalizeOrderMutationPayload = (
     ? Boolean(payload.shippedFromInventory)
     : Boolean(existing.shippedFromInventory);
   const shipmentType = toText(payload.shipmentType, toText(existing.shipmentType)).trim();
+  const nextStatus = toNumber(payload.status ?? existing.status);
 
   payload.deliveryBy = shipmentType === "warehouse" || shippedFromInventory
     ? DELIVERY_BY.HOMIX
     : toNumber(payload.deliveryBy) || toNumber(existing.deliveryBy) || DELIVERY_BY.VENDOR;
+
+  if (nextStatus === ORDER_STATUS.DELIVERED) {
+    const currentDeliveryDate = toIsoString(payload.deliveryDate) ?? toIsoString(existing.deliveryDate);
+    if (!currentDeliveryDate) {
+      payload.deliveryDate = new Date().toISOString();
+    }
+  }
+
   payload.priority = resolveOrderPriority(
     payload.priority ?? existing.priority,
     payload.deliveryStatus ?? existing.deliveryStatus,
