@@ -125,9 +125,13 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     toBeCollected: Number(financial.amountToCollect ?? 0),
     commission: Number(financial.commission ?? 0),
     shippedFromInventory: order.deliveryBy === 1 || order.deliveryBy === "1",
-    userId: order.userId,
+    /**
+     * «المسؤول» — الاستجابة الجديدة ترسله كـ `assigneeId` (على الطلب وعلى الجذر)
+     * ولا ترسل `userId` إطلاقاً، فنقرأ منه أولاً ونُبقي `userId` بديلاً للشكل القديم.
+     */
+    userId: order.assigneeId ?? root.assigneeId ?? order.userId,
     userName: order.userName,
-    assigneeName: root.assigneeName ?? "",
+    assigneeName: root.assigneeName ?? order.assigneeName ?? "",
     /** سجل الأحداث من `data.timeline` — يُعرض في بطاقة «سجل الأحداث» */
     timeline: Array.isArray(root.timeline) ? root.timeline : [],
   };

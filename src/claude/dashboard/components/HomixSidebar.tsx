@@ -104,7 +104,6 @@ const adminMain: NavItem[] = [
   { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default" },
   { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets },
-  { to: "/financialReports", label: "الإيرادات", icon: icons.revenue },
 ];
 
 const adminManage: NavItem[] = [
