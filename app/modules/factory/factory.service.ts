@@ -118,6 +118,18 @@ const normalizeFactoryStatus = (value: unknown): number | null => {
   return null;
 };
 
+const factoryStatusStorageValues = (statusId: number): string[] => {
+  if (statusId === FACTORY_STATUS.ONLINE) {
+    return ["1", "online", "active", "on"];
+  }
+
+  if (statusId === FACTORY_STATUS.OFFLINE) {
+    return ["2", "offline", "inactive", "off"];
+  }
+
+  return [];
+};
+
 const getFactoryStatusLabel = (value: unknown): string => {
   const statusId = normalizeFactoryStatus(value);
   if (!statusId) {
@@ -325,12 +337,11 @@ const buildWhereClause = (filters: FactoryFilters) => {
 
   const statusId = normalizeFactoryStatus(filters.status);
   if (statusId) {
-    andConditions.push(
-      sequelize.where(
-        sequelize.cast(sequelize.col("Factory.status"), "integer"),
-        { [Op.eq]: statusId },
-      ),
-    );
+    andConditions.push({
+      status: {
+        [Op.in]: factoryStatusStorageValues(statusId),
+      },
+    });
   }
 
   if (filters.factoryCategory) {
@@ -462,7 +473,11 @@ class FactoryService {
         ...whereClause,
         [Op.and]: [
           ...((whereClause as PlainRecord)[Op.and] as unknown[] ?? []),
-          sequelize.where(sequelize.cast(sequelize.col("status"), "integer"), { [Op.eq]: FACTORY_STATUS.ONLINE }),
+          {
+            status: {
+              [Op.in]: factoryStatusStorageValues(FACTORY_STATUS.ONLINE),
+            },
+          },
         ],
       },
     });
@@ -472,7 +487,11 @@ class FactoryService {
         ...whereClause,
         [Op.and]: [
           ...((whereClause as PlainRecord)[Op.and] as unknown[] ?? []),
-          sequelize.where(sequelize.cast(sequelize.col("status"), "integer"), { [Op.eq]: FACTORY_STATUS.OFFLINE }),
+          {
+            status: {
+              [Op.in]: factoryStatusStorageValues(FACTORY_STATUS.OFFLINE),
+            },
+          },
         ],
       },
     });
