@@ -406,12 +406,14 @@ describe("orderRouter", () => {
     expect(response.body.data.items[0].deliveryBy).toBe(1);
     expect(response.body.data.items[0].deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.items[0].deliveryStatus).toBe(3);
+    expect(response.body.data.items[0].itemType).toBe("غرفة نوم");
     expect(response.body.data.items[0].priority).toBe(3);
     expect(response.body.data.items[0].priorityLabel).toBe("مستعجل جدا");
     expect(response.body.data.items[0].operationNumber).toBe("3001");
     expect(response.body.data.items[0].orderSource).toBe(2);
     expect(response.body.data.items[0].orderSourceLabel).toBe("اونلاين");
     expect(response.body.data.items[0].fine).toBe(0);
+    expect(response.body.data.items[0].toBeCollected).toBe(2099);
     expect(response.body.data.totalCount).toBe(1);
   });
 
@@ -520,12 +522,14 @@ describe("orderRouter", () => {
     expect(response.body.data.order.deliveryBy).toBe(1);
     expect(response.body.data.order.deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.order.deliveryStatus).toBe(3);
+    expect(response.body.data.order.itemType).toBe("غرفة نوم");
     expect(response.body.data.order.priority).toBe(3);
     expect(response.body.data.order.priorityLabel).toBe("مستعجل جدا");
     expect(response.body.data.order.orderNumber).toBe("31668");
     expect(response.body.data.order.orderSource).toBe(2);
     expect(response.body.data.order.orderSourceLabel).toBe("اونلاين");
     expect(response.body.data.order.fine).toBe(0);
+    expect(response.body.data.order.toBeCollected).toBe(2099);
     expect(response.body.data.order.productName).toBe("ركنة للأثاث");
     expect(response.body.data.order.shippedFromInventory).toBe(false);
     expect(response.body.data.order.itemsCount).toBe(1);
