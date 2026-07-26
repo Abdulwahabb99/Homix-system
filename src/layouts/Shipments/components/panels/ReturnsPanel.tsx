@@ -246,6 +246,9 @@ interface FilterState {
 
 const EMPTY_FILTERS: FilterState = { orderNumber: "", operationCode: "", status: "", sellerName: "" };
 
+/** مرجع ثابت — يمنع إعادة حساب النموذج داخل المودال على كل render أثناء تحميل الـ meta. */
+const NO_OPTIONS: { value: string | number; label: string }[] = [];
+
 export default function ReturnsPanel() {
   const [activeTab, setActiveTab]     = useState<"vendor" | "customer">("vendor");
   const [filters, setFilters]         = useState<FilterState>(EMPTY_FILTERS);
@@ -408,7 +411,7 @@ export default function ReturnsPanel() {
         open={editItem !== null}
         onClose={() => setEditItem(null)}
         item={editItem}
-        statusOptions={meta?.customerReturnStatuses ?? []}
+        statusOptions={meta?.customerReturnStatuses ?? NO_OPTIONS}
       />
     </Box>
   );

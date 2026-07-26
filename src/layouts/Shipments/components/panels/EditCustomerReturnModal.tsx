@@ -289,7 +289,8 @@ export default function EditCustomerReturnModal({ open, onClose, item, statusOpt
             disabled={isPending || statusOptions.length === 0}
             value={status === "" ? "" : Number(status)}
             onChange={(e) => setStatus(Number(e.target.value))}
-            SelectProps={{ MenuProps: { PaperProps: { sx: { fontFamily: FONT } } } }}
+            // القائمة تُعرض في portal على <body> — dir سمة HTML لا يقلبها المحوّل
+            SelectProps={{ MenuProps: { PaperProps: { dir: "rtl", sx: { fontFamily: FONT } } } }}
           >
             {statusOptions.map((o) => (
               <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT, fontSize: "12px", justifyContent: "flex-start" }}>
