@@ -14,7 +14,7 @@ import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
-import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList } from "query/ordersList";
+import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "query/ordersList";
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
 import { ORDERS_SORT_OPTIONS } from "layouts/Orders/utils/constants";
 import { useOrdersSummaryQuery } from "query/ordersSummary.api";
@@ -273,6 +273,31 @@ function Orders() {
 
   const ordersSummaryQuery = useOrdersSummaryQuery(ordersSummaryFiltersKey, ordersSummaryParams, Boolean(token));
 
+  /** فلاتر القائمة بدون الصفحة — يشترك فيها الجدول والتصدير حتى لا يتفرّقا. */
+  const ordersFilterParams = useMemo(
+    () => ({
+      orderNumberParam, vendorIdParam, orderStatusParam,
+      paymentStatusParam, deliveryStatusParam,
+      userIdParam: filterUserId || undefined,
+      deliveryByParam: deliveryByParam || undefined,
+      orderSourceParam: orderSourceParam || undefined,
+      shippingCompanyParam: shippingCompanyParam || undefined,
+      priorityParam: priorityParam || undefined,
+      sortField: sortConfig.field,
+      sortDir: sortConfig.dir,
+      startDate, endDate,
+      operationCode: apiOperationCode || undefined,
+      customerName: apiCustomerName || undefined,
+      productCode: apiProductCode || undefined,
+    }),
+    [
+      orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
+      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam,
+      shippingCompanyParam, priorityParam, sortConfig, startDate, endDate,
+      apiOperationCode, apiCustomerName, apiProductCode,
+    ]
+  );
+
   const {
     data: ordersListData,
     isFetching: ordersFetching,
@@ -282,21 +307,7 @@ function Orders() {
     placeholderData: keepPreviousData,
     queryFn: () =>
       fetchOrdersList({
-        params: {
-          page, orderNumberParam, vendorIdParam, orderStatusParam,
-          paymentStatusParam, deliveryStatusParam,
-          userIdParam: filterUserId || undefined,
-          deliveryByParam: deliveryByParam || undefined,
-          orderSourceParam: orderSourceParam || undefined,
-          shippingCompanyParam: shippingCompanyParam || undefined,
-          priorityParam: priorityParam || undefined,
-          sortField: sortConfig.field,
-          sortDir: sortConfig.dir,
-          startDate, endDate,
-          operationCode: apiOperationCode || undefined,
-          customerName: apiCustomerName || undefined,
-          productCode: apiProductCode || undefined,
-        },
+        params: { ...ordersFilterParams, page },
         navigate,
       }),
   });
@@ -501,19 +512,9 @@ function Orders() {
       .catch(() => NotificationMeassage("error", "حدث خطأ"));
   };
 
+  /** التصدير يستخدم نفس فلاتر الجدول بلا ترقيم — أي فلتر مُطبَّق يسري على الملف. */
   const handleExport = () => {
-    const query = new URLSearchParams({
-      ...(vendorIdParam      && { vendorId:      vendorIdParam }),
-      ...(orderStatusParam   && { status:         orderStatusParam }),
-      ...(paymentStatusParam && { paymentStatus: paymentStatusParam }),
-      ...(deliveryStatusParam && { deliveryStatus: deliveryStatusParam }),
-      ...(filterUserId       && { userId:         filterUserId }),
-      ...(deliveryByParam     && { deliveryBy:     deliveryByParam }),
-      ...(shippingCompanyParam && { shippingCompany: shippingCompanyParam }),
-      ...(priorityParam       && { priority:       priorityParam }),
-      ...(startDate          && { startDate:      rangeDateToIso(startDate) }),
-      ...(endDate            && { endDate:        rangeDateToIso(endDate) }),
-    });
+    const query = buildOrdersFilterQuery(ordersFilterParams);
     setIsExportLoading(true);
     axiosRequest
       .get(`${baseURI}/orders/export?${query}`)

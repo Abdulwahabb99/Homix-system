@@ -18,11 +18,15 @@ export const ORDERS_LIST_PAGE_SIZE = 30;
  * @param {import("moment").Moment | null} [p.startDate]
  * @param {import("moment").Moment | null} [p.endDate]
  */
-function buildQueryString(p) {
-  const query = new URLSearchParams({
-    page: String(p.page),
-    size: String(ORDERS_LIST_PAGE_SIZE),
-  });
+/**
+ * كل فلاتر قائمة الطلبات بدون ترقيم الصفحات.
+ *
+ * مصدر واحد للفلاتر يستخدمه الجدول والتصدير (`/orders/export`) معاً — أي فلتر
+ * جديد يُضاف هنا يسري على الاثنين، فلا يُصدَّر ملف بفلاتر مختلفة عمّا يراه المستخدم.
+ * @returns {URLSearchParams}
+ */
+export function buildOrdersFilterQuery(p) {
+  const query = new URLSearchParams();
   if (p.orderNumberParam)  query.set("orderNumber",    p.orderNumberParam);
   if (p.vendorIdParam)     query.set("vendorId",       p.vendorIdParam);
   if (p.orderStatusParam)  query.set("status",         p.orderStatusParam);
@@ -39,6 +43,13 @@ function buildQueryString(p) {
   if (p.startDate) query.set("startDate", p.startDate.utc().toISOString());
   if (p.endDate)   query.set("endDate",   p.endDate.utc().toISOString());
   if (p.sortField && p.sortDir) query.set(`sort[${p.sortField}]`, String(p.sortDir));
+  return query;
+}
+
+function buildQueryString(p) {
+  const query = buildOrdersFilterQuery(p);
+  query.set("page", String(p.page));
+  query.set("size", String(ORDERS_LIST_PAGE_SIZE));
   return query.toString();
 }
 
