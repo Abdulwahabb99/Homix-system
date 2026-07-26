@@ -45,6 +45,7 @@ export type OrderListItem = {
   daysSinceOrder: number | null;
   deliveryPriority: OrderPriorityKey | null;
   deliveryPriorityLabel: string;
+  deliveryStatus: number | null;
   priority: OrderPriorityKey | null;
   priorityLabel: string;
   deliveryBy: number | null;

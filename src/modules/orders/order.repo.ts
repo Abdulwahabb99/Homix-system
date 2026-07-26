@@ -18,6 +18,7 @@ import {
   buildLogMessage,
   getDaysSince,
   getDeliveryPriorityLabel,
+  resolveDeliveryStatus,
   getHistoryActorLabel,
   resolveOrderPriority,
   getStatusLabel,
@@ -385,6 +386,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     deliveryBy: toNumber(order.deliveryBy) || null,
     deliveryPriority: priority,
     deliveryPriorityLabel: getDeliveryPriorityLabel(priority),
+    deliveryStatus: resolveDeliveryStatus(order.deliveryStatus, order.expectedDeliveryDate),
     priority,
     priorityLabel: getDeliveryPriorityLabel(priority),
     expectedDeliveryDate: toIsoString(order.expectedDeliveryDate),
@@ -449,7 +451,7 @@ export class OrderRepository {
           const matchesPriority = !filters.priority
             || filters.priority.split(",").map((value) => Number(value.trim())).includes(item.deliveryPriority ?? 0);
           const matchesDeliveryStatus = !filters.deliveryStatus
-            || filters.deliveryStatus.split(",").map(Number).includes(toNumber(row.deliveryStatus));
+            || filters.deliveryStatus.split(",").map(Number).includes(item.deliveryStatus ?? 0);
           return matchesPriority && matchesDeliveryStatus;
         });
 
@@ -488,7 +490,7 @@ export class OrderRepository {
         const matchesPriority = !filters.priority
           || filters.priority.split(",").map((value) => Number(value.trim())).includes(item.deliveryPriority ?? 0);
         const matchesDeliveryStatus = !filters.deliveryStatus
-          || filters.deliveryStatus.split(",").map(Number).includes(toNumber(row.deliveryStatus));
+          || filters.deliveryStatus.split(",").map(Number).includes(item.deliveryStatus ?? 0);
         return matchesPriority && matchesDeliveryStatus;
       })
       .map(({ item }: { item: OrderListItem; row: Record<string, unknown> }) => item);
@@ -523,6 +525,19 @@ export class OrderRepository {
     const logs = await logModel.findAll({ order: [["createdAt", "DESC"]], where: { entityId: orderId, entityType: "order" } });
     const users = await userModel.findAll({ attributes: ["firstName", "id", "lastName"], where: { id: { [Op.in]: logs.map((log: unknown) => toNumber(toPlain(log).userId)).filter(Boolean) } } });
     const userNames = new Map(users.map((user: unknown) => { const plainUser = toPlain(user); return [toNumber(plainUser.id), `${toText(plainUser.firstName)} ${toText(plainUser.lastName)}`.trim()]; }));
+    const vendorIds = logs
+      .map((log: unknown) => toPlain(log))
+      .filter((log: Record<string, unknown>) => toText(log.field) === "vendorId")
+      .flatMap((log: Record<string, unknown>) => [toNumber(log.from), toNumber(log.to)])
+      .filter((id: number) => id > 0);
+    const vendors = vendorIds.length > 0
+      ? await vendorModel.findAll({ attributes: ["id", "name"], where: { id: { [Op.in]: vendorIds } } })
+      : [];
+    const vendorNamesById = Object.fromEntries(vendors.map((vendor: unknown) => {
+      const plainVendor = toPlain(vendor);
+      return [String(toNumber(plainVendor.id)), toText(plainVendor.name)];
+    }));
+    const userNamesById = Object.fromEntries(Array.from(userNames.entries()).map(([id, name]) => [String(id), name]));
     const expectedManufacturingDays = orderLines
       .map((line) => {
         const product = toPlain(toPlain(line).product);
@@ -567,7 +582,7 @@ export class OrderRepository {
           fromStatus: toNumber(log.from) || null,
           fromStatusLabel: getStatusLabel(log.from),
           id: toNumber(log.id),
-          message: buildLogMessage(log),
+          message: buildLogMessage(log, { userNamesById, vendorNamesById }),
           toStatus,
           toStatusLabel: getStatusLabel(log.to),
           userName,
@@ -659,7 +674,7 @@ export class OrderRepository {
       notes,
       order: {
         ...summary,
-        deliveryStatus: toNumber(plainOrder.deliveryStatus) || null,
+        deliveryStatus: summary.deliveryStatus,
         deliveryDate: toIsoString(plainOrder.deliveryDate),
         itemsCount: orderLines.length,
         notes: toText(plainOrder.notes),

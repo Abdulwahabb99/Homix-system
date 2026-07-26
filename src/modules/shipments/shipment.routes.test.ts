@@ -125,7 +125,7 @@ const makeShipment = (overrides: Record<string, unknown> = {}) => ({
   deliveryBy: 1,
   deliveryStatus: 2,
   deliveryDate: "2026-05-17T00:00:00.000Z",
-  expectedDeliveryDate: null,
+  expectedDeliveryDate: "2026-05-17T00:00:00.000Z",
   governorate: "الجيزة",
   id: 9802,
   priority: 2,
@@ -577,6 +577,9 @@ describe("shipmentRouter", () => {
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
         customerName: "عبير ابوالمجيد",
+        deliveryBy: 1,
+        deliveryByLabel: "J&T",
+        deliveryStatus: 3,
         deliveryPriority: 2,
         deliveryPriorityLabel: "مستعجل",
         priority: 2,
@@ -633,6 +636,29 @@ describe("shipmentRouter", () => {
     expect(response.body.data.items[0]).toEqual(expect.objectContaining({ deliveryPriority: 2, id: 9802 }));
   });
 
+  it("filters shipments by automated delivery status derived from expectedDeliveryDate", async () => {
+    orderModel.findAll.mockResolvedValue([
+      makeShipment({
+        expectedDeliveryDate: "2026-05-17T00:00:00.000Z",
+        id: 9802,
+      }),
+      makeShipment({
+        expectedDeliveryDate: "2099-05-17T00:00:00.000Z",
+        id: 9803,
+      }),
+    ]);
+
+    const response = await request(app).get("/shipments").query({ deliveryStatus: "3", page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(response.body.data.totalCount).toBe(1);
+    expect(response.body.data.items[0]).toEqual(expect.objectContaining({
+      deliveryStatus: 3,
+      id: 9802,
+    }));
+  });
+
   it("sorts shipments by totalPrice in the database query", async () => {
     const response = await request(app).get("/shipments").query({ page: 1, size: 20, sort: { totalPrice: -1 } });
 
@@ -685,7 +711,9 @@ describe("shipmentRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
-    expect(response.body.data.shipment.deliveryStatus).toBe(2);
+    expect(response.body.data.shipment.deliveryBy).toBe(1);
+    expect(response.body.data.shipment.deliveryByLabel).toBe("J&T");
+    expect(response.body.data.shipment.deliveryStatus).toBe(3);
     expect(response.body.data.shipment.priority).toBe(2);
     expect(response.body.data.shipment.priorityLabel).toBe("مستعجل");
     expect(response.body.data.shipment.shippedFromInventory).toBe(false);
@@ -699,6 +727,18 @@ describe("shipmentRouter", () => {
       sku: "RKA-002",
     }));
     expect(response.body.data.timeline[0].message).toBe("تم استلام الطلب");
+  });
+
+  it("returns automated deliveryStatus in shipment details based on expectedDeliveryDate", async () => {
+    orderModel.findOne.mockResolvedValue(makeShipment({
+      deliveryStatus: 3,
+      expectedDeliveryDate: "2099-05-17T00:00:00.000Z",
+    }));
+
+    const response = await request(app).get("/shipments/9802");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.shipment.deliveryStatus).toBe(1);
   });
 
   it("returns vendor returns list", async () => {

@@ -8,6 +8,7 @@ export type ShipmentListQuery = {
   customerName?: string;
   customerPhone?: string;
   deliveryBy?: string;
+  deliveryStatus?: string;
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
   endDate?: string;
@@ -130,9 +131,11 @@ export type ShipmentListItem = {
   customerName: string;
   customerPhone: string;
   daysCounter: number | null;
-  deliveryBy: string;
+  deliveryBy: number | null;
+  deliveryByLabel: string;
   deliveryPriority: number | null;
   deliveryPriorityLabel: string;
+  deliveryStatus: number | null;
   priority: number | null;
   priorityLabel: string;
   deliveryDate: string | null;

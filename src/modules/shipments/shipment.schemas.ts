@@ -43,6 +43,7 @@ export const shipmentListQuerySchema = z.object({
   customerName: z.string().trim().optional(),
   customerPhone: z.string().trim().optional(),
   deliveryBy: z.string().trim().optional(),
+  deliveryStatus: csvString.optional(),
   deliveryDateFrom: dateString.optional(),
   deliveryDateTo: dateString.optional(),
   endDate: dateString.optional(),

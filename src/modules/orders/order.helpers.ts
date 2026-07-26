@@ -1,4 +1,13 @@
-import { DELIVERY_BY, DELIVERY_STATUS, ORDER_STATUS } from "../../../config/constants";
+import {
+  DELIVERY_BY,
+  DELIVERY_BY_ARABIC,
+  DELIVERY_STATUS,
+  MANUFACTURE_STATUS_ARABIC,
+  ORDER_SOURCE_ARABIC,
+  ORDER_STATUS,
+  ORDER_STATUS_Arabic,
+  PAYMENT_STATUS_ARABIC,
+} from "../../../config/constants";
 import {
   DELIVERY_STATUS_PRIORITY_MAP,
   MANUFACTURE_STATUS_LABELS,
@@ -7,6 +16,12 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "./order.constants";
+import {
+  SHIPMENT_PRIORITY_LABELS,
+  SHIPMENT_SCHEDULE_STATUS_LABELS,
+  SHIPMENT_STATUS_LABELS,
+  SHIPMENT_TYPE_LABELS,
+} from "../shipments/shipment.constants";
 import type { OrderPriorityKey } from "./order.types";
 
 type PlainRecord = Record<string, unknown>;
@@ -79,6 +94,19 @@ export const getDeliveryStatusValue = (expectedDeliveryDate: unknown): number | 
   return DELIVERY_STATUS.ON_SCHEDULE;
 };
 
+export const resolveDeliveryStatus = (
+  deliveryStatus: unknown,
+  expectedDeliveryDate: unknown,
+): number | null => {
+  const derivedStatus = getDeliveryStatusValue(expectedDeliveryDate);
+  if (derivedStatus) {
+    return derivedStatus;
+  }
+
+  const parsedStatus = toNumber(deliveryStatus);
+  return parsedStatus || null;
+};
+
 export const getOrderPriority = (expectedDeliveryDate: unknown): OrderPriorityKey | null => {
   const deliveryStatus = getDeliveryStatusValue(expectedDeliveryDate);
   return deliveryStatus ? DELIVERY_STATUS_PRIORITY_MAP[deliveryStatus] ?? null : null;
@@ -102,14 +130,9 @@ export const getOrderPriorityFromDeliveryStatus = (
   deliveryStatus: unknown,
   expectedDeliveryDate?: unknown,
 ): OrderPriorityKey | null => {
-  const dateBasedPriority = getOrderPriority(expectedDeliveryDate);
-  if (dateBasedPriority) {
-    return dateBasedPriority;
-  }
-
-  const parsedDeliveryStatus = toNumber(deliveryStatus);
-  if (parsedDeliveryStatus) {
-    return DELIVERY_STATUS_PRIORITY_MAP[parsedDeliveryStatus as keyof typeof DELIVERY_STATUS_PRIORITY_MAP] ?? null;
+  const resolvedDeliveryStatus = resolveDeliveryStatus(deliveryStatus, expectedDeliveryDate);
+  if (resolvedDeliveryStatus) {
+    return DELIVERY_STATUS_PRIORITY_MAP[resolvedDeliveryStatus as keyof typeof DELIVERY_STATUS_PRIORITY_MAP] ?? null;
   }
 
   return null;
@@ -154,7 +177,141 @@ export const getManufactureLabel = (value: unknown): string => {
   return MANUFACTURE_STATUS_LABELS[toNumber(value)] ?? "";
 };
 
-export const buildLogMessage = (log: PlainRecord): string => {
+const FIELD_LABELS: Record<string, string> = {
+  deliveryBy: "التوصيل بواسطة",
+  deliveryDate: "تاريخ التسليم",
+  deliveryStatus: "حالة التسليم",
+  downPayment: "جدية الشراء",
+  expectedDeliveryDate: "موعد التسليم المتوقع",
+  governorate: "المحافظة",
+  manufactureStatus: "حالة التصنيع",
+  notes: "الملاحظات",
+  orderDate: "تاريخ الطلب",
+  orderSource: "مصدر الطلب",
+  paymentStatus: "حالة الدفع",
+  priority: "الأولوية",
+  scheduleStatus: "حالة الجدولة",
+  shipmentStatus: "حالة الشحنة",
+  shipmentType: "نوع الشحنة",
+  shippedFromInventory: "الشحن من المخزون",
+  shippingCompany: "شركة الشحن",
+  shippingFees: "سعر الشحن",
+  shippingReceiveDate: "تاريخ استلام الشحنة",
+  status: "حالة الطلب",
+  toBeCollected: "المبلغ المطلوب تحصيله",
+  totalPrice: "سعر البيع",
+  userId: "المسؤول",
+  vendorId: "البائع",
+};
+
+type LogMessageContext = {
+  shippingCompanyNamesById?: Record<string, string>;
+  userNamesById?: Record<string, string>;
+  vendorNamesById?: Record<string, string>;
+};
+
+const DELIVERY_STATUS_LABELS: Record<number, string> = {
+  [DELIVERY_STATUS.ON_SCHEDULE]: "بالمدة",
+  [DELIVERY_STATUS.ALMOST_LAST]: "مستعجل",
+  [DELIVERY_STATUS.LATE]: "متأخر",
+};
+
+const stringifyLogValue = (value: unknown): string => {
+  if (typeof value === "boolean") {
+    return value ? "نعم" : "لا";
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return "";
+};
+
+const getFieldLabel = (field: string): string => FIELD_LABELS[field] ?? field;
+
+const getMappedLogValue = (
+  field: string,
+  rawValue: unknown,
+  context?: LogMessageContext,
+): string => {
+  const numericValue = toNumber(rawValue);
+  const rawText = stringifyLogValue(rawValue).trim();
+
+  if (!rawText) {
+    return "";
+  }
+
+  if (field === "status") {
+    return ORDER_STATUS_Arabic[numericValue as keyof typeof ORDER_STATUS_Arabic] ?? rawText;
+  }
+
+  if (field === "paymentStatus") {
+    return PAYMENT_STATUS_ARABIC[numericValue as keyof typeof PAYMENT_STATUS_ARABIC] ?? rawText;
+  }
+
+  if (field === "manufactureStatus") {
+    return MANUFACTURE_STATUS_ARABIC[numericValue as keyof typeof MANUFACTURE_STATUS_ARABIC] ?? rawText;
+  }
+
+  if (field === "orderSource") {
+    return ORDER_SOURCE_ARABIC[numericValue as keyof typeof ORDER_SOURCE_ARABIC] ?? rawText;
+  }
+
+  if (field === "deliveryBy") {
+    return DELIVERY_BY_ARABIC[numericValue as keyof typeof DELIVERY_BY_ARABIC] ?? rawText;
+  }
+
+  if (field === "deliveryStatus") {
+    return DELIVERY_STATUS_LABELS[numericValue] ?? rawText;
+  }
+
+  if (field === "priority") {
+    return SHIPMENT_PRIORITY_LABELS[numericValue] ?? rawText;
+  }
+
+  if (field === "shipmentStatus") {
+    return SHIPMENT_STATUS_LABELS[numericValue] ?? rawText;
+  }
+
+  if (field === "scheduleStatus") {
+    return SHIPMENT_SCHEDULE_STATUS_LABELS[numericValue] ?? rawText;
+  }
+
+  if (field === "shipmentType") {
+    return SHIPMENT_TYPE_LABELS[rawText] ?? rawText;
+  }
+
+  if (field === "shippedFromInventory") {
+    const normalized = rawText.toLowerCase();
+    if (normalized === "true" || rawValue === true) {
+      return "نعم";
+    }
+    if (normalized === "false" || rawValue === false) {
+      return "لا";
+    }
+  }
+
+  if (field === "vendorId") {
+    return context?.vendorNamesById?.[rawText] ?? rawText;
+  }
+
+  if (field === "userId") {
+    return context?.userNamesById?.[rawText] ?? rawText;
+  }
+
+  if (field === "shippingCompany") {
+    return context?.shippingCompanyNamesById?.[rawText] ?? rawText;
+  }
+
+  return rawText;
+};
+
+export const buildLogMessage = (log: PlainRecord, context?: LogMessageContext): string => {
   const action = toText(log.action);
   const field = toText(log.field);
 
@@ -174,12 +331,13 @@ export const buildLogMessage = (log: PlainRecord): string => {
     return "بدأ التصنيع";
   }
 
-  const nextValue = toText(log.to);
+  const fieldLabel = getFieldLabel(field);
+  const nextValue = getMappedLogValue(field, log.to, context);
   if (!field) {
     return "تم تحديث الطلب";
   }
 
-  return nextValue ? `تم تحديث ${field} إلى ${nextValue}` : `تم تحديث ${field}`;
+  return nextValue ? `تم تحديث ${fieldLabel} إلى ${nextValue}` : `تم تحديث ${fieldLabel}`;
 };
 
 export const getHistoryActorLabel = (userName: string): string => {
@@ -242,12 +400,19 @@ export const normalizeOrderMutationPayload = (
     payload.expectedDeliveryDate ?? existing.expectedDeliveryDate,
   );
 
+  const hasLineItems = Array.isArray(payload.line_items);
   const lineItemsFinancials = getLineItemsFinancials(payload.line_items);
-  const subTotalPrice = lineItemsFinancials.subTotalPrice || resolveFinancialValue(payload, existing, "subTotalPrice");
-  const totalDiscounts = lineItemsFinancials.totalDiscounts || resolveFinancialValue(payload, existing, "totalDiscounts");
+  const subTotalPrice = hasLineItems
+    ? lineItemsFinancials.subTotalPrice
+    : resolveFinancialValue(payload, existing, "subTotalPrice");
+  const totalDiscounts = hasLineItems
+    ? lineItemsFinancials.totalDiscounts
+    : resolveFinancialValue(payload, existing, "totalDiscounts");
   const shippingFees = resolveFinancialValue(payload, existing, "shippingFees");
   const downPayment = resolveFinancialValue(payload, existing, "downPayment");
 
+  payload.subTotalPrice = subTotalPrice;
+  payload.totalDiscounts = totalDiscounts;
   payload.toBeCollected = subTotalPrice + shippingFees - totalDiscounts - downPayment;
 
   return payload;

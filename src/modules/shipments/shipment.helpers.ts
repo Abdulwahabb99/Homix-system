@@ -143,6 +143,27 @@ export const getShipmentPriority = (
   return null;
 };
 
+export const resolveShipmentDeliveryStatus = (
+  deliveryStatus: unknown,
+  expectedDeliveryDate: unknown,
+): number | null => {
+  const derivedPriority = getShipmentPriority(undefined, expectedDeliveryDate);
+  if (derivedPriority === SHIPMENT_PRIORITY.ON_SCHEDULE) {
+    return 1;
+  }
+
+  if (derivedPriority === SHIPMENT_PRIORITY.ALMOST_DUE) {
+    return 2;
+  }
+
+  if (derivedPriority === SHIPMENT_PRIORITY.URGENT) {
+    return 3;
+  }
+
+  const numericDeliveryStatus = toNumber(deliveryStatus);
+  return numericDeliveryStatus || null;
+};
+
 export const resolveShipmentPriority = (
   priority: unknown,
   deliveryStatus: unknown,
@@ -153,7 +174,7 @@ export const resolveShipmentPriority = (
     return explicitPriority;
   }
 
-  return getShipmentPriority(deliveryStatus, expectedDeliveryDate) ?? SHIPMENT_PRIORITY.ON_SCHEDULE;
+  return getShipmentPriority(resolveShipmentDeliveryStatus(deliveryStatus, expectedDeliveryDate), expectedDeliveryDate) ?? SHIPMENT_PRIORITY.ON_SCHEDULE;
 };
 
 export const getShipmentPriorityLabel = (priority: unknown): string => {

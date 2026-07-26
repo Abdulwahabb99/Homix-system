@@ -143,4 +143,65 @@ describe("OrderService", () => {
       { id: 1 },
     );
   });
+
+  it("recalculates amount to collect from edited line items when discounts are cleared", async () => {
+    const repository = {
+      findOrderEntity: jest.fn().mockResolvedValue({
+        deliveryBy: 2,
+        downPayment: 100,
+        shipmentType: "separate",
+        shippedFromInventory: false,
+        shippingFees: 60,
+        subTotalPrice: 2000,
+        totalDiscounts: 150,
+      }),
+    } as never;
+    const legacyGateway = {
+      updateOrder: jest.fn().mockResolvedValue({ data: { id: 7 }, status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.updateOrder(7, {
+      line_items: [{ price: 1000, quantity: 2 }],
+    }, { id: 1 } as never);
+
+    expect(legacyGateway.updateOrder).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        subTotalPrice: 2000,
+        totalDiscounts: 0,
+        toBeCollected: 1960,
+      }),
+      { id: 1 },
+    );
+  });
+
+  it("preserves edited orderSource on update", async () => {
+    const repository = {
+      findOrderEntity: jest.fn().mockResolvedValue({
+        deliveryBy: 2,
+        downPayment: 100,
+        orderSource: 1,
+        shipmentType: "separate",
+        shippedFromInventory: false,
+        shippingFees: 60,
+        subTotalPrice: 2000,
+        totalDiscounts: 150,
+      }),
+    } as never;
+    const legacyGateway = {
+      updateOrder: jest.fn().mockResolvedValue({ data: { id: 7 }, status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.updateOrder(7, { orderSource: 2 }, { id: 1 } as never);
+
+    expect(legacyGateway.updateOrder).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        orderSource: 2,
+      }),
+      { id: 1 },
+    );
+  });
 });

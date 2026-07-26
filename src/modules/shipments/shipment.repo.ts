@@ -36,6 +36,7 @@ import {
   getDaysBetween,
   getShipmentAgingDays,
   getShipmentPriorityLabel,
+  resolveShipmentDeliveryStatus,
   resolveShipmentPriority,
   getShipmentStatusLabel,
   getShipmentTypeLabel,
@@ -289,6 +290,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
   const shippingCompanyRecord = toPlain(order.shippingCompanyRecord);
   const deliveryBy = toNullableNumber(order.deliveryBy);
   const shippingCompanyName = toText(shippingCompanyRecord.name, toText(order.shippingCompany));
+  const deliveryStatus = resolveShipmentDeliveryStatus(order.deliveryStatus, order.expectedDeliveryDate);
   const deliveryPriority = resolveShipmentPriority(order.priority, order.deliveryStatus, order.expectedDeliveryDate);
 
   return {
@@ -296,9 +298,11 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     customerName: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
     customerPhone: toText(customer.phoneNumber),
     daysCounter: getShipmentAgingDays(order.shipmentStatus, order.shippingReceiveDate, order.deliveryDate, order.updatedAt),
-    deliveryBy: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
+    deliveryBy,
+    deliveryByLabel: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
     deliveryPriority,
     deliveryPriorityLabel: getShipmentPriorityLabel(deliveryPriority),
+    deliveryStatus,
     priority: deliveryPriority,
     priorityLabel: getShipmentPriorityLabel(deliveryPriority),
     deliveryDate: toIsoString(order.deliveryDate),
@@ -334,6 +338,17 @@ const matchesShipmentPriority = (item: ShipmentListItem, priorityFilter?: string
     .split(",")
     .map((value) => Number(value.trim()))
     .includes(item.deliveryPriority ?? 0);
+};
+
+const matchesShipmentDeliveryStatus = (item: ShipmentListItem, deliveryStatusFilter?: string): boolean => {
+  if (!deliveryStatusFilter) {
+    return true;
+  }
+
+  return deliveryStatusFilter
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .includes(item.deliveryStatus ?? 0);
 };
 
 const getShipmentSortEntries = (sort?: ShipmentListQuery["sort"]): ShipmentSortEntry[] => {
@@ -554,7 +569,8 @@ export class ShipmentRepository {
     });
     const items: ShipmentListItem[] = orders
       .map((order: unknown) => mapShipmentListItem(order))
-      .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority));
+      .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority))
+      .filter((item: ShipmentListItem) => matchesShipmentDeliveryStatus(item, filters.deliveryStatus));
     const deliveredCount = items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length;
     const inDeliveryStatuses = [
       SHIPMENT_STATUS.READY_FOR_SHIPPING,
@@ -592,7 +608,7 @@ export class ShipmentRepository {
     const whereClause = buildShipmentWhereClause(filters, vendorId);
     const sortEntries = getShipmentSortEntries(filters.sort);
 
-    if (filters.priority || sortEntries.some(([field]) => field === "priority")) {
+    if (filters.priority || filters.deliveryStatus || sortEntries.some(([field]) => field === "priority")) {
       const rows = await orderModel.findAll({
         include: buildIncludes(),
         order: buildShipmentSort(sortEntries),
@@ -601,7 +617,8 @@ export class ShipmentRepository {
       });
       const filteredItems = rows
         .map((row: unknown) => ({ item: mapShipmentListItem(row), row: toPlain(row) }))
-        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentPriority(item, filters.priority));
+        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentPriority(item, filters.priority))
+        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentDeliveryStatus(item, filters.deliveryStatus));
       if (sortEntries.length > 0) {
         filteredItems.sort(
           (
@@ -699,7 +716,6 @@ export class ShipmentRepository {
       }),
       shipment: {
         ...mapShipmentListItem(order),
-        deliveryStatus: toNullableNumber(order.deliveryStatus),
         shippedFromInventory: Boolean(order.shippedFromInventory),
         shippingCompanyName: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany)),
       },

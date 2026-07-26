@@ -259,8 +259,39 @@ describe("orderRouter", () => {
       [expect.objectContaining({
         ...payload,
         deliveryBy: 2,
+        orderSource: 1,
         priority: 1,
         toBeCollected: 16999,
+      })],
+      false,
+      { id: 1, userType: "1" },
+    );
+  });
+
+  it("passes explicit orderSource when creating manual orders", async () => {
+    const payload = {
+      customer: {
+        firstName: "عبير",
+        lastName: "ابوالمجيد",
+      },
+      line_items: [
+        {
+          price: 16999,
+          quantity: 1,
+          title: "كنبة شيب",
+          variant_id: 445566,
+        },
+      ],
+      name: "#H9802",
+      orderSource: 2,
+    };
+
+    const response = await request(app).post("/orders").send(payload);
+
+    expect(response.status).toBe(200);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith(
+      [expect.objectContaining({
+        orderSource: 2,
       })],
       false,
       { id: 1, userType: "1" },
@@ -358,6 +389,7 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.status).toBe(true);
     expect(response.body.data.items[0].deliveryBy).toBe(1);
+    expect(response.body.data.items[0].deliveryStatus).toBe(3);
     expect(response.body.data.items[0].priority).toBe(3);
     expect(response.body.data.items[0].priorityLabel).toBe("مستعجل جدا");
     expect(response.body.data.items[0].operationNumber).toBe("3001");
@@ -420,6 +452,26 @@ describe("orderRouter", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.items).toHaveLength(1);
     expect(response.body.data.items[0].orderNumber).toBe("31668");
+  });
+
+  it("filters orders by automated delivery status derived from expectedDeliveryDate", async () => {
+    orderModel.findAll.mockResolvedValue([
+      makeOrder(),
+      {
+        ...makeOrder(),
+        expectedDeliveryDate: "2099-05-06T00:00:00.000Z",
+        id: 8,
+        orderNumber: "31669",
+      },
+    ]);
+
+    const response = await request(app).get("/orders").query({ deliveryStatus: "3", page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(response.body.data.totalCount).toBe(1);
+    expect(response.body.data.items[0].orderNumber).toBe("31668");
+    expect(response.body.data.items[0].deliveryStatus).toBe(3);
   });
 
   it("sorts orders by totalPrice in the database query", async () => {
@@ -497,6 +549,19 @@ describe("orderRouter", () => {
       sku: "RKA-001",
     }));
     expect(response.body.data.customer.id).toBe(5);
+  });
+
+  it("returns automated deliveryStatus in order details based on expectedDeliveryDate", async () => {
+    orderModel.findOne.mockResolvedValue({
+      ...makeOrder(),
+      deliveryStatus: 3,
+      expectedDeliveryDate: "2099-05-06T00:00:00.000Z",
+    });
+
+    const response = await request(app).get("/orders/7");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.order.deliveryStatus).toBe(1);
   });
 
   it("caps status history at the order current status", async () => {
