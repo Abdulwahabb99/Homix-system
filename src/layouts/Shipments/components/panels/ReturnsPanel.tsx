@@ -13,9 +13,16 @@ import {
   type ReturnItem,
   type ReturnsParams,
 } from "query/shipmentsReturns";
+import VendorSelect from "components/VendorSelect/VendorSelect";
 import EditCustomerReturnModal from "./EditCustomerReturnModal";
 
 const FONT = "'Cairo', sans-serif";
+
+/** يُصغّر ارتفاع VendorSelect إلى 34px ليطابق بقية حقول شريط الفلاتر. */
+const filterVendorSx = {
+  "& .MuiOutlinedInput-root": { minHeight: 34, height: 34, py: 0, borderRadius: "8px" },
+  "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
+} as const;
 
 const TH: React.CSSProperties = {
   fontFamily: FONT, fontSize: "11px", fontWeight: 700, color: HX.tx2,
@@ -432,33 +439,37 @@ export default function ReturnsPanel() {
         })}
       </Box>
 
-      {/* Filter bar */}
-      <Box sx={{
-        display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap",
-        px: "14px", py: "10px", borderBottom: `0.5px solid ${HX.border}`,
-        bgcolor: HX.surface,
-      }}>
-        <SearchInput
-          placeholder="بحث برقم الطلب..."
-          value={filters.orderNumber}
-          onChange={setText("orderNumber")}
-        />
-        <SearchInput
-          placeholder="بحث برقم العملية..."
-          value={filters.operationCode}
-          onChange={setText("operationCode")}
-        />
-        <FilterSelect
-          label="حالة المرتجع"
-          value={filters.status}
-          options={statusOptions}
-          onChange={setSelect("status")}
-        />
-        <SearchInput
-          placeholder="اسم البائع..."
-          value={filters.sellerName}
-          onChange={setText("sellerName")}
-        />
+      {/* Filter bar — نصف العرض على الشاشات الكبيرة فقط، كامل العرض على الأصغر */}
+      <Box sx={{ px: "14px", py: "10px", borderBottom: `0.5px solid ${HX.border}`, bgcolor: HX.surface }}>
+        <Box sx={{
+          display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap",
+          width: { xs: "100%", md: "50%" },
+        }}>
+          <SearchInput
+            placeholder="بحث برقم الطلب..."
+            value={filters.orderNumber}
+            onChange={setText("orderNumber")}
+          />
+          <SearchInput
+            placeholder="بحث برقم العملية..."
+            value={filters.operationCode}
+            onChange={setText("operationCode")}
+          />
+          <FilterSelect
+            label={activeTab === "customer" ? "حالة السحب" : "حالة المرتجع"}
+            value={filters.status}
+            options={statusOptions}
+            onChange={setSelect("status")}
+          />
+          <Box sx={{ flex: "1 1 140px", minWidth: 0 }}>
+            {/* الـ API يفلتر بالاسم لا بالمعرّف، فنُخزّن تسمية الخيار في sellerName */}
+            <VendorSelect
+              value={filters.sellerName}
+              onChange={(_id, opt) => setSelect("sellerName")(opt ? opt.label : "")}
+              sx={filterVendorSx}
+            />
+          </Box>
+        </Box>
       </Box>
 
       {/* Table */}
