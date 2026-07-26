@@ -585,7 +585,7 @@ describe("shipmentRouter", () => {
       expect.objectContaining({
         customerName: "عبير ابوالمجيد",
         deliveryBy: 1,
-        deliveryByLabel: "J&T",
+        deliveryByLabel: "هوميكس",
         deliveryStatus: 3,
         deliveryPriority: 2,
         deliveryPriorityLabel: "مستعجل",
@@ -597,6 +597,7 @@ describe("shipmentRouter", () => {
         scheduleStatus: 1,
         scheduleStatusLabel: "مجدول",
         shippingCompany: 3,
+        shippingCompanyName: "J&T",
         shipmentNumber: "SH-9802",
         shipmentStatusLabel: "في المخزن",
         shipmentTypeLabel: "شحن مجمع",
@@ -719,7 +720,7 @@ describe("shipmentRouter", () => {
     expect(response.body.data.customer.name).toBe("عبير ابوالمجيد");
     expect(response.body.data.products[0].productCode).toBe("RKA-002");
     expect(response.body.data.shipment.deliveryBy).toBe(1);
-    expect(response.body.data.shipment.deliveryByLabel).toBe("J&T");
+    expect(response.body.data.shipment.deliveryByLabel).toBe("هوميكس");
     expect(response.body.data.shipment.deliveryStatus).toBe(3);
     expect(response.body.data.shipment.priority).toBe(2);
     expect(response.body.data.shipment.priorityLabel).toBe("مستعجل");

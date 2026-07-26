@@ -192,12 +192,7 @@ const buildShipmentWhereClause = (
   }
 
   if (filters.deliveryBy) {
-    andConditions.push({
-      [Op.or]: [
-        where(col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }),
-        where(fn("lower", col("Order.shippingCompany")), { [Op.like]: `%${filters.deliveryBy.toLowerCase()}%` }),
-      ],
-    });
+    andConditions.push(where(col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
   }
 
   if (filters.startDate) {
@@ -299,7 +294,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     customerPhone: toText(customer.phoneNumber),
     daysCounter: getShipmentAgingDays(order.shipmentStatus, order.shippingReceiveDate, order.deliveryDate, order.updatedAt),
     deliveryBy,
-    deliveryByLabel: shippingCompanyName || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
+    deliveryByLabel: deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : "",
     deliveryPriority,
     deliveryPriorityLabel: getShipmentPriorityLabel(deliveryPriority),
     deliveryStatus,
@@ -320,6 +315,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     scheduleStatusLabel: SHIPMENT_SCHEDULE_LABELS[toNumber(order.scheduleStatus)] ?? "",
     sellerName: toText(vendor.name),
     shippingCompany: toNullableNumber(shippingCompanyRecord.id),
+    shippingCompanyName,
     shipmentNumber: buildShipmentNumber(order.id),
     shipmentStatus: toNullableNumber(order.shipmentStatus),
     shipmentStatusLabel: getShipmentStatusLabel(order.shipmentStatus),

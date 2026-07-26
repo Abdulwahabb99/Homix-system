@@ -151,6 +151,7 @@ export type ShipmentListItem = {
   scheduleStatusLabel: string;
   sellerName: string;
   shippingCompany: number | null;
+  shippingCompanyName: string;
   shipmentNumber: string;
   shipmentStatus: number | null;
   shipmentStatusLabel: string;
