@@ -1597,22 +1597,27 @@ class OrderService {
       "downPayment",
       "shippingFees",
       "subTotalPrice",
+      "totalPrice",
       "totalDiscounts",
     ].some((key) => Object.prototype.hasOwnProperty.call(orderData, key));
     if (hasFinancialEdit) {
-      const subTotalPrice = Object.prototype.hasOwnProperty.call(orderData, "subTotalPrice")
-        ? orderData.subTotalPrice
-        : order.subTotalPrice;
-      const shippingFees = Object.prototype.hasOwnProperty.call(orderData, "shippingFees")
-        ? orderData.shippingFees
-        : order.shippingFees;
       const totalDiscounts = Object.prototype.hasOwnProperty.call(orderData, "totalDiscounts")
         ? orderData.totalDiscounts
         : order.totalDiscounts;
+      const subTotalPrice = Object.prototype.hasOwnProperty.call(orderData, "subTotalPrice")
+        ? orderData.subTotalPrice
+        : Object.prototype.hasOwnProperty.call(orderData, "totalPrice")
+          ? normalizeNumber(orderData.totalPrice) + normalizeNumber(totalDiscounts)
+          : order.subTotalPrice;
+      const shippingFees = Object.prototype.hasOwnProperty.call(orderData, "shippingFees")
+        ? orderData.shippingFees
+        : order.shippingFees;
       const downPayment = Object.prototype.hasOwnProperty.call(orderData, "downPayment")
         ? orderData.downPayment
         : order.downPayment;
 
+      orderData.subTotalPrice = subTotalPrice;
+      orderData.totalPrice = normalizeNumber(subTotalPrice) - normalizeNumber(totalDiscounts);
       orderData.toBeCollected = calculateAmountToCollect({
         downPayment,
         shippingFees,
@@ -1832,22 +1837,27 @@ class OrderService {
         "downPayment",
         "shippingFees",
         "subTotalPrice",
+        "totalPrice",
         "totalDiscounts",
       ].some((key) => Object.prototype.hasOwnProperty.call(perOrderData, key));
       if (hasFinancialEdit) {
-        const subTotalPrice = Object.prototype.hasOwnProperty.call(perOrderData, "subTotalPrice")
-          ? perOrderData.subTotalPrice
-          : order.subTotalPrice;
-        const shippingFees = Object.prototype.hasOwnProperty.call(perOrderData, "shippingFees")
-          ? perOrderData.shippingFees
-          : order.shippingFees;
         const totalDiscounts = Object.prototype.hasOwnProperty.call(perOrderData, "totalDiscounts")
           ? perOrderData.totalDiscounts
           : order.totalDiscounts;
+        const subTotalPrice = Object.prototype.hasOwnProperty.call(perOrderData, "subTotalPrice")
+          ? perOrderData.subTotalPrice
+          : Object.prototype.hasOwnProperty.call(perOrderData, "totalPrice")
+            ? normalizeNumber(perOrderData.totalPrice) + normalizeNumber(totalDiscounts)
+            : order.subTotalPrice;
+        const shippingFees = Object.prototype.hasOwnProperty.call(perOrderData, "shippingFees")
+          ? perOrderData.shippingFees
+          : order.shippingFees;
         const downPayment = Object.prototype.hasOwnProperty.call(perOrderData, "downPayment")
           ? perOrderData.downPayment
           : order.downPayment;
 
+        perOrderData.subTotalPrice = subTotalPrice;
+        perOrderData.totalPrice = normalizeNumber(subTotalPrice) - normalizeNumber(totalDiscounts);
         perOrderData.toBeCollected = calculateAmountToCollect({
           downPayment,
           shippingFees,

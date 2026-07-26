@@ -371,7 +371,7 @@ const getLineItemsFinancials = (lineItems: unknown): { subTotalPrice: number; to
 const resolveFinancialValue = (
   payload: Record<string, unknown>,
   existing: Record<string, unknown>,
-  key: "downPayment" | "shippingFees" | "subTotalPrice" | "totalDiscounts",
+  key: "downPayment" | "shippingFees" | "subTotalPrice" | "totalDiscounts" | "totalPrice",
 ): number => {
   if (payload[key] !== undefined && payload[key] !== null && payload[key] !== "") {
     return toNumber(payload[key]);
@@ -411,17 +411,23 @@ export const normalizeOrderMutationPayload = (
 
   const hasLineItems = Array.isArray(payload.line_items);
   const lineItemsFinancials = getLineItemsFinancials(payload.line_items);
-  const subTotalPrice = hasLineItems
-    ? lineItemsFinancials.subTotalPrice
-    : resolveFinancialValue(payload, existing, "subTotalPrice");
   const totalDiscounts = hasLineItems
     ? lineItemsFinancials.totalDiscounts
     : resolveFinancialValue(payload, existing, "totalDiscounts");
+  const explicitTotalPrice = resolveFinancialValue(payload, existing, "totalPrice");
+  const subTotalPrice = hasLineItems
+    ? lineItemsFinancials.subTotalPrice
+    : (payload.subTotalPrice !== undefined && payload.subTotalPrice !== null && payload.subTotalPrice !== "")
+      ? resolveFinancialValue(payload, existing, "subTotalPrice")
+      : (payload.totalPrice !== undefined && payload.totalPrice !== null && payload.totalPrice !== "")
+        ? explicitTotalPrice + totalDiscounts
+    : resolveFinancialValue(payload, existing, "subTotalPrice");
   const shippingFees = resolveFinancialValue(payload, existing, "shippingFees");
   const downPayment = resolveFinancialValue(payload, existing, "downPayment");
 
   payload.subTotalPrice = subTotalPrice;
   payload.totalDiscounts = totalDiscounts;
+  payload.totalPrice = subTotalPrice - totalDiscounts;
   payload.toBeCollected = subTotalPrice + shippingFees - totalDiscounts - downPayment;
 
   return payload;

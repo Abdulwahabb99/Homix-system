@@ -220,7 +220,40 @@ describe("OrderService", () => {
       expect.objectContaining({
         subTotalPrice: 2000,
         totalDiscounts: 0,
+        totalPrice: 2000,
         toBeCollected: 1960,
+      }),
+      { id: 1 },
+    );
+  });
+
+  it("recalculates amount to collect when the edited sale price is sent as totalPrice", async () => {
+    const repository = {
+      findOrderEntity: jest.fn().mockResolvedValue({
+        deliveryBy: 2,
+        downPayment: 100,
+        shipmentType: "separate",
+        shippedFromInventory: false,
+        shippingFees: 60,
+        subTotalPrice: 2000,
+        totalDiscounts: 150,
+        totalPrice: 1850,
+      }),
+    } as never;
+    const legacyGateway = {
+      updateOrder: jest.fn().mockResolvedValue({ data: { id: 7 }, status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.updateOrder(7, { totalPrice: 3000 }, { id: 1 } as never);
+
+    expect(legacyGateway.updateOrder).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        subTotalPrice: 3150,
+        totalDiscounts: 150,
+        totalPrice: 3000,
+        toBeCollected: 2960,
       }),
       { id: 1 },
     );
