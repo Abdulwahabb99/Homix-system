@@ -75,6 +75,34 @@ const FACTORY_STATUS = {
   ONLINE: 1,
   OFFLINE: 2,
 };
+const FACTORY_STATUS_ARABIC = {
+  1: "أونلاين",
+  2: "أوفلاين",
+};
+const FACTORY_DOCUMENT_TYPE = {
+  COMMERCIAL_REGISTER: 1,
+  TAX_CARD: 2,
+  BANK_STATEMENT: 3,
+  CONTRACT: 4,
+  OTHER: 5,
+};
+const FACTORY_DOCUMENT_TYPE_ARABIC = {
+  1: "السجل التجاري",
+  2: "البطاقة الضريبية",
+  3: "كشف حساب بنكي",
+  4: "عقد",
+  5: "أخرى",
+};
+const FACTORY_DOCUMENT_STATUS = {
+  VERIFIED: 1,
+  PENDING_REVIEW: 2,
+  EXPIRED: 3,
+};
+const FACTORY_DOCUMENT_STATUS_ARABIC = {
+  1: "موثق",
+  2: "قيد المراجعة",
+  3: "منتهي",
+};
 
 const SHIPMENTS_STATUS = {
   PENDING: 1,
@@ -163,6 +191,11 @@ module.exports = {
   ORDER_STATUS,
   PAYMENT_STATUS,
   FACTORY_STATUS,
+  FACTORY_STATUS_ARABIC,
+  FACTORY_DOCUMENT_TYPE,
+  FACTORY_DOCUMENT_TYPE_ARABIC,
+  FACTORY_DOCUMENT_STATUS,
+  FACTORY_DOCUMENT_STATUS_ARABIC,
   ORDER_LINE_STATUS,
   ORDER_LINE__ITEM_STATUS,
   DELIVERY_STATUS,

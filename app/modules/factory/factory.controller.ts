@@ -28,8 +28,9 @@ class FactoryController {
         req.filePaths,
         req.fileNames,
         req.descriptions,
+        req.body as Record<string, unknown>,
       );
-      return res.status(200).json(factory);
+      return res.status(factory.statusCode).json(factory);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to upload files";
       return next(new AppError(message, 500));
@@ -39,7 +40,7 @@ class FactoryController {
   public static async create(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const factory = await FactoryService.create(req.body as Record<string, unknown>);
-      return res.status(201).json(factory);
+      return res.status(factory.statusCode).json(factory);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create factory";
       return next(new AppError(message, 500));
@@ -49,6 +50,13 @@ class FactoryController {
   public static async getOne(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const factory = await FactoryService.getOne(getParam(req.params.id));
+      if (!factory) {
+        return res.status(404).json({
+          message: "Factory not found",
+          status: false,
+          statusCode: 404,
+        });
+      }
       return res.status(200).json(factory);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch factory";
@@ -70,10 +78,24 @@ class FactoryController {
     }
   }
 
+  public static async getMeta(_req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    try {
+      const meta = await FactoryService.getMeta();
+      return res.status(200).json({
+        data: meta,
+        status: true,
+        statusCode: 200,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch factory meta";
+      return next(new AppError(message, 500));
+    }
+  }
+
   public static async update(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const factory = await FactoryService.update(getParam(req.params.id), req.body as Record<string, unknown>);
-      return res.status(200).json(factory);
+      return res.status(factory.statusCode).json(factory);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update factory";
       return next(new AppError(message, 500));
@@ -83,7 +105,7 @@ class FactoryController {
   public static async delete(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const factory = await FactoryService.delete(getParam(req.params.id));
-      return res.status(200).json(factory);
+      return res.status(factory.statusCode).json(factory);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to delete factory";
       return next(new AppError(message, 500));

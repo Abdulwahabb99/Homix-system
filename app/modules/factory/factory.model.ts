@@ -65,8 +65,16 @@ const Factory = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    contactPersonRole: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    joinDate: {
+      type: DataTypes.DATEONLY,
       allowNull: true,
     },
     cairoGizaShipping: {
@@ -75,6 +83,34 @@ const Factory = sequelize.define(
     },
     otherCitiesShipping: {
       type: DataTypes.DECIMAL,
+      allowNull: true,
+    },
+    bankName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bankAccountType: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bankAccountHolderName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bankAccountNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    walletNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    walletProvider: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    instapayNumber: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     userId: {

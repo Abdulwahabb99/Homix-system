@@ -18,6 +18,22 @@ const Attachment = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    attachmentType: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    verificationStatus: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    issuedAt: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    expiresAt: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
     modelType: {
       type: DataTypes.STRING,
       allowNull: false,
