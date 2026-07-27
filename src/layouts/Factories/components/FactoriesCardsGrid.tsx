@@ -5,23 +5,24 @@
 import React from "react";
 import { Box } from "@mui/material";
 import { cardsGridSx, emptyStateSx, tableCardSx } from "../utils/styles";
-import { Factory } from "../utils/types";
+import { FactoryListItem } from "../utils/types";
 import FactoriesPagination from "./FactoriesPagination";
 import FactoryCard from "./FactoryCard";
 
 export interface FactoriesCardsGridProps {
-  items: Factory[];
+  items: FactoryListItem[];
   totalCount: number;
   page: number;
   totalPages: number;
   onPageChange: (p: number) => void;
-  onView: (f: Factory) => void;
+  onView: (f: FactoryListItem) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
+  isFetching?: boolean;
 }
 
 export default function FactoriesCardsGrid({
-  items, totalCount, page, totalPages, onPageChange, onView, onEdit, onDelete,
+  items, totalCount, page, totalPages, onPageChange, onView, onEdit, onDelete, isFetching,
 }: FactoriesCardsGridProps) {
   if (items.length === 0) {
     return (
@@ -32,7 +33,10 @@ export default function FactoriesCardsGrid({
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+    <Box sx={{
+      display: "flex", flexDirection: "column", gap: "14px",
+      opacity: isFetching ? 0.6 : 1, transition: "opacity .2s",
+    }}>
       <Box sx={cardsGridSx}>
         {items.map((f) => (
           <FactoryCard

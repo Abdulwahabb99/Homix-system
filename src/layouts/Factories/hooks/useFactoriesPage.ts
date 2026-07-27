@@ -1,40 +1,61 @@
 /**
- * منطق صفحة الصنّاع: الفلاتر + الترتيب + الترقيم + طريقة العرض + نموذج
- * الإضافة/التعديل + الحذف.
+ * منطق صفحة الصنّاع فوق الـ API:
+ *   GET /factories/meta   → خيارات القوائم
+ *   GET /factories        → القائمة + الترقيم + الملخّص (فلترة وترتيب على الخادم)
+ *   POST/PUT/DELETE       → عبر `query/factoryMutations`
  *
- * نقطة الربط الوحيدة: `STATIC_FACTORIES` أدناه. عند جهوز الـ API تُستبدل بـ
- * `useQuery({ queryKey: factoryKeys.list(), queryFn: fetchFactories })` وتتحوّل
- * دوال الحفظ/الحذف إلى mutations — بقيّة الملف والمكوّنات تبقى كما هي.
+ * القوائم تُطبَّق فوراً وحقل البحث بعد تهدئة الكتابة، حتى لا نُطلق طلباً لكل حرف.
  */
-import { useCallback, useMemo, useState } from "react";
-import { STATIC_FACTORIES, STATIC_KPI_EXTRAS } from "../data/staticFactories";
-import { buildKpis, factoryToForm, filterFactories, formToFactory, sortFactories } from "../utils/calc";
-import { DEFAULT_VIEW, EMPTY_FILTERS, EMPTY_FORM, FACTORIES_PAGE_SIZE } from "../utils/constants";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useFactoriesListQuery,
+  type FactoriesParams,
+  type FactoriesSummary,
+  type FactoryListItem,
+  type FactorySortDir,
+} from "query/factoriesList";
+import { useFactoriesMetaQuery, type FactoriesMeta } from "query/factoriesMeta";
+import {
+  useDeleteFactoryMutation,
+  useSaveFactoryMutation,
+  type FactoryUploadFile,
+} from "query/factoryMutations";
+import { DEFAULT_VIEW, EMPTY_FILTERS, SEARCH_DEBOUNCE_MS } from "../utils/constants";
 import {
   FactoriesView,
-  Factory,
   FactoryFilters,
   FactoryFormValues,
-  FactoryKpis,
+  FactorySortKey,
 } from "../utils/types";
+import { formToPayload } from "../utils/calc";
 
-type SortKey = "name" | "spec" | null;
-type SortDir = "asc" | "desc";
+const EMPTY_SUMMARY: FactoriesSummary = {
+  totalFactories: 0,
+  onlineFactories: 0,
+  offlineFactories: 0,
+  specialtiesCount: 0,
+};
 
 export interface UseFactoriesPage {
-  /** الصفحة الحالية من النتائج بعد الفلترة والترتيب */
-  pageItems: Factory[];
-  /** كل النتائج بعد الفلترة (لعدّاد الترويسة والترقيم) */
-  filteredCount: number;
-  kpis: FactoryKpis;
+  meta: FactoriesMeta | undefined;
+  items: FactoryListItem[];
+  /** ملخّص عام للمؤشرات (لا يتأثّر بالفلاتر) */
+  summary: FactoriesSummary;
+  /** عدد النتائج بعد الفلترة — للعدّاد والترقيم */
+  totalItems: number;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
 
+  /** قيمة الحقل كما يكتبها المستخدم (قبل التهدئة) */
   filters: FactoryFilters;
   setFilter: <K extends keyof FactoryFilters>(key: K, value: FactoryFilters[K]) => void;
+  applyNow: () => void;
   resetFilters: () => void;
 
-  sortKey: SortKey;
-  sortDir: SortDir;
-  toggleSort: (key: Exclude<SortKey, null>) => void;
+  sortKey: FactorySortKey | null;
+  sortDir: "asc" | "desc";
+  toggleSort: (key: FactorySortKey) => void;
 
   view: FactoriesView;
   setView: (v: FactoriesView) => void;
@@ -43,28 +64,31 @@ export interface UseFactoriesPage {
   totalPages: number;
   setPage: (p: number) => void;
 
-  /** نموذج الإضافة/التعديل */
+  /** النموذج */
   isFormOpen: boolean;
-  editingFactory: Factory | null;
-  formInitialValues: FactoryFormValues;
+  editingId: number | null;
   openAdd: () => void;
   openEdit: (id: number) => void;
   closeForm: () => void;
-  saveFactory: (values: FactoryFormValues) => void;
+  saveFactory: (values: FactoryFormValues, documents: FactoryUploadFile[]) => void;
+  isSaving: boolean;
 
   /** الحذف */
   pendingDeleteId: number | null;
   askDelete: (id: number) => void;
   cancelDelete: () => void;
   confirmDelete: () => void;
+  isDeleting: boolean;
 }
 
 export function useFactoriesPage(): UseFactoriesPage {
-  const [factories, setFactories] = useState<Factory[]>(STATIC_FACTORIES);
-
+  /** ما يظهر في الحقول */
   const [filters, setFilters] = useState<FactoryFilters>(EMPTY_FILTERS);
-  const [sortKey, setSortKey] = useState<SortKey>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  /** ما يُرسل فعلاً للخادم (البحث بعد التهدئة) */
+  const [applied, setApplied] = useState<FactoryFilters>(EMPTY_FILTERS);
+
+  const [sortKey, setSortKey] = useState<FactorySortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [view, setView] = useState<FactoriesView>(DEFAULT_VIEW);
   const [page, setPage] = useState(1);
 
@@ -72,41 +96,70 @@ export function useFactoriesPage(): UseFactoriesPage {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
-  /* ── الفلترة ثم الترتيب ── */
-  const visible = useMemo(() => {
-    const matched = filterFactories(factories, filters);
-    return sortFactories(matched, sortKey, sortDir);
-  }, [factories, filters, sortKey, sortDir]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(visible.length / FACTORIES_PAGE_SIZE));
-  /** الصفحة تُقصَر عند تقلّص النتائج بدل أن تُعرض صفحة فارغة */
-  const safePage = Math.min(page, totalPages);
+  const { data: meta } = useFactoriesMetaQuery();
 
-  const pageItems = useMemo(
-    () => visible.slice((safePage - 1) * FACTORIES_PAGE_SIZE, safePage * FACTORIES_PAGE_SIZE),
-    [visible, safePage]
+  const params: FactoriesParams = useMemo(
+    () => ({
+      page,
+      search: applied.search || undefined,
+      status: applied.status,
+      factoryCategory: applied.factoryCategory || undefined,
+      sortField: sortKey,
+      sortDir: (sortDir === "asc" ? 1 : -1) as FactorySortDir,
+    }),
+    [page, applied, sortKey, sortDir]
   );
 
-  const kpis = useMemo(() => buildKpis(factories, STATIC_KPI_EXTRAS), [factories]);
+  const listQuery = useFactoriesListQuery(params);
+
+  const items = listQuery.data?.items ?? [];
+  const summary = listQuery.data?.summary ?? EMPTY_SUMMARY;
+  const totalPages = Math.max(1, listQuery.data?.pagination.totalPages ?? 1);
+  const totalItems = listQuery.data?.pagination.totalItems ?? 0;
+
+  const saveMutation = useSaveFactoryMutation();
+  const deleteMutation = useDeleteFactoryMutation();
 
   /* ── الفلاتر ── */
-  const setFilter = useCallback(
-    <K extends keyof FactoryFilters>(key: K, value: FactoryFilters[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-      setPage(1);
-    },
-    []
-  );
-
-  const resetFilters = useCallback(() => {
-    setFilters(EMPTY_FILTERS);
+  const commit = useCallback((next: FactoryFilters) => {
+    setApplied(next);
     setPage(1);
   }, []);
 
+  const setFilter = useCallback(
+    <K extends keyof FactoryFilters>(key: K, value: FactoryFilters[K]) => {
+      const next = { ...filters, [key]: value };
+      setFilters(next);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (key === "search") {
+        debounceRef.current = setTimeout(() => commit(next), SEARCH_DEBOUNCE_MS);
+      } else {
+        commit(next);
+      }
+    },
+    [filters, commit]
+  );
+
+  const applyNow = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    commit(filters);
+  }, [filters, commit]);
+
+  const resetFilters = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setFilters(EMPTY_FILTERS);
+    commit(EMPTY_FILTERS);
+  }, [commit]);
+
   /** نفس العمود يقلب الاتجاه، وعمود جديد يبدأ تصاعدياً */
-  const toggleSort = useCallback((key: Exclude<SortKey, null>) => {
-    setSortKey((prevKey) => {
-      if (prevKey === key) {
+  const toggleSort = useCallback((key: FactorySortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
         setSortDir((d) => (d === "asc" ? "desc" : "asc"));
         return key;
       }
@@ -117,16 +170,6 @@ export function useFactoriesPage(): UseFactoriesPage {
   }, []);
 
   /* ── النموذج ── */
-  const editingFactory = useMemo(
-    () => (editingId != null ? factories.find((f) => f.id === editingId) ?? null : null),
-    [editingId, factories]
-  );
-
-  const formInitialValues = useMemo(
-    () => (editingFactory ? factoryToForm(editingFactory) : EMPTY_FORM),
-    [editingFactory]
-  );
-
   const openAdd = useCallback(() => {
     setEditingId(null);
     setIsFormOpen(true);
@@ -143,54 +186,60 @@ export function useFactoriesPage(): UseFactoriesPage {
   }, []);
 
   const saveFactory = useCallback(
-    (values: FactoryFormValues) => {
-      const patch = formToFactory(values);
-      setFactories((prev) => {
-        if (editingId != null) {
-          return prev.map((f) => (f.id === editingId ? { ...f, ...patch } : f));
-        }
-        // TODO(BE): المعرّف يأتي من الـ API؛ مؤقّتاً أعلى معرّف + 1 لتجنّب التكرار
-        const nextId = prev.reduce((max, f) => Math.max(max, f.id), 0) + 1;
-        return [{ ...patch, id: nextId, orders: 0, sales: 0 }, ...prev];
-      });
-      closeForm();
+    (values: FactoryFormValues, documents: FactoryUploadFile[]) => {
+      saveMutation.mutate(
+        { id: editingId, body: formToPayload(values), documents },
+        { onSuccess: () => closeForm() }
+      );
     },
-    [editingId, closeForm]
+    [editingId, saveMutation, closeForm]
   );
 
   /* ── الحذف ── */
   const askDelete = useCallback((id: number) => setPendingDeleteId(id), []);
   const cancelDelete = useCallback(() => setPendingDeleteId(null), []);
   const confirmDelete = useCallback(() => {
-    setFactories((prev) => prev.filter((f) => f.id !== pendingDeleteId));
-    setPendingDeleteId(null);
-  }, [pendingDeleteId]);
+    if (pendingDeleteId == null) return;
+    deleteMutation.mutate(pendingDeleteId, { onSuccess: () => setPendingDeleteId(null) });
+  }, [pendingDeleteId, deleteMutation]);
 
   return {
-    pageItems,
-    filteredCount: visible.length,
-    kpis,
+    meta,
+    items,
+    summary,
+    totalItems,
+    isLoading: listQuery.isLoading,
+    isFetching: listQuery.isFetching,
+    isError: listQuery.isError,
+
     filters,
     setFilter,
+    applyNow,
     resetFilters,
+
     sortKey,
     sortDir,
     toggleSort,
+
     view,
     setView,
-    page: safePage,
+
+    page,
     totalPages,
     setPage,
+
     isFormOpen,
-    editingFactory,
-    formInitialValues,
+    editingId,
     openAdd,
     openEdit,
     closeForm,
     saveFactory,
+    isSaving: saveMutation.isPending,
+
     pendingDeleteId,
     askDelete,
     cancelDelete,
     confirmDelete,
+    isDeleting: deleteMutation.isPending,
   };
 }

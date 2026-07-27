@@ -1,6 +1,6 @@
 /**
- * بطاقة جدول الصنّاع: ترويسة (عدّاد + تصدير Excel) + جدول قابل للتمرير أفقياً
- * برأس ملتصق + ترقيم أسفل.
+ * بطاقة جدول الصنّاع: ترويسة (عدّاد + تصدير) + جدول قابل للتمرير أفقياً برأس
+ * ملتصق + ترقيم أسفل. الترتيب يُطلب من الخادم عبر الأعمدة المدعومة فقط.
  */
 import React from "react";
 import { Box } from "@mui/material";
@@ -14,23 +14,25 @@ import { FACTORY_COLUMNS, TABLE_MIN_WIDTH } from "../utils/constants";
 import {
   emptyStateSx, ghostBtnSx, tableCardSx, tableHeadBarSx, TH, FONT,
 } from "../utils/styles";
-import { Factory } from "../utils/types";
+import { FactoryListItem, FactorySortKey } from "../utils/types";
 import FactoriesPagination from "./FactoriesPagination";
 import FactoryTableRow from "./FactoryTableRow";
 
 export interface FactoriesTableProps {
-  items: Factory[];
+  items: FactoryListItem[];
   totalCount: number;
   page: number;
   totalPages: number;
   onPageChange: (p: number) => void;
-  sortKey: "name" | "spec" | null;
+  sortKey: FactorySortKey | null;
   sortDir: "asc" | "desc";
-  onSort: (key: "name" | "spec") => void;
-  onView: (f: Factory) => void;
+  onSort: (key: FactorySortKey) => void;
+  onView: (f: FactoryListItem) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
   onExport: () => void;
+  /** يخفت الجدول أثناء إعادة الجلب بدل إخفائه */
+  isFetching?: boolean;
 }
 
 /** سهم الترتيب — محايد إذا العمود غير مُرتَّب حالياً */
@@ -44,7 +46,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
 
 export default function FactoriesTable({
   items, totalCount, page, totalPages, onPageChange,
-  sortKey, sortDir, onSort, onView, onEdit, onDelete, onExport,
+  sortKey, sortDir, onSort, onView, onEdit, onDelete, onExport, isFetching,
 }: FactoriesTableProps) {
   return (
     <Box sx={tableCardSx}>
@@ -70,7 +72,7 @@ export default function FactoriesTable({
       {items.length === 0 ? (
         <Box sx={emptyStateSx}>لا توجد مصانع مطابقة للفلاتر</Box>
       ) : (
-        <>
+        <Box sx={{ opacity: isFetching ? 0.6 : 1, transition: "opacity .2s" }}>
           <Box sx={{ overflowX: "auto" }}>
             <table
               style={{
@@ -95,9 +97,7 @@ export default function FactoriesTable({
                         }}
                       >
                         {c.label}
-                        {sortable ? (
-                          <SortIcon active={sortKey === c.sortKey} dir={sortDir} />
-                        ) : null}
+                        {sortable ? <SortIcon active={sortKey === c.sortKey} dir={sortDir} /> : null}
                       </th>
                     );
                   })}
@@ -123,7 +123,7 @@ export default function FactoriesTable({
             totalCount={totalCount}
             onPageChange={onPageChange}
           />
-        </>
+        </Box>
       )}
     </Box>
   );

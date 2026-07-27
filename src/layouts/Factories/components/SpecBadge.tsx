@@ -1,23 +1,16 @@
 /**
- * شارة تخصّص المصنع — خلفية ولون نص لكل تخصّص (مطابقة لـ .spec-badge).
+ * شارة تخصّص المصنع — اللون مُشتق من اسم التخصّص (التخصصات ديناميكية من الـ meta).
  */
 import React from "react";
 import { Box } from "@mui/material";
-import { HX } from "layouts/Orders/ordersHomixTheme";
-import { SPEC_BG, SPEC_TEXT } from "../utils/constants";
+import { specPalette } from "../utils/calc";
 import { specBadgeSx } from "../utils/styles";
-import { FactorySpec } from "../utils/types";
 
-export default function SpecBadge({ spec }: { spec: FactorySpec }) {
+export default function SpecBadge({ spec }: { spec: string }) {
+  if (!spec) return <>—</>;
+  const palette = specPalette(spec);
   return (
-    <Box
-      component="span"
-      sx={{
-        ...specBadgeSx,
-        bgcolor: SPEC_BG[spec] ?? HX.accentLight,
-        color: SPEC_TEXT[spec] ?? HX.accent,
-      }}
-    >
+    <Box component="span" sx={{ ...specBadgeSx, bgcolor: palette.bg, color: palette.text }}>
       {spec}
     </Box>
   );

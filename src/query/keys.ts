@@ -27,6 +27,16 @@ export const userKeys = {
   detail: (id: number | string) => [...userKeys.all(), "detail", String(id)],
 };
 
+export const factoryKeys = {
+  all: () => ["factories"] as const,
+  meta: () => [...factoryKeys.all(), "meta"] as const,
+  lists: () => [...factoryKeys.all(), "list"] as const,
+  /** @param filtersKey سلسلة JSON ثابتة من فلاتر الصفحة (بحث/حالة/تخصص/ترتيب/صفحة) */
+  list: (filtersKey: string) => [...factoryKeys.lists(), filtersKey] as const,
+  detail: (factoryId: number | string) =>
+    [...factoryKeys.all(), "detail", String(factoryId)] as const,
+};
+
 export const shipmentKeys = {
   all: () => ["shipments"] as const,
   lists: () => [...shipmentKeys.all(), "list"] as const,

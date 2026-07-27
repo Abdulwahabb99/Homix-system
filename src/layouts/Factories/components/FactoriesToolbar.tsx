@@ -1,7 +1,6 @@
 /**
- * شريط الفلاتر + مبدّل العرض (جدول / بطاقات).
- * الفلاتر تُطبَّق مباشرة عند التغيير كما في التصميم؛ زر «تطبيق» يعيد التطبيق
- * فوراً (مفيد بعد الكتابة) و«إعادة ضبط» يُفرّغ الكل.
+ * شريط الفلاتر + مبدّل العرض. خيارات التخصّص والحالة من `GET /factories/meta`،
+ * والفلترة تُرسل للخادم (القوائم فوراً، البحث بعد تهدئة الكتابة).
  */
 import React from "react";
 import { Box, MenuItem, TextField } from "@mui/material";
@@ -9,16 +8,18 @@ import SearchIcon from "@mui/icons-material/Search";
 import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { SPEC_OPTIONS, STATUS_OPTIONS } from "../utils/constants";
+import type { FactoriesMeta } from "query/factoriesMeta";
 import {
   filterBarSx, filterBtnSx, filterFieldSx, filterSepSx,
   viewToggleBtnSx, viewToggleSx, FONT,
 } from "../utils/styles";
-import { FactoriesView, FactoryFilters, FactorySpec, FactoryStatus } from "../utils/types";
+import { FactoriesView, FactoryFilters } from "../utils/types";
 
 export interface FactoriesToolbarProps {
+  meta: FactoriesMeta | undefined;
   filters: FactoryFilters;
   onFilterChange: <K extends keyof FactoryFilters>(key: K, value: FactoryFilters[K]) => void;
+  onApply: () => void;
   onReset: () => void;
   view: FactoriesView;
   onViewChange: (v: FactoriesView) => void;
@@ -30,17 +31,20 @@ const VIEWS: { key: FactoriesView; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function FactoriesToolbar({
-  filters, onFilterChange, onReset, view, onViewChange,
+  meta, filters, onFilterChange, onApply, onReset, view, onViewChange,
 }: FactoriesToolbarProps) {
+  const specialties = meta?.specialties ?? [];
+  const statuses = meta?.statuses ?? [];
+
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
       <Box sx={filterBarSx}>
         <TextField
           size="small"
-          placeholder="بحث باسم المصنع أو العنوان..."
+          placeholder="بحث بالاسم، العنوان، المسؤول أو رقمه..."
           value={filters.search}
           onChange={(e) => onFilterChange("search", e.target.value)}
-          sx={{ ...filterFieldSx, width: { xs: "100%", sm: 220 } }}
+          sx={{ ...filterFieldSx, width: { xs: "100%", sm: 260 } }}
           InputProps={{
             startAdornment: (
               <SearchIcon sx={{ fontSize: 14, color: HX.tx3, marginInlineEnd: "6px", flexShrink: 0 }} />
@@ -53,27 +57,31 @@ export default function FactoriesToolbar({
         <TextField
           select
           size="small"
-          value={filters.spec}
-          onChange={(e) => onFilterChange("spec", e.target.value as FactorySpec | "")}
-          sx={{ ...filterFieldSx, minWidth: 150 }}
+          disabled={specialties.length === 0}
+          value={filters.factoryCategory}
+          onChange={(e) => onFilterChange("factoryCategory", e.target.value)}
+          sx={{ ...filterFieldSx, minWidth: 160 }}
         >
           <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل التخصصات</MenuItem>
-          {SPEC_OPTIONS.map((s) => (
-            <MenuItem key={s} value={s} sx={{ fontFamily: FONT, fontSize: "12px" }}>{s}</MenuItem>
+          {specialties.map((s) => (
+            <MenuItem key={s.id} value={s.value} sx={{ fontFamily: FONT, fontSize: "12px" }}>
+              {s.label}
+            </MenuItem>
           ))}
         </TextField>
 
         <TextField
           select
           size="small"
+          disabled={statuses.length === 0}
           value={filters.status === "" ? "" : String(filters.status)}
           onChange={(e) =>
-            onFilterChange("status", e.target.value === "" ? "" : (Number(e.target.value) as FactoryStatus))
+            onFilterChange("status", e.target.value === "" ? "" : Number(e.target.value))
           }
-          sx={{ ...filterFieldSx, minWidth: 130 }}
+          sx={{ ...filterFieldSx, minWidth: 140 }}
         >
           <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل الحالات</MenuItem>
-          {STATUS_OPTIONS.map((o) => (
+          {statuses.map((o) => (
             <MenuItem key={o.value} value={String(o.value)} sx={{ fontFamily: FONT, fontSize: "12px" }}>
               {o.label}
             </MenuItem>
@@ -82,12 +90,7 @@ export default function FactoriesToolbar({
 
         <Box sx={filterSepSx} />
 
-        <Box
-          component="button"
-          type="button"
-          onClick={() => onFilterChange("search", filters.search)}
-          sx={filterBtnSx(true)}
-        >
+        <Box component="button" type="button" onClick={onApply} sx={filterBtnSx(true)}>
           تطبيق
         </Box>
         <Box component="button" type="button" onClick={onReset} sx={filterBtnSx(false)}>

@@ -1,16 +1,13 @@
 /**
- * حسابات ومساعدات عرض صفحة الصنّاع — بلا أي حالة أو تأثيرات جانبية.
+ * مساعدات عرض صفحة الصنّاع — بلا حالة ولا تأثيرات جانبية.
+ * الفلترة والترتيب والترقيم صارت على الخادم، فلم يبقَ هنا حساب قوائم.
  */
-import {
-  Factory,
-  FactoryFilters,
-  FactoryFormValues,
-  FactoryKpis,
-  FactorySpec,
-} from "./types";
-import { CURRENCY } from "./constants";
+import moment from "moment";
+import { CURRENCY, SPEC_PALETTE, SpecPalette } from "./constants";
+import { FactoryDetail, FactoryFormValues } from "./types";
+import type { FactoryPayload } from "query/factoryMutations";
 
-/** أرقام لاتينية بفواصل — نفس ما يستخدمه باقي لوحات Homix */
+/** أرقام لاتينية بفواصل */
 export function fmt(n: number | null | undefined): string {
   return Number(n ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
@@ -18,6 +15,13 @@ export function fmt(n: number | null | undefined): string {
 /** مبلغ مع العملة */
 export function money(n: number | null | undefined): string {
   return `${fmt(n)} ${CURRENCY}`;
+}
+
+/** تاريخ ميلادي مختصر بأرقام لاتينية */
+export function fmtDate(d: string | null | undefined): string {
+  if (!d) return "—";
+  const m = moment(d).locale("en");
+  return m.isValid() ? m.format("YYYY-MM-DD") : "—";
 }
 
 /** حرفان من أول كلمتين للاسم (avatar) */
@@ -30,107 +34,128 @@ export function initials(name: string): string {
     .join("");
 }
 
-/** الجزء المعروض من رابط الويب سايت — ما بعد `/...` كما في التصميم */
-export function websiteLabel(website: string): string {
-  if (!website) return "رابط";
-  return website.split("/...")[1] || "رابط";
-}
-
-/** فلترة بالبحث النصي (الاسم/العنوان/المسؤول) + التخصّص + الحالة */
-export function filterFactories(list: Factory[], filters: FactoryFilters): Factory[] {
-  const q = filters.search.trim().toLowerCase();
-  return list.filter((f) => {
-    if (filters.spec && f.spec !== filters.spec) return false;
-    if (filters.status !== "" && f.status !== filters.status) return false;
-    if (!q) return true;
-    return (
-      f.name.toLowerCase().includes(q) ||
-      (f.addr ?? "").toLowerCase().includes(q) ||
-      (f.resp ?? "").toLowerCase().includes(q)
-    );
-  });
-}
-
-/** ترتيب تصاعدي/تنازلي حسب الاسم أو التخصّص (مقارنة نصية عربية-آمنة) */
-export function sortFactories(
-  list: Factory[],
-  key: "name" | "spec" | null,
-  dir: "asc" | "desc"
-): Factory[] {
-  if (!key) return list;
-  const factor = dir === "asc" ? 1 : -1;
-  return [...list].sort((a, b) => String(a[key]).localeCompare(String(b[key]), "ar") * factor);
-}
-
 /**
- * مؤشرات أعلى الصفحة. العدد/النشاط/المبيعات تُشتق من القائمة، أمّا عدد المنتجات
- * و«تحتاج مراجعة» فلا يوفّرهما مصدر الصنّاع — تُمرَّر من طبقة البيانات.
+ * لون ثابت لكل تخصّص. التخصصات تأتي من الـ meta ولا يمكن ربطها بخريطة ثابتة،
+ * فنستخدم تجزئة بسيطة لاسم التخصّص لاختيار لون من لوحة التصميم — نفس الاسم
+ * يعطي نفس اللون دائماً.
  */
-export function buildKpis(
-  list: Factory[],
-  extras: { totalProducts: number; needsReview: number }
-): FactoryKpis {
-  const total = list.length;
-  const online = list.filter((f) => f.status === 1).length;
-  const totalSales = list.reduce((sum, f) => sum + Number(f.sales ?? 0), 0);
-  return {
-    total,
-    online,
-    activePct: total ? Math.round((online / total) * 1000) / 10 : 0,
-    totalProducts: extras.totalProducts,
-    totalSales,
-    needsReview: extras.needsReview,
-  };
+export function specPalette(spec: string): SpecPalette {
+  const s = String(spec ?? "");
+  if (!s) return SPEC_PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    hash = (hash * 31 + s.charCodeAt(i)) % 100_000;
+  }
+  return SPEC_PALETTE[hash % SPEC_PALETTE.length];
 }
 
-/** يختصر المبالغ الكبيرة (847000 → 847K) كما في بطاقة المبيعات */
-export function compactMoney(n: number): string {
+/** الجزء المعروض من رابط الويب سايت — اسم المضيف + المسار المختصر */
+export function websiteLabel(website: string): string {
+  const raw = String(website ?? "").trim();
+  if (!raw) return "—";
+  return raw.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
+}
+
+/** نسبة النشاط % من الملخّص */
+export function activityPct(online: number, total: number): number {
+  if (!total) return 0;
+  return Math.round((online / total) * 1000) / 10;
+}
+
+/** يختصر المبالغ الكبيرة (847000 → 847K) */
+export function compactNumber(n: number): string {
   const v = Number(n ?? 0);
   if (Math.abs(v) >= 1_000_000) return `${Math.round(v / 100_000) / 10}M`;
   if (Math.abs(v) >= 1_000) return `${Math.round(v / 1_000)}K`;
   return fmt(v);
 }
 
-/** مصنع → قيم النموذج (وضع التعديل) */
-export function factoryToForm(f: Factory): FactoryFormValues {
+/** تفاصيل مصنع → قيم النموذج (وضع التعديل) */
+export function detailToForm(d: FactoryDetail): FactoryFormValues {
   return {
-    name: f.name ?? "",
-    addr: f.addr ?? "",
-    spec: f.spec ?? "",
-    status: f.status ?? 1,
-    website: f.website ?? "",
-    resp: f.resp ?? "",
-    phone: f.phone ?? "",
-    shipCairo: f.shipCairo != null ? String(f.shipCairo) : "",
-    shipOther: f.shipOther != null ? String(f.shipOther) : "",
-    bankName: f.bankName ?? "",
-    bankHolder: f.bankHolder ?? "",
-    bankAccount: f.bankAccount ?? "",
-    bankWallet: f.bankWallet ?? "",
-    // التصميم يعرض المحفظة كقيمة افتراضية لـ InstaPay عند غيابه
-    bankInstapay: f.bankInstapay ?? f.bankWallet ?? "",
+    name: d.name,
+    description: d.description,
+    factoryCategory: d.factoryCategory,
+    status: d.status,
+    joinDate: d.joinDate ? moment(d.joinDate).locale("en").format("YYYY-MM-DD") : "",
+    website: d.website,
+    email: d.email,
+    phoneNumber: d.phoneNumber,
+    address: d.address,
+    city: d.city,
+    country: d.country,
+
+    responsibleName: d.responsibleName,
+    responsiblePhone: d.responsiblePhone,
+    responsibleEmail: d.responsibleEmail,
+    responsibleRole: d.responsibleRole,
+
+    contactPersonName: d.contactPersonName,
+    contactPersonPhoneNumber: d.contactPersonPhoneNumber,
+    contactPersonEmail: d.contactPersonEmail,
+    contactPersonRole: d.contactPersonRole,
+
+    cairoGizaShipping: d.cairoGizaShipping != null ? String(d.cairoGizaShipping) : "",
+    otherCitiesShipping: d.otherCitiesShipping != null ? String(d.otherCitiesShipping) : "",
+
+    bankName: d.bankName,
+    bankAccountHolderName: d.bankAccountHolderName,
+    bankAccountNumber: d.bankAccountNumber,
+    bankAccountType: d.bankAccountType,
+    walletNumber: d.walletNumber,
+    walletProvider: d.walletProvider,
+    instapayNumber: d.instapayNumber,
   };
 }
 
-/** قيم النموذج → حقول المصنع القابلة للحفظ (بدون id والمؤشرات المحسوبة) */
-export function formToFactory(
-  v: FactoryFormValues
-): Omit<Factory, "id" | "orders" | "sales" | "bankIban"> {
+/** رقم من نص حقل إدخال، أو undefined إن كان فارغاً/غير صالح */
+function num(v: string): number | undefined {
+  if (v.trim() === "") return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** نص مُشذّب، أو undefined إن كان فارغاً — حتى لا نُرسل حقولاً فارغة */
+function text(v: string): string | undefined {
+  const t = String(v ?? "").trim();
+  return t === "" ? undefined : t;
+}
+
+/** قيم النموذج → جسم POST/PUT (الحقول الفارغة تُحذف) */
+export function formToPayload(v: FactoryFormValues): FactoryPayload {
   return {
     name: v.name.trim(),
-    addr: v.addr.trim(),
-    spec: (v.spec || "Furniture") as FactorySpec,
-    status: v.status,
-    website: v.website.trim(),
-    resp: v.resp.trim(),
-    phone: v.phone.trim(),
-    shipCairo: parseInt(v.shipCairo, 10) || 0,
-    shipOther: parseInt(v.shipOther, 10) || 0,
-    bankName: v.bankName.trim(),
-    bankHolder: v.bankHolder.trim(),
-    bankAccount: v.bankAccount.trim(),
-    bankWallet: v.bankWallet.trim(),
-    bankInstapay: v.bankInstapay.trim(),
+    factoryCategory: v.factoryCategory,
+    status: Number(v.status),
+    description: text(v.description),
+    joinDate: text(v.joinDate),
+    website: text(v.website),
+    email: text(v.email),
+    phoneNumber: text(v.phoneNumber),
+    address: text(v.address),
+    city: text(v.city),
+    country: text(v.country),
+
+    responsibleName: text(v.responsibleName),
+    responsiblePhone: text(v.responsiblePhone),
+    responsibleEmail: text(v.responsibleEmail),
+    responsibleRole: text(v.responsibleRole),
+
+    contactPersonName: text(v.contactPersonName),
+    contactPersonPhoneNumber: text(v.contactPersonPhoneNumber),
+    contactPersonEmail: text(v.contactPersonEmail),
+    contactPersonRole: text(v.contactPersonRole),
+
+    cairoGizaShipping: num(v.cairoGizaShipping),
+    otherCitiesShipping: num(v.otherCitiesShipping),
+
+    bankName: text(v.bankName),
+    bankAccountHolderName: text(v.bankAccountHolderName),
+    bankAccountNumber: text(v.bankAccountNumber),
+    bankAccountType: text(v.bankAccountType),
+    walletNumber: text(v.walletNumber),
+    walletProvider: text(v.walletProvider),
+    instapayNumber: text(v.instapayNumber),
   };
 }
 

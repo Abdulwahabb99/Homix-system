@@ -1,27 +1,29 @@
 /**
- * شارة حالة المصنع (أونلاين / أوفلاين) — نقطة ملوّنة + نص، مطابقة لـ .bdg.
+ * شارة حالة المصنع — النص من `statusLabel` كما يرده الـ API، والرقم يحدّد اللون.
  */
 import React from "react";
 import { Box } from "@mui/material";
-import { STATUS_LABELS } from "../utils/constants";
+import { STATUS_ONLINE } from "../utils/constants";
 import { statusBadgeSx } from "../utils/styles";
-import { FactoryStatus } from "../utils/types";
 
 export default function StatusBadge({
   status,
+  label,
   small,
 }: {
-  status: FactoryStatus;
+  status: number | null | undefined;
+  label?: string;
   /** حجم أصغر داخل بطاقات العرض */
   small?: boolean;
 }) {
-  const online = status === 1;
+  const text = (label ?? "").trim();
+  if (!text && status == null) return <>—</>;
   return (
     <Box
       component="span"
-      sx={{ ...statusBadgeSx(online), ...(small ? { fontSize: "10px" } : null) }}
+      sx={{ ...statusBadgeSx(status === STATUS_ONLINE), ...(small ? { fontSize: "10px" } : null) }}
     >
-      {STATUS_LABELS[status] ?? "—"}
+      {text || "—"}
     </Box>
   );
 }

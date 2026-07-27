@@ -1,13 +1,13 @@
 /**
- * ترقيم جدول الصنّاع — «عرض س–ص من ن» + أزرار الصفحات (مطابق لـ .pg).
+ * ترقيم صفحة الصنّاع — «عرض س–ص من ن» + أزرار الصفحات (مطابق لـ .pg).
  * يعرض حتى 5 أرقام حول الصفحة الحالية حتى لا يتمدّد الشريط.
  */
 import React from "react";
 import { Box } from "@mui/material";
-import { FACTORIES_PAGE_SIZE } from "../utils/constants";
+import { FACTORIES_PAGE_SIZE } from "query/factoriesList";
+import { HX } from "layouts/Orders/ordersHomixTheme";
 import { fmt } from "../utils/calc";
 import { pageBtnSx, paginationBarSx, FONT } from "../utils/styles";
-import { HX } from "layouts/Orders/ordersHomixTheme";
 
 const MAX_NUMBERS = 5;
 

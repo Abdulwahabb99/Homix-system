@@ -1,14 +1,10 @@
 /**
  * ثوابت صفحة الصنّاع — مطابقة لـ homix_factories_v3.html.
- * الألوان المشتركة تأتي من رموز التصميم HX؛ ما يخصّ التخصصات فقط يُعرَّف هنا.
+ *
+ * التخصصات والحالات لم تبقَ ثابتة: تأتي من `GET /factories/meta`. ما يبقى هنا هو
+ * لوحة الألوان (يُختار منها لوناً ثابتاً لكل تخصّص عبر تجزئة اسمه) والأعمدة.
  */
-import {
-  FactoriesView,
-  FactoryFilters,
-  FactoryFormValues,
-  FactorySpec,
-  FactoryStatus,
-} from "./types";
+import { FactoriesView, FactoryFilters, FactoryFormValues } from "./types";
 
 /** عملة العرض */
 export const CURRENCY = "ج.م";
@@ -21,122 +17,103 @@ export const R_SM = "9px";
 export const PAGE_TITLE = "الصنّاع";
 export const PAGE_SUBTITLE = "إدارة مصانع ومورّدي HOMIX Marketplace";
 
-/** عدد الصفوف في صفحة الجدول */
-export const FACTORIES_PAGE_SIZE = 10;
-
-/** التخصصات المتاحة — ترتيب القائمة كما في التصميم */
-export const SPEC_OPTIONS: FactorySpec[] = [
-  "Furniture",
-  "MDF",
-  "steel",
-  "upholstery",
-  "mirrors",
-  "wood",
-  "lighting",
-];
-
-/** تدرّج لوني لصورة الحرف (avatar) لكل تخصّص */
-export const SPEC_GRADIENTS: Record<FactorySpec, string> = {
-  Furniture: "linear-gradient(135deg,#8c7355,#5a4530)",
-  MDF: "linear-gradient(135deg,#4a7855,#2d5038)",
-  steel: "linear-gradient(135deg,#3b6896,#1e3a5f)",
-  upholstery: "linear-gradient(135deg,#a07840,#6b5030)",
-  mirrors: "linear-gradient(135deg,#5a4070,#3a2850)",
-  wood: "linear-gradient(135deg,#7a5c38,#4a3520)",
-  lighting: "linear-gradient(135deg,#c9a96e,#a07840)",
-};
-
-/** خلفية شارة التخصّص */
-export const SPEC_BG: Record<FactorySpec, string> = {
-  Furniture: "rgba(140,115,85,.1)",
-  MDF: "rgba(74,120,85,.1)",
-  steel: "rgba(59,104,150,.1)",
-  upholstery: "rgba(160,120,64,.1)",
-  mirrors: "rgba(90,64,112,.1)",
-  wood: "rgba(122,92,56,.1)",
-  lighting: "rgba(201,169,110,.1)",
-};
-
-/** لون نص شارة التخصّص */
-export const SPEC_TEXT: Record<FactorySpec, string> = {
-  Furniture: "#5a4530",
-  MDF: "#2d5038",
-  steel: "#1e3a5f",
-  upholstery: "#6b5030",
-  mirrors: "#3a2850",
-  wood: "#4a3520",
-  lighting: "#a07840",
-};
-
-/** تدرّج بديل لتخصّص غير معروف */
-export const SPEC_FALLBACK_GRADIENT = "linear-gradient(135deg,#6366f1,#8b5cf6)";
-
-/** تسميات الحالة — نفس ترميز الـ API (1 / 2) */
-export const STATUS_LABELS: Record<FactoryStatus, string> = {
-  1: "أونلاين",
-  2: "أوفلاين",
-};
-
-export interface StatusOption {
-  value: FactoryStatus;
-  label: string;
+/**
+ * لوحة ألوان التخصصات المأخوذة من التصميم. التخصصات صارت ديناميكية من الـ meta،
+ * فيُشتق لون ثابت لكل اسم بالتجزئة بدل خريطة أسماء ثابتة.
+ */
+export interface SpecPalette {
+  gradient: string;
+  bg: string;
+  text: string;
 }
-export const STATUS_OPTIONS: StatusOption[] = [
-  { value: 1, label: STATUS_LABELS[1] },
-  { value: 2, label: STATUS_LABELS[2] },
+
+export const SPEC_PALETTE: SpecPalette[] = [
+  { gradient: "linear-gradient(135deg,#8c7355,#5a4530)", bg: "rgba(140,115,85,.1)", text: "#5a4530" },
+  { gradient: "linear-gradient(135deg,#4a7855,#2d5038)", bg: "rgba(74,120,85,.1)", text: "#2d5038" },
+  { gradient: "linear-gradient(135deg,#3b6896,#1e3a5f)", bg: "rgba(59,104,150,.1)", text: "#1e3a5f" },
+  { gradient: "linear-gradient(135deg,#a07840,#6b5030)", bg: "rgba(160,120,64,.1)", text: "#6b5030" },
+  { gradient: "linear-gradient(135deg,#5a4070,#3a2850)", bg: "rgba(90,64,112,.1)", text: "#3a2850" },
+  { gradient: "linear-gradient(135deg,#7a5c38,#4a3520)", bg: "rgba(122,92,56,.1)", text: "#4a3520" },
+  { gradient: "linear-gradient(135deg,#c9a96e,#a07840)", bg: "rgba(201,169,110,.1)", text: "#a07840" },
 ];
 
-/** أعمدة الجدول — `sortKey` يعني أنّ العمود قابل للترتيب */
+/** حالة أونلاين — يُستخدم للتلوين فقط؛ النص يأتي من `statusLabel` */
+export const STATUS_ONLINE = 1;
+
+/** أعمدة الجدول — `sortKey` يعني أنّ الـ API يدعم الترتيب بهذا العمود */
 export interface FactoryColumn {
   key: string;
   label: string;
   center?: boolean;
-  sortKey?: "name" | "spec";
+  sortKey?: "name" | "status" | "joinDate";
 }
+
 export const FACTORY_COLUMNS: FactoryColumn[] = [
   { key: "name", label: "اسم المصنع", sortKey: "name" },
-  { key: "addr", label: "العنوان" },
-  { key: "spec", label: "التخصص", sortKey: "spec" },
-  { key: "resp", label: "اسم المسؤول" },
-  { key: "phone", label: "رقم المسؤول" },
-  { key: "shipCairo", label: "شحن القاهرة والجيزة", center: true },
-  { key: "shipOther", label: "شحن باقي المحافظات", center: true },
-  { key: "status", label: "الحالة" },
+  { key: "code", label: "الكود" },
+  { key: "address", label: "العنوان" },
+  { key: "specialty", label: "التخصص" },
+  { key: "responsibleName", label: "اسم المسؤول" },
+  { key: "responsiblePhone", label: "رقم المسؤول" },
+  { key: "cairoGizaShipping", label: "شحن القاهرة والجيزة", center: true },
+  { key: "otherCitiesShipping", label: "شحن باقي المحافظات", center: true },
+  { key: "status", label: "الحالة", sortKey: "status" },
   { key: "website", label: "الويب سايت" },
-  { key: "orders", label: "الطلبات" },
-  { key: "sales", label: "المبيعات" },
+  { key: "joinDate", label: "تاريخ الانضمام", sortKey: "joinDate" },
+  { key: "documentsCount", label: "المستندات", center: true },
   { key: "actions", label: "" },
 ];
 
 /** الحد الأدنى لعرض الجدول قبل ظهور التمرير الأفقي */
-export const TABLE_MIN_WIDTH = 1200;
+export const TABLE_MIN_WIDTH = 1420;
 
 /** طريقة العرض الافتراضية */
 export const DEFAULT_VIEW: FactoriesView = "table";
 
 /** فلاتر فارغة */
-export const EMPTY_FILTERS: FactoryFilters = { search: "", spec: "", status: "" };
+export const EMPTY_FILTERS: FactoryFilters = { search: "", status: "", factoryCategory: "" };
+
+/** مهلة تهدئة الكتابة قبل إرسال البحث للخادم */
+export const SEARCH_DEBOUNCE_MS = 500;
 
 /** قيم نموذج فارغة (وضع الإضافة) */
 export const EMPTY_FORM: FactoryFormValues = {
   name: "",
-  addr: "",
-  spec: "",
-  status: 1,
+  description: "",
+  factoryCategory: "",
+  status: STATUS_ONLINE,
+  joinDate: "",
   website: "",
-  resp: "",
-  phone: "",
-  shipCairo: "",
-  shipOther: "",
+  email: "",
+  phoneNumber: "",
+  address: "",
+  city: "",
+  country: "Egypt",
+
+  responsibleName: "",
+  responsiblePhone: "",
+  responsibleEmail: "",
+  responsibleRole: "",
+
+  contactPersonName: "",
+  contactPersonPhoneNumber: "",
+  contactPersonEmail: "",
+  contactPersonRole: "",
+
+  cairoGizaShipping: "",
+  otherCitiesShipping: "",
+
   bankName: "",
-  bankHolder: "",
-  bankAccount: "",
-  bankWallet: "",
-  bankInstapay: "",
+  bankAccountHolderName: "",
+  bankAccountNumber: "",
+  bankAccountType: "",
+  walletNumber: "",
+  walletProvider: "",
+  instapayNumber: "",
 };
 
 /** أنواع الملفات المقبولة في الأوراق الرسمية */
 export const ATTACHMENT_ACCEPT = ".pdf,.jpg,.jpeg,.png";
 
-/** حالة المرفق قبل الإرسال */
-export const ATTACHMENT_PENDING_LABEL = "قيد المراجعة";
+/** حالة المرفق المحلّي قبل الرفع */
+export const ATTACHMENT_PENDING_LABEL = "في انتظار الرفع";
