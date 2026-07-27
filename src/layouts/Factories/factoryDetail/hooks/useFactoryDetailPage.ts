@@ -8,7 +8,7 @@
  */
 import { useCallback, useState } from "react";
 import { useFactoriesMetaQuery, type FactoriesMeta } from "query/factoriesMeta";
-import { useFactoryDetailQuery, type FactoryDetail } from "query/factoryDetail";
+import { useFactoryDetailQuery, type FactoryDetail, type FactoryDocument } from "query/factoryDetail";
 import {
   useDeleteFactoryAttachmentMutation,
   useSaveFactoryMutation,
@@ -34,8 +34,12 @@ export interface UseFactoryDetailPage {
   /** المستندات */
   uploadDocuments: (files: File[], attachmentType: number) => void;
   isUploading: boolean;
-  deleteDocument: (documentId: number) => void;
-  deletingDocumentId: number | null;
+  /** حذف المستند يمرّ بتأكيد: ask → confirm */
+  pendingDeleteDocument: FactoryDocument | null;
+  askDeleteDocument: (documentId: number) => void;
+  cancelDeleteDocument: () => void;
+  confirmDeleteDocument: () => void;
+  isDeletingDocument: boolean;
 }
 
 export function useFactoryDetailPage(rawId: string | undefined): UseFactoryDetailPage {
@@ -43,6 +47,7 @@ export function useFactoryDetailPage(rawId: string | undefined): UseFactoryDetai
   const factoryId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [pendingDeleteDocId, setPendingDeleteDocId] = useState<number | null>(null);
 
   const { data: meta } = useFactoriesMetaQuery();
   const detailQuery = useFactoryDetailQuery(factoryId);
@@ -85,13 +90,23 @@ export function useFactoryDetailPage(rawId: string | undefined): UseFactoryDetai
     [factoryId, meta, defaultVerification, uploadMutation]
   );
 
-  const deleteDocument = useCallback(
-    (documentId: number) => {
-      if (factoryId == null) return;
-      deleteMutation.mutate({ factoryId, attachmentId: documentId });
-    },
-    [factoryId, deleteMutation]
-  );
+  /* ── حذف مستند بتأكيد ── */
+  const askDeleteDocument = useCallback((documentId: number) => {
+    setPendingDeleteDocId(documentId);
+  }, []);
+
+  const cancelDeleteDocument = useCallback(() => setPendingDeleteDocId(null), []);
+
+  const confirmDeleteDocument = useCallback(() => {
+    if (factoryId == null || pendingDeleteDocId == null) return;
+    deleteMutation.mutate(
+      { factoryId, attachmentId: pendingDeleteDocId },
+      { onSuccess: () => setPendingDeleteDocId(null) }
+    );
+  }, [factoryId, pendingDeleteDocId, deleteMutation]);
+
+  const pendingDeleteDocument =
+    (detailQuery.data?.documents ?? []).find((d) => d.id === pendingDeleteDocId) ?? null;
 
   return {
     factoryId,
@@ -108,9 +123,10 @@ export function useFactoryDetailPage(rawId: string | undefined): UseFactoryDetai
 
     uploadDocuments,
     isUploading: uploadMutation.isPending,
-    deleteDocument,
-    deletingDocumentId: deleteMutation.isPending
-      ? deleteMutation.variables?.attachmentId ?? null
-      : null,
+    pendingDeleteDocument,
+    askDeleteDocument,
+    cancelDeleteDocument,
+    confirmDeleteDocument,
+    isDeletingDocument: deleteMutation.isPending,
   };
 }

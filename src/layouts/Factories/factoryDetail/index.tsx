@@ -17,6 +17,7 @@ import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 
+import ConfirmDeleteModal from "../ConfirmDeleteModal";
 import FactoryFormModal from "../components/FactoryFormModal";
 import BankTransferCard from "./components/BankTransferCard";
 import DocumentsCard from "./components/DocumentsCard";
@@ -104,8 +105,8 @@ export default function FactoryDetail() {
             documentTypes={page.meta?.documentTypes ?? []}
             onUpload={page.uploadDocuments}
             isUploading={page.isUploading}
-            onDelete={page.deleteDocument}
-            deletingId={page.deletingDocumentId}
+            onDelete={page.askDeleteDocument}
+            deletingId={page.isDeletingDocument ? page.pendingDeleteDocument?.id ?? null : null}
           />
         </Box>
       </Box>
@@ -125,6 +126,16 @@ export default function FactoryDetail() {
         isSaving={page.isSaving}
         onClose={page.closeEdit}
         onSave={(values) => page.saveFactory(values)}
+      />
+
+      <ConfirmDeleteModal
+        open={page.pendingDeleteDocument !== null}
+        onClose={page.cancelDeleteDocument}
+        handleConfirmDelete={page.confirmDeleteDocument}
+        title="حذف المستند"
+        itemName={page.pendingDeleteDocument?.name || page.pendingDeleteDocument?.description}
+        itemLabel="هذا المستند"
+        isDeleting={page.isDeletingDocument}
       />
     </DashboardLayout>
   );

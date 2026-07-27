@@ -17,8 +17,12 @@ export interface ConfirmDeleteModalProps {
   open: boolean;
   onClose: () => void;
   handleConfirmDelete: () => void;
+  /** عنوان الحوار — يسمّي الإجراء صريحاً */
+  title?: string;
   /** اسم العنصر — يُبرز داخل النص ليعرف المستخدم ما سيُحذف بالضبط */
   itemName?: string;
+  /** بديل الاسم عند غيابه (مثل «هذا المستند») */
+  itemLabel?: string;
   /** يمنع الإغلاق ويُظهر مؤشّر تحميل أثناء تنفيذ الحذف */
   isDeleting?: boolean;
 }
@@ -44,7 +48,9 @@ export default function ConfirmDeleteModal({
   open,
   onClose,
   handleConfirmDelete,
+  title = "حذف المصنع",
   itemName,
+  itemLabel = "هذا المصنع",
   isDeleting = false,
 }: ConfirmDeleteModalProps) {
   return (
@@ -78,20 +84,17 @@ export default function ConfirmDeleteModal({
 
         <Box sx={{ minWidth: 0, pt: "2px" }}>
           <Typography sx={{ fontSize: "15px", fontWeight: 800, color: HX.tx, fontFamily: FONT, mb: "6px" }}>
-            حذف المصنع
+            {title}
           </Typography>
           <Typography sx={{ fontSize: "12.5px", color: HX.tx2, fontFamily: FONT, lineHeight: 1.75 }}>
-            {itemName ? (
-              <>
-                سيتم حذف{" "}
-                <Box component="span" sx={{ fontWeight: 700, color: HX.tx }}>
-                  {itemName}
-                </Box>{" "}
-                نهائياً. لا يمكن التراجع عن هذا الإجراء.
-              </>
-            ) : (
-              "سيتم حذف هذا المصنع نهائياً. لا يمكن التراجع عن هذا الإجراء."
-            )}
+            سيتم حذف{" "}
+            <Box
+              component="span"
+              sx={itemName ? { fontWeight: 700, color: HX.tx, wordBreak: "break-word" } : undefined}
+            >
+              {itemName || itemLabel}
+            </Box>{" "}
+            نهائياً. لا يمكن التراجع عن هذا الإجراء.
           </Typography>
         </Box>
       </Box>
