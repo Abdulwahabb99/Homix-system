@@ -58,6 +58,16 @@ type VendorMetrics = {
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_SIZE = 20;
+const DEFAULT_FACTORY_SPECIALTIES = [
+  "Furniture",
+  "MDF",
+  "steel",
+  "upholstery",
+  "mirrors",
+  "wood",
+  "lighting",
+  "decore&textile",
+];
 
 const normalizeText = (value: unknown): string => {
   if (typeof value === "string") {
@@ -769,6 +779,8 @@ class FactoryService {
         .sort((left, right) => left.localeCompare(right, "ar"))
       : [];
 
+    const specialties = Array.from(new Set([...DEFAULT_FACTORY_SPECIALTIES, ...categories]));
+
     return {
       documentStatuses: Object.entries(FACTORY_DOCUMENT_STATUS_ARABIC).map(([id, label]) => ({
         id: Number(id),
@@ -778,7 +790,7 @@ class FactoryService {
         id: Number(id),
         label,
       })),
-      specialties: categories.map((label) => ({ id: label, label })),
+      specialties: specialties.map((label) => ({ id: label, label })),
       statuses: Object.entries(FACTORY_STATUS_ARABIC).map(([id, label]) => ({
         id: Number(id),
         label,
