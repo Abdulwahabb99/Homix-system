@@ -9,6 +9,7 @@ import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import type { FactoriesMeta } from "query/factoriesMeta";
+import { ALL_SPECIALTIES_LABEL, ALL_STATUSES_LABEL } from "../utils/constants";
 import {
   filterBarSx, filterBtnSx, filterFieldSx, filterSepSx,
   viewToggleBtnSx, viewToggleSx, FONT,
@@ -54,15 +55,29 @@ export default function FactoriesToolbar({
 
         <Box sx={filterSepSx} />
 
+        {/*
+          displayEmpty + renderValue يضمنان ظهور «الكل» كقيمة افتراضية في كل
+          الحالات — حتى قبل وصول الـ meta حين لا يوجد خيار مطابق للقيمة الفارغة.
+        */}
         <TextField
           select
           size="small"
-          disabled={specialties.length === 0}
           value={filters.factoryCategory}
           onChange={(e) => onFilterChange("factoryCategory", e.target.value)}
           sx={{ ...filterFieldSx, minWidth: 160 }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (v) =>
+              v ? (
+                <Box component="span" sx={{ color: HX.tx }}>{String(v)}</Box>
+              ) : (
+                <Box component="span" sx={{ color: HX.tx2 }}>{ALL_SPECIALTIES_LABEL}</Box>
+              ),
+          }}
         >
-          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل التخصصات</MenuItem>
+          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>
+            {ALL_SPECIALTIES_LABEL}
+          </MenuItem>
           {specialties.map((s) => (
             <MenuItem key={s.id} value={s.value} sx={{ fontFamily: FONT, fontSize: "12px" }}>
               {s.label}
@@ -73,14 +88,25 @@ export default function FactoriesToolbar({
         <TextField
           select
           size="small"
-          disabled={statuses.length === 0}
           value={filters.status === "" ? "" : String(filters.status)}
           onChange={(e) =>
             onFilterChange("status", e.target.value === "" ? "" : Number(e.target.value))
           }
           sx={{ ...filterFieldSx, minWidth: 140 }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (v) => {
+              if (v === "" || v == null) {
+                return <Box component="span" sx={{ color: HX.tx2 }}>{ALL_STATUSES_LABEL}</Box>;
+              }
+              const match = statuses.find((s) => String(s.value) === String(v));
+              return <Box component="span" sx={{ color: HX.tx }}>{match?.label ?? String(v)}</Box>;
+            },
+          }}
         >
-          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل الحالات</MenuItem>
+          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>
+            {ALL_STATUSES_LABEL}
+          </MenuItem>
           {statuses.map((o) => (
             <MenuItem key={o.value} value={String(o.value)} sx={{ fontFamily: FONT, fontSize: "12px" }}>
               {o.label}

@@ -70,8 +70,12 @@ export const TABLE_MIN_WIDTH = 1420;
 /** طريقة العرض الافتراضية */
 export const DEFAULT_VIEW: FactoriesView = "table";
 
-/** فلاتر فارغة */
+/** فلاتر فارغة — القيمة الفارغة تعني «الكل» ولا تُرسل للخادم */
 export const EMPTY_FILTERS: FactoryFilters = { search: "", status: "", factoryCategory: "" };
+
+/** التسميات الافتراضية لقوائم الفلاتر (تظهر عند عدم التحديد) */
+export const ALL_SPECIALTIES_LABEL = "كل التخصصات";
+export const ALL_STATUSES_LABEL = "كل الحالات";
 
 /** مهلة تهدئة الكتابة قبل إرسال البحث للخادم */
 export const SEARCH_DEBOUNCE_MS = 500;
