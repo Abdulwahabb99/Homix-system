@@ -93,11 +93,17 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
+  /**
+   * «المسؤول» — الاستجابة تسمّي الحقل `assigneeId` ولا تحتوي `userId` إطلاقاً،
+   * فنرسل الاسمين معاً: `assigneeId` هو الصحيح، و`userId` يبقى للتوافق مع
+   * الباك اند القديم (الحقول الزائدة تُتجاهل). و`userId` مطلوب محلياً أيضاً لأنه
+   * ما يقرأه الـ Autocomplete بعد التطبيع في `orderDetailNormalize`.
+   */
   const changeAssignee = useCallback(
-    (userId: number | null) => {
-      if (userId == null) return;
-      updateOrderField({ userId });
-      const found = users.find((u: any) => String(u.id) === String(userId));
+    (assigneeId: number | null) => {
+      if (assigneeId == null) return;
+      updateOrderField({ assigneeId, userId: assigneeId });
+      const found = users.find((u: any) => String(u.id) === String(assigneeId));
       if (found) setAdministrator(`${found.firstName ?? ""} ${found.lastName ?? ""}`.trim());
     },
     [updateOrderField, users]
