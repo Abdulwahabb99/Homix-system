@@ -7,13 +7,20 @@ const {
   FACTORY_DOCUMENT_TYPE_ARABIC,
   FACTORY_STATUS,
   FACTORY_STATUS_ARABIC,
+  ORDER_STATUS_Arabic,
 } = require("../../../config/constants") as typeof import("../../../config/constants");
 const { sequelize } = require("../../../src/infrastructure/database") as typeof import("../../../src/infrastructure/database");
 const Attachment = require("../attachments/attachment.model") as typeof import("../attachments/attachment.model");
+const Customer = require("../customer/customer.model") as typeof import("../customer/customer.model");
+const Order = require("../order/order.model") as typeof import("../order/order.model");
+const OrderLine = require("../orderLines/orderline.model") as typeof import("../orderLines/orderline.model");
+const Product = require("../product/product.model") as typeof import("../product/product.model");
+const Vendor = require("../vendor/vendor.model") as typeof import("../vendor/vendor.model");
 const Factory = require("./factory.model") as typeof import("./factory.model");
 const FACTORY_STATUS_LABELS = FACTORY_STATUS_ARABIC as Record<number, string>;
 const FACTORY_DOCUMENT_TYPE_LABELS = FACTORY_DOCUMENT_TYPE_ARABIC as Record<number, string>;
 const FACTORY_DOCUMENT_STATUS_LABELS = FACTORY_DOCUMENT_STATUS_ARABIC as Record<number, string>;
+const ORDER_STATUS_LABELS = ORDER_STATUS_Arabic as Record<number, string>;
 
 type FactoryRecord = {
   createdAt?: Date | string | null;
@@ -43,6 +50,11 @@ type FactoryResponse = {
 };
 
 type PlainRecord = Record<string, unknown>;
+type VendorMetrics = {
+  ordersCount: number;
+  productsCount: number;
+  totalSales: number;
+};
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_SIZE = 20;
@@ -219,10 +231,46 @@ const buildFactoryCode = (id: unknown): string => {
   return `FAC-${String(numericId).padStart(4, "0")}`;
 };
 
-const mapFactorySummary = (factory: unknown) => {
+const getOrderStatusLabel = (value: unknown): string => {
+  const statusId = normalizeNumber(value);
+  if (!statusId) {
+    return "غير محدد";
+  }
+
+  return ORDER_STATUS_LABELS[statusId] ?? "غير محدد";
+};
+
+const normalizeCurrency = (value: unknown): number => normalizeNumber(value) ?? 0;
+
+const mapRecentOrder = (order: unknown) => {
+  const record = toPlain(order);
+  const customer = toPlain(record.customer);
+  const orderLines = Array.isArray(record.orderLines) ? record.orderLines : [];
+  const firstLine = orderLines.length > 0 ? toPlain(orderLines[0]) : {};
+  const customerName = `${normalizeText(customer.firstName)} ${normalizeText(customer.lastName)}`.trim();
+
+  return {
+    customerName,
+    id: normalizeNumber(record.id),
+    orderDate: record.orderDate ? new Date(String(record.orderDate)).toISOString() : null,
+    orderNumber: normalizeText(record.orderNumber || record.number || record.code),
+    productName: normalizeText(firstLine.title || firstLine.name),
+    sales: normalizeCurrency(record.totalPrice || firstLine.price),
+    status: normalizeNumber(record.status),
+    statusLabel: getOrderStatusLabel(record.status),
+  };
+};
+
+const mapFactorySummary = (
+  factory: unknown,
+  vendorMap: Map<string, number>,
+  metricsByVendorId: Map<number, VendorMetrics>,
+) => {
   const record = toPlain(factory);
   const attachments = Array.isArray(record.attachments) ? record.attachments.map(mapAttachment) : [];
   const statusId = normalizeFactoryStatus(record.status);
+  const vendorId = vendorMap.get(normalizeText(record.name).toLowerCase()) ?? null;
+  const metrics = vendorId ? metricsByVendorId.get(vendorId) : undefined;
 
   return {
     address: normalizeText(record.address),
@@ -232,17 +280,26 @@ const mapFactorySummary = (factory: unknown) => {
     id: normalizeNumber(record.id),
     joinDate: normalizeDate(record.joinDate),
     name: normalizeText(record.name),
+    ordersCount: metrics?.ordersCount ?? 0,
     otherCitiesShipping: normalizeNumber(record.otherCitiesShipping) ?? 0,
+    productsCount: metrics?.productsCount ?? 0,
     responsibleName: normalizeText(record.contactPersonName),
     responsiblePhone: normalizeText(record.contactPersonPhoneNumber),
     specialty: normalizeText(record.factoryCategory),
     status: statusId,
     statusLabel: getFactoryStatusLabel(record.status),
+    totalSales: metrics?.totalSales ?? 0,
+    vendorId,
     website: normalizeText(record.website),
   };
 };
 
-const mapFactoryDetails = (factory: unknown) => {
+const mapFactoryDetails = (
+  factory: unknown,
+  vendorId: number | null,
+  metrics: VendorMetrics,
+  recentOrders: unknown[],
+) => {
   const record = toPlain(factory);
   const attachments = Array.isArray(record.attachments) ? record.attachments.map(mapAttachment) : [];
   const statusId = normalizeFactoryStatus(record.status);
@@ -269,6 +326,11 @@ const mapFactoryDetails = (factory: unknown) => {
     description: normalizeText(record.description),
     documents: attachments,
     email: normalizeText(record.email),
+    heroStats: {
+      ordersCount: metrics.ordersCount,
+      productsCount: metrics.productsCount,
+      totalSales: metrics.totalSales,
+    },
     id: normalizeNumber(record.id),
     joinDate: normalizeDate(record.joinDate) ?? normalizeDate(record.createdAt),
     name: normalizeText(record.name),
@@ -287,6 +349,8 @@ const mapFactoryDetails = (factory: unknown) => {
     specialty: normalizeText(record.factoryCategory),
     status: statusId,
     statusLabel: getFactoryStatusLabel(record.status),
+    recentOrders: recentOrders.map(mapRecentOrder),
+    vendorId,
     website: normalizeText(record.website),
   };
 };
@@ -376,6 +440,145 @@ const getWhereAndConditions = (whereClause: unknown): unknown[] => {
   }
 
   return [];
+};
+
+const getMatchedVendorsByFactoryNames = async (factoryNames: string[]): Promise<Map<string, number>> => {
+  const normalizedNames = Array.from(new Set(factoryNames.map((name) => normalizeText(name).toLowerCase()).filter(Boolean)));
+  if (normalizedNames.length === 0) {
+    return new Map();
+  }
+
+  const vendorsResult = await Vendor.findAll({
+    attributes: ["id", "name"],
+    where: sequelize.where(sequelize.fn("lower", sequelize.col("name")), {
+      [Op.in]: normalizedNames,
+    }),
+  });
+
+  const vendorMap = new Map<string, number>();
+  for (const vendor of Array.isArray(vendorsResult) ? vendorsResult : []) {
+    const plainVendor = toPlain(vendor);
+    const vendorId = normalizeNumber(plainVendor.id);
+    const vendorName = normalizeText(plainVendor.name).toLowerCase();
+    if (vendorId && vendorName) {
+      vendorMap.set(vendorName, vendorId);
+    }
+  }
+
+  return vendorMap;
+};
+
+const getVendorMetricsMap = async (vendorIds: number[]): Promise<Map<number, VendorMetrics>> => {
+  const uniqueVendorIds = Array.from(new Set(vendorIds.filter((id) => Number.isFinite(id))));
+  if (uniqueVendorIds.length === 0) {
+    return new Map();
+  }
+
+  const productRows = await Product.findAll({
+    attributes: [
+      "vendorId",
+      [sequelize.fn("COUNT", sequelize.col("id")), "productsCount"],
+    ],
+    group: ["vendorId"],
+    raw: true,
+    where: {
+      vendorId: {
+        [Op.in]: uniqueVendorIds,
+      },
+    },
+  });
+
+  const orderRows = await OrderLine.findAll({
+    attributes: [
+      [sequelize.col("product.vendorId"), "vendorId"],
+      [sequelize.fn("COUNT", sequelize.fn("DISTINCT", sequelize.col("OrderLine.orderId"))), "ordersCount"],
+      [
+        sequelize.literal(
+          'COALESCE(SUM((COALESCE("OrderLine"."price", 0)::numeric * COALESCE("OrderLine"."quantity", 0)::numeric) - COALESCE("OrderLine"."discount", 0)::numeric), 0)',
+        ),
+        "totalSales",
+      ],
+    ],
+    group: [sequelize.col("product.vendorId")],
+    include: [
+      {
+        as: "product",
+        attributes: [],
+        model: Product,
+        required: true,
+        where: {
+          vendorId: {
+            [Op.in]: uniqueVendorIds,
+          },
+        },
+      },
+    ],
+    raw: true,
+  });
+
+  const metricsMap = new Map<number, VendorMetrics>();
+  for (const vendorId of uniqueVendorIds) {
+    metricsMap.set(vendorId, { ordersCount: 0, productsCount: 0, totalSales: 0 });
+  }
+
+  for (const row of Array.isArray(productRows) ? productRows : []) {
+    const plainRow = toPlain(row);
+    const vendorId = normalizeNumber(plainRow.vendorId);
+    if (!vendorId) {
+      continue;
+    }
+    const current = metricsMap.get(vendorId) ?? { ordersCount: 0, productsCount: 0, totalSales: 0 };
+    current.productsCount = normalizeNumber(plainRow.productsCount) ?? 0;
+    metricsMap.set(vendorId, current);
+  }
+
+  for (const row of Array.isArray(orderRows) ? orderRows : []) {
+    const plainRow = toPlain(row);
+    const vendorId = normalizeNumber(plainRow.vendorId);
+    if (!vendorId) {
+      continue;
+    }
+    const current = metricsMap.get(vendorId) ?? { ordersCount: 0, productsCount: 0, totalSales: 0 };
+    current.ordersCount = normalizeNumber(plainRow.ordersCount) ?? 0;
+    current.totalSales = normalizeCurrency(plainRow.totalSales);
+    metricsMap.set(vendorId, current);
+  }
+
+  return metricsMap;
+};
+
+const getRecentOrdersByVendorId = async (vendorId: number, limit = 5): Promise<unknown[]> => {
+  const orders = await Order.findAll({
+    attributes: ["id", "orderNumber", "number", "code", "orderDate", "status", "totalPrice"],
+    include: [
+      {
+        as: "customer",
+        attributes: ["firstName", "lastName"],
+        model: Customer,
+        required: false,
+      },
+      {
+        as: "orderLines",
+        attributes: ["title", "name", "price"],
+        include: [
+          {
+            as: "product",
+            attributes: ["vendorId"],
+            model: Product,
+            required: true,
+            where: { vendorId },
+          },
+        ],
+        model: OrderLine,
+        required: true,
+      },
+    ],
+    limit,
+    order: [["orderDate", "DESC"], ["createdAt", "DESC"]],
+    subQuery: false,
+  });
+
+  return Array.isArray(orders) ? orders : [];
 };
 
 class FactoryService {
@@ -519,8 +722,15 @@ class FactoryService {
       },
     });
 
-    const items = Array.isArray(result.rows) ? result.rows.map(mapFactorySummary) : [];
+    const factoryRows: unknown[] = Array.isArray(result.rows) ? result.rows : [];
+    const vendorMap = await getMatchedVendorsByFactoryNames(
+      factoryRows.map((factory: unknown) => normalizeText(toPlain(factory).name)),
+    );
+    const metricsByVendorId = await getVendorMetricsMap(Array.from(vendorMap.values()));
+    const items = factoryRows.map((factory: unknown) => mapFactorySummary(factory, vendorMap, metricsByVendorId));
     const specialties = new Set(items.map((item: { specialty: string }) => item.specialty).filter(Boolean));
+    const totalProducts = items.reduce((sum: number, item: { productsCount?: number }) => sum + (item.productsCount ?? 0), 0);
+    const totalSales = items.reduce((sum: number, item: { totalSales?: number }) => sum + (item.totalSales ?? 0), 0);
 
     return {
       items,
@@ -534,6 +744,8 @@ class FactoryService {
         offlineFactories,
         onlineFactories,
         specialtiesCount: specialties.size,
+        totalProducts,
+        totalSales,
         totalFactories: result.count,
       },
     };
@@ -590,7 +802,16 @@ class FactoryService {
       return null;
     }
 
-    return mapFactoryDetails(factory);
+    const factoryName = normalizeText(toPlain(factory).name);
+    const vendorMap = await getMatchedVendorsByFactoryNames([factoryName]);
+    const vendorId = vendorMap.get(factoryName.toLowerCase()) ?? null;
+    const metricsByVendorId = await getVendorMetricsMap(vendorId ? [vendorId] : []);
+    const metrics = vendorId
+      ? (metricsByVendorId.get(vendorId) ?? { ordersCount: 0, productsCount: 0, totalSales: 0 })
+      : { ordersCount: 0, productsCount: 0, totalSales: 0 };
+    const recentOrders = vendorId ? await getRecentOrdersByVendorId(vendorId, 5) : [];
+
+    return mapFactoryDetails(factory, vendorId, metrics, recentOrders);
   }
 
   public static async update(id: string, data: Record<string, unknown>): Promise<FactoryResponse> {

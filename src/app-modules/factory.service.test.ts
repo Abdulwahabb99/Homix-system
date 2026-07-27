@@ -21,10 +21,16 @@ describe("FactoryService", () => {
         "../../../src/infrastructure/database": {
           sequelize: {
             col: jest.fn(),
+            define: jest.fn(),
             where: jest.fn(),
           },
         },
         "../attachments/attachment.model": { findOne: jest.fn() },
+        "../customer/customer.model": {},
+        "../order/order.model": {},
+        "../orderLines/orderline.model": {},
+        "../product/product.model": {},
+        "../vendor/vendor.model": {},
         "./factory.model": { findByPk: jest.fn().mockResolvedValue(null) },
       },
     );
@@ -54,11 +60,17 @@ describe("FactoryService", () => {
         "../../../src/infrastructure/database": {
           sequelize: {
             col: jest.fn().mockReturnValue("status"),
+            define: jest.fn(),
             fn: jest.fn().mockReturnValue("fn"),
             where,
           },
         },
         "../attachments/attachment.model": {},
+        "../customer/customer.model": {},
+        "../order/order.model": {},
+        "../orderLines/orderline.model": { findAll: jest.fn().mockResolvedValue([]) },
+        "../product/product.model": { findAll: jest.fn().mockResolvedValue([]) },
+        "../vendor/vendor.model": { findAll: jest.fn().mockResolvedValue([]) },
         "./factory.model": { count, findAndCountAll },
       },
     );
@@ -66,7 +78,7 @@ describe("FactoryService", () => {
     await expect(service.getAll({ factoryCategory: "wood", status: "online" })).resolves.toEqual({
       items: [],
       pagination: { page: 1, size: 20, totalItems: 0, totalPages: 1 },
-      summary: { offlineFactories: 0, onlineFactories: 0, specialtiesCount: 0, totalFactories: 0 },
+      summary: { offlineFactories: 0, onlineFactories: 0, specialtiesCount: 0, totalFactories: 0, totalProducts: 0, totalSales: 0 },
     });
     expect(findAndCountAll).toHaveBeenCalled();
     expect(count).toHaveBeenCalledTimes(2);
