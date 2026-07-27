@@ -20,6 +20,7 @@ export interface ShipmentsMeta {
   paymentStatuses: ShipmentsMetaOption[];
   governorates: ShipmentsMetaOption[];
   deliveryByOptions: ShipmentsMetaOption[];
+  shippingCompanies: ShipmentsMetaOption[];
   accountingStatuses: ShipmentsMetaOption[];
   vendorReturnStatuses: ShipmentsMetaOption[];
   customerReturnStatuses: ShipmentsMetaOption[];
@@ -49,6 +50,7 @@ function normalizeMeta(raw: any): ShipmentsMeta {
     paymentStatuses:        pick("paymentStatuses",        FALLBACK.paymentStatuses),
     governorates:           pick("governorates",           FALLBACK.governorates),
     deliveryByOptions:      pick("deliveryByOptions",      []),
+    shippingCompanies:      pick("shippingCompanies",      []),
     accountingStatuses:     pick("accountingStatuses",     []),
     vendorReturnStatuses:   pick("vendorReturnStatuses",   []),
     customerReturnStatuses: pick("customerReturnStatuses", []),
@@ -68,6 +70,7 @@ const FALLBACK: ShipmentsMeta = {
   ],
   governorates: [],
   deliveryByOptions: [],
+  shippingCompanies: [],
   accountingStatuses: [],
   vendorReturnStatuses: [],
   customerReturnStatuses: [],

@@ -117,6 +117,7 @@ export default function Shipments() {
   const paymentStatus  = searchParams.get("paymentStatus")  || "";
   const shipmentType   = searchParams.get("shipmentType")   || "";
   const deliveryBy     = searchParams.get("deliveryBy")     || "";
+  const shippingCompany = searchParams.get("shippingCompany") || "";
   const scheduleStatus = searchParams.get("scheduleStatus") || "";
   const vendorName     = searchParams.get("vendorName")     || "";
   const startDate      = dateFromUrl(searchParams.get("startDate") || "");
@@ -130,8 +131,8 @@ export default function Shipments() {
   // React Query
   const queryParams = {
     page, operationCode, customerName, customerPhone,
-    shipmentStatus, paymentStatus, shipmentType, deliveryBy, scheduleStatus, vendorName,
-    startDate, endDate,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
+    scheduleStatus, vendorName, startDate, endDate,
   };
 
   const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams);
@@ -163,6 +164,7 @@ export default function Shipments() {
     if (values.paymentStatus)  urlParams.set("paymentStatus",  values.paymentStatus);
     if (values.shipmentType)   urlParams.set("shipmentType",   values.shipmentType);
     if (values.deliveryBy)     urlParams.set("deliveryBy",     values.deliveryBy);
+    if (values.shippingCompany) urlParams.set("shippingCompany", values.shippingCompany);
     if (values.scheduleStatus) urlParams.set("scheduleStatus", values.scheduleStatus);
     if (values.vendorName)     urlParams.set("vendorName",     values.vendorName);
     if (values.startDate) {
@@ -199,6 +201,7 @@ export default function Shipments() {
     if (paymentStatus)  q.set("paymentStatus",  paymentStatus);
     if (shipmentType)   q.set("shipmentType",   shipmentType);
     if (deliveryBy)     q.set("deliveryBy",     deliveryBy);
+    if (shippingCompany) q.set("shippingCompany", shippingCompany);
     if (scheduleStatus) q.set("scheduleStatus", scheduleStatus);
     if (vendorName)     q.set("vendorName",     vendorName);
     const sIso = toIso(startDate);
@@ -231,8 +234,8 @@ export default function Shipments() {
   // Default values snapshot for filter bar (from current URL)
   const filterDefaults: FilterValues = {
     operationCode, customerName, customerPhone,
-    shipmentStatus, paymentStatus, shipmentType, deliveryBy, scheduleStatus, vendorName,
-    startDate, endDate,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
+    scheduleStatus, vendorName, startDate, endDate,
   };
 
   return (

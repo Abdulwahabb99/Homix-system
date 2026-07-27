@@ -136,6 +136,7 @@ export default function ShipmentEdit() {
   const [shipmentType, setShipmentType] = useState<string>("");
   const [governorate, setGovernorate] = useState<string>("");
   const [scheduleStatus, setScheduleStatus] = useState<number | "">("");
+  const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [shippingCompany, setShippingCompany] = useState("");
   const [shippingFees, setShippingFees] = useState("");
 
@@ -175,6 +176,21 @@ export default function ShipmentEdit() {
     data?.shipment.scheduleStatusLabel
   );
   const paymentOptions = meta?.paymentStatuses?.length ? meta.paymentStatuses : DEFAULT_PAYMENT_OPTIONS;
+  const deliveryByOptions = meta?.deliveryByOptions ?? [];
+
+  /**
+   * «التوصيل بواسطة» يعود من تفاصيل الشحنة كتسمية ("هوميكس" / "بائع") ويستقبله
+   * الـ API معرّفاً، فنطبّع الوارد على معرّف الـ meta بعد وصول القائمة.
+   */
+  useEffect(() => {
+    if (deliveryBy !== "" || deliveryByOptions.length === 0) return;
+    const raw = data?.shipment?.deliveryBy;
+    if (raw == null || raw === "") return;
+    const match =
+      deliveryByOptions.find((o) => String(o.value) === String(raw)) ??
+      deliveryByOptions.find((o) => o.label === String(raw).trim());
+    if (match) setDeliveryBy(Number(match.value));
+  }, [deliveryByOptions, data?.shipment?.deliveryBy, deliveryBy]);
 
   // --- prefill once the shipment has loaded ---
   useEffect(() => {
@@ -217,6 +233,7 @@ export default function ShipmentEdit() {
     if (shipmentType) body.shipmentType = shipmentType;
     if (governorate) body.governorate = governorate;
     if (scheduleStatus !== "") body.scheduleStatus = Number(scheduleStatus);
+    if (deliveryBy !== "") body.deliveryBy = Number(deliveryBy);
     if (shippingCompany.trim()) {
       const asNum = Number(shippingCompany);
       body.shippingCompany = Number.isFinite(asNum) ? asNum : shippingCompany.trim();
@@ -404,6 +421,20 @@ export default function ShipmentEdit() {
                 onChange={(e) => setScheduleStatus(Number(e.target.value))}
               >
                 {scheduleOptions.map((o) => (
+                  <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                {...fieldBaseProps}
+                select
+                disabled={deliveryByOptions.length === 0}
+                label="التوصيل بواسطة"
+                value={deliveryBy === "" ? "" : Number(deliveryBy)}
+                onChange={(e) => setDeliveryBy(Number(e.target.value))}
+              >
+                {deliveryByOptions.map((o) => (
                   <MenuItem key={o.value} value={Number(o.value)} sx={{ fontFamily: FONT }}>{o.label}</MenuItem>
                 ))}
               </TextField>

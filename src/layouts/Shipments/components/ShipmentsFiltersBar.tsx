@@ -19,6 +19,7 @@ export interface FilterValues {
   paymentStatus: string;
   shipmentType: string;
   deliveryBy: string;
+  shippingCompany: string;
   scheduleStatus: string;
   vendorName: string;
   startDate: any;
@@ -187,7 +188,8 @@ export default function ShipmentsFiltersBar({
     const empty: FilterValues = {
       operationCode: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
-      deliveryBy: "", scheduleStatus: "", vendorName: "", startDate: null, endDate: null,
+      deliveryBy: "", shippingCompany: "", scheduleStatus: "", vendorName: "",
+      startDate: null, endDate: null,
     };
     setVals(empty);
     onReset();
@@ -200,13 +202,14 @@ export default function ShipmentsFiltersBar({
     { value: 2, label: "مدفوع" },
   ];
   const deliveryByOptions = meta?.deliveryByOptions ?? [];
+  const shippingCompanies = meta?.shippingCompanies ?? [];
   const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
 
   const activeCount =
     [
       vals.operationCode, vals.customerName, vals.customerPhone,
       vals.shipmentStatus, vals.paymentStatus, isVendor ? "" : vals.shipmentType,
-      vals.deliveryBy, vals.scheduleStatus, vals.vendorName,
+      vals.deliveryBy, vals.shippingCompany, vals.scheduleStatus, vals.vendorName,
     ].filter(Boolean).length + (vals.startDate && vals.endDate ? 1 : 0);
 
   return (
@@ -309,6 +312,13 @@ export default function ShipmentsFiltersBar({
               value={vals.deliveryBy}
               options={deliveryByOptions}
               onChange={setSelect("deliveryBy")}
+            />
+
+            <FilterSelect
+              label="شركة الشحن"
+              value={vals.shippingCompany}
+              options={shippingCompanies}
+              onChange={setSelect("shippingCompany")}
             />
 
             <FilterSelect
