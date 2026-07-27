@@ -110,11 +110,12 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
-  /* تعديل «المبلغ المطلوب تحصيله» inline من بطاقة التفاصيل المالية */
-  const changeToBeCollected = useCallback(
-    (toBeCollected: number) => {
-      updateOrderField({ toBeCollected });
-      setOrderTotalToBeCollected(toBeCollected);
+  /* تعديل «جدية الشراء» inline من بطاقة التفاصيل المالية.
+     «المبلغ المطلوب تحصيله» يحسبه الـ BE ويعود في `financial.amountToCollect`،
+     فلا نرسله من هنا حتى لا نكتب فوق قيمة الخادم. */
+  const changeDownPayment = useCallback(
+    (downPayment: number) => {
+      updateOrderField({ downPayment });
     },
     [updateOrderField]
   );
@@ -430,7 +431,7 @@ export function useOrderDetailsPage() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryLocation,
-    changeToBeCollected,
+    changeDownPayment,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,

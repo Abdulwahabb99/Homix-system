@@ -53,7 +53,7 @@ function OrderDetails() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryLocation,
-    changeToBeCollected,
+    changeDownPayment,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,
@@ -175,7 +175,7 @@ function OrderDetails() {
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
               changeDeliveryLocation={changeDeliveryLocation}
-              changeToBeCollected={changeToBeCollected}
+              changeDownPayment={changeDownPayment}
               updateCustomer={updateCustomer}
               isUpdatingCustomer={isUpdatingCustomer}
               updateComment={updateComment}

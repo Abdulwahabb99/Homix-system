@@ -1,6 +1,9 @@
 /**
- * بطاقة التفاصيل المالية: سعر البيع/التكلفة/الهامش/الشحن/الخصم/الجدية +
- * «المبلغ المطلوب تحصيله» القابل للتعديل inline (للأدوار غير البائع).
+ * بطاقة التفاصيل المالية: سعر البيع/التكلفة/الهامش/الشحن/الخصم +
+ * «جدية الشراء» القابلة للتعديل inline (للأدوار غير البائع).
+ *
+ * «المبلغ المطلوب تحصيله» يأتي من الـ API (`financial.amountToCollect`) للقراءة فقط،
+ * و«هامش الربح» محسوب: سعر البيع + سعر الشحن − سعر التكلفة.
  */
 import React from "react";
 import { Box, IconButton, Stack, TextField, Typography } from "@mui/material";
@@ -20,7 +23,7 @@ interface FinancialDetailsCardProps {
   orderTotalToBeCollected: number | null;
   orderTotalCost: number | null;
   isVendor: boolean;
-  changeToBeCollected: (value: number) => void;
+  changeDownPayment: (downPayment: number) => void;
 }
 
 /** صف واحد في جدول التفاصيل المالية */
@@ -77,38 +80,42 @@ export default function FinancialDetailsCard({
   orderTotalToBeCollected,
   orderTotalCost,
   isVendor,
-  changeToBeCollected,
+  changeDownPayment,
 }: FinancialDetailsCardProps) {
   const sell = Number(orderDetails.subTotalPrice ?? orderTotalPrice ?? 0);
-  const costLine = Number(orderDetails.orderLines?.[0]?.cost ?? orderDetails.totalCost ?? 0);
-  const totalCostNum = Number(orderDetails.totalCost ?? orderTotalCost ?? 0);
-  const margin = sell - totalCostNum;
   const ship = Number(orderDetails.shippingFees ?? orderTotalShipping ?? 0);
+  /** «سعر التكلفة» — نفس القيمة المعروضة تُستخدم في هامش الربح ليتّسق الحساب المرئي */
+  const cost = Number(orderDetails.orderLines?.[0]?.cost ?? orderDetails.totalCost ?? orderTotalCost ?? 0);
   const disc = Number(orderDetails.totalDiscounts ?? 0);
   const down = Number(orderDetails.downPayment ?? 0);
+
+  /** هامش الربح = سعر البيع + سعر الشحن − سعر التكلفة */
+  const margin = sell + ship - cost;
+
+  /** المبلغ المطلوب تحصيله يأتي من الـ API (`financial.amountToCollect`) — للقراءة فقط */
   const collect = Number(orderDetails.toBeCollected ?? orderTotalToBeCollected ?? 0);
 
-  const collectEdit = useInlineNumberEdit(changeToBeCollected);
+  const downEdit = useInlineNumberEdit(changeDownPayment);
 
-  const collectNode = collectEdit.editing ? (
+  const downNode = downEdit.editing ? (
     <Stack direction="row" alignItems="center" spacing={0.5}>
       <TextField
         autoFocus
         type="number"
         size="small"
-        value={collectEdit.draft}
-        onChange={(e) => collectEdit.setDraft(e.target.value)}
+        value={downEdit.draft}
+        onChange={(e) => downEdit.setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") collectEdit.save(collect);
-          if (e.key === "Escape") collectEdit.cancel();
+          if (e.key === "Enter") downEdit.save(down);
+          if (e.key === "Escape") downEdit.cancel();
         }}
         inputProps={{ min: 0, style: { textAlign: "center", fontWeight: 800, width: 90, padding: "5px 6px" } }}
         sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", bgcolor: OD.sur } }}
       />
-      <IconButton size="small" onClick={() => collectEdit.save(collect)} aria-label="حفظ" sx={{ color: OD.green }}>
+      <IconButton size="small" onClick={() => downEdit.save(down)} aria-label="حفظ" sx={{ color: OD.green }}>
         <CheckIcon sx={{ fontSize: 18 }} />
       </IconButton>
-      <IconButton size="small" onClick={collectEdit.cancel} aria-label="إلغاء" sx={{ color: OD.red }}>
+      <IconButton size="small" onClick={downEdit.cancel} aria-label="إلغاء" sx={{ color: OD.red }}>
         <CloseIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Stack>
@@ -117,8 +124,8 @@ export default function FinancialDetailsCard({
       {!isVendor && (
         <IconButton
           size="small"
-          onClick={() => collectEdit.start(collect)}
-          aria-label="تعديل المبلغ المطلوب تحصيله"
+          onClick={() => downEdit.start(down)}
+          aria-label="تعديل جدية الشراء"
           sx={{ color: OD.tx3, "&:hover": { color: OD.accent } }}
         >
           <EditIcon sx={{ fontSize: 15 }} />
@@ -126,10 +133,15 @@ export default function FinancialDetailsCard({
       )}
       <Typography
         component="span"
-        onClick={!isVendor ? () => collectEdit.start(collect) : undefined}
-        sx={{ fontWeight: 900, fontSize: "0.94rem", color: OD.accent, cursor: !isVendor ? "pointer" : "default" }}
+        onClick={!isVendor ? () => downEdit.start(down) : undefined}
+        sx={{
+          fontWeight: 700,
+          fontSize: "0.81rem",
+          color: down === 0 ? OD.tx3 : OD.tx,
+          cursor: !isVendor ? "pointer" : "default",
+        }}
       >
-        {formatMoney(collect)} ج.م
+        {formatMoney(down)} ج.م
       </Typography>
     </Stack>
   );
@@ -144,7 +156,7 @@ export default function FinancialDetailsCard({
         <MoneyValue value={sell} />
       </FinancialRow>
       <FinancialRow label="سعر التكلفة">
-        <MoneyValue value={costLine} />
+        <MoneyValue value={cost} />
       </FinancialRow>
       <FinancialRow label="هامش الربح">
         <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.81rem", color: margin >= 0 ? OD.green : OD.red }}>
@@ -159,10 +171,15 @@ export default function FinancialDetailsCard({
         <MoneyValue value={disc} zeroMuted />
       </FinancialRow>
       <FinancialRow label="جدية الشراء">
-        <MoneyValue value={down} zeroMuted />
+        {downNode}
       </FinancialRow>
       <FinancialRow label="المبلغ المطلوب تحصيله" isTotal>
-        {collectNode}
+        <Typography
+          component="span"
+          sx={{ fontWeight: 900, fontSize: "0.94rem", color: OD.accent }}
+        >
+          {formatMoney(collect)} ج.م
+        </Typography>
       </FinancialRow>
     </SectionCard>
   );
