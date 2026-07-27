@@ -36,7 +36,7 @@ import {
   clearAuthStorage,
 } from "shared/functions/sessionGuard";
 
-const FactoryDetails = React.lazy(() => import("layouts/Factories/FactoryDetails"));
+const FactoryDetails = React.lazy(() => import("layouts/Factories/factoryDetail"));
 const UserDetails = React.lazy(() => import("layouts/Users/UserDetails"));
 const OrderDetails = React.lazy(() => import("layouts/Orders/OrderDetails"));
 const ProductDetails = React.lazy(() => import("layouts/Products/components/ProductDetails"));

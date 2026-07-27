@@ -160,6 +160,21 @@ export function useSaveFactoryMutation() {
   });
 }
 
+/** رفع مستندات لمصنع قائم (من شاشة التفاصيل) */
+export function useUploadFactoryDocumentsMutation() {
+  const invalidate = useInvalidateFactories();
+
+  return useMutation({
+    mutationFn: (vars: { factoryId: number; files: FactoryUploadFile[] }) =>
+      uploadFactoryDocuments(vars.factoryId, vars.files),
+    onSuccess: async (_r, vars) => {
+      await invalidate(vars.factoryId);
+      NotificationMeassage("success", "تم رفع المستند");
+    },
+    onError: () => NotificationMeassage("error", "حدث خطأ أثناء رفع المستند"),
+  });
+}
+
 export function useDeleteFactoryMutation() {
   const invalidate = useInvalidateFactories();
 
