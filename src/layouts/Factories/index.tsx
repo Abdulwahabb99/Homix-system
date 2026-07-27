@@ -124,6 +124,8 @@ export default function Factories() {
         open={page.pendingDeleteId !== null}
         onClose={page.cancelDelete}
         handleConfirmDelete={page.confirmDelete}
+        itemName={page.items.find((f) => f.id === page.pendingDeleteId)?.name}
+        isDeleting={page.isDeleting}
       />
     </DashboardLayout>
   );
