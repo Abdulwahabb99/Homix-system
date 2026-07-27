@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { ToastContainer, toast } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
@@ -206,9 +207,12 @@ export default function Shipments() {
     if (eIso) q.set("endDate",   eIso);
 
     setIsExportLoading(true);
+    // طلب GET واحد موثّق بالتوكن، ثم يُحفظ الملف من نفس الاستجابة — بلا تنقّل
     axiosRequest
-      .get(`/shipments/export?${q}`)
-      .then(({ request: { responseURL } }: any) => { window.location.href = responseURL; })
+      .get(`/shipments/export?${q}`, { responseType: "blob" })
+      .then((res) =>
+        downloadBlobResponse(res, `shipments-${moment().locale("en").format("YYYY-MM-DD")}.xlsx`)
+      )
       .catch(() => toast.error("حدث خطأ أثناء التصدير"))
       .finally(() => setIsExportLoading(false));
   };
