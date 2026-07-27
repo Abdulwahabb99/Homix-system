@@ -10,6 +10,7 @@ import "moment-timezone";
 import "shared/functions/momentLocale";
 import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
@@ -516,9 +517,12 @@ function Orders() {
   const handleExport = () => {
     const query = buildOrdersFilterQuery(ordersFilterParams);
     setIsExportLoading(true);
+    // طلب GET واحد موثّق بالتوكن، ثم يُحفظ الملف من نفس الاستجابة — بلا تنقّل
     axiosRequest
-      .get(`${baseURI}/orders/export?${query}`)
-      .then(({ request: { responseURL } }: any) => { window.location.href = responseURL; })
+      .get(`${baseURI}/orders/export?${query}`, { responseType: "blob" })
+      .then((res) =>
+        downloadBlobResponse(res, `orders-${moment().locale("en").format("YYYY-MM-DD")}.xlsx`)
+      )
       .catch(() => NotificationMeassage("error", "حدث خطأ"))
       .finally(() => setIsExportLoading(false));
   };
