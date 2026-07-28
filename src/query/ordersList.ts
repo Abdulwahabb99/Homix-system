@@ -110,7 +110,8 @@ function mapListItemRow(row) {
     deliveryPriority: row.deliveryPriority,
     deliveryPriorityLabel: row.deliveryPriorityLabel,
     fine: row.fine,
-    type: row.productName,
+    /** عمود «النوع» — تصنيف المنتج كما يرسله الـ API لا اسم المنتج */
+    type: row.itemType,
     orderData: { name: row.orderNumber ? `#${row.orderNumber}` : String(orderId) },
     commission: row.commission ?? "",
     downPayment: row.downPayment ?? "",
@@ -151,7 +152,7 @@ function mapOrderRow(order) {
     totalVendorDue: order.totalVendorDue,
     totalCompanyDue: order.totalCompanyDue,
     expectedDeliveryDate: order.expectedDeliveryDate,
-    type: order.orderLines[0]?.product?.type?.name,
+    type: order.itemType ?? order.orderLines[0]?.product?.type?.name,
     shippedFromInventory: order.shippedFromInventory,
     deliveryBy: order.deliveryBy,
     deliveryByLabel: order.deliveryByLabel,
