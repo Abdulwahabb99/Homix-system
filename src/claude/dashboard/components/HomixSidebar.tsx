@@ -1,5 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { ListItemIcon, Menu, MenuItem } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useDispatch } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
+import { clearAuthStorage, SIGN_IN_PATH } from "shared/functions/sessionGuard";
+import { clearUser } from "store/slices/authSlice";
 
 function brandIcon() {
   return (
@@ -232,6 +238,21 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
   const navigate = useNavigate();
   const nav = onNavigate;
 
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+  /** مرساة قائمة خيارات المستخدم (زر النقاط الثلاث) */
+  const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const handleLogout = () => {
+    setUserMenuAnchor(null);
+    // مسح كاش React Query أولاً حتى لا يرى المستخدم التالي بيانات الجلسة السابقة
+    queryClient.clear();
+    dispatch(clearUser());
+    clearAuthStorage();
+    navigate(SIGN_IN_PATH);
+    nav?.();
+  };
+
   return (
     <>
       <div className="h-brand">
@@ -340,7 +361,19 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
             <div className="h-user-name">{name}</div>
             <div className="h-user-role">{userRole}</div>
           </div>
-          <button type="button" className="h-user-settings" aria-label="خيارات" tabIndex={-1}>
+          <button
+            type="button"
+            className="h-user-settings"
+            aria-label="خيارات"
+            aria-haspopup="menu"
+            aria-expanded={Boolean(userMenuAnchor)}
+            // يمنع نقرة الزر من تفعيل تنقّل الصف الحاوي
+            onClick={(e) => {
+              e.stopPropagation();
+              setUserMenuAnchor(e.currentTarget);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <svg viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="1" />
               <circle cx="12" cy="5" r="1" />
@@ -348,6 +381,42 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
             </svg>
           </button>
         </div>
+
+        <Menu
+          anchorEl={userMenuAnchor}
+          open={Boolean(userMenuAnchor)}
+          onClose={() => setUserMenuAnchor(null)}
+          // القائمة تُفتح لأعلى — صف المستخدم في أسفل الشريط الجانبي
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+          PaperProps={{
+            sx: {
+              minWidth: 168,
+              borderRadius: "10px",
+              bgcolor: "#1f2233",
+              color: "rgba(255,255,255,0.85)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+            },
+          }}
+        >
+          <MenuItem
+            onClick={handleLogout}
+            sx={{
+              fontFamily: "'Cairo', sans-serif",
+              fontSize: "13px",
+              fontWeight: 600,
+              gap: "2px",
+              py: "9px",
+              "&:hover": { bgcolor: "rgba(239,68,68,0.14)", color: "#fca5a5" },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: "unset !important", mr: "9px", color: "inherit" }}>
+              <LogoutIcon sx={{ fontSize: 17 }} />
+            </ListItemIcon>
+            تسجيل الخروج
+          </MenuItem>
+        </Menu>
       </div>
     </>
   );
