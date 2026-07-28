@@ -12,11 +12,21 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import { financialKeys } from "query/keys";
 import { BillingDay } from "layouts/Financialreports/utils/types";
 
 export const FINANCIAL_REPORT_PATH = "/orders/financialReport";
+export const FINANCIAL_REPORT_EXPORT_PATH = `${FINANCIAL_REPORT_PATH}/export`;
+
+/**
+ * معاملات التقرير — مصدر واحد يستخدمه الجلب والتصدير، فلا يُصدَّر ملف بدورة
+ * فوترة مختلفة عمّا يراه المستخدم.
+ */
+export function buildFinancialReportQuery(billingDay: BillingDay): string {
+  return new URLSearchParams({ billingDay: String(billingDay) }).toString();
+}
 
 /** بيانات الدورة الحالية (cycle) */
 export interface FinancialCycle {
@@ -157,7 +167,7 @@ export async function fetchFinancialReport(
   billingDay: BillingDay,
   navigate: NavigateFunction
 ): Promise<FinancialReport> {
-  const url = `${FINANCIAL_REPORT_PATH}?billingDay=${billingDay}`;
+  const url = `${FINANCIAL_REPORT_PATH}?${buildFinancialReportQuery(billingDay)}`;
   const { data } = await axiosRequest.get(url);
 
   const root = data as ApiFinancialReportResponse;
@@ -174,6 +184,18 @@ export async function fetchFinancialReport(
     vendorDeliveries: normalizeSection(d.vendorDeliveries),
     warehouseDeliveries: normalizeSection(d.warehouseDeliveries),
   };
+}
+
+/**
+ * `GET /orders/financialReport/export` — بنفس معاملات الجلب.
+ * طلب واحد موثّق بالتوكن ثم يُحفظ الملف من نفس الاستجابة (بلا تنقّل).
+ */
+export async function exportFinancialReport(billingDay: BillingDay): Promise<void> {
+  const res = await axiosRequest.get(
+    `${FINANCIAL_REPORT_EXPORT_PATH}?${buildFinancialReportQuery(billingDay)}`,
+    { responseType: "blob" }
+  );
+  downloadBlobResponse(res, `financial-report-day-${billingDay}.xlsx`);
 }
 
 export function useFinancialReport(billingDay: BillingDay) {

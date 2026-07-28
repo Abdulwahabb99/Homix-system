@@ -4,10 +4,13 @@
  * المكوّنات المقسّمة عبر `useFinancialSettlements` (GET /orders/financialReport).
  */
 import React, { useState } from "react";
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
+import { ToastContainer } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { exportFinancialReport } from "query/financialReport";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 
 import { useFinancialSettlements } from "./hooks/useFinancialSettlements";
@@ -45,6 +48,7 @@ const stateBoxSx = {
 export default function Financialreports() {
   const [billingDay, setBillingDay] = useState<BillingDay>(DEFAULT_BILLING_DAY);
   const [tab, setTab] = useState<SettlementTabKey>(DEFAULT_TAB);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay);
 
@@ -55,16 +59,38 @@ export default function Financialreports() {
     comprehensive: sections.comprehensive.length,
   };
 
-  // TODO(BE): ربط أزرار التصدير/الفاتورة اليدوية بنقاط النهاية عند توفّرها.
+  /** تصدير Excel — نفس معاملات التقرير المعروض (دورة الفوترة الحالية) */
+  const handleExportExcel = () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    exportFinancialReport(billingDay)
+      .catch(() => NotificationMeassage("error", "حدث خطأ أثناء التصدير"))
+      .finally(() => setIsExporting(false));
+  };
+
+  // TODO(BE): لا توجد نقطة نهاية لتصدير PDF ولا للفاتورة اليدوية بعد.
+  const notAvailable = () => NotificationMeassage("info", "غير متاح بعد");
+
   const actions = (
     <Box sx={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-      <Box component="button" type="button" onClick={() => {}} sx={ghostBtnSx}>
+      <Box component="button" type="button" onClick={notAvailable} sx={ghostBtnSx}>
         <FileDownloadOutlinedIcon /> تصدير PDF
       </Box>
-      <Box component="button" type="button" onClick={() => {}} sx={ghostBtnSx}>
-        <FileDownloadOutlinedIcon /> تصدير Excel
+      <Box
+        component="button"
+        type="button"
+        onClick={handleExportExcel}
+        disabled={isExporting}
+        sx={{ ...ghostBtnSx, opacity: isExporting ? 0.6 : 1 }}
+      >
+        {isExporting ? (
+          <CircularProgress size={13} sx={{ color: HX.tx2 }} />
+        ) : (
+          <FileDownloadOutlinedIcon />
+        )}
+        تصدير Excel
       </Box>
-      <Box component="button" type="button" onClick={() => {}} sx={primaryBtnSx}>
+      <Box component="button" type="button" onClick={notAvailable} sx={primaryBtnSx}>
         <AddIcon /> فاتورة يدوية
       </Box>
     </Box>
@@ -85,6 +111,8 @@ export default function Financialreports() {
 
   return (
     <DashboardLayout pageTitle={PAGE_TITLE} pageSubtitle={PAGE_SUBTITLE} pageActions={actions}>
+      <ToastContainer />
+
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "16px", fontFamily: FONT }}>
         {isLoading ? (
           <FinancialReportsSkeleton />
