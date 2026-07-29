@@ -6,8 +6,15 @@ import {
   mapApiItemToTicket,
 } from "query/ticketsList.api";
 
-/** GET — بحث طلب لربطه بتذكرة جديدة (رقم عملية أو رقم طلب حسب دعم الـ API) */
-const TICKETS_ORDERS_LOOKUP_PATH = "/tickets/orders/lookup";
+/**
+ * GET — بحث طلب لربطه بتذكرة جديدة.
+ * صار البحث على نقطتَي نهاية منفصلتين: لكل معرّف مساره ومعامله الخاص.
+ */
+const TICKETS_ORDERS_LOOKUP_BASE = "/tickets/orders/lookup";
+/** `?operationNumber=` */
+const LOOKUP_BY_OPERATION_PATH = `${TICKETS_ORDERS_LOOKUP_BASE}/operation-number`;
+/** `?orderNumber=` */
+const LOOKUP_BY_ORDER_PATH = `${TICKETS_ORDERS_LOOKUP_BASE}/order-number`;
 
 interface ApiEnvelope {
   status?: boolean;
@@ -75,14 +82,31 @@ export async function resolveOrderForNewTicket(
   const orderNumber = input.orderNumber?.trim();
   const operationNumber = input.operationNumber?.replace(/^OP-?/i, "").trim();
 
-  const query: Record<string, string> = {};
-  if (orderNumber) query.orderNumber = orderNumber;
-  if (operationNumber) query.operationNumber = operationNumber;
-  if (!query.orderNumber && !query.operationNumber) return null;
+  /**
+   * كل معرّف له نقطة نهاية مستقلّة، فلا يمكن إرسال الاثنين معاً.
+   * عند تعبئة الحقلين يفوز رقم العملية لأنه الأدقّ (يحدّد سطر طلب بعينه).
+   */
+  let path: string;
+  let params: Record<string, string>;
+  if (operationNumber) {
+    path = LOOKUP_BY_OPERATION_PATH;
+    params = { operationNumber };
+  } else if (orderNumber) {
+    path = LOOKUP_BY_ORDER_PATH;
+    params = { orderNumber };
+  } else {
+    return null;
+  }
 
-  const { data } = await axiosRequest.get<Record<string, unknown>>(TICKETS_ORDERS_LOOKUP_PATH, {
-    params: query,
-  });
+  let data: Record<string, unknown>;
+  try {
+    ({ data } = await axiosRequest.get<Record<string, unknown>>(path, { params }));
+  } catch (error) {
+    // رقم غير موجود يعود 404 — نُرجع null ليعرض النموذج «لم يتم العثور» لا خطأ عام
+    if ((error as { response?: { status?: number } })?.response?.status === 404) return null;
+    throw error;
+  }
+
   const root = data as unknown as ApiEnvelope;
   checkLogout(navigate, root);
   if (root.status === false) return null;
