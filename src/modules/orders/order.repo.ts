@@ -10,6 +10,7 @@ import {
   ORDER_STATUS,
   ORDER_SOURCE,
   ORDER_STATUS_Arabic,
+  PAYMENT_STATUS,
   PAYMENT_STATUS_ARABIC,
   SHIPMENTS_STATUS,
 } from "../../../config/constants";
@@ -215,6 +216,10 @@ const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[string, "ASC" | "
   return databaseEntries.length > 0 ? databaseEntries : [["orderDate", "DESC"]];
 };
 
+const getOrderCollectionAmount = (order: Record<string, unknown>): number => {
+  return toNumber(order.paymentStatus) === PAYMENT_STATUS.PAID ? 0 : toNumber(order.toBeCollected);
+};
+
 const getOrderLineVariant = (lineValue: unknown): Record<string, unknown> => {
   const line = toPlain(lineValue);
   const product = toPlain(line.product);
@@ -407,7 +412,7 @@ const mapOrderSummary = (value: unknown): OrderListItem => {
     productName: toText(product.title, toText(orderLine.title)),
     status: toNumber(order.status) || null,
     statusLabel: getStatusLabel(order.status),
-    toBeCollected: toNumber(order.toBeCollected),
+    toBeCollected: getOrderCollectionAmount(order),
     totalCost: toNumber(order.totalCost),
     totalPrice: toNumber(order.totalPrice),
     userName: `${toText(user.firstName)} ${toText(user.lastName)}`.trim(),
@@ -675,7 +680,7 @@ export class OrderRepository {
         name: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
         phoneNumber: toText(customer.phoneNumber),
       },
-      financial: { amountToCollect: toNumber(plainOrder.toBeCollected), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), fine: toNumber(plainOrder.fine), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
+      financial: { amountToCollect: getOrderCollectionAmount(plainOrder), commission: toNumber(plainOrder.commission), discount: toNumber(plainOrder.totalDiscounts), downPayment: toNumber(plainOrder.downPayment), fine: toNumber(plainOrder.fine), shippingFees: toNumber(plainOrder.shippingFees), totalCost: toNumber(plainOrder.totalCost), totalPrice: toNumber(plainOrder.totalPrice) },
       notes,
       order: {
         ...summary,

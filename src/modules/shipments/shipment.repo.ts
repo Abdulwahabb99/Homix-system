@@ -3,7 +3,7 @@ import { Op, fn, col, where } from "sequelize";
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
-import { ORDER_SOURCE_ARABIC, ORDER_SOURCE, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
+import { ORDER_SOURCE_ARABIC, ORDER_SOURCE, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
@@ -99,6 +99,10 @@ const SHIPMENT_SORTABLE_FIELDS = ["orderDate", "priority", "subTotalPrice", "tot
 type ShipmentSortField = (typeof SHIPMENT_SORTABLE_FIELDS)[number];
 type ShipmentSortDirection = 1 | -1;
 type ShipmentSortEntry = [ShipmentSortField, ShipmentSortDirection];
+
+const getShipmentCollectionAmount = (order: Record<string, unknown>): number => (
+  toNumber(order.paymentStatus) === PAYMENT_STATUS.PAID ? 0 : toNumber(order.toBeCollected || order.totalPrice)
+);
 
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
@@ -290,7 +294,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
 
   return {
     assigneeId: toNullableNumber(order.userId),
-    amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
+    amountToCollect: getShipmentCollectionAmount(order),
     customerName: `${toText(customer.firstName)} ${toText(customer.lastName)}`.trim(),
     customerPhone: toText(customer.phoneNumber),
     daysCounter: getShipmentAgingDays(order.shipmentStatus, order.shippingReceiveDate, order.deliveryDate, order.updatedAt),
@@ -722,7 +726,7 @@ export class ShipmentRepository {
         phoneNumber: toText(customer.phoneNumber),
       },
       financial: {
-        amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
+        amountToCollect: getShipmentCollectionAmount(order),
         shippingCost: toNumber(order.shippingFees),
         totalPrice: toNumber(order.totalPrice),
       },
