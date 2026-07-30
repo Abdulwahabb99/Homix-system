@@ -372,6 +372,15 @@ class OrderService {
         }
         const codeNumber = nextNumber;
         nextNumber++;
+        const shippingFees = normalizeNumber(order.shippingFees);
+        const downPayment = normalizeNumber(order.downPayment);
+        const toBeCollected = calculateAmountToCollect({
+          downPayment,
+          shippingFees,
+          subTotalPrice,
+          totalDiscounts: total_discounts,
+        });
+
         let obj = {
           shopifyId: String(order.id),
           name,
@@ -401,10 +410,10 @@ class OrderService {
             : null,
           receivedAmount: order.receivedAmount || 0,
           commission: order.commission || 0,
-          shippingFees: order.shippingFees || 0,
+          shippingFees,
           PoDate: order.PoDate || null,
-          downPayment: order.downPayment || 0,
-          toBeCollected: order.toBeCollected || 0,
+          downPayment,
+          toBeCollected,
           itemShipping: order.itemShipping || 0,
           deliveryStatus: order.deliveryStatus || null,
           orderSource:
