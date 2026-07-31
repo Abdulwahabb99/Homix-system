@@ -70,12 +70,15 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
       orderStatusValues[Number(orderDetails?.status)] ?? orderDetails?.statusLabel ?? "—";
     const issueDate = formatDateArabic(orderDetails?.createdAt ?? orderDetails?.orderDate);
 
+    // نفس مصادر بطاقة «التفاصيل المالية» بالضبط ليتطابق الرقمان.
     const subtotal = Number(orderDetails?.subTotalPrice ?? 0);
     const shipping = Number(orderDetails?.shippingFees ?? 0);
     const discount = Number(orderDetails?.totalDiscounts ?? 0);
     const total = Number(orderDetails?.totalPrice ?? 0);
     const paid = Number(orderDetails?.downPayment ?? 0);
-    const remaining = total - paid;
+    // «المتبقّي» = المبلغ المطلوب تحصيله من الـ API (financial.amountToCollect) —
+    // نفس قيمة «المبلغ المطلوب تحصيله» في بطاقة التفاصيل المالية، لا حساب total − paid.
+    const remaining = Number(orderDetails?.toBeCollected ?? 0);
 
     return (
       <div className={styles.invoiceRoot}>
