@@ -4,6 +4,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DownloadIcon from "@mui/icons-material/Download";
 import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
 import { HX } from "layouts/Orders/ordersHomixTheme";
+import { usePermissions } from "shared/permissions";
 
 interface OrdersHomixListingHeaderProps {
   isVendor: boolean;
@@ -18,13 +19,20 @@ export default function OrdersHomixListingHeader({
   onExport,
   onAddOrder,
 }: OrdersHomixListingHeaderProps) {
+  const { canAdd } = usePermissions();
+  // تصدير الطلبات: لا يوجد مفتاح `orders_export` → يبقى باللوجيك القديم.
+  const showExport = !isVendor;
+  // زرار الإضافة: ديناميكي حسب صلاحية `orders_create`.
+  const showAdd = canAdd("orders");
+
   return (
     <HomixPageHeader
       title="الطلبات"
       subtitle="إدارة ومتابعة جميع الطلبات"
       actions={
-        !isVendor ? (
+        showExport || showAdd ? (
           <Stack direction="row" alignItems="center" spacing={1}>
+            {showExport && (
             <Button
               size="small"
               variant="text"
@@ -54,6 +62,8 @@ export default function OrdersHomixListingHeader({
             >
               تصدير Excel
             </Button>
+            )}
+            {showAdd && (
             <Button
               size="small"
               variant="contained"
@@ -73,6 +83,7 @@ export default function OrdersHomixListingHeader({
             >
               طلب جديد
             </Button>
+            )}
           </Stack>
         ) : undefined
       }

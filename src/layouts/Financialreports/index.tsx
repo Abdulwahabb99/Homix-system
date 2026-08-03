@@ -12,6 +12,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { exportFinancialReport } from "query/financialReport";
 import { HX } from "layouts/Orders/ordersHomixTheme";
+import { usePermissions } from "shared/permissions";
 
 import { useFinancialSettlements } from "./hooks/useFinancialSettlements";
 import { PAGE_TITLE, PAGE_SUBTITLE, DEFAULT_BILLING_DAY, DEFAULT_TAB } from "./utils/constants";
@@ -49,6 +50,7 @@ export default function Financialreports() {
   const [billingDay, setBillingDay] = useState<BillingDay>(DEFAULT_BILLING_DAY);
   const [tab, setTab] = useState<SettlementTabKey>(DEFAULT_TAB);
   const [isExporting, setIsExporting] = useState(false);
+  const { canExport } = usePermissions();
 
   const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay);
 
@@ -73,23 +75,27 @@ export default function Financialreports() {
 
   const actions = (
     <Box sx={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-      <Box component="button" type="button" onClick={notAvailable} sx={ghostBtnSx}>
-        <FileDownloadOutlinedIcon /> تصدير PDF
-      </Box>
-      <Box
-        component="button"
-        type="button"
-        onClick={handleExportExcel}
-        disabled={isExporting}
-        sx={{ ...ghostBtnSx, opacity: isExporting ? 0.6 : 1 }}
-      >
-        {isExporting ? (
-          <CircularProgress size={13} sx={{ color: HX.tx2 }} />
-        ) : (
-          <FileDownloadOutlinedIcon />
-        )}
-        تصدير Excel
-      </Box>
+      {canExport("finance") && (
+        <Box component="button" type="button" onClick={notAvailable} sx={ghostBtnSx}>
+          <FileDownloadOutlinedIcon /> تصدير PDF
+        </Box>
+      )}
+      {canExport("finance") && (
+        <Box
+          component="button"
+          type="button"
+          onClick={handleExportExcel}
+          disabled={isExporting}
+          sx={{ ...ghostBtnSx, opacity: isExporting ? 0.6 : 1 }}
+        >
+          {isExporting ? (
+            <CircularProgress size={13} sx={{ color: HX.tx2 }} />
+          ) : (
+            <FileDownloadOutlinedIcon />
+          )}
+          تصدير Excel
+        </Box>
+      )}
       <Box component="button" type="button" onClick={notAvailable} sx={primaryBtnSx}>
         <AddIcon /> فاتورة يدوية
       </Box>

@@ -6,6 +6,7 @@ import { useDispatch } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearAuthStorage, SIGN_IN_PATH } from "shared/functions/sessionGuard";
 import { clearUser } from "store/slices/authSlice";
+import { usePermissions, type PermissionKey } from "shared/permissions";
 
 function brandIcon() {
   return (
@@ -102,44 +103,46 @@ type NavItem = {
   badge?: string;
   badgeType?: "warn" | "danger" | "default";
   end?: boolean;
+  /** صلاحية العرض المطلوبة لإظهار العنصر (`*_view`)؛ بدونها يظهر دائمًا */
+  perm?: PermissionKey;
 };
 
 const adminMain: NavItem[] = [
-  { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true },
-  { to: "/orders", label: "الطلبات", icon: icons.orders, badge: "72", badgeType: "warn" },
-  { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default" },
-  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
-  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
+  { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, badge: "72", badgeType: "warn", perm: "orders_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default", perm: "products_view" },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
 
 const adminManage: NavItem[] = [
-  { to: "/factories", label: "الصُنّاع", icon: icons.makers, badge: "3", badgeType: "danger" },
-  { to: "/vendors", label: "الموردين", icon: icons.suppliers },
-  { to: "/users", label: "المستخدمين", icon: icons.users },
-  { to: "/financialReports", label: "التقارير", icon: icons.reports },
+  { to: "/factories", label: "الصُنّاع", icon: icons.makers, badge: "3", badgeType: "danger", perm: "factory_view" },
+  { to: "/vendors", label: "الموردين", icon: icons.suppliers, perm: "vendors_view" },
+  { to: "/users", label: "المستخدمين", icon: icons.users, perm: "users_view" },
+  { to: "/financialReports", label: "التقارير", icon: icons.reports, perm: "finance_view" },
 ];
 
 const vendorMain: NavItem[] = [
-  { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true },
-  { to: "/orders", label: "الطلبات", icon: icons.orders },
-  { to: "/products", label: "المنتجات", icon: icons.product },
-  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
-  { to: "/financialReports", label: "تقارير مالية", icon: icons.reports },
+  { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
+  { to: "/financialReports", label: "تقارير مالية", icon: icons.reports, perm: "finance_view" },
 ];
 
 const operationsMain: NavItem[] = [
-  { to: "/products", label: "المنتجات", icon: icons.product },
-  { to: "/orders", label: "الطلبات", icon: icons.orders },
-  { to: "/factories", label: "المصانع", icon: icons.suppliers },
-  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
-  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
+  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
+  { to: "/factories", label: "المصانع", icon: icons.suppliers, perm: "factory_view" },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
 
 const logisticsMain: NavItem[] = [
-  { to: "/products", label: "المنتجات", icon: icons.product },
-  { to: "/orders", label: "الطلبات", icon: icons.orders },
-  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments },
-  { to: "/tickets", label: "التذاكر", icon: icons.tickets },
+  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
+  { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
+  { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
 
 function getInitials(): string {
@@ -238,6 +241,10 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
   const navigate = useNavigate();
   const nav = onNavigate;
 
+  const { can } = usePermissions();
+  /** يُبقي فقط عناصر القائمة التي يملك المستخدم صلاحية عرضها */
+  const visibleNav = (items: NavItem[]) => items.filter((it) => !it.perm || can(it.perm));
+
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   /** مرساة قائمة خيارات المستخدم (زر النقاط الثلاث) */
@@ -269,7 +276,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
         <>
           <div className="h-nav-section">
             <div className="h-nav-label">القائمة الرئيسية</div>
-            {vendorMain.map((it) => (
+            {visibleNav(vendorMain).map((it) => (
               <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
             ))}
           </div>
@@ -294,13 +301,13 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
         <>
           <div className="h-nav-section">
             <div className="h-nav-label">القائمة الرئيسية</div>
-            {adminMain.map((it) => (
+            {visibleNav(adminMain).map((it) => (
               <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
             ))}
           </div>
           <div className="h-nav-section">
             <div className="h-nav-label">الإدارة</div>
-            {adminManage.map((it) => (
+            {visibleNav(adminManage).map((it) => (
               <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
             ))}
           </div>
@@ -324,7 +331,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
       {role === "operations" && (
         <div className="h-nav-section">
           <div className="h-nav-label">القائمة الرئيسية</div>
-          {operationsMain.map((it) => (
+          {visibleNav(operationsMain).map((it) => (
             <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
           ))}
         </div>
@@ -333,7 +340,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
       {role === "logistics" && (
         <div className="h-nav-section">
           <div className="h-nav-label">القائمة الرئيسية</div>
-          {logisticsMain.map((it) => (
+          {visibleNav(logisticsMain).map((it) => (
             <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
           ))}
         </div>

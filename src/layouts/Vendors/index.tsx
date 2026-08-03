@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { Box } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { usePermissions } from "shared/permissions";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { ToastContainer } from "react-toastify";
@@ -29,6 +30,7 @@ export default function Vendors() {
   } = useVendors();
 
   const [editVendorRow, setEditVendorRow] = useState<Vendor | null>(null);
+  const { canAdd } = usePermissions();
 
   const handleReset = () => { setSearch(""); setStatus("all"); };
 
@@ -41,9 +43,11 @@ export default function Vendors() {
           <Box component="button" type="button" onClick={soon} sx={topGhostBtnSx}>
             <FileDownloadOutlinedIcon /> تصدير Excel
           </Box>
-          <Box component="button" type="button" onClick={soon} sx={addBtnSx}>
-            <AddIcon /> إضافة مورد
-          </Box>
+          {canAdd("vendors") && (
+            <Box component="button" type="button" onClick={soon} sx={addBtnSx}>
+              <AddIcon /> إضافة مورد
+            </Box>
+          )}
         </Box>
       }
     >

@@ -7,6 +7,7 @@ import { Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import { usePermissions } from "shared/permissions";
 import { useUsers } from "./hooks/useUsers";
 import { PAGE_TITLE, PAGE_SUBTITLE } from "./utils/constants";
 import { addBtnSx, FONT } from "./utils/styles";
@@ -29,6 +30,7 @@ export default function Users() {
   const [editUser, setEditUser] = useState<AppUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
 
+  const { canAdd } = usePermissions();
   const openAdd = () => { setEditUser(null); setModalOpen(true); };
   const openEdit = (u: AppUser) => { setEditUser(u); setModalOpen(true); };
   const openView = (u: AppUser) => navigate(`/users/${u.id}`);
@@ -43,9 +45,11 @@ export default function Users() {
       pageTitle={PAGE_TITLE}
       pageSubtitle={PAGE_SUBTITLE}
       pageActions={
-        <Box component="button" type="button" onClick={openAdd} sx={addBtnSx}>
-          <AddIcon /> إضافة مستخدم
-        </Box>
+        canAdd("employees") ? (
+          <Box component="button" type="button" onClick={openAdd} sx={addBtnSx}>
+            <AddIcon /> إضافة مستخدم
+          </Box>
+        ) : undefined
       }
     >
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "12px", fontFamily: FONT }}>
