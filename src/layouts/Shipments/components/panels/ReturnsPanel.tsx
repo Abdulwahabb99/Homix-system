@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, Tooltip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -12,6 +12,7 @@ import {
   RETURNS_PAGE_SIZE,
   type ReturnItem,
   type ReturnsParams,
+  exportReturns,
 } from "query/shipmentsReturns";
 import VendorSelect from "components/VendorSelect/VendorSelect";
 import EditCustomerReturnModal from "./EditCustomerReturnModal";
@@ -322,7 +323,11 @@ const EMPTY_FILTERS: FilterState = { orderNumber: "", operationCode: "", status:
 /** مرجع ثابت — يمنع إعادة حساب النموذج داخل المودال على كل render أثناء تحميل الـ meta. */
 const NO_OPTIONS: { value: string | number; label: string }[] = [];
 
-export default function ReturnsPanel() {
+interface ReturnsPanelProps {
+  onExporterChange?: (exporter: { run: () => Promise<void>; successMessage: string } | null) => void;
+}
+
+export default function ReturnsPanel({ onExporterChange }: ReturnsPanelProps) {
   const [activeTab, setActiveTab]     = useState<"vendor" | "customer">("vendor");
   const [filters, setFilters]         = useState<FilterState>(EMPTY_FILTERS);
   const [applied, setApplied]         = useState<FilterState>(EMPTY_FILTERS);
@@ -334,6 +339,19 @@ export default function ReturnsPanel() {
 
   const vendorParams: ReturnsParams   = { page: vendorPage,   ...applied };
   const customerParams: ReturnsParams = { page: customerPage, ...applied };
+
+  const exportCurrentView = useCallback(
+    () => exportReturns(activeTab, activeTab === "vendor" ? vendorParams : customerParams),
+    [activeTab, applied, customerPage, vendorPage],
+  );
+
+  useEffect(() => {
+    onExporterChange?.({
+      run: exportCurrentView,
+      successMessage: activeTab === "vendor" ? "تم تصدير مرتجعات الموردين" : "تم تصدير مرتجعات العملاء",
+    });
+    return () => onExporterChange?.(null);
+  }, [activeTab, exportCurrentView, onExporterChange]);
 
   // Only the visible return list is requested. Previously opening this panel
   // always fired both endpoints and made the first tab switch contend for work.

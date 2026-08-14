@@ -4,6 +4,7 @@ import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import {
   useShipmentsPerformanceQuery,
+  exportShipmentsPerformance,
   type PerformanceChartPoint,
   type PerformancePeriod,
   type ProviderRow,
@@ -80,7 +81,11 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-export default function ReportsPanel() {
+interface ReportsPanelProps {
+  onExporterChange?: (exporter: { run: () => Promise<void>; successMessage: string } | null) => void;
+}
+
+export default function ReportsPanel({ onExporterChange }: ReportsPanelProps) {
   const initialStartDate = React.useMemo(() => moment().startOf("month").format("YYYY-MM-DD"), []);
   const initialEndDate = React.useMemo(() => moment().format("YYYY-MM-DD"), []);
   const [period, setPeriod] = React.useState<PerformancePeriod>("daily");
@@ -98,6 +103,19 @@ export default function ReportsPanel() {
     startDate: appliedRange.startDate,
   }), [appliedRange, period]);
   const awaitingCustomRange = period === "custom" && !customRangeReady;
+
+  const exportCurrentView = React.useCallback(
+    () => exportShipmentsPerformance(queryParams),
+    [queryParams],
+  );
+  React.useEffect(() => {
+    if (awaitingCustomRange) {
+      onExporterChange?.(null);
+      return undefined;
+    }
+    onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير تقرير الأداء" });
+    return () => onExporterChange?.(null);
+  }, [awaitingCustomRange, exportCurrentView, onExporterChange]);
   const { data, isError, isLoading, isFetching, refetch } = useShipmentsPerformanceQuery(
     queryParams,
     !awaitingCustomRange,

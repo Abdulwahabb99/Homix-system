@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { shipmentKeys } from "./keys";
 import moment from "moment";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 
 export type PerformancePeriod = "daily" | "weekly" | "monthly" | "custom";
 
@@ -90,6 +91,11 @@ function normalizePerformance(response: unknown): ShipmentsPerformanceData {
 export async function fetchShipmentsPerformance(params: PerformanceParams): Promise<ShipmentsPerformanceData> {
   const { data } = await axiosRequest.get(`/shipments/performance?${buildQuery(params)}`);
   return normalizePerformance(data);
+}
+
+export async function exportShipmentsPerformance(params: PerformanceParams): Promise<void> {
+  const response = await axiosRequest.get(`/shipments/performance/export?${buildQuery(params)}`, { responseType: "blob" });
+  downloadBlobResponse(response, "shipment-performance.xlsx");
 }
 
 export function useShipmentsPerformanceQuery(params: PerformanceParams, enabled = true) {

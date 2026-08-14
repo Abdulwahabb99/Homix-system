@@ -12,6 +12,7 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 
 import TicketsHomixTable from "layouts/Tickets/components/TicketsHomixTable";
 import EditTicketModal from "layouts/Tickets/components/EditTicketModal";
@@ -525,6 +526,15 @@ export default function Tickets() {
     <Stack direction="row" spacing={1}>
       <Button
         size="small"
+        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: "14px !important" }} />}
+        onClick={() => void handleExport()}
+        disabled={isExporting}
+        sx={BTN_G}
+      >
+        {isExporting ? "جارٍ التصدير..." : "تصدير"}
+      </Button>
+      <Button
+        size="small"
         disableElevation
         disableRipple={false}
         startIcon={<SettingsOutlinedIcon sx={{ fontSize: "13px !important" }} />}
@@ -784,9 +794,6 @@ export default function Tickets() {
                     sx={BTN_P}
                   >
                     تذكرة جديدة
-                  </Button>
-                  <Button size="small" sx={BTN_G} onClick={handleExport} disabled={isExporting}>
-                    {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
                   </Button>
                 </Stack>
               }

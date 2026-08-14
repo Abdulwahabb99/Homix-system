@@ -10,7 +10,13 @@ import ConfirmDeleteModal from "../ConfirmDeleteModal";
 import { useDeleteInventoryItemMutation } from "query/shipmentsInventory";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
-import { useShipmentsInventoryQuery, INVENTORY_PAGE_SIZE, type InventoryItem } from "query/shipmentsInventory";
+import {
+  exportShipmentsInventory,
+  useShipmentsInventoryQuery,
+  INVENTORY_PAGE_SIZE,
+  type InventoryItem,
+  type InventoryParams,
+} from "query/shipmentsInventory";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -190,7 +196,11 @@ const selectSx = {
   flex: "1 1 160px", minWidth: 0,
 };
 
-export default function InventoryPanel() {
+interface InventoryPanelProps {
+  onExporterChange?: (exporter: { run: () => Promise<void>; successMessage: string } | null) => void;
+}
+
+export default function InventoryPanel({ onExporterChange }: InventoryPanelProps) {
   const [page, setPage] = useState(1);
   const [codeSearch, setCodeSearch] = useState("");
   const [vendorFilter, setVendorFilter] = useState("");
@@ -207,12 +217,22 @@ export default function InventoryPanel() {
     return () => clearTimeout(timer);
   }, [codeSearch]);
 
-  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({
+  const inventoryParams = useMemo<InventoryParams>(() => ({
     page,
     productCode: debouncedCode || undefined,
     status: stockFilter === "available" ? "1" : stockFilter === "out" ? "2" : undefined,
     vendorName: vendorFilter || undefined,
-  });
+  }), [debouncedCode, page, stockFilter, vendorFilter]);
+  const { data, isLoading, isFetching } = useShipmentsInventoryQuery(inventoryParams);
+
+  const exportCurrentView = React.useCallback(
+    () => exportShipmentsInventory(inventoryParams),
+    [inventoryParams],
+  );
+  useEffect(() => {
+    onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير المخزون" });
+    return () => onExporterChange?.(null);
+  }, [exportCurrentView, onExporterChange]);
 
   const rawItems   = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;

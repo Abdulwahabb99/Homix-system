@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { shipmentKeys } from "./keys";
 
 export interface ReturnItem {
@@ -47,6 +48,14 @@ function buildQuery(p: ReturnsParams): string {
   if (p.status)        q.set("status",        p.status);
   if (p.sellerName)    q.set("sellerName",     p.sellerName);
   return q.toString();
+}
+
+export async function exportReturns(type: "vendor" | "customer", params: ReturnsParams): Promise<void> {
+  const query = new URLSearchParams(buildQuery(params));
+  query.delete("page");
+  query.delete("size");
+  const response = await axiosRequest.get(`/shipments/returns/${type}/export?${query}`, { responseType: "blob" });
+  downloadBlobResponse(response, `${type}-returns.xlsx`);
 }
 
 function normalizeResponse(data: any): ReturnsListResponse {

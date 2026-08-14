@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tansta
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { shipmentKeys } from "./keys";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 
 export interface InventoryItem {
   id: number;
@@ -57,6 +58,14 @@ function normalizeResponse(data: any): InventoryListResponse {
 export async function fetchShipmentsInventory(params: InventoryParams): Promise<InventoryListResponse> {
   const { data } = await axiosRequest.get(`/shipments/inventory?${buildQuery(params)}`);
   return normalizeResponse(data);
+}
+
+export async function exportShipmentsInventory(params: InventoryParams): Promise<void> {
+  const query = new URLSearchParams(buildQuery(params));
+  query.delete("page");
+  query.delete("size");
+  const response = await axiosRequest.get(`/shipments/inventory/export?${query}`, { responseType: "blob" });
+  downloadBlobResponse(response, "inventory.xlsx");
 }
 
 export function useShipmentsInventoryQuery(params: InventoryParams) {

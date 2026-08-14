@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Box, Button, IconButton, MenuItem, TextField } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -8,7 +8,6 @@ import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
-import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import {
   exportDeliveryAccounts,
   exportExpenseAccounts,
@@ -22,6 +21,15 @@ import {
 } from "query/shipmentsAccounts";
 
 const FONT = "'Cairo', sans-serif";
+
+export interface AccountsPanelExporter {
+  run: () => Promise<void>;
+  successMessage: string;
+}
+
+interface AccountsPanelProps {
+  onExporterChange?: (exporter: AccountsPanelExporter | null) => void;
+}
 
 const SUB_TABS = [
   { id: "deliveries", label: "حسابات التسليم" },
@@ -111,12 +119,11 @@ function ErrorBox({ message }: { message: string }) {
   );
 }
 
-function DeliveriesTab() {
+function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const [page, setPage] = useState(1);
   const [editItem, setEditItem] = useState<DeliveryAccountItem | null>(null);
   const [filters, setFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
-  const [isExporting, setIsExporting] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const items      = data?.items      ?? [];
@@ -126,17 +133,15 @@ function DeliveriesTab() {
   const setFilter = (field: keyof DeliveryFilterState) => (value: string) =>
     setFilters((current) => ({ ...current, [field]: value }));
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await exportDeliveryAccounts(appliedFilters);
-      NotificationMeassage("success", "تم تصدير حسابات التسليم");
-    } catch {
-      NotificationMeassage("error", "تعذّر تصدير حسابات التسليم");
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  const exportCurrentView = useCallback(
+    () => exportDeliveryAccounts(appliedFilters),
+    [appliedFilters],
+  );
+
+  useEffect(() => {
+    onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير حسابات التسليم" });
+    return () => onExporterChange?.(null);
+  }, [exportCurrentView, onExporterChange]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -202,13 +207,6 @@ function DeliveriesTab() {
           sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
         >
           إعادة ضبط
-        </Button>
-        <Button
-          onClick={handleExport}
-          disabled={isExporting}
-          sx={{ height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
-        >
-          {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
         </Button>
       </Box>
 
@@ -297,39 +295,24 @@ function DeliveriesTab() {
   );
 }
 
-function ExpensesTab() {
+function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
   const [page, setPage] = useState(1);
-  const [isExporting, setIsExporting] = useState(false);
   const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page });
   const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await exportExpenseAccounts();
-      NotificationMeassage("success", "تم تصدير المصروفات");
-    } catch {
-      NotificationMeassage("error", "تعذّر تصدير المصروفات");
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  const exportCurrentView = useCallback(() => exportExpenseAccounts(), []);
+
+  useEffect(() => {
+    onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير المصروفات" });
+    return () => onExporterChange?.(null);
+  }, [exportCurrentView, onExporterChange]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            sx={{ height: 34, fontFamily: FONT, fontSize: "12px" }}
-          >
-            {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
-          </Button>
-        </Box>
         <AddExpenseForm />
       </Box>
       {isLoading ? (
@@ -397,7 +380,7 @@ function ExpensesTab() {
   );
 }
 
-export default function AccountsPanel() {
+export default function AccountsPanel({ onExporterChange }: AccountsPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState("deliveries");
 
   return (
@@ -429,8 +412,8 @@ export default function AccountsPanel() {
         })}
       </Box>
 
-      {activeSubTab === "deliveries" && <DeliveriesTab />}
-      {activeSubTab === "expenses"   && <ExpensesTab />}
+      {activeSubTab === "deliveries" && <DeliveriesTab onExporterChange={onExporterChange} />}
+      {activeSubTab === "expenses"   && <ExpensesTab onExporterChange={onExporterChange} />}
     </Box>
   );
 }

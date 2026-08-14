@@ -17,7 +17,7 @@ import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFi
 import ShipmentsTable from "./components/ShipmentsTable";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
-import AccountsPanel from "./components/panels/AccountsPanel";
+import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
 import { usePermissions, type PermissionKey } from "shared/permissions";
 import ReportsPanel from "./components/panels/ReportsPanel";
 import {
@@ -293,6 +293,10 @@ export default function Shipments() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment]   = useState<ShipmentItem | null>(null);
   const [isExportLoading, setIsExportLoading]     = useState(false);
+  const [accountsExporter, setAccountsExporter] = useState<AccountsPanelExporter | null>(null);
+  const [returnsExporter, setReturnsExporter] = useState<AccountsPanelExporter | null>(null);
+  const [inventoryExporter, setInventoryExporter] = useState<AccountsPanelExporter | null>(null);
+  const [reportsExporter, setReportsExporter] = useState<AccountsPanelExporter | null>(null);
 
   // React Query
   const queryParams = React.useMemo(() => ({
@@ -364,7 +368,31 @@ export default function Shipments() {
   }, [navigate]);
 
   // Export
-  const handleExport = () => {
+  const handleExport = async () => {
+    const panelExporter = activeTab === "accounts"
+      ? accountsExporter
+      : activeTab === "returns"
+        ? returnsExporter
+        : activeTab === "inventory"
+          ? inventoryExporter
+          : activeTab === "reports"
+            ? reportsExporter
+            : null;
+    if (activeTab !== "shipments") {
+      if (!panelExporter) return;
+      setIsExportLoading(true);
+      try {
+        await panelExporter.run();
+        toast.success(panelExporter.successMessage);
+      } catch {
+        toast.error("حدث خطأ أثناء التصدير");
+      } finally {
+        setIsExportLoading(false);
+      }
+      return;
+    }
+
+    if (activeTab !== "shipments") return;
     const q = new URLSearchParams();
     if (operationCode)  q.set("operationCode",  operationCode);
     if (orderNumber)    q.set("orderNumber",    orderNumber);
@@ -384,14 +412,21 @@ export default function Shipments() {
 
     setIsExportLoading(true);
     // طلب GET واحد موثّق بالتوكن، ثم يُحفظ الملف من نفس الاستجابة — بلا تنقّل
-    axiosRequest
-      .get(`/shipments/export?${q}`, { responseType: "blob" })
-      .then((res) =>
-        downloadBlobResponse(res, `shipments-${moment().locale("en").format("YYYY-MM-DD")}.xlsx`)
-      )
-      .catch(() => toast.error("حدث خطأ أثناء التصدير"))
-      .finally(() => setIsExportLoading(false));
+    try {
+      const response = await axiosRequest.get(`/shipments/export?${q}`, { responseType: "blob" });
+      downloadBlobResponse(response, `shipments-${moment().locale("en").format("YYYY-MM-DD")}.xlsx`);
+    } catch {
+      toast.error("حدث خطأ أثناء التصدير");
+    } finally {
+      setIsExportLoading(false);
+    }
   };
+
+  const canExportActiveTab = activeTab === "shipments"
+    || (activeTab === "accounts" && accountsExporter !== null)
+    || (activeTab === "returns" && returnsExporter !== null)
+    || (activeTab === "inventory" && inventoryExporter !== null)
+    || (activeTab === "reports" && reportsExporter !== null);
 
   // Mutations
   const deleteShipment = () => {
@@ -432,11 +467,11 @@ export default function Shipments() {
       pageSubtitle="إدارة الشحنات، المرتجعات، المخزون، الحسابات، وتقارير الأداء"
       pageActions={
         <>
-          <Box
+          {canExportActiveTab && <Box
             component="button"
             type="button"
             title="تصدير"
-            onClick={handleExport}
+            onClick={() => void handleExport()}
             disabled={isExportLoading}
             sx={{
               display: "flex", alignItems: "center", gap: "5px",
@@ -453,7 +488,7 @@ export default function Shipments() {
               : <FileDownloadOutlinedIcon sx={{ fontSize: 17 }} />
             }
             تصدير
-          </Box>
+          </Box>}
           {!isVendor && (
             <Box
               component="button"
@@ -591,22 +626,22 @@ export default function Shipments() {
 
         {visitedTabs.has("returns") && (
           <Box id="shipment-tab-panel-returns" role="tabpanel" hidden={activeTab !== "returns"} sx={{ display: activeTab === "returns" ? "block" : "none" }}>
-            <MemoizedReturnsPanel />
+            <MemoizedReturnsPanel onExporterChange={setReturnsExporter} />
           </Box>
         )}
         {visitedTabs.has("inventory") && isTabVisible("inventory") && (
           <Box id="shipment-tab-panel-inventory" role="tabpanel" hidden={activeTab !== "inventory"} sx={{ display: activeTab === "inventory" ? "block" : "none" }}>
-            <MemoizedInventoryPanel />
+            <MemoizedInventoryPanel onExporterChange={setInventoryExporter} />
           </Box>
         )}
         {visitedTabs.has("accounts") && isTabVisible("accounts") && (
           <Box id="shipment-tab-panel-accounts" role="tabpanel" hidden={activeTab !== "accounts"} sx={{ display: activeTab === "accounts" ? "block" : "none" }}>
-            <MemoizedAccountsPanel />
+            <MemoizedAccountsPanel onExporterChange={setAccountsExporter} />
           </Box>
         )}
         {visitedTabs.has("reports") && (
           <Box id="shipment-tab-panel-reports" role="tabpanel" hidden={activeTab !== "reports"} sx={{ display: activeTab === "reports" ? "block" : "none" }}>
-            <MemoizedReportsPanel />
+            <MemoizedReportsPanel onExporterChange={setReportsExporter} />
           </Box>
         )}
       </Box>
