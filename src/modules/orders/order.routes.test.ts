@@ -590,7 +590,7 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
-      order: [["totalPrice", "DESC"]],
+      order: [["totalPrice", "DESC"], ["createdAt", "DESC"], ["id", "DESC"]],
     }));
   });
 
@@ -604,7 +604,7 @@ describe("orderRouter", () => {
 
     expect(response.status).toBe(200);
     expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
-      order: [["priority", "DESC"]],
+      order: [["priority", "DESC"], ["createdAt", "DESC"], ["id", "DESC"]],
     }));
     expect(response.body.data.items.map((item: { orderNumber: string }) => item.orderNumber)).toEqual(["31670", "31669"]);
   });

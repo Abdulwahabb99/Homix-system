@@ -288,11 +288,28 @@ const compareOrderEntries = (
   return right.item.id - left.item.id;
 };
 
-const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[string, "ASC" | "DESC"]> => {
-  const databaseEntries = sortEntries
-    .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
+const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[unknown, "ASC" | "DESC"]> => {
+  const effectiveEntries: OrderSortEntry[] = sortEntries.length > 0
+    ? sortEntries
+    : [["orderDate", -1]];
+  const databaseEntries = effectiveEntries.map(([field, direction]) => {
+    const databaseDirection = direction === -1 ? "DESC" : "ASC";
+    // Manual orders store the selected business date at midnight, while
+    // imported orders often include a time. Compare the calendar day first so
+    // a newly-created manual order is not buried below every import that day.
+    const expression = field === "orderDate"
+      ? fn("DATE", col("Order.orderDate"))
+      : field;
+    return [expression, databaseDirection] as [unknown, "ASC" | "DESC"];
+  });
+  const orderDateDirection = effectiveEntries.find(([field]) => field === "orderDate")?.[1];
+  const tieDirection = orderDateDirection === 1 ? "ASC" : "DESC";
 
-  return databaseEntries.length > 0 ? databaseEntries : [["orderDate", "DESC"]];
+  return [
+    ...databaseEntries,
+    ["createdAt", tieDirection],
+    ["id", tieDirection],
+  ];
 };
 
 const getOrderCollectionAmount = (order: Record<string, unknown>): number => {

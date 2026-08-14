@@ -57,6 +57,25 @@ const normalizeNumber = (value) => {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 };
 
+const resolveManualOrderDate = (value) => {
+  const raw = typeof value === "string" ? value.trim() : "";
+  const cameFromDateOnlyInput = /^\d{4}-\d{2}-\d{2}(?:T00:00:00(?:\.000)?Z)?$/.test(raw);
+  if (!cameFromDateOnlyInput) {
+    const parsed = moment(value);
+    return parsed.isValid() ? parsed.toDate() : new Date();
+  }
+
+  const nowInCairo = moment.tz("Africa/Cairo");
+  return moment.tz(raw.slice(0, 10), "YYYY-MM-DD", true, "Africa/Cairo")
+    .set({
+      hour: nowInCairo.hour(),
+      minute: nowInCairo.minute(),
+      second: nowInCairo.second(),
+      millisecond: nowInCairo.millisecond(),
+    })
+    .toDate();
+};
+
 const calculateAmountToCollect = ({
   subTotalPrice,
   shippingFees,
@@ -341,7 +360,9 @@ class OrderService {
           totalDiscounts: total_discounts,
         });
 
-        const orderDate = order.orderDate || order.created_at || new Date();
+        const orderDate = order.id
+          ? order.orderDate || order.created_at || new Date()
+          : resolveManualOrderDate(order.orderDate);
         const expectedDeliveryDate = resolveExpectedDeliveryDate({
           daysToDeliver: vendor?.daysToDeliver,
           expectedDeliveryDate: order.expectedDeliveryDate,
