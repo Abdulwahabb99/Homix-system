@@ -244,6 +244,13 @@ export const shipmentExpenseMutationSchema = z.object({
   type: z.coerce.number().int().positive(),
 });
 
+export const shipmentExpenseTypesMutationSchema = z.object({
+  options: z.array(z.object({
+    id: z.coerce.number().int().positive().optional(),
+    label: z.string().trim().min(1).max(150),
+  })).min(1).max(100),
+});
+
 export const shipmentPerformanceQuerySchema = z.object({
   endDate: dateString.optional(),
   period: z.enum(PERFORMANCE_PERIODS).default("daily"),

@@ -261,6 +261,10 @@ export class ShipmentService {
     return success(await this.shipmentRepository.createExpenseAccount(payload));
   }
 
+  public async updateExpenseTypes(options: Array<{ id?: number; label: string }>): Promise<Result<Array<{ id: number; label: string }>>> {
+    return success(await this.shipmentRepository.updateExpenseTypes(options));
+  }
+
   public async listShippingCompanies(search?: string): Promise<Result<ShippingCompanyListResponse>> {
     return success(await this.shipmentRepository.listShippingCompanies(search));
   }

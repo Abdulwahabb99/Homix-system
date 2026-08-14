@@ -83,6 +83,9 @@ export class TicketService {
     user: TicketRequestUser,
     vendorId?: number | null,
   ): Promise<Result<TicketDetails>> {
+    if (!(await this.ticketRepository.hasTicketType(payload.type))) {
+      throw new NotFoundError("Ticket type not found");
+    }
     const hasOrder = await this.ticketRepository.hasOrder(payload.orderId, vendorId);
     if (!hasOrder) {
       throw new NotFoundError("Order not found");
@@ -115,6 +118,13 @@ export class TicketService {
     }
 
     return success(ticket);
+  }
+
+  public async updateSettings(payload: {
+    quickReplies: Array<{ id?: number; label: string }>;
+    types: Array<{ id?: number; label: string }>;
+  }): Promise<Result<{ quickReplies: Array<{ id: number; label: string }>; types: Array<{ id: number; label: string }> }>> {
+    return success(await this.ticketRepository.updateSettings(payload));
   }
 
   public async listTickets(

@@ -11,6 +11,11 @@ export class TicketController {
     response.status(200).json({ data: unwrap(result), status: true });
   };
 
+  public updateSettings = async (request: Request, response: Response): Promise<void> => {
+    const result = await this.ticketService.updateSettings(request.body);
+    response.status(200).json({ data: unwrap(result), status: true });
+  };
+
   public lookupOrderByOperationNumber = async (request: Request, response: Response): Promise<void> => {
     const result = await this.ticketService.lookupOrderByOperationNumber(
       String(request.query.operationNumber ?? ""),

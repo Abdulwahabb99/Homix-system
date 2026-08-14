@@ -12,6 +12,7 @@ import {
   shipmentExpenseAccountsExportQuerySchema,
   shipmentExportQuerySchema,
   shipmentExpenseMutationSchema,
+  shipmentExpenseTypesMutationSchema,
   shipmentExpenseParamsSchema,
   shipmentExpenseAccountsQuerySchema,
   shipmentIdParamsSchema,
@@ -274,6 +275,13 @@ shipmentRouter.post(
   requirePermission("ship_edit"),
   validateRequest({ body: shipmentShippingCompanyMutationSchema }),
   asyncHandler(shipmentController.createShippingCompany),
+);
+
+shipmentRouter.put(
+  "/accounts/expense-types",
+  requirePermission("finance_settle"),
+  validateRequest({ body: shipmentExpenseTypesMutationSchema }),
+  asyncHandler(shipmentController.updateExpenseTypes),
 );
 
 /**

@@ -4,6 +4,13 @@ import { sequelize } from "../../infrastructure/database";
 import { USER_TYPES } from "../../../config/constants";
 import { buildLogMessage, getHistoryActorLabel } from "../orders/order.helpers";
 import {
+  getManagedOptionLabels,
+  listManagedOptions,
+  MANAGED_OPTION_GROUP,
+  replaceManagedOptions,
+  type ManagedOptionValue,
+} from "../settings/managed-options";
+import {
   OVERDUE_DAYS_THRESHOLD,
   TICKET_STATUS,
   TICKET_STATUS_ARABIC,
@@ -311,7 +318,7 @@ const getLatestReplyText = (
   return getText(matchedNotes[0]?.text);
 };
 
-const mapTicketSummary = (value: unknown): TicketSummary => {
+const mapTicketSummary = (value: unknown, typeLabels: Record<number, string> = TICKET_TYPE_ARABIC): TicketSummary => {
   const ticket = value && typeof value === "object" ? (value as PlainRecord) : {};
   const createdAt = toIsoString(ticket.createdAt);
   const closedAt = toIsoString(ticket.closedAt) || null;
@@ -333,18 +340,21 @@ const mapTicketSummary = (value: unknown): TicketSummary => {
     status,
     statusLabel: TICKET_STATUS_ARABIC[status] ?? String(status),
     type: (parseNumber(ticket.type) || TICKET_TYPE.DELIVERY_DELAY) as TicketType,
-    typeLabel: TICKET_TYPE_ARABIC[(parseNumber(ticket.type) || TICKET_TYPE.DELIVERY_DELAY) as TicketType] ?? "",
+    typeLabel: typeLabels[parseNumber(ticket.type) || TICKET_TYPE.DELIVERY_DELAY]
+      ?? TICKET_TYPE_ARABIC[(parseNumber(ticket.type) || TICKET_TYPE.DELIVERY_DELAY) as keyof typeof TICKET_TYPE_ARABIC]
+      ?? "",
   };
 };
 
 const mapTicketDetails = (
   value: unknown,
   history: TicketHistoryItem[] = [],
+  typeLabels: Record<number, string> = TICKET_TYPE_ARABIC,
 ): TicketDetails => {
   const ticket = value && typeof value === "object" ? (value as PlainRecord) : {};
 
   return {
-    ...mapTicketSummary(ticket),
+    ...mapTicketSummary(ticket, typeLabels),
     attachments: Array.isArray(ticket.attachments)
       ? (ticket.attachments as unknown[]).map((attachment) => mapTicketAttachment(attachment))
       : [],
@@ -510,7 +520,7 @@ const buildOrderWhere = (filters: {
 
 export class TicketRepository {
   public async getMeta(): Promise<TicketMetaResponse> {
-    const users = await userModel.findAll({
+    const [users, types, quickReplies] = await Promise.all([userModel.findAll({
       attributes: ["id", "firstName", "lastName"],
       order: [["firstName", "ASC"]],
       where: {
@@ -518,7 +528,7 @@ export class TicketRepository {
           [Op.ne]: USER_TYPES.VENDOR,
         },
       },
-    });
+    }), listManagedOptions(MANAGED_OPTION_GROUP.TICKET_TYPE), listManagedOptions(MANAGED_OPTION_GROUP.TICKET_QUICK_REPLY)]);
 
     return {
       assignees: users
@@ -528,11 +538,25 @@ export class TicketRepository {
         key: Number(key) as TicketSummary["status"],
         label,
       })),
-      types: Object.entries(TICKET_TYPE_ARABIC).map(([key, label]) => ({
-        key: Number(key) as TicketType,
-        label,
-      })),
+      quickReplies: quickReplies.map(({ id, label }) => ({ key: id, label })),
+      types: types.map(({ id, label }) => ({ key: id, label })),
     };
+  }
+
+  public async updateSettings(payload: {
+    quickReplies: Array<{ id?: number; label: string }>;
+    types: Array<{ id?: number; label: string }>;
+  }): Promise<{ quickReplies: ManagedOptionValue[]; types: ManagedOptionValue[] }> {
+    const [types, quickReplies] = await Promise.all([
+      replaceManagedOptions(MANAGED_OPTION_GROUP.TICKET_TYPE, payload.types),
+      replaceManagedOptions(MANAGED_OPTION_GROUP.TICKET_QUICK_REPLY, payload.quickReplies),
+    ]);
+    return { quickReplies, types };
+  }
+
+  public async hasTicketType(type: number): Promise<boolean> {
+    const types = await listManagedOptions(MANAGED_OPTION_GROUP.TICKET_TYPE);
+    return types.some((option) => option.id === type);
   }
 
   public async lookupOrderByOperationNumber(
@@ -630,23 +654,23 @@ export class TicketRepository {
       },
     ];
     const where = buildListWhere(filters);
-    const result = await ticketModel.findAndCountAll({
+    const [result, typeLabels] = await Promise.all([ticketModel.findAndCountAll({
       distinct: true,
       include,
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
       order: [["createdAt", "DESC"]],
       where,
-    });
+    }), getManagedOptionLabels(MANAGED_OPTION_GROUP.TICKET_TYPE)]);
 
-    const items = result.rows.map((row) => mapTicketSummary(toPlain(row)));
+    const items = result.rows.map((row) => mapTicketSummary(toPlain(row), typeLabels));
     const allRows = await ticketModel.findAll({
       distinct: true,
       include,
       order: [["createdAt", "DESC"]],
       where,
     });
-    const allItems = allRows.map((row) => mapTicketSummary(toPlain(row)));
+    const allItems = allRows.map((row) => mapTicketSummary(toPlain(row), typeLabels));
     const closedItems = allItems.filter((item) => item.status === TICKET_STATUS.CLOSED);
     const averageResolutionDays = closedItems.length > 0
       ? Math.round(
@@ -736,9 +760,11 @@ export class TicketRepository {
         .map((user) => [user.id, user]),
     );
 
+    const typeLabels = await getManagedOptionLabels(MANAGED_OPTION_GROUP.TICKET_TYPE);
     return mapTicketDetails(
       toPlain(ticket),
       logs.map((log) => mapTicketHistoryItem(toPlain(log), usersById)),
+      typeLabels,
     );
   }
 

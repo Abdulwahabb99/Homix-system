@@ -14,6 +14,7 @@ import {
   ticketOrderNumberLookupQuerySchema,
   ticketNoteParamsSchema,
   ticketNoteSchema,
+  ticketSettingsSchema,
   ticketUpdateSchema,
 } from "./ticket.schemas";
 import { TicketService } from "./ticket.service";
@@ -108,6 +109,12 @@ const requireTicketUpdatePermission: express.RequestHandler = (request, response
  *         description: Missing or invalid bearer token
  */
 ticketRouter.get("/meta", requirePermission("tickets_view"), asyncHandler(ticketController.getMeta));
+ticketRouter.put(
+  "/settings",
+  requireTicketWritePermission,
+  validateRequest({ body: ticketSettingsSchema }),
+  asyncHandler(ticketController.updateSettings),
+);
 
 /**
  * @swagger

@@ -1,12 +1,9 @@
 import type { Request } from "express";
 
-import type {
-  TICKET_STATUS,
-  TICKET_TYPE,
-} from "./ticket.constants";
+import type { TICKET_STATUS } from "./ticket.constants";
 
 export type TicketStatus = (typeof TICKET_STATUS)[keyof typeof TICKET_STATUS];
-export type TicketType = (typeof TICKET_TYPE)[keyof typeof TICKET_TYPE];
+export type TicketType = number;
 
 export type TicketUserSummary = {
   firstName: string;
@@ -124,6 +121,7 @@ export type TicketListResponse = {
 
 export type TicketMetaResponse = {
   assignees: TicketUserSummary[];
+  quickReplies: Array<{ key: number; label: string }>;
   statuses: Array<{ key: TicketStatus; label: string }>;
   types: Array<{ key: TicketType; label: string }>;
 };

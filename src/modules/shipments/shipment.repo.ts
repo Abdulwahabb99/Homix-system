@@ -3,6 +3,13 @@ import { Op, QueryTypes, fn, col, where } from "sequelize";
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
+import {
+  getManagedOptionLabels,
+  listManagedOptions,
+  MANAGED_OPTION_GROUP,
+  replaceManagedOptions,
+  type ManagedOptionValue,
+} from "../settings/managed-options";
 import { DELIVERY_BY, ORDER_SOURCE_ARABIC, ORDER_SOURCE, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
@@ -680,7 +687,7 @@ export class ShipmentRepository {
    * count plus the remaining lookups issued in parallel.
    */
   public async getMeta(): Promise<ShipmentMetaResponse> {
-    const [statusCountRows, shippingCompanies, inventoryCount, expensesCount] = await Promise.all([
+    const [statusCountRows, shippingCompanies, inventoryCount, expensesCount, expenseTypes] = await Promise.all([
       orderModel.findAll({
         attributes: ["shipmentStatus", [fn("COUNT", col("Order.id")), "rowCount"]],
         group: ["Order.shipmentStatus"],
@@ -690,6 +697,7 @@ export class ShipmentRepository {
       shippingCompanyModel.findAll({ order: [["name", "ASC"]] }),
       shipmentInventoryModel.count(),
       shipmentExpenseModel.count(),
+      listManagedOptions(MANAGED_OPTION_GROUP.EXPENSE_TYPE),
     ]);
 
     let shipmentsCount = 0;
@@ -711,7 +719,7 @@ export class ShipmentRepository {
       deliveryByOptions: Object.entries(DELIVERY_BY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       accountingStatuses: Object.entries(ACCOUNT_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       customerReturnStatuses: Object.entries(CUSTOMER_RETURN_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
-      expenseTypes: Object.entries(EXPENSE_TYPE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
+      expenseTypes,
       governorates: Object.entries(GOVERNORATE_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       inventoryStatuses: Object.entries(INVENTORY_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
       orderSources: Object.entries(ORDER_SOURCE).map(([, id]) => ({ id: Number(id), label: ORDER_SOURCE_LABELS[Number(id)] ?? String(id) })),
@@ -1468,9 +1476,9 @@ export class ShipmentRepository {
   }
 
   public async listExpenseAccounts(filters: ExpenseAccountsListQuery): Promise<ExpenseAccountsListResponse> {
-    const rows = await shipmentExpenseModel.findAll({
+    const [rows, expenseTypeLabels] = await Promise.all([shipmentExpenseModel.findAll({
       order: [["accountingDate", "DESC"], ["createdAt", "DESC"]],
-    });
+    }), getManagedOptionLabels(MANAGED_OPTION_GROUP.EXPENSE_TYPE)]);
     const items: ExpenseAccountItem[] = rows.map((row: unknown) => {
       const item = toPlain(row);
       const accountingStatus = toNumber(item.accountingStatus) || ACCOUNTING_STATUS.PENDING;
@@ -1483,7 +1491,7 @@ export class ShipmentRepository {
         id: toNumber(item.id),
         reason: toText(item.reason),
         type,
-        typeLabel: EXPENSE_TYPE_LABELS[type] ?? String(type),
+        typeLabel: expenseTypeLabels[type] ?? EXPENSE_TYPE_LABELS[type] ?? String(type),
       };
     });
     const filteredItems = items.filter((item: ExpenseAccountItem) => {
@@ -1579,6 +1587,7 @@ export class ShipmentRepository {
   }
 
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<ExpenseAccountItem> {
+    const expenseTypeLabels = await getManagedOptionLabels(MANAGED_OPTION_GROUP.EXPENSE_TYPE);
     const createdExpense = await shipmentExpenseModel.create({
       accountingDate: payload.accountingDate || null,
       accountingStatus: payload.accountingStatus ?? ACCOUNTING_STATUS.PENDING,
@@ -1596,7 +1605,7 @@ export class ShipmentRepository {
       id: toNumber(expense.id),
       reason: toText(expense.reason),
       type: toNumber(expense.type),
-      typeLabel: EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
+      typeLabel: expenseTypeLabels[toNumber(expense.type)] ?? EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
     };
   }
 
@@ -1611,6 +1620,7 @@ export class ShipmentRepository {
       ...(payload.accountingDate !== undefined ? { accountingDate: payload.accountingDate || null } : {}),
     });
     const expense = toPlain(expenseRecord);
+    const expenseTypeLabels = await getManagedOptionLabels(MANAGED_OPTION_GROUP.EXPENSE_TYPE);
     const accountingStatus = toNumber(expense.accountingStatus) || ACCOUNTING_STATUS.PENDING;
     return {
       accountingDate: toIsoString(expense.accountingDate),
@@ -1620,8 +1630,12 @@ export class ShipmentRepository {
       id: toNumber(expense.id),
       reason: toText(expense.reason),
       type: toNumber(expense.type),
-      typeLabel: EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
+      typeLabel: expenseTypeLabels[toNumber(expense.type)] ?? EXPENSE_TYPE_LABELS[toNumber(expense.type)] ?? String(expense.type),
     };
+  }
+
+  public updateExpenseTypes(options: Array<{ id?: number; label: string }>): Promise<ManagedOptionValue[]> {
+    return replaceManagedOptions(MANAGED_OPTION_GROUP.EXPENSE_TYPE, options);
   }
 
   public async deleteExpenseAccount(expenseId: number): Promise<boolean> {

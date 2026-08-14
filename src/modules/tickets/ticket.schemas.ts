@@ -5,7 +5,6 @@ import {
   DEFAULT_TICKET_PAGE_SIZE,
   MAX_TICKET_PAGE_SIZE,
   TICKET_STATUS,
-  TICKET_TYPE,
 } from "./ticket.constants";
 
 const positiveIntegerMessage = "Expected a positive integer";
@@ -13,17 +12,11 @@ const ticketStatusSchema = z.union([
   z.literal(TICKET_STATUS.OPEN),
   z.literal(TICKET_STATUS.CLOSED),
 ]);
-const ticketTypeSchema = z.union([
-  z.literal(TICKET_TYPE.DELIVERY_DELAY),
-  z.literal(TICKET_TYPE.CANCEL),
-  z.literal(TICKET_TYPE.MONEY_REFUND),
-  z.literal(TICKET_TYPE.PRODUCT_RETURN),
-  z.literal(TICKET_TYPE.DELIVERY_REJECTED),
-  z.literal(TICKET_TYPE.DELIVERY_FAILURE),
-  z.literal(TICKET_TYPE.MAINTENANCE),
-  z.literal(TICKET_TYPE.REPLACEMENT),
-  z.literal(TICKET_TYPE.VERIFICATION),
-]);
+const ticketTypeSchema = z.number().int().positive();
+const managedOptionSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
+  label: z.string().trim().min(1).max(150),
+});
 
 const optionalDateString = z.string().datetime({ offset: true }).or(z.string().date()).optional();
 
@@ -82,6 +75,11 @@ export const ticketCreateSchema = z.object({
   notes: z.string().trim().optional(),
   orderId: z.coerce.number().int().positive(positiveIntegerMessage),
   type: z.coerce.number().pipe(ticketTypeSchema),
+});
+
+export const ticketSettingsSchema = z.object({
+  quickReplies: z.array(managedOptionSchema).max(100),
+  types: z.array(managedOptionSchema).min(1).max(100),
 });
 
 export const ticketUpdateSchema = z.object({

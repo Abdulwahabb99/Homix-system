@@ -388,6 +388,57 @@ const ensureTicketTable = async (): Promise<void> => {
   });
 };
 
+const ensureManagedOptions = async (): Promise<void> => {
+  logStep("Ensuring dynamic expense and ticket options");
+  await ensureTable("managedOptions", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    optionGroup: { allowNull: false, type: DataTypes.STRING },
+    optionId: { allowNull: false, type: DataTypes.INTEGER },
+    label: { allowNull: false, type: DataTypes.STRING },
+    sortOrder: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    active: { allowNull: false, defaultValue: true, type: DataTypes.BOOLEAN },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+  });
+  await ensureIndex("managedOptions", "managed_options_group_id_idx", ["optionGroup", "optionId"], { unique: true });
+  await ensureIndex("managedOptions", "managed_options_group_active_sort_idx", ["optionGroup", "active", "sortOrder"]);
+  await runSql(`
+    INSERT INTO "managedOptions" ("optionGroup", "optionId", label, "sortOrder", active, "createdAt", "updatedAt") VALUES
+      ('expense_type', 1, 'شحن', 0, TRUE, NOW(), NOW()),
+      ('expense_type', 2, 'تغليف', 1, TRUE, NOW(), NOW()),
+      ('expense_type', 3, 'صيانة', 2, TRUE, NOW(), NOW()),
+      ('expense_type', 4, 'إيجار مخزن', 3, TRUE, NOW(), NOW()),
+      ('expense_type', 5, 'رواتب', 4, TRUE, NOW(), NOW()),
+      ('expense_type', 6, 'أخرى', 5, TRUE, NOW(), NOW()),
+      ('ticket_type', 1, 'تأخير في التوصيل', 0, TRUE, NOW(), NOW()),
+      ('ticket_type', 2, 'إلغاء', 1, TRUE, NOW(), NOW()),
+      ('ticket_type', 3, 'استرجاع الأموال', 2, TRUE, NOW(), NOW()),
+      ('ticket_type', 4, 'استرجاع منتج', 3, TRUE, NOW(), NOW()),
+      ('ticket_type', 5, 'رفض الاستلام', 4, TRUE, NOW(), NOW()),
+      ('ticket_type', 6, 'فشل في التوصيل', 5, TRUE, NOW(), NOW()),
+      ('ticket_type', 7, 'صيانة', 6, TRUE, NOW(), NOW()),
+      ('ticket_type', 8, 'استبدال', 7, TRUE, NOW(), NOW()),
+      ('ticket_type', 9, 'التحقق', 8, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 1, 'التوصيل خلال أسبوع', 0, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 2, 'التوصيل خلال 72 ساعة', 1, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 3, 'التوصيل خلال 48 ساعة', 2, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 4, 'ملغي', 3, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 5, 'تم استرداد المبلغ', 4, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 6, 'غير قابل للاسترداد', 5, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 7, 'لا يشمله الضمان', 6, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 8, 'غير صالح', 7, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 9, 'بسبب سوء الاستخدام', 8, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 10, 'قابل للإرجاع', 9, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 11, 'غير مقبول', 10, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 12, 'يعتمد على DC', 11, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 13, 'تم إبلاغ البائع', 12, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 14, 'استبدال', 13, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 15, 'تمت الموافقة على الإصلاح', 14, TRUE, NOW(), NOW()),
+      ('ticket_quick_reply', 16, 'تم التوصيل', 15, TRUE, NOW(), NOW())
+    ON CONFLICT ("optionGroup", "optionId") DO NOTHING;
+  `);
+};
+
 const normalizeShipmentData = async (): Promise<void> => {
   logStep("Normalizing shipment data and shipping companies");
 
@@ -967,6 +1018,7 @@ const main = async (): Promise<void> => {
   await ensureShipmentTables();
   await ensureDashboardTables();
   await ensureTicketTable();
+  await ensureManagedOptions();
   await normalizeShipmentData();
   await ensureConstraints();
   await ensureIndexes();

@@ -121,6 +121,10 @@ export class ShipmentController {
     response.status(201).json({ data: unwrap(await this.shipmentService.createExpenseAccount(request.body)), status: true });
   };
 
+  public updateExpenseTypes = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ data: unwrap(await this.shipmentService.updateExpenseTypes(request.body.options)), status: true });
+  };
+
   public listShippingCompanies = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.listShippingCompanies(request.query.search as string | undefined)), status: true });
   };
