@@ -5,6 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { env } from "../config/env";
 import { dashboardRouter } from "./dashboard";
 import { notificationRouter } from "./notification";
+import { navigationRouter } from "./navigation";
 import { orderRouter } from "./orders";
 import { ticketRouter } from "./tickets";
 
@@ -2428,6 +2429,7 @@ export const createMainRouter = (): express.Router => {
   router.use("/customers", verifyToken, isNotVendor, customerRouter);
   router.use("/shipments", verifyToken, isNotVendor, shipmentRouter);
   router.use("/notifications", verifyToken, notificationRouter);
+  router.use("/navigation", navigationRouter);
   router.use("/dashboard", dashboardRouter);
   router.use("/tickets", ticketRouter);
 

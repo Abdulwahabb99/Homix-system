@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { env } from "./config/env";
 import { createApp } from "./app";
 import { connectToDatabase } from "./infrastructure/database";
+import { navigationCountsEvents } from "./modules/navigation";
 import { logger } from "./shared/logger/logger";
 
 const createDefaultData = require("../config/defaultData.seeder");
@@ -29,6 +30,10 @@ const io = new Server(server, {
 });
 
 const registerSocketHandlers = (): void => {
+  navigationCountsEvents.on("changed", () => {
+    io.emit("navigationCountsChanged");
+  });
+
   io.on("connection", (socket) => {
     logger.info({ socketId: socket.id }, "Socket client connected");
 

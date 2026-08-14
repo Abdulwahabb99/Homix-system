@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { env } from "./config/env";
 import { createMainRouter } from "./modules/app-router";
+import { notifyNavigationCountsChanged } from "./modules/navigation";
 import { errorMiddleware, notFoundHandler, requestContextMiddleware } from "./shared/http";
 import { httpLogger } from "./shared/logger/http-logger";
 
@@ -49,6 +50,7 @@ export const createApp = (): Express => {
   app.use(cors());
   app.use(UPLOADS_ROUTE, express.static(path.resolve(env.UPLOADS_DIR)));
   app.use(applyCacheHeaders);
+  app.use(notifyNavigationCountsChanged);
   app.use(createMainRouter());
   app.use(notFoundHandler);
   app.use(handleJsonSyntaxError);
