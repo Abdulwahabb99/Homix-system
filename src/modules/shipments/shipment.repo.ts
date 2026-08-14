@@ -1715,28 +1715,28 @@ export class ShipmentRepository {
         .map(([label, deliveredOrdersCountValue]) => ({
           deliveredOrdersCount: deliveredOrdersCountValue,
           label,
-      })),
+        })),
       overview: {
         deliveredOrdersCount,
         totalGmv,
       },
       providers: Array.from(providerMap.values())
         .map((providerValue) => ({
-            deliveredOrdersCount: providerValue.deliveredOrdersCount,
-            deliveryBy: providerValue.deliveryBy,
-            deliveryByLabel: providerValue.deliveryByLabel,
-            returnsCount: providerValue.returnsCount,
-            shippingCompanyName: providerValue.shippingCompanyName,
-            totalGmv: providerValue.totalGmv,
-          }))
+          deliveredOrdersCount: providerValue.deliveredOrdersCount,
+          deliveryBy: providerValue.deliveryBy,
+          deliveryByLabel: providerValue.deliveryByLabel,
+          returnsCount: providerValue.returnsCount,
+          shippingCompanyName: providerValue.shippingCompanyName,
+          totalGmv: providerValue.totalGmv,
+        }))
         .sort((left, right) => right.deliveredOrdersCount - left.deliveredOrdersCount),
       vendors: Array.from(vendorMap.values())
         .map((vendorValue) => ({
-            deliveredOrdersCount: vendorValue.deliveredOrdersCount,
-            returnsCount: vendorValue.returnsCount,
-            sellerName: vendorValue.sellerName,
-            totalGmv: vendorValue.totalGmv,
-          }))
+          deliveredOrdersCount: vendorValue.deliveredOrdersCount,
+          returnsCount: vendorValue.returnsCount,
+          sellerName: vendorValue.sellerName,
+          totalGmv: vendorValue.totalGmv,
+        }))
         .sort((left, right) => right.deliveredOrdersCount - left.deliveredOrdersCount),
     };
   }
