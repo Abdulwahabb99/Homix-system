@@ -222,6 +222,21 @@ describe("ticketRouter", () => {
     expect(response.body.data.summary.total).toBe(1);
   });
 
+  it("exports the filtered tickets as an Excel workbook", async () => {
+    const response = await request(app)
+      .get("/tickets/export")
+      .query({ status: 1 });
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(response.headers["content-disposition"]).toContain("tickets.xlsx");
+    expect(ticketModel.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 1_000_000 }),
+    );
+  });
+
   it("adds a note to a ticket", async () => {
     const response = await request(app)
       .post("/tickets/4/notes")

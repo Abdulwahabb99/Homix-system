@@ -1015,6 +1015,30 @@ describe("shipmentRouter", () => {
     );
   });
 
+  it("exports delivery accounts as an Excel workbook", async () => {
+    const response = await request(app).get("/shipments/accounts/deliveries/export");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(response.headers["content-disposition"]).toContain("delivery-accounts.xlsx");
+    expect(orderModel.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 1_000_000 }),
+    );
+  });
+
+  it("exports expenses as an Excel workbook", async () => {
+    const response = await request(app).get("/shipments/accounts/expenses/export");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(response.headers["content-disposition"]).toContain("expenses.xlsx");
+    expect(shipmentExpenseModel.findAll).toHaveBeenCalled();
+  });
+
   it("creates shipment expenses", async () => {
     const response = await request(app).post("/shipments/accounts/expenses").send({
       amount: 150,

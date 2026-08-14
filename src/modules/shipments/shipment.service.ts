@@ -30,6 +30,7 @@ import type {
 } from "./shipment.types";
 import type { ShipmentMutationPayload, ShipmentRequestUser } from "./shipment.internal-types";
 import { RETURN_TO_VENDOR_STATUS, SHIPMENT_RETURN_TYPE } from "./shipment.constants";
+import { DELIVERY_BY } from "../../../config/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
 const ExcelJS = require("exceljs");
@@ -42,8 +43,9 @@ export class ShipmentService {
     await shipmentLegacyGateway.createShipment({
       ...normalizeOrderMutationPayload({
         ...normalizedPayload,
-        shippedFromInventory: true,
+        deliveryBy: DELIVERY_BY.HOMIX,
       }),
+      deliveryBy: DELIVERY_BY.HOMIX,
       shippedFromInventory: true,
     });
     return success({ message: "Shipment created successfully" });
