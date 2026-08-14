@@ -697,6 +697,11 @@ const ensureIndexes = async (): Promise<void> => {
      by shipmentStatus (the deliveries ledger pins it to DELIVERED). */
   await ensureIndex("orders", "orders_shipped_from_inventory_idx", ["shippedFromInventory"]);
   await ensureIndex("orders", "orders_shipped_from_inventory_status_idx", ["shippedFromInventory", "shipmentStatus"]);
+  await ensureIndex(
+    "logs",
+    "logs_order_status_history_idx",
+    ["entityType", "field", "entityId", "to", "createdAt"],
+  );
   await ensureIndex("orders", "orders_accounting_status_idx", ["accountingStatus"]);
   await ensureIndex("orders", "orders_accounting_date_idx", ["accountingDate"]);
   await ensureIndex("orders", "orders_schedule_status_idx", ["scheduleStatus"]);

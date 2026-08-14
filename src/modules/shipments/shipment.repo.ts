@@ -1,4 +1,4 @@
-import { Op, fn, col, where } from "sequelize";
+import { Op, QueryTypes, fn, col, where } from "sequelize";
 
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
@@ -1652,6 +1652,92 @@ export class ShipmentRepository {
       ...(vendorId ? { "$orderLines.product.vendor.id$": vendorId } : {}),
     };
 
+    const rangeStart = filters.startDate ? toDateRangeBoundary(filters.startDate, "start") : null;
+    const rangeEnd = filters.endDate ? toDateRangeBoundary(filters.endDate, "end") : null;
+    const reportDateOverrides = new Map<number, Date>();
+    const hasDateRange = Boolean(rangeStart || rangeEnd);
+
+    if (hasDateRange) {
+      const candidates = await sequelize.query<{ id: number; reportDate: Date | string }>(`
+        WITH performance_orders AS (
+          SELECT
+            o.id,
+            COALESCE(
+              (
+                SELECT l."createdAt"
+                FROM logs l
+                WHERE l."entityType" = 'order'
+                  AND l.action = 'update'
+                  AND l.field = 'shipmentStatus'
+                  AND l."entityId" = o.id
+                  AND l."to" = o."shipmentStatus"::text
+                ORDER BY l."createdAt" DESC
+                LIMIT 1
+              ),
+              CASE
+                WHEN o."shipmentStatus" = :deliveredStatus
+                  THEN COALESCE(o."deliveryDate", o."updatedAt", o."orderDate")
+                WHEN o."shipmentStatus" IN (:persistedReturnStatuses)
+                  THEN COALESCE(
+                    (
+                      SELECT COALESCE(sr."completedAt", sr."returnDate", sr."startedAt", sr."createdAt")
+                      FROM "shipmentReturns" sr
+                      WHERE sr."orderId" = o.id
+                        AND sr."returnType" = CASE
+                          WHEN o."shipmentStatus" = :returnedToVendorStatus THEN :vendorReturnType
+                          ELSE :customerReturnType
+                        END
+                        AND sr."deletedAt" IS NULL
+                      ORDER BY sr."createdAt" DESC
+                      LIMIT 1
+                    ),
+                    o."updatedAt",
+                    o."deliveryDate",
+                    o."orderDate"
+                  )
+                ELSE COALESCE(o."updatedAt", o."deliveryDate", o."orderDate")
+              END
+            ) AS "reportDate"
+          FROM orders o
+          WHERE o."deletedAt" IS NULL
+            AND o."shipmentStatus" IN (:performanceStatuses)
+            AND (
+              o."deliveryBy" = :homixDeliveryBy
+              OR (o."deliveryBy" IS NULL AND o."shippedFromInventory" IS TRUE)
+            )
+        )
+        SELECT id, "reportDate"
+        FROM performance_orders
+        WHERE "reportDate" IS NOT NULL
+          ${rangeStart ? "AND \"reportDate\" >= :rangeStart" : ""}
+          ${rangeEnd ? "AND \"reportDate\" <= :rangeEnd" : ""}
+      `, {
+        replacements: {
+          customerReturnType: SHIPMENT_RETURN_TYPE.FROM_CUSTOMER,
+          deliveredStatus: SHIPMENT_STATUS.DELIVERED,
+          homixDeliveryBy: DELIVERY_BY.HOMIX,
+          performanceStatuses,
+          persistedReturnStatuses: [
+            SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
+            SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+          ],
+          rangeEnd,
+          rangeStart,
+          returnedToVendorStatus: SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+          vendorReturnType: SHIPMENT_RETURN_TYPE.TO_VENDOR,
+        },
+        type: QueryTypes.SELECT,
+      });
+
+      for (const candidate of candidates) {
+        const reportDate = new Date(candidate.reportDate);
+        if (!Number.isNaN(reportDate.getTime())) {
+          reportDateOverrides.set(toNumber(candidate.id), reportDate);
+        }
+      }
+      whereClause.id = { [Op.in]: [...reportDateOverrides.keys()] };
+    }
+
     const orders = await orderModel.findAll({
       include: buildIncludes(),
       order: [["deliveryDate", "ASC"]],
@@ -1675,7 +1761,7 @@ export class ShipmentRepository {
       return { item, order: plainOrder };
     });
     const orderIds = unfilteredItems.map(({ item }) => item.id);
-    const [statusLogs, returnRecords] = orderIds.length > 0
+    const [statusLogs, returnRecords] = orderIds.length > 0 && !hasDateRange
       ? await Promise.all([
         logModel.findAll({
           order: [["createdAt", "ASC"]],
@@ -1716,12 +1802,11 @@ export class ShipmentRepository {
       }
     }
 
-    const rangeStart = filters.startDate ? toDateRangeBoundary(filters.startDate, "start") : null;
-    const rangeEnd = filters.endDate ? toDateRangeBoundary(filters.endDate, "end") : null;
     const items = unfilteredItems
       .map(({ item, order }) => {
         const shipmentStatus = item.shipmentStatus ?? 0;
-        const transitionDate = statusTransitionDates.get(`${item.id}::${shipmentStatus}`);
+        const transitionDate = reportDateOverrides.get(item.id)
+          ?? statusTransitionDates.get(`${item.id}::${shipmentStatus}`);
         const returnType = shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR
           ? SHIPMENT_RETURN_TYPE.TO_VENDOR
           : shipmentStatus === SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER

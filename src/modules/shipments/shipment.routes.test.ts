@@ -59,6 +59,8 @@ const legacyOrderService = {
   saveImportedOrders: jest.fn().mockResolvedValue(undefined),
 };
 
+const sequelizeQuery = jest.fn();
+
 jest.mock("../../../app/middlewares/protectApi", () => {
   return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     req.user = { id: 1, userType: "1" };
@@ -75,6 +77,7 @@ jest.mock("../../infrastructure/database", () => ({
   sequelize: {
     col: jest.fn((value: string) => value),
     fn: jest.fn((...args: string[]) => args.join(".")),
+    query: sequelizeQuery,
     where: jest.fn((_left: unknown, right: unknown) => right),
   },
 }));
@@ -206,6 +209,7 @@ const makeShipmentRecord = (overrides: Record<string, unknown> = {}) => {
 describe("shipmentRouter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    sequelizeQuery.mockResolvedValue([]);
     orderModel.count
       .mockResolvedValueOnce(156)
       .mockResolvedValueOnce(11)
@@ -1042,14 +1046,9 @@ describe("shipmentRouter", () => {
         shippedFromInventory: true,
       }),
     ]);
-    logModel.findAll.mockResolvedValueOnce([{
-      action: "update",
-      createdAt: "2026-08-14T18:26:17.292Z",
-      entityId: 47821,
-      entityType: "order",
-      field: "shipmentStatus",
-      from: null,
-      to: "4",
+    sequelizeQuery.mockResolvedValueOnce([{
+      id: 47821,
+      reportDate: "2026-08-14T18:26:17.292Z",
     }]);
 
     const response = await request(app).get("/shipments/performance").query({
@@ -1073,32 +1072,9 @@ describe("shipmentRouter", () => {
         shipmentStatus: 4,
         updatedAt: "2026-07-10T00:00:00.000Z",
       }),
-      makeShipment({
-        deliveryDate: "2026-06-20T00:00:00.000Z",
-        id: 9803,
-        shipmentStatus: 4,
-        updatedAt: "2026-06-20T00:00:00.000Z",
-      }),
     ]);
-    logModel.findAll.mockResolvedValueOnce([
-      {
-        action: "update",
-        createdAt: "2026-06-15T12:00:00.000Z",
-        entityId: 9802,
-        entityType: "order",
-        field: "shipmentStatus",
-        from: "3",
-        to: "4",
-      },
-      {
-        action: "update",
-        createdAt: "2026-07-01T12:00:00.000Z",
-        entityId: 9803,
-        entityType: "order",
-        field: "shipmentStatus",
-        from: "3",
-        to: "4",
-      },
+    sequelizeQuery.mockResolvedValueOnce([
+      { id: 9802, reportDate: "2026-06-15T12:00:00.000Z" },
     ]);
 
     const response = await request(app).get("/shipments/performance").query({
