@@ -40,7 +40,7 @@ function InventoryImage({ image, name }: { image: string | null; name: string })
   const isUrl = !!image && /^(https?:)?\/\//.test(image);
   return (
     <Box sx={{
-      height: 110, bgcolor: HX.surface2, display: "flex", alignItems: "center",
+      width: "100%", aspectRatio: "1 / 1", bgcolor: HX.surface2, display: "flex", alignItems: "center",
       justifyContent: "center", fontSize: "44px", position: "relative",
       borderBottom: `0.5px solid ${HX.border}`, overflow: "hidden",
     }}>
