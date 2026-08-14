@@ -37,19 +37,36 @@ function StockBadge({ available }: { available: boolean }) {
 }
 
 function InventoryImage({ image, name }: { image: string | null; name: string }) {
-  const isUrl = !!image && /^(https?:)?\/\//.test(image);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [image]);
+  const isAbsoluteUrl = !!image && /^(https?:|data:|blob:|\/\/)/i.test(image);
+  const isRelativeUrl = !!image && /^(\/|uploads\/)/i.test(image);
+  const baseUrl = String(process.env.REACT_APP_API_URL ?? "").replace(/\/+$/, "");
+  const imageUrl = isAbsoluteUrl
+    ? image
+    : isRelativeUrl
+      ? `${baseUrl}/${image.replace(/^\/+/, "")}`
+      : null;
+  const showImage = Boolean(imageUrl) && !failed;
   return (
     <Box sx={{
-      width: "100%", aspectRatio: "1 / 1", bgcolor: HX.surface2, display: "flex", alignItems: "center",
-      justifyContent: "center", fontSize: "44px", position: "relative",
-      borderBottom: `0.5px solid ${HX.border}`, overflow: "hidden",
+      width: 180, height: 180, mx: "auto", bgcolor: HX.surface2, position: "relative",
+      fontSize: "44px",
+      border: `0.5px solid ${HX.border}`, borderRadius: "10px", overflow: "hidden",
     }}>
-      {isUrl ? (
-        <Box component="img" src={image as string} alt={name} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : image ? (
-        <Box component="span" sx={{ lineHeight: 1 }}>{image}</Box>
+      {showImage ? (
+        <Box
+          component="img"
+          src={imageUrl as string}
+          alt=""
+          aria-label={name}
+          onError={() => setFailed(true)}
+          sx={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", maxWidth: "none", objectFit: "cover" }}
+        />
       ) : (
-        <Box component="span" sx={{ lineHeight: 1 }}>📦</Box>
+        <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box component="span" role="img" aria-label="لا توجد صورة" sx={{ lineHeight: 1 }}>📦</Box>
+        </Box>
       )}
     </Box>
   );
@@ -79,7 +96,7 @@ function InventoryCard({
       overflow: "hidden", transition: ".2s",
       "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transform: "translateY(-2px)" },
     }}>
-      <Box sx={{ position: "relative" }}>
+      <Box sx={{ position: "relative", pt: "12px" }}>
         <InventoryImage image={item.image} name={item.productName} />
         <Box sx={{ position: "absolute", top: 8, right: 8, display: "flex", gap: "4px" }}>
           <IconButton
