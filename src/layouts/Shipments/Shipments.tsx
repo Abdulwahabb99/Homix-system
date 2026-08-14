@@ -46,7 +46,11 @@ const DEFAULT_INVENTORY_PARAMS: InventoryParams = { page: 1 };
 const DEFAULT_ACCOUNTS_PARAMS: AccountsParams = {
   page: 1, accountingStatus: "", orderNumber: "", paymentMethod: "", settledDate: "",
 };
-const DEFAULT_PERFORMANCE_PARAMS: PerformanceParams = { startDate: "", endDate: "" };
+const DEFAULT_PERFORMANCE_PARAMS: PerformanceParams = {
+  endDate: moment().format("YYYY-MM-DD"),
+  period: "daily",
+  startDate: moment().startOf("month").format("YYYY-MM-DD"),
+};
 
 // Once a panel has been visited it stays mounted; memoization prevents an
 // unrelated main-tab click from rendering every hidden panel again.
