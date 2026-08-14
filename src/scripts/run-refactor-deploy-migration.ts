@@ -860,6 +860,9 @@ const recalculateOrderFines = async (): Promise<void> => {
         )
       )
     order by o.id asc, ol.id asc
+    ) eligible
+    order by eligible."orderDate" desc nulls last, eligible.id desc
+    ${finesLimit === null ? "" : `limit ${finesLimit}`}
   `, {
     replacements: { finalStatuses: FINAL_FINE_STATUSES },
     type: QueryTypes.SELECT,
