@@ -1642,7 +1642,12 @@ export class ShipmentRepository {
       SHIPMENT_STATUS.FAILED_DELIVERY,
     ]);
     const whereClause: Record<string | symbol, unknown> = {
-      deliveryBy: DELIVERY_BY.HOMIX,
+      [Op.or]: [
+        { deliveryBy: DELIVERY_BY.HOMIX },
+        // Legacy shipments used only shippedFromInventory. Keep them visible
+        // until their nullable deliveryBy value is naturally backfilled.
+        { deliveryBy: null, shippedFromInventory: true },
+      ],
       shipmentStatus: { [Op.in]: performanceStatuses },
       ...(vendorId ? { "$orderLines.product.vendor.id$": vendorId } : {}),
     };
@@ -1845,6 +1850,13 @@ export class ShipmentRepository {
 
     const plainShipmentBeforeUpdate = toPlain(shipment);
     const nextPayload = await this.normalizeShippingCompanyPayload(payload);
+    if (
+      !Object.prototype.hasOwnProperty.call(nextPayload, "deliveryBy")
+      && toNullableNumber(plainShipmentBeforeUpdate.deliveryBy) === null
+      && plainShipmentBeforeUpdate.shippedFromInventory === true
+    ) {
+      nextPayload.deliveryBy = DELIVERY_BY.HOMIX;
+    }
     /* A cleared <select>/<input> arrives as "", which is not null and so is put
        through the column validators — `shipmentType: ""` failed its isIn rule
        and the whole edit 500'd. Every nullable column here means "unset" by "". */

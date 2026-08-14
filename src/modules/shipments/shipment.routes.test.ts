@@ -1033,6 +1033,38 @@ describe("shipmentRouter", () => {
     }));
   });
 
+  it("includes legacy Homix shipments that have no deliveryBy value", async () => {
+    orderModel.findAll.mockResolvedValueOnce([
+      makeShipment({
+        deliveryBy: null,
+        id: 47821,
+        shipmentStatus: 4,
+        shippedFromInventory: true,
+      }),
+    ]);
+    logModel.findAll.mockResolvedValueOnce([{
+      action: "update",
+      createdAt: "2026-08-14T18:26:17.292Z",
+      entityId: 47821,
+      entityType: "order",
+      field: "shipmentStatus",
+      from: null,
+      to: "4",
+    }]);
+
+    const response = await request(app).get("/shipments/performance").query({
+      endDate: "2026-08-31",
+      period: "daily",
+      startDate: "2026-08-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.overview.deliveredOrdersCount).toBe(1);
+    expect(orderModel.findAll).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ shipmentStatus: expect.any(Object) }),
+    }));
+  });
+
   it("filters performance by the actual shipment status history date", async () => {
     orderModel.findAll.mockResolvedValueOnce([
       makeShipment({
