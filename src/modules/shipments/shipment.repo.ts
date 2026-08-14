@@ -600,23 +600,41 @@ export class ShipmentRepository {
     return nextPayload;
   }
 
+  /**
+   * Meta is fetched on every tab, so it must be cheap.
+   *
+   * The three tab counts used to be three sequential COUNT queries over the
+   * orders table, followed by the shipping companies — four round trips to a
+   * remote database for one small payload (~1.3s). They are now one grouped
+   * count plus the remaining lookups issued in parallel.
+   */
   public async getMeta(): Promise<ShipmentMetaResponse> {
-    const shipmentsCount = await orderModel.count({ where: { shippedFromInventory: true } });
-    const returnsToVendorCount = await orderModel.count({
-      where: {
-        shippedFromInventory: true,
-        shipmentStatus: SHIPMENT_STATUS.RETURNED_TO_VENDOR,
-      },
-    });
-    const returnsFromCustomerCount = await orderModel.count({
-      where: {
-        shippedFromInventory: true,
-        shipmentStatus: SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
-      },
-    });
-    const shippingCompanies = await shippingCompanyModel.findAll({
-      order: [["name", "ASC"]],
-    });
+    const [statusCountRows, shippingCompanies, inventoryCount, expensesCount] = await Promise.all([
+      orderModel.findAll({
+        attributes: ["shipmentStatus", [fn("COUNT", col("Order.id")), "rowCount"]],
+        group: ["Order.shipmentStatus"],
+        raw: true,
+        where: { shippedFromInventory: true },
+      }),
+      shippingCompanyModel.findAll({ order: [["name", "ASC"]] }),
+      shipmentInventoryModel.count(),
+      shipmentExpenseModel.count(),
+    ]);
+
+    let shipmentsCount = 0;
+    let returnsToVendorCount = 0;
+    let returnsFromCustomerCount = 0;
+    let deliveredCount = 0;
+
+    for (const row of statusCountRows as Array<Record<string, unknown>>) {
+      const rowCount = toNumber(row.rowCount);
+      const shipmentStatus = toNumber(row.shipmentStatus);
+      shipmentsCount += rowCount;
+
+      if (shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR) returnsToVendorCount += rowCount;
+      if (shipmentStatus === SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER) returnsFromCustomerCount += rowCount;
+      if (shipmentStatus === SHIPMENT_STATUS.DELIVERED) deliveredCount += rowCount;
+    }
 
     return {
       deliveryByOptions: Object.entries(DELIVERY_BY_LABELS).map(([id, label]) => ({ id: Number(id), label })),
@@ -638,9 +656,9 @@ export class ShipmentRepository {
       tabs: [
         { count: shipmentsCount, id: "shipments", label: "الشحنات" },
         { count: returnsToVendorCount + returnsFromCustomerCount, id: "returns", label: "المرتجعات" },
-        { id: "inventory", label: "المخزون" },
-        { id: "accounts", label: "الحسابات" },
-        { id: "performance", label: "تقارير الأداء" },
+        { count: toNumber(inventoryCount), id: "inventory", label: "المخزون" },
+        { count: toNumber(expensesCount) + deliveredCount, id: "accounts", label: "الحسابات" },
+        { count: deliveredCount, id: "performance", label: "تقارير الأداء" },
       ],
       vendorReturnStatuses: Object.entries(RETURN_TO_VENDOR_STATUS_LABELS).map(([id, label]) => ({ id: Number(id), label })),
     };
