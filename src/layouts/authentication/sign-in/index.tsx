@@ -110,7 +110,7 @@ function Basic() {
       .then(({ data: { notifications } }) => {
         const newsNotifications = notifications.map((notification) => ({
           ...notification,
-          readAt: notification.readAt ? new Date(notification.readAt) : null,
+          readAt: notification.readAt || null,
           orderId: notification.entityId,
         }));
         dispatch(setNotifications(newsNotifications));

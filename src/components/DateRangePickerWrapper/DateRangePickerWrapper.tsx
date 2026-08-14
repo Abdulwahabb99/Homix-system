@@ -424,8 +424,9 @@ const DateRangePickerWrapper = ({
 };
 
 DateRangePickerWrapper.propTypes = {
-  startDate: PropTypes.string.isRequired,
-  endDate: PropTypes.string.isRequired,
+  // Empty filters legitimately pass null; selected values may be strings or moments.
+  startDate: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+  endDate: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   handleDatesChange: PropTypes.func.isRequired,
   maxDaysRange: PropTypes.number,
   isDirectionRTL: PropTypes.bool,

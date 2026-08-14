@@ -190,7 +190,8 @@ export default function App() {
         .then(({ data: { notifications } }) => {
           const newsNotifications = notifications?.map((notification) => ({
             ...notification,
-            readAt: notification.readAt ? new Date(notification.readAt) : null,
+            // Redux state must stay serializable; keep API dates as ISO strings.
+            readAt: notification.readAt || null,
             orderId: notification.entityId,
           }));
 

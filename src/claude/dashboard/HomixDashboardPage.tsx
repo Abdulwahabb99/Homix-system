@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import "claude/dashboard/homixDashboard.css";
@@ -81,15 +81,11 @@ export default function HomixDashboardPage() {
   const pickerEnd   = toPickerStr(endDate)   || todayDMY;
 
   /* ── API ── */
-  const { data: cardsData, isLoading: cardsLoading, isError: cardsError, error } =
+  const { data: cardsData, isLoading: cardsLoading, isError: cardsError } =
     useDashboardCards(apiStartDate, apiEndDate);
 
   const { data: distData, isLoading: distLoading, isError: distError } =
     useDashboardSalesDistribution(apiStartDate, apiEndDate);
-
-  useEffect(() => {
-    console.log("[Dashboard Cards]", { cardsData, cardsLoading, cardsError, error });
-  }, [cardsData, cardsLoading, cardsError, error]);
 
   return (
     <DashboardLayout

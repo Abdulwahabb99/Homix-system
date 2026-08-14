@@ -137,7 +137,11 @@ export default function HomixNotificationsButton() {
               bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
             }}
           >
-            <MDTypography variant="subtitle2" fontWeight={800} color="text.primary" sx={{ fontSize: "0.95rem" }}>
+            <MDTypography
+              variant="subtitle2"
+              fontWeight="bold"
+              sx={{ fontSize: "0.95rem", color: "text.primary" }}
+            >
               الإشعارات
             </MDTypography>
             {unread.length > 0 && (
@@ -145,7 +149,7 @@ export default function HomixNotificationsButton() {
                 component="span"
                 variant="caption"
                 color="primary"
-                fontWeight={700}
+                fontWeight="bold"
                 sx={{
                   fontSize: "0.7rem",
                   py: 0.25,
@@ -163,7 +167,11 @@ export default function HomixNotificationsButton() {
             {notifications.length === 0 ? (
               <Box sx={{ py: 4, px: 2, textAlign: "center" }}>
                 <NotificationsNoneOutlinedIcon sx={{ fontSize: 48, color: "text.disabled", opacity: 0.5, mb: 1 }} />
-                <MDTypography variant="body2" color="text.secondary" display="block" sx={{ fontWeight: 600 }}>
+                <MDTypography
+                  variant="body2"
+                  display="block"
+                  sx={{ fontWeight: 600, color: "text.secondary" }}
+                >
                   لا توجد إشعارات
                 </MDTypography>
               </Box>

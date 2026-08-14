@@ -75,8 +75,8 @@ export default function CategoryDonutChart({ items, isLoading, isError }: Catego
               paddingAngle={0}
               stroke="none"
             >
-              {items.map((entry) => (
-                <Cell key={entry.label} fill={entry.color} />
+              {items.map((entry, index) => (
+                <Cell key={`${entry.label}-${entry.color}-${index}`} fill={entry.color} />
               ))}
             </Pie>
           </PieChart>
@@ -88,8 +88,8 @@ export default function CategoryDonutChart({ items, isLoading, isError }: Catego
       </div>
 
       <div className="h-donut-legend">
-        {items.map((c) => (
-          <div className="h-dleg" key={c.label}>
+        {items.map((c, index) => (
+          <div className="h-dleg" key={`${c.label}-${c.color}-${index}`}>
             <div className="h-dleg-dot" style={{ background: c.color }} />
             <div className="h-dleg-info">
               <div className="h-dleg-name">{c.label}</div>
