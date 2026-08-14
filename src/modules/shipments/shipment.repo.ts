@@ -1240,45 +1240,48 @@ export class ShipmentRepository {
   }
 
   public async listInventory(filters: InventoryListQuery, vendorId?: number | null): Promise<InventoryListResponse> {
-    const whereClause: Record<string, unknown> = {};
+    const whereClause: Record<string, unknown> = {
+      ...(filters.productCode
+        ? { productCode: { [Op.iLike]: `%${filters.productCode}%` } }
+        : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+    };
+    const vendorWhere: Record<string, unknown> = {
+      ...(vendorId ? { id: vendorId } : {}),
+      ...(filters.vendorName
+        ? { name: { [Op.iLike]: `%${filters.vendorName}%` } }
+        : {}),
+    };
+    const filterByVendor = Object.keys(vendorWhere).length > 0;
 
-    const rows = await shipmentInventoryModel.findAll({
+    const { count, rows } = await shipmentInventoryModel.findAndCountAll({
+      distinct: true,
       include: [
         {
           as: "product",
-          include: [{ as: "vendor", model: vendorModel, required: false }],
+          attributes: ["id", "image", "title", "variants", "vendorId"],
+          include: [{
+            as: "vendor",
+            attributes: ["id", "name"],
+            model: vendorModel,
+            required: filterByVendor,
+            ...(filterByVendor ? { where: vendorWhere } : {}),
+          }],
           model: productModel,
-          required: false,
+          required: filterByVendor,
         },
       ],
+      limit: filters.size,
+      offset: (filters.page - 1) * filters.size,
       order: [["updatedAt", "DESC"]],
       where: whereClause,
     });
 
-    const items: InventoryItem[] = rows.map((row: unknown) => buildInventoryItem(row)).filter((item: InventoryItem) => {
-      if (vendorId && item.vendorId !== vendorId) {
-        return false;
-      }
-      if (filters.vendorName && !item.vendorName.toLowerCase().includes(filters.vendorName.toLowerCase())) {
-        return false;
-      }
-      if (filters.productCode && !item.productCode.toLowerCase().includes(filters.productCode.toLowerCase())) {
-        return false;
-      }
-      if (filters.status && item.status !== filters.status) {
-        return false;
-      }
-      return true;
-    });
-
-    const start = (filters.page - 1) * filters.size;
-    const paginatedItems = items.slice(start, start + filters.size);
-
     return {
-      items: paginatedItems,
+      items: rows.map((row: unknown) => buildInventoryItem(row)),
       page: filters.page,
       size: filters.size,
-      totalCount: items.length,
+      totalCount: toNumber(count),
     };
   }
 

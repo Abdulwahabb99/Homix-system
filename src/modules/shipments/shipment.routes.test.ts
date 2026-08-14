@@ -27,6 +27,7 @@ const shipmentInventoryModel = {
   count: jest.fn(),
   create: jest.fn(),
   findAll: jest.fn(),
+  findAndCountAll: jest.fn(),
   findByPk: jest.fn(),
 };
 
@@ -305,7 +306,7 @@ describe("shipmentRouter", () => {
       name: "DHL",
       updatedAt: "2026-06-20T10:00:00.000Z",
     });
-    shipmentInventoryModel.findAll.mockResolvedValue([
+    const inventoryRows = [
       {
         color: "أبيض",
         costPrice: "2800",
@@ -322,7 +323,9 @@ describe("shipmentRouter", () => {
         quantity: 2,
         status: 1,
       },
-    ]);
+    ];
+    shipmentInventoryModel.findAll.mockResolvedValue(inventoryRows);
+    shipmentInventoryModel.findAndCountAll.mockResolvedValue({ count: inventoryRows.length, rows: inventoryRows });
     shipmentInventoryModel.create.mockResolvedValue({
       setDataValue: jest.fn(),
       toJSON: () => ({
@@ -972,9 +975,21 @@ describe("shipmentRouter", () => {
   });
 
   it("returns inventory cards derived from product variants", async () => {
-    const response = await request(app).get("/shipments/inventory").query({ page: 1, size: 20 });
+    const response = await request(app).get("/shipments/inventory").query({
+      page: 2,
+      productCode: "DRS",
+      size: 20,
+      status: 1,
+      vendorName: "دريسينج",
+    });
 
     expect(response.status).toBe(200);
+    expect(shipmentInventoryModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+      distinct: true,
+      limit: 20,
+      offset: 20,
+      where: expect.objectContaining({ status: 1 }),
+    }));
     expect(response.body.data.items[0]).toEqual(
       expect.objectContaining({
         productId: 321,
