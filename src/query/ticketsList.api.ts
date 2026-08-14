@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import type { Attachment, ChatMessage, Ticket, TicketHistoryEvent } from "layouts/Tickets/utils/constants";
 import { ticketKeys } from "query/keys";
@@ -12,6 +13,7 @@ import { ticketKeys } from "query/keys";
  */
 export const TICKETS_LIST_PATH = "/tickets";
 export const TICKETS_META_PATH = "/tickets/meta";
+export const TICKETS_EXPORT_PATH = "/tickets/export";
 
 /* ── شكل الاستجابة من الـ backend ───────────────────────────────────────── */
 
@@ -112,6 +114,20 @@ function buildTicketsListQueryParams(
   }
 
   return params;
+}
+
+export async function exportTickets(filters: TicketsListFilters): Promise<void> {
+  const params = buildTicketsListQueryParams(1, 1, filters);
+  delete params.page;
+  delete params.size;
+  const query = new URLSearchParams(
+    Object.entries(params).map(([key, value]) => [key, String(value)])
+  ).toString();
+  const response = await axiosRequest.get(
+    `${TICKETS_EXPORT_PATH}${query ? `?${query}` : ""}`,
+    { responseType: "blob" }
+  );
+  downloadBlobResponse(response, "tickets.xlsx");
 }
 
 /** قيم `status` في الـ API — يجب أن تتطابق مع الباكند */

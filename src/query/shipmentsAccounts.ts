@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
+import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { shipmentKeys } from "./keys";
 
@@ -53,6 +54,13 @@ function buildQuery(p: AccountsParams): string {
   return query.toString();
 }
 
+function buildExportQuery(p: Omit<AccountsParams, "page">): string {
+  const query = new URLSearchParams(buildQuery({ ...p, page: 1 }));
+  query.delete("page");
+  query.delete("size");
+  return query.toString();
+}
+
 function normalizeList<T>(data: any): { items: T[]; page: number; size: number; totalCount: number } {
   const raw = data?.data ?? data ?? {};
   return {
@@ -71,6 +79,22 @@ export async function fetchDeliveryAccounts(params: AccountsParams) {
 export async function fetchExpenseAccounts(params: AccountsParams) {
   const { data } = await axiosRequest.get(`/shipments/accounts/expenses?${buildQuery(params)}`);
   return normalizeList<ExpenseItem>(data);
+}
+
+export async function exportDeliveryAccounts(params: Omit<AccountsParams, "page">): Promise<void> {
+  const query = buildExportQuery(params);
+  const response = await axiosRequest.get(`/shipments/accounts/deliveries/export${query ? `?${query}` : ""}`, {
+    responseType: "blob",
+  });
+  downloadBlobResponse(response, "delivery-accounts.xlsx");
+}
+
+export async function exportExpenseAccounts(params: Omit<AccountsParams, "page"> = {}): Promise<void> {
+  const query = buildExportQuery(params);
+  const response = await axiosRequest.get(`/shipments/accounts/expenses/export${query ? `?${query}` : ""}`, {
+    responseType: "blob",
+  });
+  downloadBlobResponse(response, "expenses.xlsx");
 }
 
 export function useDeliveryAccountsQuery(params: AccountsParams) {

@@ -8,7 +8,10 @@ import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import {
+  exportDeliveryAccounts,
+  exportExpenseAccounts,
   useDeliveryAccountsQuery,
   useUpdateDeliveryAccountMutation,
   useDeleteExpenseMutation,
@@ -113,6 +116,7 @@ function DeliveriesTab() {
   const [editItem, setEditItem] = useState<DeliveryAccountItem | null>(null);
   const [filters, setFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
+  const [isExporting, setIsExporting] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const items      = data?.items      ?? [];
@@ -121,6 +125,18 @@ function DeliveriesTab() {
 
   const setFilter = (field: keyof DeliveryFilterState) => (value: string) =>
     setFilters((current) => ({ ...current, [field]: value }));
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportDeliveryAccounts(appliedFilters);
+      NotificationMeassage("success", "تم تصدير حسابات التسليم");
+    } catch {
+      NotificationMeassage("error", "تعذّر تصدير حسابات التسليم");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -186,6 +202,13 @@ function DeliveriesTab() {
           sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
         >
           إعادة ضبط
+        </Button>
+        <Button
+          onClick={handleExport}
+          disabled={isExporting}
+          sx={{ height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
+        >
+          {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
         </Button>
       </Box>
 
@@ -276,15 +299,39 @@ function DeliveriesTab() {
 
 function ExpensesTab() {
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
   const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page });
   const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportExpenseAccounts();
+      NotificationMeassage("success", "تم تصدير المصروفات");
+    } catch {
+      NotificationMeassage("error", "تعذّر تصدير المصروفات");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <AddExpenseForm />
+      <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            sx={{ height: 34, fontFamily: FONT, fontSize: "12px" }}
+          >
+            {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
+          </Button>
+        </Box>
+        <AddExpenseForm />
+      </Box>
       {isLoading ? (
         <SkeletonRows />
       ) : isError ? (

@@ -34,6 +34,7 @@ import { ticketKeys } from "query/keys";
 import {
   type TicketMetaOption,
   type TicketsListFilters,
+  exportTickets,
   formatTicketMetaAssigneeName,
   useTicketsList,
   useTicketsMeta,
@@ -253,6 +254,7 @@ export default function Tickets() {
   const [searchParams, setSearchParams] = useSearchParams();
   const TICKET_PAGE_SIZE = 10;
   const [ticketTablePage, setTicketTablePage] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [ticketTypes, setTicketTypes] = useState<string[]>(DEFAULT_TICKET_TYPES);
   const [quickReplies, setQuickReplies] = useState<string[]>(DEFAULT_QUICK_REPLIES);
@@ -285,6 +287,18 @@ export default function Tickets() {
     pageSize: TICKET_PAGE_SIZE,
     filters: appliedFilters,
   });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportTickets(appliedFilters);
+      NotificationMeassage("success", "تم تصدير التذاكر");
+    } catch {
+      NotificationMeassage("error", "تعذّر تصدير التذاكر");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const tickets = useMemo((): Ticket[] => {
     if (ticketsQuery.isError) return MOCK_TICKETS;
@@ -771,8 +785,8 @@ export default function Tickets() {
                   >
                     تذكرة جديدة
                   </Button>
-                  <Button size="small" sx={BTN_G}>
-                    تصدير Excel
+                  <Button size="small" sx={BTN_G} onClick={handleExport} disabled={isExporting}>
+                    {isExporting ? "جارٍ التصدير..." : "تصدير Excel"}
                   </Button>
                 </Stack>
               }
