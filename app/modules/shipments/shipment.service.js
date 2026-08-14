@@ -10,7 +10,24 @@ const Vendor = require("../vendor/vendor.model");
 const Customer = require("../customer/customer.model");
 const Note = require("../notes/notes.model");
 const User = require("../user/user.model");
-const { SHIPMENT_STATUS, USER_TYPES, DELIVERY_STATUS } = require("../../../config/constants");
+const {
+  SHIPMENT_STATUS,
+  USER_TYPES,
+  DELIVERY_STATUS,
+  PAYMENT_STATUS,
+} = require("../../../config/constants");
+const {
+  DELIVERY_BY_LABELS,
+  GOVERNORATE_LABELS,
+  PAYMENT_STATUS_LABELS,
+  SHIPMENT_SCHEDULE_STATUS_LABELS,
+} = require("../../../src/modules/shipments/shipment.constants");
+const {
+  buildShipmentNumber,
+  getShipmentAgingDays,
+  getShipmentStatusLabel,
+  getShipmentTypeLabel,
+} = require("../../../src/modules/shipments/shipment.helpers");
 const moment = require("moment-timezone");
 const ProductType = require("../product/productType.model");
 const Attachment = require("../attachments/attachment.model");
@@ -24,6 +41,24 @@ const EXPORT_SORT_FIELDS = new Set([
   "subTotalPrice",
   "totalPrice",
 ]);
+
+const formatExportDate = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = moment(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
+};
+
+// Governorate is stored as free text, but older rows hold the numeric id.
+const resolveGovernorateLabel = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  return GOVERNORATE_LABELS[value] || String(value);
+};
 
 const resolveExportSort = (sort, fallbackField = "orderDate") => {
   if (!sort || typeof sort !== "object" || Array.isArray(sort)) {
@@ -564,92 +599,29 @@ class ShipmentService {
     const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
     const worksheet = workbook.addWorksheet("shipments");
 
+    // Column order is fixed by the business spec, do not reshuffle.
     worksheet.columns = [
-      {
-        header: "كود العملية",
-        key: "code",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "رقم الطلب",
-        key: "orderNumber",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: " المنتج",
-        key: "productName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: " كود المنتج",
-        key: "productCode",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "الكمیة",
-        key: "quantity",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "البائع",
-        key: "vendorName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "حالة الطلب",
-        key: "status",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "طریقة الدفع",
-        key: "paymentStatus",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "تاریخ أمر التصنیع",
-        key: "orderDate",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "الأیام المنقضیة",
-        key: "daysPassed",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "سعر التكلفة",
-        key: "cost",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "سعر البیع",
-        key: "price",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "المسئول",
-        key: "userName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "النوع",
-        key: "productType",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-    ];
+      { header: "رقم العملية", key: "code" },
+      { header: "رقم الشحنة", key: "shipmentNumber" },
+      { header: "اسم العميل", key: "customerName" },
+      { header: "البائع", key: "vendorName" },
+      { header: "المحافظة", key: "governorate" },
+      { header: "حالة الشحنة", key: "shipmentStatus" },
+      { header: "نوع الشحنة", key: "shipmentType" },
+      { header: "حالة الدفع", key: "paymentStatus" },
+      { header: "التوصيل بواسطة", key: "deliveryBy" },
+      { header: "مبلغ التحصيل", key: "amountToCollect" },
+      { header: "تكلفة الشحن", key: "shippingCost" },
+      { header: "تاريخ الاستلام بالمخزن", key: "receivedInWarehouseDate" },
+      { header: "موعد الجدولة", key: "scheduledDeliveryDate" },
+      { header: "حالة الجدولة", key: "scheduleStatus" },
+      { header: "تاريخ التسليم الفعلي", key: "actualDeliveryDate" },
+      { header: "عداد الأيام", key: "daysCounter" },
+    ].map((column) => ({
+      ...column,
+      style: { alignment: { horizontal: "right" } },
+      width: 22,
+    }));
     const CHUNK_SIZE = 500;
     let offset = 0;
     let hasMore = true;
@@ -683,27 +655,10 @@ class ShipmentService {
             ],
           },
           {
-            model: Note,
-            as: "notesList",
-            required: false,
-            include: [
-              {
-                model: User,
-                as: "user",
-                required: false,
-                attributes: ["firstName", "lastName"],
-              },
-              {
-                model: Attachment,
-                as: "attachments",
-                required: false,
-              },
-            ],
-          },
-          {
             model: Customer,
             as: "customer",
             required: false,
+            attributes: ["id", "firstName", "lastName"],
           },
           {
             model: User,
@@ -719,35 +674,42 @@ class ShipmentService {
         subQuery: false,
       });
 
+      // One row per shipment, unlike the orders export which is per order line.
       for (const order of chunk) {
-        for (const line of order.orderLines) {
-          const variant = line.product.variants.find(
-            (variant) => String(variant.shopifyId) === String(line.variant_id)
-          );
-          worksheet.addRow({
-            code: order.code,
-            orderNumber: order.orderNumber,
-            productName: line.product.title,
-            quantity: line.quantity,
-            vendorName: line.product.vendor.name,
-            status: ORDER_STATUS_Arabic[order.status] || order.status,
-            paymentStatus:
-              PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
-            orderDate: order.PoDate
-              ? moment(order.PoDate).format("YYYY-MM-DD")
-              : "",
-            daysPassed: order.PoDate
-              ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
-              : "",
-            cost: line.cost,
-            price: line.price * line.quantity,
-            userName: order.user
-              ? `${order.user.firstName} ${order.user.lastName}`
-              : "",
-            productType: line.product?.type?.name || "",
-            productCode: variant ? variant.sku : "",
-          });
-        }
+        const customer = order.customer;
+        const vendor = order.orderLines?.[0]?.product?.vendor;
+        const amountToCollect =
+          Number(order.paymentStatus) === PAYMENT_STATUS.PAID
+            ? 0
+            : Number(order.toBeCollected || order.totalPrice) || 0;
+
+        worksheet.addRow({
+          actualDeliveryDate: formatExportDate(order.deliveryDate),
+          amountToCollect,
+          code: order.code,
+          customerName: customer
+            ? `${customer.firstName || ""} ${customer.lastName || ""}`.trim()
+            : "",
+          daysCounter:
+            getShipmentAgingDays(
+              order.shipmentStatus,
+              order.shippingReceiveDate,
+              order.deliveryDate,
+              order.updatedAt,
+            ) ?? "",
+          deliveryBy: DELIVERY_BY_LABELS[order.deliveryBy] || "",
+          governorate: resolveGovernorateLabel(order.governorate),
+          paymentStatus:
+            PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus || "",
+          receivedInWarehouseDate: formatExportDate(order.shippingReceiveDate),
+          scheduledDeliveryDate: formatExportDate(order.expectedDeliveryDate),
+          scheduleStatus: SHIPMENT_SCHEDULE_STATUS_LABELS[order.scheduleStatus] || "",
+          shipmentNumber: buildShipmentNumber(order),
+          shipmentStatus: getShipmentStatusLabel(order.shipmentStatus),
+          shipmentType: getShipmentTypeLabel(order.shipmentType),
+          shippingCost: Number(order.shippingFees) || 0,
+          vendorName: vendor?.name || "",
+        });
       }
       hasMore = chunk.length > 0;
       offset += CHUNK_SIZE;

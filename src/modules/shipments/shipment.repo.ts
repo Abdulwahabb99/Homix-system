@@ -33,6 +33,7 @@ import {
 import {
   buildShipmentNumber,
   buildUserName,
+  SHIPMENT_NUMBER_PREFIX,
   getDaysBetween,
   getShipmentAgingDays,
   getShipmentPriorityLabel,
@@ -151,6 +152,25 @@ const buildShipmentWhereClause = (
         where(fn("lower", col("Order.orderNumber")), { [Op.like]: `%${filters.orderNumber.toLowerCase()}%` }),
       ],
     });
+  }
+
+  // Shipment numbers are derived (SH + order number), so the filter is applied
+  // against the order number with the SH prefix stripped off.
+  if (filters.shipmentNumber) {
+    const orderNumberPart = filters.shipmentNumber
+      .trim()
+      .replace(new RegExp(`^${SHIPMENT_NUMBER_PREFIX}`, "i"), "")
+      .toLowerCase();
+
+    if (orderNumberPart) {
+      andConditions.push({
+        [Op.or]: [
+          where(fn("lower", col("Order.name")), { [Op.like]: `%${orderNumberPart}%` }),
+          where(fn("lower", col("Order.number")), { [Op.like]: `%${orderNumberPart}%` }),
+          where(fn("lower", col("Order.orderNumber")), { [Op.like]: `%${orderNumberPart}%` }),
+        ],
+      });
+    }
   }
 
   if (filters.orderSource) {
@@ -321,7 +341,7 @@ const mapShipmentListItem = (orderValue: unknown): ShipmentListItem => {
     sellerName: toText(vendor.name),
     shippingCompany: toNullableNumber(shippingCompanyRecord.id),
     shippingCompanyName,
-    shipmentNumber: buildShipmentNumber(order.id),
+    shipmentNumber: buildShipmentNumber(order),
     shipmentStatus: toNullableNumber(order.shipmentStatus),
     shipmentStatusLabel: getShipmentStatusLabel(order.shipmentStatus),
     shipmentType: toText(order.shipmentType),

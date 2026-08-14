@@ -1,0 +1,778 @@
+import { execFileSync } from "node:child_process";
+
+import moment from "moment";
+import { DataTypes, QueryTypes } from "sequelize";
+
+import { connectToDb, sequelize } from "../infrastructure/database";
+import { DashboardAggregateService } from "../modules/dashboard/dashboard-aggregate.service";
+import { DashboardRepository } from "../modules/dashboard/dashboard.repo";
+import { getPermissionTemplateForUserType } from "../../app/modules/user/user.permissions";
+import { normalizePermissions, toPlainRecord, toText } from "../../app/modules/user/user.helpers";
+
+const User = require("../../app/modules/user/user.model") as {
+  findAll: () => Promise<Array<Record<string, unknown>>>;
+};
+
+const queryInterface = sequelize.getQueryInterface();
+
+const FINAL_FINE_STATUSES = [4, 5, 8] as const;
+const DEFAULT_ORDER_PRIORITY = 1;
+const DEFAULT_ORDER_SOURCE = 1;
+
+const hasFlag = (flag: string): boolean => process.argv.includes(flag);
+
+const logStep = (message: string): void => {
+  // eslint-disable-next-line no-console
+  console.log(`\n==> ${message}`);
+};
+
+const printBranchDiffSummary = (): void => {
+  try {
+    const output = execFileSync(
+      "git",
+      ["diff", "--name-status", "develop...refactor", "--", "migrations", "src/scripts", "app/modules", "src/modules"],
+      { cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim();
+
+    if (!output) {
+      return;
+    }
+
+    const lines = output.split("\n");
+    // eslint-disable-next-line no-console
+    console.log(`Detected ${lines.length} changed files between develop and refactor`);
+    for (const line of lines.slice(0, 40)) {
+      // eslint-disable-next-line no-console
+      console.log(`  ${line}`);
+    }
+    if (lines.length > 40) {
+      // eslint-disable-next-line no-console
+      console.log(`  ... and ${lines.length - 40} more`);
+    }
+  } catch (_error) {
+    // Ignore branch diff failures in deployment environments without git metadata.
+  }
+};
+
+const normalizeNumber = (value: unknown): number => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+};
+
+const calculateExceededDays = ({
+  orderDate,
+  daysToDeliver,
+  expectedDeliveryDate,
+  endDate = new Date(),
+}: {
+  orderDate?: unknown;
+  daysToDeliver?: unknown;
+  expectedDeliveryDate?: unknown;
+  endDate?: Date;
+}): number => {
+  const endMoment = moment(endDate);
+  if (!endMoment.isValid()) {
+    return 0;
+  }
+
+  const deliveryWindow = normalizeNumber(daysToDeliver);
+  if (orderDate && deliveryWindow > 0) {
+    const startMoment = moment(orderDate);
+    if (startMoment.isValid()) {
+      return Math.max(
+        0,
+        endMoment.clone().startOf("day").diff(startMoment.clone().startOf("day"), "days") - deliveryWindow,
+      );
+    }
+  }
+
+  if (expectedDeliveryDate) {
+    const expectedMoment = moment(expectedDeliveryDate);
+    if (expectedMoment.isValid()) {
+      return Math.max(
+        0,
+        endMoment.clone().startOf("day").diff(expectedMoment.clone().startOf("day"), "days"),
+      );
+    }
+  }
+
+  return 0;
+};
+
+const calculateOrderFine = ({
+  baseAmount,
+  daysToDeliver,
+  orderDate,
+  expectedDeliveryDate,
+  endDate = new Date(),
+}: {
+  baseAmount?: unknown;
+  daysToDeliver?: unknown;
+  orderDate?: unknown;
+  expectedDeliveryDate?: unknown;
+  endDate?: Date;
+}): number => {
+  const exceededDays = calculateExceededDays({
+    daysToDeliver,
+    endDate,
+    expectedDeliveryDate,
+    orderDate,
+  });
+
+  if (exceededDays < 1) {
+    return 0;
+  }
+
+  return Math.round(normalizeNumber(baseAmount) * 0.01 * exceededDays * 100) / 100;
+};
+
+const ensureTable = async (tableName: string, columns: Record<string, object>): Promise<void> => {
+  const tables = (await queryInterface.showAllTables()) as Array<string | { tableName?: string }>;
+  const normalizedTables = tables.map((table) => {
+    if (typeof table === "string") {
+      return table;
+    }
+    return String(table.tableName ?? table);
+  });
+
+  if (!normalizedTables.includes(tableName)) {
+    await queryInterface.createTable(tableName, columns as never);
+  }
+};
+
+const ensureColumn = async (
+  tableName: string,
+  columnName: string,
+  columnDefinition: object,
+): Promise<void> => {
+  const table = await queryInterface.describeTable(tableName);
+  if (!(columnName in table)) {
+    await queryInterface.addColumn(tableName, columnName, columnDefinition as never);
+  }
+};
+
+const ensureIndex = async (
+  tableName: string,
+  indexName: string,
+  fields: string[],
+  options: Record<string, unknown> = {},
+): Promise<void> => {
+  const indexes = (await queryInterface.showIndex(tableName)) as Array<{ name?: string }>;
+  if (!indexes.some((index) => index.name === indexName)) {
+    await queryInterface.addIndex(tableName, fields, {
+      name: indexName,
+      ...options,
+    });
+  }
+};
+
+const runSql = async (sql: string): Promise<void> => {
+  await sequelize.query(sql);
+};
+
+const ensureCoreColumns = async (): Promise<void> => {
+  logStep("Ensuring refactor columns");
+
+  await ensureColumn("orders", "orderSource", {
+    allowNull: true,
+    defaultValue: DEFAULT_ORDER_SOURCE,
+    type: DataTypes.INTEGER,
+  });
+  await ensureColumn("orders", "priority", {
+    allowNull: false,
+    defaultValue: DEFAULT_ORDER_PRIORITY,
+    type: DataTypes.INTEGER,
+  });
+  await ensureColumn("orders", "fine", {
+    allowNull: true,
+    defaultValue: 0,
+    type: DataTypes.DECIMAL,
+  });
+  await ensureColumn("orders", "deliveryBy", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+  await ensureColumn("orders", "scheduleStatus", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+
+  await ensureColumn("vendors", "accountManagerUserId", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+
+  await ensureColumn("users", "roleName", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "accountStatus", { allowNull: false, defaultValue: "active", type: DataTypes.STRING });
+  await ensureColumn("users", "phoneNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "jobTitle", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "salary", { allowNull: true, type: DataTypes.DECIMAL });
+  await ensureColumn("users", "bankName", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "bankAccountType", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "bankAccountHolderName", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "bankAccountNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "walletNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "instaPayNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("users", "permissions", { allowNull: false, defaultValue: {}, type: DataTypes.JSON });
+  await ensureColumn("users", "lastSeenAt", { allowNull: true, type: DataTypes.DATE });
+  await ensureColumn("users", "lastPasswordChangeAt", { allowNull: true, type: DataTypes.DATE });
+
+  await ensureColumn("factories", "contactPersonRole", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "joinDate", { allowNull: true, type: DataTypes.DATEONLY });
+  await ensureColumn("factories", "bankName", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "bankAccountType", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "bankAccountHolderName", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "bankAccountNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "walletNumber", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "walletProvider", { allowNull: true, type: DataTypes.STRING });
+  await ensureColumn("factories", "instapayNumber", { allowNull: true, type: DataTypes.STRING });
+
+  await ensureColumn("attachments", "attachmentType", { allowNull: true, type: DataTypes.INTEGER });
+  await ensureColumn("attachments", "verificationStatus", { allowNull: true, type: DataTypes.INTEGER });
+  await ensureColumn("attachments", "issuedAt", { allowNull: true, type: DataTypes.DATEONLY });
+  await ensureColumn("attachments", "expiresAt", { allowNull: true, type: DataTypes.DATEONLY });
+
+  await queryInterface.changeColumn("orders", "deliveryBy", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  }).catch(() => undefined);
+};
+
+const ensureShipmentTables = async (): Promise<void> => {
+  logStep("Ensuring shipment manual tables");
+
+  await ensureTable("shipmentInventoryItems", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    productId: { allowNull: true, type: DataTypes.INTEGER },
+    productCode: { allowNull: false, type: DataTypes.STRING },
+    color: { allowNull: true, defaultValue: "", type: DataTypes.STRING },
+    size: { allowNull: true, defaultValue: "", type: DataTypes.STRING },
+    quantity: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    costPrice: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL },
+    status: { allowNull: false, defaultValue: 1, type: DataTypes.INTEGER },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+    deletedAt: { allowNull: true, type: DataTypes.DATE },
+  });
+  await ensureColumn("shipmentInventoryItems", "productId", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+
+  await ensureTable("shipmentExpenses", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    type: { allowNull: false, defaultValue: 6, type: DataTypes.INTEGER },
+    amount: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL },
+    reason: { allowNull: false, type: DataTypes.TEXT },
+    accountingStatus: { allowNull: false, defaultValue: 1, type: DataTypes.INTEGER },
+    accountingDate: { allowNull: true, type: DataTypes.DATE },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+    deletedAt: { allowNull: true, type: DataTypes.DATE },
+  });
+
+  await ensureTable("shipmentReturns", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    orderId: { allowNull: false, type: DataTypes.INTEGER },
+    returnType: { allowNull: false, type: DataTypes.INTEGER },
+    status: { allowNull: false, type: DataTypes.INTEGER },
+    reason: { allowNull: true, type: DataTypes.TEXT },
+    returnDate: { allowNull: true, type: DataTypes.DATE },
+    startedAt: { allowNull: false, type: DataTypes.DATE },
+    completedAt: { allowNull: true, type: DataTypes.DATE },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+    deletedAt: { allowNull: true, type: DataTypes.DATE },
+  });
+
+  await ensureTable("shippingCompanies", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    name: { allowNull: false, type: DataTypes.STRING, unique: true },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+    deletedAt: { allowNull: true, type: DataTypes.DATE },
+  });
+};
+
+const ensureDashboardTables = async (): Promise<void> => {
+  logStep("Ensuring dashboard aggregate tables");
+
+  await ensureTable("dashboardDailyMetrics", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    activeMakers: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    activeProducts: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    deliveredOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    inProgressOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    metricDate: { allowNull: false, type: DataTypes.DATEONLY },
+    canceledOrRefundedOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    pendingOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    role: { allowNull: false, type: DataTypes.STRING },
+    scopeId: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalSales: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL(14, 2) },
+    vendorId: { allowNull: true, type: DataTypes.INTEGER },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+  });
+  await ensureColumn("dashboardDailyMetrics", "inProgressOrders", {
+    allowNull: false,
+    defaultValue: 0,
+    type: DataTypes.INTEGER,
+  });
+  await ensureColumn("dashboardDailyMetrics", "canceledOrRefundedOrders", {
+    allowNull: false,
+    defaultValue: 0,
+    type: DataTypes.INTEGER,
+  });
+
+  await ensureTable("dashboardDailyProductSales", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    metricDate: { allowNull: false, type: DataTypes.DATEONLY },
+    productId: { allowNull: false, type: DataTypes.INTEGER },
+    productTitle: { allowNull: false, type: DataTypes.TEXT },
+    totalOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalQuantity: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalSales: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL(14, 2) },
+    vendorId: { allowNull: false, type: DataTypes.INTEGER },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+  });
+
+  await ensureTable("dashboardDailyCategorySales", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    categoryId: { allowNull: false, type: DataTypes.INTEGER },
+    categoryTitle: { allowNull: false, type: DataTypes.TEXT },
+    metricDate: { allowNull: false, type: DataTypes.DATEONLY },
+    role: { allowNull: false, type: DataTypes.STRING },
+    scopeId: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalOrders: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalQuantity: { allowNull: false, defaultValue: 0, type: DataTypes.INTEGER },
+    totalSales: { allowNull: false, defaultValue: 0, type: DataTypes.DECIMAL(14, 2) },
+    vendorId: { allowNull: true, type: DataTypes.INTEGER },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+  });
+};
+
+const ensureTicketTable = async (): Promise<void> => {
+  logStep("Ensuring tickets table");
+
+  await ensureTable("tickets", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    orderId: { allowNull: false, type: DataTypes.INTEGER },
+    type: { allowNull: false, type: DataTypes.INTEGER },
+    status: { allowNull: false, defaultValue: 1, type: DataTypes.INTEGER },
+    assignedToUserId: { allowNull: true, type: DataTypes.INTEGER },
+    createdByUserId: { allowNull: true, type: DataTypes.INTEGER },
+    notes: { allowNull: true, type: DataTypes.TEXT },
+    closedAt: { allowNull: true, type: DataTypes.DATE },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+    deletedAt: { allowNull: true, type: DataTypes.DATE },
+  });
+};
+
+const normalizeShipmentData = async (): Promise<void> => {
+  logStep("Normalizing shipment data and shipping companies");
+
+  await runSql(`
+    INSERT INTO "shippingCompanies" ("name", "createdAt", "updatedAt")
+    SELECT source."name", NOW(), NOW()
+    FROM (
+      SELECT MIN(TRIM("shippingCompany")) AS "name"
+      FROM orders
+      WHERE "shippingCompany" IS NOT NULL
+        AND TRIM("shippingCompany") <> ''
+        AND "deletedAt" IS NULL
+      GROUP BY LOWER(TRIM("shippingCompany"))
+    ) AS source
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM "shippingCompanies" company
+      WHERE LOWER(company."name") = LOWER(source."name")
+        AND company."deletedAt" IS NULL
+    );
+  `);
+
+  await runSql(`
+    UPDATE orders AS "Order"
+    SET "shippingCompany" = company."name"
+    FROM "shippingCompanies" company
+    WHERE "Order"."deletedAt" IS NULL
+      AND company."deletedAt" IS NULL
+      AND "Order"."shippingCompany" IS NOT NULL
+      AND TRIM("Order"."shippingCompany") <> ''
+      AND LOWER(TRIM("Order"."shippingCompany")) = LOWER(company."name");
+  `);
+
+  await runSql(`
+    ALTER TABLE "shipmentInventoryItems"
+    ALTER COLUMN "status" TYPE INTEGER
+    USING (
+      CASE
+        WHEN "status"::text IN ('1', '2') THEN "status"::integer
+        WHEN LOWER(COALESCE("status"::text, '')) = 'instock' THEN 1
+        WHEN LOWER(COALESCE("status"::text, '')) = 'outofstock' THEN 2
+        ELSE 1
+      END
+    );
+  `);
+
+  await runSql(`
+    ALTER TABLE "shipmentExpenses"
+    ALTER COLUMN "type" TYPE INTEGER
+    USING (
+      CASE
+        WHEN "type"::text IN ('1', '2', '3', '4', '5', '6') THEN "type"::integer
+        WHEN COALESCE("type"::text, '') = 'شحن' THEN 1
+        WHEN COALESCE("type"::text, '') = 'تغليف' THEN 2
+        WHEN COALESCE("type"::text, '') = 'صيانة' THEN 3
+        WHEN COALESCE("type"::text, '') = 'إيجار مخزن' THEN 4
+        WHEN COALESCE("type"::text, '') = 'رواتب' THEN 5
+        WHEN COALESCE("type"::text, '') = 'أخرى' THEN 6
+        WHEN LOWER(COALESCE("type"::text, '')) = 'shipping' THEN 1
+        WHEN LOWER(COALESCE("type"::text, '')) = 'packaging' THEN 2
+        WHEN LOWER(COALESCE("type"::text, '')) = 'maintenance' THEN 3
+        WHEN LOWER(COALESCE("type"::text, '')) IN ('warehouse_rent', 'warehouse rent') THEN 4
+        WHEN LOWER(COALESCE("type"::text, '')) = 'salaries' THEN 5
+        WHEN LOWER(COALESCE("type"::text, '')) = 'other' THEN 6
+        ELSE 6
+      END
+    );
+  `);
+
+  await runSql(`
+    ALTER TABLE "shipmentExpenses"
+    ALTER COLUMN "accountingStatus" TYPE INTEGER
+    USING (
+      CASE
+        WHEN "accountingStatus"::text IN ('1', '2') THEN "accountingStatus"::integer
+        WHEN LOWER(COALESCE("accountingStatus"::text, '')) = 'pending' THEN 1
+        WHEN LOWER(COALESCE("accountingStatus"::text, '')) = 'settled' THEN 2
+        ELSE 1
+      END
+    );
+  `);
+
+  await runSql(`
+    DO $$
+    DECLARE
+      has_product_name_column boolean;
+    BEGIN
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'shipmentInventoryItems'
+          AND column_name = 'productName'
+      ) INTO has_product_name_column;
+
+      IF has_product_name_column THEN
+        UPDATE "shipmentInventoryItems" AS inventory
+        SET "productId" = product.id
+        FROM products AS product
+        WHERE inventory."productId" IS NULL
+          AND inventory."deletedAt" IS NULL
+          AND product."deletedAt" IS NULL
+          AND (
+            EXISTS (
+              SELECT 1
+              FROM json_array_elements(COALESCE(product.variants, '[]'::json)) AS variant
+              WHERE LOWER(COALESCE(variant->>'sku', '')) = LOWER(COALESCE(inventory."productCode", ''))
+            )
+            OR LOWER(COALESCE(product.title, '')) = LOWER(COALESCE(inventory."productName", ''))
+          );
+      ELSE
+        UPDATE "shipmentInventoryItems" AS inventory
+        SET "productId" = product.id
+        FROM products AS product
+        WHERE inventory."productId" IS NULL
+          AND inventory."deletedAt" IS NULL
+          AND product."deletedAt" IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM json_array_elements(COALESCE(product.variants, '[]'::json)) AS variant
+            WHERE LOWER(COALESCE(variant->>'sku', '')) = LOWER(COALESCE(inventory."productCode", ''))
+          );
+      END IF;
+    END
+    $$;
+  `);
+
+  await runSql(`ALTER TABLE orders ALTER COLUMN "orderSource" SET DEFAULT 1;`);
+  await runSql(`ALTER TABLE orders ALTER COLUMN "priority" SET DEFAULT 1;`);
+  await runSql(`ALTER TABLE "shipmentInventoryItems" ALTER COLUMN "status" SET DEFAULT 1;`);
+  await runSql(`ALTER TABLE "shipmentExpenses" ALTER COLUMN "type" SET DEFAULT 6;`);
+  await runSql(`ALTER TABLE "shipmentExpenses" ALTER COLUMN "accountingStatus" SET DEFAULT 1;`);
+
+  await runSql(`
+    UPDATE orders
+    SET "orderSource" = CASE
+      WHEN COALESCE(NULLIF(TRIM("shopifyId"), ''), 'custom') <> 'custom' THEN 2
+      ELSE 1
+    END
+    WHERE "deletedAt" IS NULL
+      AND ("orderSource" IS NULL OR "orderSource" NOT IN (1, 2));
+  `);
+
+  await runSql(`
+    UPDATE orders
+    SET "priority" = 1
+    WHERE "deletedAt" IS NULL
+      AND ("priority" IS NULL OR "priority" NOT IN (1, 2, 3));
+  `);
+};
+
+const ensureConstraints = async (): Promise<void> => {
+  logStep("Ensuring foreign keys and unique constraints");
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_shipping_company_fkey') THEN
+        ALTER TABLE orders DROP CONSTRAINT orders_shipping_company_fkey;
+      END IF;
+      ALTER TABLE orders
+      ADD CONSTRAINT orders_shipping_company_fkey
+      FOREIGN KEY ("shippingCompany") REFERENCES "shippingCompanies"("name")
+      ON UPDATE CASCADE ON DELETE SET NULL;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END
+    $$;
+  `);
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'vendors_account_manager_user_id_fkey') THEN
+        ALTER TABLE vendors
+        ADD CONSTRAINT vendors_account_manager_user_id_fkey
+        FOREIGN KEY ("accountManagerUserId") REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+      END IF;
+    END
+    $$;
+  `);
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shipment_inventory_items_product_id_fkey') THEN
+        ALTER TABLE "shipmentInventoryItems"
+        ADD CONSTRAINT shipment_inventory_items_product_id_fkey
+        FOREIGN KEY ("productId") REFERENCES products(id)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+      END IF;
+    END
+    $$;
+  `);
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shipment_returns_order_id_fkey') THEN
+        ALTER TABLE "shipmentReturns"
+        ADD CONSTRAINT shipment_returns_order_id_fkey
+        FOREIGN KEY ("orderId") REFERENCES orders(id)
+        ON UPDATE CASCADE ON DELETE CASCADE;
+      END IF;
+    END
+    $$;
+  `);
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shipment_returns_order_type_key') THEN
+        ALTER TABLE "shipmentReturns"
+        ADD CONSTRAINT shipment_returns_order_type_key
+        UNIQUE ("orderId", "returnType");
+      END IF;
+    END
+    $$;
+  `);
+
+  await runSql(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tickets_orderId_fkey') THEN
+        ALTER TABLE tickets
+        ADD CONSTRAINT "tickets_orderId_fkey"
+        FOREIGN KEY ("orderId") REFERENCES orders(id)
+        ON UPDATE CASCADE ON DELETE CASCADE;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tickets_assignedToUserId_fkey') THEN
+        ALTER TABLE tickets
+        ADD CONSTRAINT "tickets_assignedToUserId_fkey"
+        FOREIGN KEY ("assignedToUserId") REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tickets_createdByUserId_fkey') THEN
+        ALTER TABLE tickets
+        ADD CONSTRAINT "tickets_createdByUserId_fkey"
+        FOREIGN KEY ("createdByUserId") REFERENCES users(id)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+      END IF;
+    END
+    $$;
+  `);
+};
+
+const ensureIndexes = async (): Promise<void> => {
+  logStep("Ensuring indexes");
+
+  await ensureIndex("users", "users_accountStatus_idx", ["accountStatus"]);
+  await ensureIndex("vendors", "vendors_accountManagerUserId_idx", ["accountManagerUserId"]);
+  await ensureIndex("orders", "orders_fine_idx", ["fine"]);
+  await ensureIndex("orders", "orders_deliveryBy_idx", ["deliveryBy"]);
+  await ensureIndex("orders", "orders_priority_idx", ["priority"]);
+  await ensureIndex("orders", "orders_shipping_company_idx", ["shippingCompany"]);
+  await ensureIndex("shipmentInventoryItems", "shipment_inventory_product_id_idx", ["productId"]);
+  await ensureIndex("shipmentInventoryItems", "shipment_inventory_product_code_idx", ["productCode"]);
+  await ensureIndex("shipmentInventoryItems", "shipment_inventory_status_idx", ["status"]);
+  await ensureIndex("shipmentExpenses", "shipment_expenses_type_idx", ["type"]);
+  await ensureIndex("shipmentExpenses", "shipment_expenses_accounting_status_idx", ["accountingStatus"]);
+  await ensureIndex("shipmentExpenses", "shipment_expenses_accounting_date_idx", ["accountingDate"]);
+  await ensureIndex("shipmentReturns", "shipment_returns_order_type_idx", ["orderId", "returnType"]);
+  await ensureIndex("shipmentReturns", "shipment_returns_status_idx", ["status"]);
+  await ensureIndex("shipmentReturns", "shipment_returns_type_idx", ["returnType"]);
+  await ensureIndex("shippingCompanies", "shipping_companies_name_idx", ["name"], { unique: true });
+  await ensureIndex("tickets", "tickets_order_id_idx", ["orderId"]);
+  await ensureIndex("tickets", "tickets_status_idx", ["status"]);
+  await ensureIndex("tickets", "tickets_type_idx", ["type"]);
+  await ensureIndex("tickets", "tickets_assigned_to_user_id_idx", ["assignedToUserId"]);
+  await ensureIndex("tickets", "tickets_created_by_user_id_idx", ["createdByUserId"]);
+  await ensureIndex("dashboardDailyMetrics", "dashboard_daily_metric_scope_idx", ["metricDate", "role", "scopeId"], { unique: true });
+  await ensureIndex("dashboardDailyMetrics", "dashboard_daily_metric_vendor_idx", ["vendorId", "metricDate"]);
+  await ensureIndex("dashboardDailyProductSales", "dashboard_daily_product_sale_scope_idx", ["metricDate", "vendorId", "productId"], { unique: true });
+  await ensureIndex("dashboardDailyProductSales", "dashboard_daily_product_sale_vendor_idx", ["vendorId", "metricDate"]);
+  await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_scope_idx", ["metricDate", "role", "scopeId", "categoryId"], { unique: true });
+  await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_vendor_idx", ["vendorId", "metricDate"]);
+};
+
+const backfillUserPermissions = async (): Promise<void> => {
+  logStep("Backfilling user permissions");
+
+  const overwrite = hasFlag("--overwrite-permissions");
+  const users = await User.findAll();
+
+  for (const rawUser of users) {
+    const user = rawUser as Record<string, unknown> & { save: () => Promise<void> };
+    const plainUser = toPlainRecord(user);
+    const userType = toText(plainUser.userType);
+    const roleName = toText(plainUser.roleName);
+    const nextPermissions = overwrite
+      ? normalizePermissions(getPermissionTemplateForUserType(userType, roleName), userType, roleName)
+      : normalizePermissions(plainUser.permissions, userType, roleName);
+    const currentPermissions = normalizePermissions(plainUser.permissions, "", "");
+
+    if (JSON.stringify(currentPermissions) === JSON.stringify(nextPermissions)) {
+      continue;
+    }
+
+    user.permissions = nextPermissions;
+    await user.save();
+  }
+};
+
+const recalculateOrderFines = async (): Promise<void> => {
+  logStep("Recalculating order fines");
+
+  const rows = await sequelize.query<{
+    id: number;
+    fine: string | number | null;
+    orderDate: string | null;
+    expectedDeliveryDate: string | null;
+    subTotalPrice: string | number | null;
+    daysToDeliver: number | null;
+  }>(`
+    select
+      o.id,
+      o.fine,
+      o."orderDate",
+      o."expectedDeliveryDate",
+      o."subTotalPrice",
+      v."daysToDeliver"
+    from orders o
+    left join "orderLines" ol on ol."orderId" = o.id
+    left join products p on p.id = ol."productId"
+    left join vendors v on v.id = p."vendorId"
+    where o.status not in (:finalStatuses)
+    order by o.id asc, ol.id asc
+  `, {
+    replacements: { finalStatuses: FINAL_FINE_STATUSES },
+    type: QueryTypes.SELECT,
+  });
+
+  const seen = new Set<number>();
+
+  for (const row of rows) {
+    if (seen.has(row.id)) {
+      continue;
+    }
+    seen.add(row.id);
+
+    const nextFine = calculateOrderFine({
+      baseAmount: row.subTotalPrice,
+      daysToDeliver: row.daysToDeliver,
+      expectedDeliveryDate: row.expectedDeliveryDate,
+      orderDate: row.orderDate,
+    });
+
+    if (normalizeNumber(row.fine) === nextFine) {
+      continue;
+    }
+
+    await sequelize.query(
+      `update orders set fine = :fine, "updatedAt" = now() where id = :id`,
+      {
+        replacements: {
+          fine: nextFine,
+          id: row.id,
+        },
+      },
+    );
+  }
+};
+
+const backfillDashboardAggregates = async (): Promise<void> => {
+  if (hasFlag("--skip-dashboard-backfill")) {
+    return;
+  }
+
+  logStep("Backfilling dashboard aggregates");
+  const dashboardRepository = new DashboardRepository();
+  const dashboardAggregateService = new DashboardAggregateService(dashboardRepository);
+  await dashboardAggregateService.backfill();
+};
+
+const main = async (): Promise<void> => {
+  printBranchDiffSummary();
+  await connectToDb();
+
+  await ensureCoreColumns();
+  await ensureShipmentTables();
+  await ensureDashboardTables();
+  await ensureTicketTable();
+  await normalizeShipmentData();
+  await ensureConstraints();
+  await ensureIndexes();
+  await backfillUserPermissions();
+  await recalculateOrderFines();
+  await backfillDashboardAggregates();
+
+  // eslint-disable-next-line no-console
+  console.log("\nRefactor deploy migration completed successfully");
+};
+
+void main()
+  .catch((error: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error("Refactor deploy migration failed");
+    // eslint-disable-next-line no-console
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await sequelize.close().catch(() => undefined);
+  });

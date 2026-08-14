@@ -35,6 +35,11 @@ const DELIVERY_STATUS = {
   ALMOST_LAST: 2,
   LATE: 3,
 };
+const DELIVERY_STATUS_ARABIC = {
+  1: "في الموعد",
+  2: "قارب على التأخير",
+  3: "متأخر",
+};
 const DELIVERY_BY = {
   HOMIX: 1,
   VENDOR: 2,
@@ -199,6 +204,7 @@ module.exports = {
   ORDER_LINE_STATUS,
   ORDER_LINE__ITEM_STATUS,
   DELIVERY_STATUS,
+  DELIVERY_STATUS_ARABIC,
   DELIVERY_BY,
   DELIVERY_BY_ARABIC,
   SHIPMENTS_STATUS,

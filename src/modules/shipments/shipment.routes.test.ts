@@ -600,7 +600,7 @@ describe("shipmentRouter", () => {
         scheduleStatusLabel: "مجدول",
         shippingCompany: 3,
         shippingCompanyName: "J&T",
-        shipmentNumber: "SH-9802",
+        shipmentNumber: "SH31667",
         shipmentStatusLabel: "في المخزن",
         shipmentTypeLabel: "شحن مجمع",
       }),

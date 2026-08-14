@@ -214,9 +214,20 @@ export const normalizeOperationCode = (value: unknown): string => {
   return toText(value).trim();
 };
 
-export const buildShipmentNumber = (orderId: unknown): string => {
-  const numericId = toNumber(orderId);
-  return numericId > 0 ? `SH-${numericId}` : "";
+export const SHIPMENT_NUMBER_PREFIX = "SH";
+
+/**
+ * A shipment is always the shipping side of one order, so its number is simply
+ * the order number prefixed with SH (e.g. order 10587 -> SH10587).
+ */
+export const buildShipmentNumber = (order: unknown): string => {
+  const plainOrder = toPlain(order);
+  const orderNumber = toText(
+    plainOrder.orderNumber,
+    toText(plainOrder.number, toText(plainOrder.name)),
+  ).trim().replace(/^#/, "");
+
+  return orderNumber ? `${SHIPMENT_NUMBER_PREFIX}${orderNumber}` : "";
 };
 
 export const buildUserName = (value: unknown): string => {

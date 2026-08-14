@@ -20,8 +20,16 @@ const {
   PAYMENT_STATUS,
   PAYMENT_STATUS_ARABIC,
   DELIVERY_STATUS,
+  DELIVERY_STATUS_ARABIC,
+  DELIVERY_BY_ARABIC,
+  ORDER_SOURCE_ARABIC,
   MANUFACTURE_STATUS_ARABIC,
 } = require("../../../config/constants");
+const {
+  getDeliveryPriorityLabel,
+  resolveDeliveryStatus,
+  resolveOrderPriority,
+} = require("../../../src/modules/orders/order.helpers");
 const moment = require("moment-timezone");
 const Attachment = require("../attachments/attachment.model");
 const ProductType = require("../product/productType.model");
@@ -165,20 +173,26 @@ class OrderService {
   }
   static async saveImportedOrders(ordersFromShopify, isShipment = false, user) {
     let orders = [];
-    const orderNames = ordersFromShopify.map((order) => order.name);
-    const existingOrders = await Order.findAll({
-      where: {
-        name: {
-          [Op.in]: orderNames,
-        },
-      },
-      attributes: ["name"],
-    });
+    // Manual orders carry no name yet (it is generated below), so only Shopify
+    // orders take part in the duplicate check.
+    const orderNames = ordersFromShopify
+      .map((order) => order.name)
+      .filter(Boolean);
+    const existingOrders = orderNames.length
+      ? await Order.findAll({
+          where: {
+            name: {
+              [Op.in]: orderNames,
+            },
+          },
+          attributes: ["name"],
+        })
+      : [];
     const existingOrdersSet = new Set(
       existingOrders.map((order) => order.name),
     );
     ordersFromShopify = ordersFromShopify.filter(
-      (order) => !existingOrdersSet.has(order.name),
+      (order) => !order.name || !existingOrdersSet.has(order.name),
     );
     if (!ordersFromShopify || ordersFromShopify.length === 0) {
       return {
@@ -260,15 +274,18 @@ class OrderService {
       order: [[literal('CAST("code" AS INTEGER)'), "DESC"]],
       attributes: ["code"],
     });
+    // Ordered by number (not code) and including soft-deleted rows, otherwise a
+    // deleted manual order lets the next one reuse its number.
     const lastCustomOrder = await Order.findOne({
       where: {
-        code: {
+        number: {
           [Op.not]: null,
         },
         custom: true,
       },
-      order: [[literal('CAST("code" AS INTEGER)'), "DESC"]],
+      order: [[literal('CAST("number" AS INTEGER)'), "DESC"]],
       attributes: ["number"],
+      paranoid: false,
     });
 
     // Get last code number or default to 0
@@ -332,7 +349,7 @@ class OrderService {
           line.unitCost = cost;
           line.cost = cost * line.quantity;
           totalCost += line.cost;
-          subTotalPrice = line.price * line.quantity;
+          subTotalPrice += normalizeNumber(line.price) * line.quantity;
           total_discounts += line.discount || 0;
         });
         const customerKey = order.id
@@ -340,11 +357,13 @@ class OrderService {
           : `${
               order.customer.firstName ||
               order.customer.first_name ||
-              order.customer.default_address.first_name
+              order.customer.default_address?.first_name ||
+              ""
             }${
               order.customer.lastName ||
               order.customer.last_name ||
-              order.customer.default_address.last_name
+              order.customer.default_address?.last_name ||
+              ""
             }${
               order.customer.email ||
               order.customer.default_address?.email ||
@@ -364,11 +383,13 @@ class OrderService {
           orderNumber = order.order_number;
           name = order.name;
         } else {
-          const newNumber = parseInt(lastCustomNumber) + 1;
+          const newNumber = parseInt(lastCustomNumber, 10) + 1;
           number = `${newNumber}`;
           orderNumber = `${newNumber + 1000}`;
           name = `#${CUSTOM_PREFIX}${newNumber}`;
           custom = true;
+          // Advance so a batch of manual orders does not reuse the same number.
+          lastCustomNumber = newNumber;
         }
         const codeNumber = nextNumber;
         nextNumber++;
@@ -382,7 +403,7 @@ class OrderService {
         });
 
         let obj = {
-          shopifyId: String(order.id),
+          shopifyId: order.id ? String(order.id) : null,
           name,
           code: codeNumber,
           number,
@@ -405,7 +426,7 @@ class OrderService {
           shipmentType: order.shipmentType || "separate",
           deliveryBy: order.deliveryBy || null,
           expectedDate: order.expectedDate || null,
-          expectedDeliveryDate: vendor.daysToDeliver
+          expectedDeliveryDate: vendor?.daysToDeliver
             ? moment().add(vendor.daysToDeliver, "days").toDate()
             : null,
           receivedAmount: order.receivedAmount || 0,
@@ -427,7 +448,9 @@ class OrderService {
               : null,
             orderDate: order.created_at || new Date(),
           }),
-          userId: vendor?.accountManagerUserId || null,
+          priority: order.priority || undefined,
+          // An explicitly picked administrator wins over the vendor's default one.
+          userId: order.userId || vendor?.accountManagerUserId || null,
         };
         // status: order.status || null,
         // financialStatus: order.financial_status || null,
@@ -436,7 +459,7 @@ class OrderService {
           order_id: obj.code,
           line_items: order.line_items,
         });
-        if (obj.status) {
+        if (order.status) {
           obj.status = order.status;
         }
         if (
@@ -1016,92 +1039,26 @@ class OrderService {
     const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
     const worksheet = workbook.addWorksheet("orders");
 
+    // Column order is fixed by the business spec, do not reshuffle.
     worksheet.columns = [
-      {
-        header: "كود العملية",
-        key: "code",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "رقم الطلب",
-        key: "orderNumber",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: " المنتج",
-        key: "productName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: " كود المنتج",
-        key: "productCode",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "الكمیة",
-        key: "quantity",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "البائع",
-        key: "vendorName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "حالة الطلب",
-        key: "status",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "طریقة الدفع",
-        key: "paymentStatus",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "تاریخ أمر التصنیع",
-        key: "orderDate",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "الأیام المنقضیة",
-        key: "daysPassed",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "سعر التكلفة",
-        key: "cost",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "سعر البیع",
-        key: "price",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "المسئول",
-        key: "userName",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-      {
-        header: "النوع",
-        key: "productType",
-        width: 20,
-        style: { alignment: { horizontal: "right" } },
-      },
-    ];
+      { header: "رقم العملية", key: "code" },
+      { header: "رقم الطلب", key: "orderNumber" },
+      { header: "كود المنتج", key: "productCode" },
+      { header: "حالة الطلب", key: "status" },
+      { header: "البائع", key: "vendorName" },
+      { header: "مصدر الطلب", key: "orderSource" },
+      { header: "حالة الدفع", key: "paymentStatus" },
+      { header: "سعر التكلفة", key: "cost" },
+      { header: "سعر البيع", key: "price" },
+      { header: "المبلغ المطلوب تحصيله", key: "amountToCollect" },
+      { header: "التوصيل بواسطة", key: "deliveryBy" },
+      { header: "حالة التأخير", key: "lateStatus" },
+      { header: "الأولوية", key: "priority" },
+    ].map((column) => ({
+      ...column,
+      style: { alignment: { horizontal: "right" } },
+      width: 22,
+    }));
     const CHUNK_SIZE = 500;
     let offset = 0;
     let hasMore = true;
@@ -1161,32 +1118,45 @@ class OrderService {
       });
 
       for (const order of chunk) {
+        const amountToCollect
+          = Number(order.paymentStatus) === PAYMENT_STATUS.PAID
+            ? 0
+            : normalizeNumber(order.toBeCollected)
+              || calculateAmountToCollect({
+                downPayment: order.downPayment,
+                shippingFees: order.shippingFees,
+                subTotalPrice: order.subTotalPrice,
+                totalDiscounts: order.totalDiscounts,
+              });
+        const lateStatus = resolveDeliveryStatus(
+          order.deliveryStatus,
+          order.expectedDeliveryDate,
+        );
+        const priority = resolveOrderPriority(
+          order.priority,
+          order.deliveryStatus,
+          order.expectedDeliveryDate,
+        );
+
         for (const line of order.orderLines) {
           const variant = line.product.variants.find(
             (variant) => String(variant.shopifyId) === String(line.variant_id),
           );
           worksheet.addRow({
+            amountToCollect,
             code: order.code,
+            cost: line.cost,
+            deliveryBy: DELIVERY_BY_ARABIC[order.deliveryBy] || "",
+            lateStatus: DELIVERY_STATUS_ARABIC[lateStatus] || "",
             orderNumber: order.orderNumber,
-            productName: line.product.title,
-            quantity: line.quantity,
-            vendorName: line.product.vendor.name,
-            status: ORDER_STATUS_Arabic[order.status] || order.status,
+            orderSource: ORDER_SOURCE_ARABIC[order.orderSource] || "",
             paymentStatus:
               PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
-            orderDate: order.PoDate
-              ? moment(order.PoDate).format("YYYY-MM-DD")
-              : "",
-            daysPassed: order.PoDate
-              ? moment().diff(moment(order.PoDate), "days", true).toFixed(0)
-              : "",
-            cost: line.cost,
             price: line.price * line.quantity,
-            userName: order.user
-              ? `${order.user.firstName} ${order.user.lastName}`
-              : "",
-            productType: line.product?.type?.name || "",
+            priority: getDeliveryPriorityLabel(priority),
             productCode: variant ? variant.sku : "",
+            status: ORDER_STATUS_Arabic[order.status] || order.status,
+            vendorName: line.product.vendor.name,
           });
         }
       }
