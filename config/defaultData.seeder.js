@@ -35,6 +35,7 @@ const createDefaultData = async () => {
       image: `${process.env.APP_URL}/uploads/default-product.png`,
       variants: [],
       shopifyId: "custom",
+      isCatalogProduct: true,
       vendorId: vendor.id,
     });
   }

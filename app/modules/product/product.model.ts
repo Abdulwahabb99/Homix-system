@@ -37,6 +37,11 @@ const Product = sequelize.define(
       allowNull: true,
       defaultValue: 0,
     },
+    isCatalogProduct: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   },
   {
     tableName: "products",
@@ -57,6 +62,9 @@ const Product = sequelize.define(
       },
       {
         fields: ["status"],
+      },
+      {
+        fields: ["isCatalogProduct"],
       },
       // Composite index for common query pattern
       {

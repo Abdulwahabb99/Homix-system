@@ -121,6 +121,11 @@ const ensureCoreColumns = async (): Promise<void> => {
     defaultValue: 0,
     type: DataTypes.DECIMAL,
   });
+  await ensureColumn("products", "isCatalogProduct", {
+    allowNull: false,
+    defaultValue: true,
+    type: DataTypes.BOOLEAN,
+  });
   await ensureColumn("orders", "deliveryBy", {
     allowNull: true,
     type: DataTypes.INTEGER,
@@ -185,6 +190,16 @@ const ensureCoreColumns = async (): Promise<void> => {
     allowNull: true,
     type: DataTypes.INTEGER,
   }).catch(() => undefined);
+};
+
+const classifyCatalogProducts = async (): Promise<void> => {
+  logStep("Classifying catalogue products");
+  await runSql(`
+    UPDATE products
+       SET "isCatalogProduct" = ("shopifyId" IS NOT NULL),
+           "updatedAt" = NOW()
+     WHERE "isCatalogProduct" IS DISTINCT FROM ("shopifyId" IS NOT NULL)
+  `);
 };
 
 const ensureShipmentTables = async (): Promise<void> => {
@@ -731,6 +746,7 @@ const ensureIndexes = async (): Promise<void> => {
   await ensureIndex("products", "products_typeId_idx", ["typeId"]);
   await ensureIndex("products", "products_shopifyId_idx", ["shopifyId"]);
   await ensureIndex("products", "products_status_idx", ["status"]);
+  await ensureIndex("products", "products_catalog_idx", ["isCatalogProduct"]);
   await ensureIndex("products", "products_deletedAt_idx", ["deletedAt"]);
   await ensureIndex("products", "product_vendor_deleted_idx", ["vendorId", "deletedAt"]);
   await ensureIndex("vendors", "vendors_name_idx", ["name"]);
@@ -948,6 +964,7 @@ const main = async (): Promise<void> => {
   await connectToDb();
 
   await ensureCoreColumns();
+  await classifyCatalogProducts();
   await ensureShipmentTables();
   await ensureDashboardTables();
   await ensureTicketTable();

@@ -1469,6 +1469,7 @@ class OrderService {
         Reflect.deleteProperty(product, "updatedAt");
         const newProduct = await Product.create({
           ...product,
+          isCatalogProduct: false,
           vendorId: orderData.vendorId,
         });
         await orderLine.update({

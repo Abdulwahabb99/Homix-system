@@ -128,7 +128,7 @@ class ProductsService {
     // deliberately have no Shopify id. They belong to that order relationship,
     // not to the product catalogue, and must not appear as duplicate products
     // (most visibly as many "Custom Product" cards).
-    whereClause.shopifyId = { [Op.not]: null };
+    whereClause.isCatalogProduct = true;
 
     if (categories.length) {
       const validCategories = toNumberArray(categories);
