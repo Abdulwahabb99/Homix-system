@@ -92,8 +92,9 @@ export async function fetchShipmentsPerformance(params: PerformanceParams): Prom
   return normalizePerformance(data);
 }
 
-export function useShipmentsPerformanceQuery(params: PerformanceParams) {
+export function useShipmentsPerformanceQuery(params: PerformanceParams, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: shipmentKeys.performance(JSON.stringify(params)),
     queryFn: () => fetchShipmentsPerformance(params),
     staleTime: 60_000,

@@ -1,9 +1,8 @@
 /**
  * تكامل تقرير دورة الفوترة — GET /orders/financialReport?billingDay=13|28
  *
- * يُرجع الـ BE مجاميع لكل مورّد ضمن ثلاثة أقسام (الفاتورة الشاملة / تسويات
- * البائع / تسويات المخزن) + ملخّص عام (KPIs) + بيانات الدورة (cycle). لا يوفّر
- * هذا الـ endpoint تفصيل الطلبات فرداً فرداً؛ لذلك يعمل الجدول على مستوى المورّد.
+ * يُرجع الـ BE مجاميع كل مورّد مع الطلبات التابعة له ضمن ثلاثة أقسام
+ * (الفاتورة الشاملة / تسويات البائع / تسويات المخزن) + الملخص والدورة.
  *
  * الاصطلاحات: استخدم `axiosRequest` دائماً، ومفاتيح `financialKeys`، وعالِج
  * `force_logout` كبقية استعلامات المشروع.
@@ -56,6 +55,21 @@ export interface FinancialVendorItem {
   fines: number;
   vendorDue: number;
   companyDue: number;
+  orders: FinancialOrderItem[];
+}
+
+export interface FinancialOrderItem {
+  collectionTotal: number;
+  companyDue: number;
+  fines: number;
+  id: number;
+  operationNumber: string;
+  orderNumber: string;
+  paymentStatus: number | null;
+  paymentStatusLabel: string;
+  productCode: string;
+  vendorDue: number;
+  warehouseCost: number;
 }
 
 /** ملخّص قسم واحد (fullInvoice / vendorDeliveries / warehouseDeliveries) */
@@ -109,6 +123,23 @@ function normalizeVendorItem(raw: any): FinancialVendorItem {
     fines: num(raw?.fines),
     vendorDue: num(raw?.vendorDue),
     companyDue: num(raw?.companyDue),
+    orders: Array.isArray(raw?.orders) ? raw.orders.map(normalizeOrderItem) : [],
+  };
+}
+
+function normalizeOrderItem(raw: any): FinancialOrderItem {
+  return {
+    collectionTotal: num(raw?.collectionTotal),
+    companyDue: num(raw?.companyDue),
+    fines: num(raw?.fines),
+    id: num(raw?.id),
+    operationNumber: String(raw?.operationNumber ?? ""),
+    orderNumber: String(raw?.orderNumber ?? ""),
+    paymentStatus: raw?.paymentStatus == null ? null : num(raw.paymentStatus),
+    paymentStatusLabel: String(raw?.paymentStatusLabel ?? ""),
+    productCode: String(raw?.productCode ?? ""),
+    vendorDue: num(raw?.vendorDue),
+    warehouseCost: num(raw?.warehouseCost),
   };
 }
 

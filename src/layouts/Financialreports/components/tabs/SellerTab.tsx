@@ -1,6 +1,6 @@
 /**
  * تبويب «تسويات البائع» — التحصيل والمستحق للبائع والغرامات لكل مورّد.
- * التفاصيل تعرض تفكيك مجاميع المورّد (endpoint التقرير لا يوفّر تفصيل الطلبات).
+ * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React from "react";
 import { money } from "../../utils/calc";
@@ -8,7 +8,8 @@ import { SellerTotals, SettlementSeller } from "../../utils/types";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
-import { Amount, AmountFine } from "../SettlementCells";
+import DetailTable from "../DetailTable";
+import { Amount, AmountFine, FineCell, Money, Muted, OpId, PayBadge, ProdCode } from "../SettlementCells";
 
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
 
@@ -23,6 +24,26 @@ export default function SellerTab({ sellers }: { sellers: SettlementSeller[] }) 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
       <DetailHeaderBar title={`تفاصيل تسويات البائع — ${s.name}`} onExport={() => {}} />
+      <DetailTable
+        columns={[
+          { label: "رقم العملية" },
+          { label: "رقم الطلب" },
+          { label: "كود المنتج" },
+          { label: "سعر التكلفة" },
+          { label: "المبلغ المطلوب تحصيله" },
+          { label: "طريقة الدفع" },
+          { label: "الغرامات" },
+        ]}
+        rows={s.row.orders.map((order) => [
+          <OpId key="operation">{order.operationNumber || `OP-${order.id}`}</OpId>,
+          <Muted key="order">#{order.orderNumber || order.id}</Muted>,
+          <ProdCode key="product">{order.productCode || "—"}</ProdCode>,
+          <Money key="cost" value={order.warehouseCost} />,
+          <Money key="collection" value={order.collectionTotal} bold />,
+          <PayBadge key="payment" pay={order.paymentStatus === 1 ? "cod" : "online"} />,
+          <FineCell key="fine" value={order.fines} />,
+        ])}
+      />
       <DetailTotalsRow
         items={[
           { label: "إجمالي التحصيل", value: money(t.collect) },

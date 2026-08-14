@@ -1,6 +1,6 @@
 /**
  * تبويب «الفاتورة الشاملة» — المستحق للبائع والشركة معاً + ملخّص متدرّج لكل مورّد.
- * التفاصيل تعرض تفكيك مجاميع المورّد (endpoint التقرير لا يوفّر تفصيل الطلبات).
+ * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React from "react";
 import { money } from "../../utils/calc";
@@ -9,7 +9,8 @@ import { SellerTotals, SettlementSeller } from "../../utils/types";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
 import ComprehensiveSummary from "../ComprehensiveSummary";
-import { Amount, AmountFine } from "../SettlementCells";
+import DetailTable from "../DetailTable";
+import { Amount, AmountFine, FineCell, Money, Muted, OpId, ProdCode } from "../SettlementCells";
 
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
 
@@ -24,6 +25,24 @@ export default function ComprehensiveTab({ sellers }: { sellers: SettlementSelle
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
       <DetailHeaderBar title={`الفاتورة الشاملة — ${s.name}`} onExport={() => {}} />
+      <DetailTable
+        columns={[
+          { label: "رقم العملية" },
+          { label: "رقم الطلب" },
+          { label: "كود المنتج" },
+          { label: "المستحق للبائع", tone: "green" },
+          { label: "المستحق للشركة", tone: "accent" },
+          { label: "الغرامات" },
+        ]}
+        rows={s.row.orders.map((order) => [
+          <OpId key="operation">{order.operationNumber || `OP-${order.id}`}</OpId>,
+          <Muted key="order">#{order.orderNumber || order.id}</Muted>,
+          <ProdCode key="product">{order.productCode || "—"}</ProdCode>,
+          <Money key="vendor" value={order.vendorDue} tone="green" bold />,
+          <Money key="company" value={order.companyDue} tone="accent" bold />,
+          <FineCell key="fine" value={order.fines} />,
+        ])}
+      />
       <ComprehensiveSummary
         items={[
           { label: "عدد الطلبات", value: String(t.orders) },

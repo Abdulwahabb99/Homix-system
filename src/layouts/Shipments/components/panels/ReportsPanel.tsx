@@ -84,6 +84,7 @@ export default function ReportsPanel() {
   const initialStartDate = React.useMemo(() => moment().startOf("month").format("YYYY-MM-DD"), []);
   const initialEndDate = React.useMemo(() => moment().format("YYYY-MM-DD"), []);
   const [period, setPeriod] = React.useState<PerformancePeriod>("daily");
+  const [customRangeReady, setCustomRangeReady] = React.useState(false);
   const [draftStartDate, setDraftStartDate] = React.useState(initialStartDate);
   const [draftEndDate, setDraftEndDate] = React.useState(initialEndDate);
   const [appliedRange, setAppliedRange] = React.useState({
@@ -96,13 +97,18 @@ export default function ReportsPanel() {
     period,
     startDate: appliedRange.startDate,
   }), [appliedRange, period]);
-  const { data, isError, isLoading, isFetching, refetch } = useShipmentsPerformanceQuery(queryParams);
+  const awaitingCustomRange = period === "custom" && !customRangeReady;
+  const { data, isError, isLoading, isFetching, refetch } = useShipmentsPerformanceQuery(
+    queryParams,
+    !awaitingCustomRange,
+  );
 
   const overview = data?.overview ?? { deliveredOrdersCount: 0, totalGmv: 0 };
   const chart = data?.chart ?? [];
   const providers = data?.providers ?? [];
   const maximumChartValue = Math.max(...chart.map((point) => point.deliveredOrdersCount), 1);
   const hasInvalidRange = Boolean(draftStartDate && draftEndDate && draftStartDate > draftEndDate);
+  const cannotApplyRange = !draftStartDate || !draftEndDate || hasInvalidRange || isFetching;
   const rangeTitle = React.useMemo(() => {
     const start = moment.utc(appliedRange.startDate, "YYYY-MM-DD", true);
     const end = moment.utc(appliedRange.endDate, "YYYY-MM-DD", true);
@@ -117,6 +123,18 @@ export default function ReportsPanel() {
   const applyDateRange = () => {
     if (!draftStartDate || !draftEndDate || hasInvalidRange) return;
     setAppliedRange({ endDate: draftEndDate, startDate: draftStartDate });
+    setCustomRangeReady(true);
+  };
+
+  const selectPeriod = (nextPeriod: PerformancePeriod) => {
+    setPeriod(nextPeriod);
+    if (nextPeriod === "custom") {
+      setDraftStartDate("");
+      setDraftEndDate("");
+      setCustomRangeReady(false);
+      return;
+    }
+    setAppliedRange({ endDate: initialEndDate, startDate: initialStartDate });
   };
 
   return (
@@ -145,7 +163,7 @@ export default function ReportsPanel() {
                 aria-selected={active}
                 component="button"
                 key={option.id}
-                onClick={() => setPeriod(option.id)}
+                onClick={() => selectPeriod(option.id)}
                 role="tab"
                 sx={{
                   bgcolor: active ? HX.surface : "transparent",
@@ -179,7 +197,7 @@ export default function ReportsPanel() {
             <Grid item xs={12} sm={6}>
               <Box sx={{ ...cardSx, p: "18px", textAlign: "center" }}>
                 <Box sx={{ color: HX.green, fontFamily: FONT, fontSize: "22px", fontWeight: 800, mb: "4px" }}>
-                  {formatNumber(overview.deliveredOrdersCount)}
+                  {awaitingCustomRange ? "—" : formatNumber(overview.deliveredOrdersCount)}
                 </Box>
                 <Box sx={{ color: HX.tx2, fontFamily: FONT, fontSize: "11px" }}>طلبات مسلّمة خلال الفترة</Box>
               </Box>
@@ -187,7 +205,7 @@ export default function ReportsPanel() {
             <Grid item xs={12} sm={6}>
               <Box sx={{ ...cardSx, p: "18px", textAlign: "center" }}>
                 <Box sx={{ color: HX.tx, fontFamily: FONT, fontSize: "22px", fontWeight: 800, mb: "4px" }}>
-                  {formatNumber(overview.totalGmv)} ج.م
+                  {awaitingCustomRange ? "—" : `${formatNumber(overview.totalGmv)} ج.م`}
                 </Box>
                 <Box sx={{ color: HX.tx2, fontFamily: FONT, fontSize: "11px" }}>إجمالي GMV</Box>
               </Box>
@@ -198,9 +216,11 @@ export default function ReportsPanel() {
 
       <Box sx={{ ...cardSx, p: "18px 20px" }}>
         <Box sx={{ color: HX.tx, fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, mb: "14px" }}>
-          التسليمات {period === "monthly" ? "الشهرية" : period === "weekly" ? "الأسبوعية" : "اليومية"} — {rangeTitle}
+          التسليمات {period === "monthly" ? "الشهرية" : period === "weekly" ? "الأسبوعية" : "اليومية"} — {awaitingCustomRange ? "اختر الفترة" : rangeTitle}
         </Box>
-        {isLoading ? (
+        {awaitingCustomRange ? (
+          <EmptyState message="اختر تاريخ البداية والنهاية ثم اضغط تطبيق" />
+        ) : isLoading ? (
           <Box sx={{ bgcolor: HX.surface3, borderRadius: "8px", height: 180 }} />
         ) : isError ? (
           <Box sx={{ py: "26px", textAlign: "center" }}>
@@ -247,16 +267,22 @@ export default function ReportsPanel() {
           <Box sx={{ color: HX.tx, fontFamily: FONT, fontSize: "12.5px", fontWeight: 700 }}>
             تفاصيل التوصيل حسب شركة الشحن
           </Box>
-          <Box sx={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: "7px" }}>
-            <Box component="input" type="date" max={initialEndDate} value={draftStartDate} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setDraftStartDate(event.target.value)} sx={{ bgcolor: HX.surface, border: `0.5px solid ${hasInvalidRange ? HX.red : HX.border}`, borderRadius: "7px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", height: 34, px: "9px" }} />
-            <Box component="input" type="date" max={initialEndDate} min={draftStartDate} value={draftEndDate} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setDraftEndDate(event.target.value)} sx={{ bgcolor: HX.surface, border: `0.5px solid ${hasInvalidRange ? HX.red : HX.border}`, borderRadius: "7px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", height: 34, px: "9px" }} />
-            <Box component="button" disabled={hasInvalidRange || isFetching} onClick={applyDateRange} sx={{ bgcolor: HX.accent, border: 0, borderRadius: "7px", color: "#fff", cursor: hasInvalidRange || isFetching ? "default" : "pointer", fontFamily: FONT, fontSize: "12px", fontWeight: 700, height: 34, opacity: hasInvalidRange || isFetching ? .6 : 1, px: "16px" }}>
-              تطبيق
+          {period === "custom" && (
+            <Box sx={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: "7px" }}>
+              <Box component="label" sx={{ color: HX.tx3, fontFamily: FONT, fontSize: "10.5px" }}>من</Box>
+              <Box component="input" type="date" max={initialEndDate} value={draftStartDate} onChange={(event: React.ChangeEvent<HTMLInputElement>) => { setDraftStartDate(event.target.value); setCustomRangeReady(false); }} sx={{ bgcolor: HX.surface, border: `0.5px solid ${hasInvalidRange ? HX.red : HX.border}`, borderRadius: "7px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", height: 34, px: "9px" }} />
+              <Box component="label" sx={{ color: HX.tx3, fontFamily: FONT, fontSize: "10.5px" }}>إلى</Box>
+              <Box component="input" type="date" max={initialEndDate} min={draftStartDate || undefined} value={draftEndDate} onChange={(event: React.ChangeEvent<HTMLInputElement>) => { setDraftEndDate(event.target.value); setCustomRangeReady(false); }} sx={{ bgcolor: HX.surface, border: `0.5px solid ${hasInvalidRange ? HX.red : HX.border}`, borderRadius: "7px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", height: 34, px: "9px" }} />
+              <Box component="button" disabled={cannotApplyRange} onClick={applyDateRange} sx={{ bgcolor: HX.accent, border: 0, borderRadius: "7px", color: "#fff", cursor: cannotApplyRange ? "default" : "pointer", fontFamily: FONT, fontSize: "12px", fontWeight: 700, height: 34, opacity: cannotApplyRange ? .6 : 1, px: "16px" }}>
+                تطبيق
+              </Box>
             </Box>
-          </Box>
+          )}
         </Box>
 
-        {isLoading ? (
+        {awaitingCustomRange ? (
+          <EmptyState message="اختر فترة مخصصة لعرض تفاصيل شركات الشحن" />
+        ) : isLoading ? (
           <Box sx={{ p: "16px" }}>
             {[...Array(4)].map((_, index) => <Box key={index} sx={{ bgcolor: HX.surface3, borderRadius: "6px", height: 38, mb: "6px" }} />)}
           </Box>

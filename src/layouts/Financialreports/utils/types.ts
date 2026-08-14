@@ -1,7 +1,6 @@
 /**
  * أنواع بيانات صفحة التقارير المالية (تسويات الصناع).
- * تُمثّل شكل البيانات بعد التطبيع من `query/financialReport` (مستوى المورّد).
- * ملاحظة: endpoint التقرير يُرجع مجاميع لكل مورّد فقط — لا تفصيل للطلبات فرداً.
+ * تُمثّل شكل البيانات بعد التطبيع من `query/financialReport`.
  */
 
 /** طريقة الدفع لكل طلب (تبقى للخلايا العامة القابلة لإعادة الاستخدام) */
@@ -26,6 +25,21 @@ export interface VendorRow {
   vendorDue: number;
   /** المستحق للشركة */
   companyDue: number;
+  orders: SettlementOrder[];
+}
+
+export interface SettlementOrder {
+  collectionTotal: number;
+  companyDue: number;
+  fines: number;
+  id: number;
+  operationNumber: string;
+  orderNumber: string;
+  paymentStatus: number | null;
+  paymentStatusLabel: string;
+  productCode: string;
+  vendorDue: number;
+  warehouseCost: number;
 }
 
 /** صانع/مورّد للعرض في الجدول — هوية العرض + مجاميعه */

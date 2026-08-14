@@ -48,6 +48,7 @@ function toSeller(item: FinancialVendorItem, index: number): SettlementSeller {
       fines: item.fines,
       vendorDue: item.vendorDue,
       companyDue: item.companyDue,
+      orders: item.orders,
     },
   };
 }
