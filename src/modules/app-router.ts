@@ -1466,6 +1466,16 @@ const swaggerOptions = {
                 shippingCompanies: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentStatuses: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
                 shipmentTypes: { items: { $ref: "#/components/schemas/ShipmentMetaOption" }, type: "array" },
+                subTabCounts: {
+                  type: "object",
+                  properties: {
+                    accountDeliveries: { example: 877, type: "integer" },
+                    accountExpenses: { example: 1, type: "integer" },
+                    customerReturns: { example: 2, type: "integer" },
+                    vendorReturns: { example: 1, type: "integer" },
+                  },
+                  required: ["accountDeliveries", "accountExpenses", "customerReturns", "vendorReturns"],
+                },
                 tabs: {
                   items: {
                     type: "object",

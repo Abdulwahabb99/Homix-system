@@ -676,6 +676,12 @@ export class ShipmentRepository {
         { id: "grouped", label: SHIPMENT_TYPE_LABELS.grouped ?? "شحن مجمع" },
         { id: "separate", label: SHIPMENT_TYPE_LABELS.separate ?? "شحن منفصل" },
       ],
+      subTabCounts: {
+        accountDeliveries: deliveredCount,
+        accountExpenses: toNumber(expensesCount),
+        customerReturns: returnsFromCustomerCount,
+        vendorReturns: returnsToVendorCount,
+      },
       tabs: [
         { count: shipmentsCount, id: "shipments", label: "الشحنات" },
         { count: returnsToVendorCount + returnsFromCustomerCount, id: "returns", label: "المرتجعات" },
@@ -834,6 +840,7 @@ export class ShipmentRepository {
     }
 
     const result = await orderModel.findAndCountAll({
+      distinct: true,
       include: buildIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
@@ -979,6 +986,7 @@ export class ShipmentRepository {
     }
 
     const result = await orderModel.findAndCountAll({
+      distinct: true,
       include: buildIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
@@ -1049,7 +1057,7 @@ export class ShipmentRepository {
       items: filteredItems,
       page: filters.page,
       size: filters.size,
-      totalCount: filteredItems.length,
+      totalCount: filters.status ? filteredItems.length : toNumber(result.count),
     };
   }
 
@@ -1390,6 +1398,7 @@ export class ShipmentRepository {
     };
 
     const result = await orderModel.findAndCountAll({
+      distinct: true,
       include: buildIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
@@ -1455,7 +1464,9 @@ export class ShipmentRepository {
       items,
       page: filters.page,
       size: filters.size,
-      totalCount: items.length,
+      totalCount: filters.accountingStatus || filters.orderNumber || filters.paymentMethod || filters.settledDate
+        ? items.length
+        : toNumber(result.count),
     };
   }
 

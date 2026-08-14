@@ -111,6 +111,12 @@ export type ShipmentMetaResponse = {
   shippingCompanies: ShipmentMetaOption[];
   shipmentStatuses: ShipmentMetaOption[];
   shipmentTypes: ShipmentMetaOption[];
+  subTabCounts: {
+    accountDeliveries: number;
+    accountExpenses: number;
+    customerReturns: number;
+    vendorReturns: number;
+  };
   tabs: Array<{ count?: number; id: string; label: string }>;
   vendorReturnStatuses: ShipmentMetaOption[];
 };
