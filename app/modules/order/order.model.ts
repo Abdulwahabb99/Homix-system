@@ -254,7 +254,7 @@ const Order = sequelize.define(
   },
   {
     hooks: {
-      beforeValidate(order, options) {
+      beforeValidate(order: any, options: any) {
         const deliveryBy = Number(order.getDataValue("deliveryBy"));
         if (deliveryBy === DELIVERY_BY.HOMIX || deliveryBy === DELIVERY_BY.VENDOR) {
           order.setDataValue("shippedFromInventory", deliveryBy === DELIVERY_BY.HOMIX);

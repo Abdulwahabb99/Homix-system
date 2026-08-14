@@ -314,4 +314,30 @@ describe("OrderService", () => {
       { id: 1 },
     );
   });
+
+  it.each([
+    { deliveryBy: 1, shippedFromInventory: true },
+    { deliveryBy: 2, shippedFromInventory: false },
+  ])("synchronizes bulk delivery updates for deliveryBy $deliveryBy", async ({ deliveryBy, shippedFromInventory }) => {
+    const repository = {
+      findOrderEntities: jest.fn().mockResolvedValue([]),
+    } as never;
+    const legacyGateway = {
+      bulkUpdate: jest.fn().mockResolvedValue({ message: "ok", status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.bulkUpdate(
+      { orderData: { deliveryBy }, orderIds: [7] },
+      { id: 1 } as never,
+    );
+
+    expect(legacyGateway.bulkUpdate).toHaveBeenCalledWith(
+      {
+        orderData: { deliveryBy, shippedFromInventory },
+        orderIds: [7],
+      },
+      { id: 1 },
+    );
+  });
 });
