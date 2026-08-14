@@ -196,3 +196,24 @@ export function useDeleteExpenseMutation() {
     onError: () => NotificationMeassage("error", "تعذّر حذف المصروف"),
   });
 }
+
+export interface ManagedExpenseType {
+  id?: number;
+  label: string;
+}
+
+export async function updateExpenseTypes(options: ManagedExpenseType[]): Promise<void> {
+  await axiosRequest.put("/shipments/accounts/expense-types", { options });
+}
+
+export function useUpdateExpenseTypesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateExpenseTypes,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() });
+      NotificationMeassage("success", "تم حفظ أنواع المصروفات");
+    },
+    onError: () => NotificationMeassage("error", "تعذّر حفظ أنواع المصروفات"),
+  });
+}

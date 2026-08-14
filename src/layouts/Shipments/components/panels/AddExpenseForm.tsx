@@ -4,10 +4,12 @@
  */
 import React, { useEffect, useState } from "react";
 import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
-import { useCreateExpenseMutation } from "query/shipmentsAccounts";
+import { useCreateExpenseMutation, useUpdateExpenseTypesMutation } from "query/shipmentsAccounts";
+import ExpenseTypesModal from "./ExpenseTypesModal";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -23,6 +25,7 @@ const floatingLabel = { shrink: true } as const;
 export default function AddExpenseForm() {
   const { data: meta } = useShipmentsMetaQuery();
   const createMutation = useCreateExpenseMutation();
+  const updateTypesMutation = useUpdateExpenseTypesMutation();
 
   const expenseTypes = meta?.expenseTypes ?? [];
   const accountingStatuses = meta?.accountingStatuses ?? [];
@@ -32,10 +35,13 @@ export default function AddExpenseForm() {
   const [reason, setReason] = useState("");
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
   const [accountingDate, setAccountingDate] = useState("");
+  const [typesModalOpen, setTypesModalOpen] = useState(false);
 
   // الخيارات تصل بعد الـ meta، فنضبط القيم الافتراضية عند وصولها
   useEffect(() => {
-    if (type === "" && expenseTypes.length > 0) setType(Number(expenseTypes[0].value));
+    if (expenseTypes.length > 0 && !expenseTypes.some((option) => Number(option.value) === type)) {
+      setType(Number(expenseTypes[0].value));
+    }
     if (accountingStatus === "" && accountingStatuses.length > 0) {
       setAccountingStatus(Number(accountingStatuses[0].value));
     }
@@ -76,9 +82,29 @@ export default function AddExpenseForm() {
 
   return (
     <Box sx={{ ...cardSx, p: "14px" }}>
-      <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx, mb: "12px" }}>
-        إضافة مصروف جديد
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: "12px" }}>
+        <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: HX.tx }}>
+          إضافة مصروف جديد
+        </Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<SettingsOutlinedIcon />}
+          onClick={() => setTypesModalOpen(true)}
+          sx={{
+            bgcolor: "#f5f3ff",
+            borderColor: "#6366f1",
+            color: "#4f46e5 !important",
+            fontFamily: FONT,
+            fontSize: "11px",
+            fontWeight: 700,
+            "& .MuiButton-startIcon, & .MuiSvgIcon-root": { color: "#4f46e5 !important" },
+            "&:hover": { bgcolor: "#ede9fe", borderColor: "#4f46e5" },
+          }}
+        >
+          إدارة أنواع المصروفات
+        </Button>
+      </Box>
 
       <Box sx={{
         display: "grid", gap: "10px",
@@ -157,6 +183,16 @@ export default function AddExpenseForm() {
           {createMutation.isPending ? "جارٍ الحفظ..." : "حفظ المصروف"}
         </Button>
       </Box>
+
+      <ExpenseTypesModal
+        open={typesModalOpen}
+        options={expenseTypes}
+        saving={updateTypesMutation.isPending}
+        onClose={() => setTypesModalOpen(false)}
+        onSave={(options) => updateTypesMutation.mutate(options, {
+          onSuccess: () => setTypesModalOpen(false),
+        })}
+      />
     </Box>
   );
 }
