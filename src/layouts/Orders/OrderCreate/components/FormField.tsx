@@ -64,7 +64,7 @@ export interface TextInputProps {
   inputProps?: Record<string, unknown>;
 }
 
-export function TextInput({ label, value, onChange, type = "text", required, placeholder, inputProps }: TextInputProps) {
+export const TextInput = React.memo(function TextInput({ label, value, onChange, type = "text", required, placeholder, inputProps }: TextInputProps) {
   return (
     <TextField
       {...fieldBaseProps}
@@ -77,7 +77,7 @@ export function TextInput({ label, value, onChange, type = "text", required, pla
       inputProps={inputProps}
     />
   );
-}
+});
 
 export interface SelectInputProps {
   label: string;
@@ -88,7 +88,7 @@ export interface SelectInputProps {
   disabled?: boolean;
 }
 
-export function SelectInput({ label, value, onChange, options, required, disabled }: SelectInputProps) {
+export const SelectInput = React.memo(function SelectInput({ label, value, onChange, options, required, disabled }: SelectInputProps) {
   return (
     <TextField
       {...fieldBaseProps}
@@ -106,4 +106,4 @@ export function SelectInput({ label, value, onChange, options, required, disable
       ))}
     </TextField>
   );
-}
+});
