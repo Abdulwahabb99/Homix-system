@@ -22,6 +22,7 @@ import MDTypography from "components/MDTypography";
 import { clearNotifications, setNotifications } from "store/slices/notificationsSlice";
 
 const BELL_SURFACE = "#ffffff";
+const NOTIFICATIONS_PAGE_SIZE = 50;
 
 type Notif = {
   id?: string | number;
@@ -33,12 +34,14 @@ type Notif = {
 
 function HomixNotificationsButton() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [visibleCount, setVisibleCount] = useState(NOTIFICATIONS_PAGE_SIZE);
   const navigate = useNavigate();
   const reduxDispatch = useDispatch();
   const notifications = useSelector((s: { notifications: Notif[] }) => s.notifications) as Notif[];
   const unread = notifications.filter((n) => !n.readAt);
 
   const open = (e: React.MouseEvent<HTMLElement>) => {
+    setVisibleCount(NOTIFICATIONS_PAGE_SIZE);
     setAnchorEl(e.currentTarget);
     const hasUnread = notifications.some((n) => !n.readAt);
     if (!hasUnread) return;
@@ -101,6 +104,7 @@ function HomixNotificationsButton() {
         </IconButton>
       </Badge>
 
+      {anchorEl && (
       <Menu
         id="homix-notification-menu"
         anchorEl={anchorEl}
@@ -177,7 +181,7 @@ function HomixNotificationsButton() {
               </Box>
             ) : (
               <List disablePadding>
-                {notifications.map((notification) => {
+                {notifications.slice(0, visibleCount).map((notification) => {
                   const isUnread = !notification.readAt;
                   return (
                     <ListItemButton
@@ -242,6 +246,15 @@ function HomixNotificationsButton() {
                 })}
               </List>
             )}
+
+            {notifications.length > visibleCount && (
+              <ListItemButton
+                onClick={() => setVisibleCount((count) => count + NOTIFICATIONS_PAGE_SIZE)}
+                sx={{ justifyContent: "center", py: 1, fontSize: "0.8rem", fontWeight: 700 }}
+              >
+                عرض المزيد
+              </ListItemButton>
+            )}
           </Box>
 
           {notifications.length > 0 && (
@@ -267,6 +280,7 @@ function HomixNotificationsButton() {
           )}
         </Box>
       </Menu>
+      )}
     </>
   );
 }
