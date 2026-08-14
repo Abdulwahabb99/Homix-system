@@ -39,86 +39,22 @@ const ProductType = require("../product/productType.model");
 const Log = require("../logs/log.model");
 const PREFIX = "H";
 const CUSTOM_PREFIX = "CU";
+const {
+  calculateOrderFine,
+  calculateOrderFineForRecord,
+  resolveExpectedDeliveryDate,
+} = require("../../../src/modules/orders/order-fines");
 const FINAL_FINE_STATUSES = [
   ORDER_STATUS.CANCELED,
   ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.REFUNDED,
+  ORDER_STATUS.REPLACED,
   ORDER_STATUS.IN_INVENTORY,
 ];
 
 const normalizeNumber = (value) => {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
-};
-
-const calculateExceededDays = ({
-  orderDate,
-  daysToDeliver,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}) => {
-  const endMoment = moment(endDate);
-  if (!endMoment.isValid()) {
-    return 0;
-  }
-
-  const deliveryWindow = normalizeNumber(daysToDeliver);
-  if (orderDate && deliveryWindow > 0) {
-    const startMoment = moment(orderDate);
-    if (startMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.startOf("day").diff(startMoment.startOf("day"), "days")
-          - deliveryWindow,
-      );
-    }
-  }
-
-  if (expectedDeliveryDate) {
-    const expectedMoment = moment(expectedDeliveryDate);
-    if (expectedMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.startOf("day").diff(expectedMoment.startOf("day"), "days"),
-      );
-    }
-  }
-
-  return 0;
-};
-
-const calculateOrderFine = ({
-  baseAmount,
-  daysToDeliver,
-  orderDate,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}) => {
-  const exceededDays = calculateExceededDays({
-    daysToDeliver,
-    endDate,
-    expectedDeliveryDate,
-    orderDate,
-  });
-  if (exceededDays < 1) {
-    return 0;
-  }
-
-  const amount = normalizeNumber(baseAmount);
-  return Math.round(amount * 0.01 * exceededDays * 100) / 100;
-};
-
-const calculateOrderFineForRecord = (orderLike, endDate = new Date()) => {
-  const firstOrderLine = Array.isArray(orderLike.orderLines)
-    ? orderLike.orderLines[0]
-    : null;
-
-  return calculateOrderFine({
-    baseAmount: orderLike.subTotalPrice,
-    daysToDeliver: firstOrderLine?.product?.vendor?.daysToDeliver,
-    endDate,
-    expectedDeliveryDate: orderLike.expectedDeliveryDate,
-    orderDate: orderLike.orderDate,
-  });
 };
 
 const calculateAmountToCollect = ({
@@ -405,6 +341,12 @@ class OrderService {
           totalDiscounts: total_discounts,
         });
 
+        const orderDate = order.orderDate || order.created_at || new Date();
+        const expectedDeliveryDate = resolveExpectedDeliveryDate({
+          daysToDeliver: vendor?.daysToDeliver,
+          expectedDeliveryDate: order.expectedDeliveryDate,
+          orderDate,
+        });
         let obj = {
           shopifyId: order.id ? String(order.id) : null,
           name,
@@ -415,7 +357,7 @@ class OrderService {
           totalDiscounts: total_discounts,
           totalTax: order.total_tax,
           totalPrice: subTotalPrice - total_discounts,
-          orderDate: order.created_at || new Date(),
+          orderDate,
           customerId: customersNamesMap[customerKey],
           totalCost,
           custom,
@@ -429,9 +371,7 @@ class OrderService {
           shipmentType: order.shipmentType || "separate",
           deliveryBy: order.deliveryBy || null,
           expectedDate: order.expectedDate || null,
-          expectedDeliveryDate: vendor?.daysToDeliver
-            ? moment().add(vendor.daysToDeliver, "days").toDate()
-            : null,
+          expectedDeliveryDate,
           receivedAmount: order.receivedAmount || 0,
           commission: order.commission || 0,
           shippingFees,
@@ -446,10 +386,8 @@ class OrderService {
           fine: calculateOrderFine({
             baseAmount: subTotalPrice,
             daysToDeliver: vendor?.daysToDeliver,
-            expectedDeliveryDate: vendor?.daysToDeliver
-              ? moment().add(vendor.daysToDeliver, "days").toDate()
-              : null,
-            orderDate: order.created_at || new Date(),
+            expectedDeliveryDate,
+            orderDate,
           }),
           priority: order.priority || undefined,
           // An explicitly picked administrator wins over the vendor's default one.
@@ -1652,6 +1590,8 @@ class OrderService {
     const shouldFreezeFine =
       nextStatus === ORDER_STATUS.DELIVERED
       || nextStatus === ORDER_STATUS.CANCELED
+      || nextStatus === ORDER_STATUS.REFUNDED
+      || nextStatus === ORDER_STATUS.REPLACED
       || nextStatus === ORDER_STATUS.IN_INVENTORY;
 
     orderData.fine = calculateOrderFineForRecord(
@@ -1897,6 +1837,8 @@ class OrderService {
       const shouldFreezeFine =
         nextStatus === ORDER_STATUS.DELIVERED
         || nextStatus === ORDER_STATUS.CANCELED
+        || nextStatus === ORDER_STATUS.REFUNDED
+        || nextStatus === ORDER_STATUS.REPLACED
         || nextStatus === ORDER_STATUS.IN_INVENTORY;
 
       perOrderData.fine = calculateOrderFineForRecord(

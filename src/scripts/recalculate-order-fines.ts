@@ -1,91 +1,24 @@
 import { QueryTypes } from "sequelize";
-import moment from "moment";
-
 import { connectToDb, sequelize } from "../infrastructure/database";
+import { calculateOrderFine } from "../modules/orders/order-fines";
 
 const ORDER_STATUS = {
   CANCELED: 4,
   DELIVERED: 5,
+  REFUNDED: 6,
+  REPLACED: 7,
   IN_INVENTORY: 8,
 } as const;
 
 const FINAL_FINE_STATUSES = [
   ORDER_STATUS.CANCELED,
   ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.REFUNDED,
+  ORDER_STATUS.REPLACED,
   ORDER_STATUS.IN_INVENTORY,
 ] as const;
 
-const normalizeNumber = (value: unknown): number => {
-  const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
-};
-
-const calculateExceededDays = ({
-  orderDate,
-  daysToDeliver,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}: {
-  orderDate?: unknown;
-  daysToDeliver?: unknown;
-  expectedDeliveryDate?: unknown;
-  endDate?: Date;
-}): number => {
-  const endMoment = moment(endDate);
-  if (!endMoment.isValid()) {
-    return 0;
-  }
-
-  const deliveryWindow = normalizeNumber(daysToDeliver);
-  if (orderDate && deliveryWindow > 0) {
-    const startMoment = moment(orderDate);
-    if (startMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.clone().startOf("day").diff(startMoment.clone().startOf("day"), "days") - deliveryWindow,
-      );
-    }
-  }
-
-  if (expectedDeliveryDate) {
-    const expectedMoment = moment(expectedDeliveryDate);
-    if (expectedMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.clone().startOf("day").diff(expectedMoment.clone().startOf("day"), "days"),
-      );
-    }
-  }
-
-  return 0;
-};
-
-const calculateOrderFine = ({
-  baseAmount,
-  daysToDeliver,
-  orderDate,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}: {
-  baseAmount?: unknown;
-  daysToDeliver?: unknown;
-  orderDate?: unknown;
-  expectedDeliveryDate?: unknown;
-  endDate?: Date;
-}): number => {
-  const exceededDays = calculateExceededDays({
-    daysToDeliver,
-    endDate,
-    expectedDeliveryDate,
-    orderDate,
-  });
-
-  if (exceededDays < 1) {
-    return 0;
-  }
-
-  return Math.round(normalizeNumber(baseAmount) * 0.01 * exceededDays * 100) / 100;
-};
+const normalizeNumber = (value: unknown): number => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 const main = async (): Promise<void> => {
   await connectToDb();

@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process";
 
-import moment from "moment";
 import { DataTypes, QueryTypes } from "sequelize";
 
 import { connectToDb, sequelize } from "../infrastructure/database";
 import { DashboardAggregateService } from "../modules/dashboard/dashboard-aggregate.service";
 import { DashboardRepository } from "../modules/dashboard/dashboard.repo";
+import { calculateOrderFine } from "../modules/orders/order-fines";
 import { getPermissionTemplateForUserType } from "../../app/modules/user/user.permissions";
 import { normalizePermissions, toPlainRecord, toText } from "../../app/modules/user/user.helpers";
 
@@ -15,7 +15,7 @@ const User = require("../../app/modules/user/user.model") as {
 
 const queryInterface = sequelize.getQueryInterface();
 
-const FINAL_FINE_STATUSES = [4, 5, 8] as const;
+const FINAL_FINE_STATUSES = [4, 5, 6, 7, 8] as const;
 const DEFAULT_ORDER_PRIORITY = 1;
 const DEFAULT_ORDER_SOURCE = 1;
 
@@ -57,73 +57,6 @@ const printBranchDiffSummary = (): void => {
 const normalizeNumber = (value: unknown): number => {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
-};
-
-const calculateExceededDays = ({
-  orderDate,
-  daysToDeliver,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}: {
-  orderDate?: unknown;
-  daysToDeliver?: unknown;
-  expectedDeliveryDate?: unknown;
-  endDate?: Date;
-}): number => {
-  const endMoment = moment(endDate);
-  if (!endMoment.isValid()) {
-    return 0;
-  }
-
-  const deliveryWindow = normalizeNumber(daysToDeliver);
-  if (orderDate && deliveryWindow > 0) {
-    const startMoment = moment(orderDate);
-    if (startMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.clone().startOf("day").diff(startMoment.clone().startOf("day"), "days") - deliveryWindow,
-      );
-    }
-  }
-
-  if (expectedDeliveryDate) {
-    const expectedMoment = moment(expectedDeliveryDate);
-    if (expectedMoment.isValid()) {
-      return Math.max(
-        0,
-        endMoment.clone().startOf("day").diff(expectedMoment.clone().startOf("day"), "days"),
-      );
-    }
-  }
-
-  return 0;
-};
-
-const calculateOrderFine = ({
-  baseAmount,
-  daysToDeliver,
-  orderDate,
-  expectedDeliveryDate,
-  endDate = new Date(),
-}: {
-  baseAmount?: unknown;
-  daysToDeliver?: unknown;
-  orderDate?: unknown;
-  expectedDeliveryDate?: unknown;
-  endDate?: Date;
-}): number => {
-  const exceededDays = calculateExceededDays({
-    daysToDeliver,
-    endDate,
-    expectedDeliveryDate,
-    orderDate,
-  });
-
-  if (exceededDays < 1) {
-    return 0;
-  }
-
-  return Math.round(normalizeNumber(baseAmount) * 0.01 * exceededDays * 100) / 100;
 };
 
 const ensureTable = async (tableName: string, columns: Record<string, object>): Promise<void> => {
@@ -872,7 +805,7 @@ const backfillUserPermissions = async (): Promise<void> => {
   }
 };
 
-const FINES_UPDATE_CHUNK_SIZE = 10;
+const FINES_UPDATE_CHUNK_SIZE = 100;
 
 /** `--fines-limit=N` caps the recalculation to the newest N eligible orders. */
 const getFinesLimit = (): number | null => {
@@ -928,14 +861,14 @@ const recalculateOrderFines = async (): Promise<void> => {
       and (
         coalesce(o.fine, 0) <> 0
         or (
-          coalesce(v."daysToDeliver", 0) > 0
-          and o."orderDate" is not null
-          and o."orderDate" + (v."daysToDeliver" * interval '1 day') < now()
+          o."expectedDeliveryDate" is not null
+          and o."expectedDeliveryDate" < now()
         )
         or (
-          coalesce(v."daysToDeliver", 0) = 0
-          and o."expectedDeliveryDate" is not null
-          and o."expectedDeliveryDate" < now()
+          o."expectedDeliveryDate" is null
+          and coalesce(v."daysToDeliver", 0) > 0
+          and o."orderDate" is not null
+          and o."orderDate" + (v."daysToDeliver" * interval '1 day') < now()
         )
       )
     order by o.id asc, ol.id asc

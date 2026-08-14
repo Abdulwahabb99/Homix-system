@@ -274,6 +274,23 @@ describe("orderRouter", () => {
     );
   });
 
+  it("preserves manual order and promised delivery dates for SLA and fine calculations", async () => {
+    const response = await request(app).post("/orders").send({
+      customer: { firstName: "عبير", phone: "01155559646" },
+      expectedDeliveryDate: "2026-08-11T00:00:00.000Z",
+      line_items: [{ price: 1000, product_id: 4455, quantity: 1, variant_id: 7788 }],
+      orderDate: "2026-08-01T00:00:00.000Z",
+    });
+
+    expect(response.status).toBe(200);
+    expect(legacyOrderService.saveImportedOrders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        expectedDeliveryDate: "2026-08-11T00:00:00.000Z",
+        orderDate: "2026-08-01T00:00:00.000Z",
+      }),
+    ], false, { id: 1, userType: "1" });
+  });
+
   it("passes explicit orderSource when creating manual orders", async () => {
     const payload = {
       customer: {
