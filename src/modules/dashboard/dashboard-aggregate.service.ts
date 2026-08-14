@@ -42,14 +42,12 @@ type DashboardDailyProductSaleModel = {
   bulkCreate: (payloads: ProductAggregateRecord[], options?: Record<string, unknown>) => Promise<unknown>;
   destroy: (options?: Record<string, unknown>) => Promise<number>;
   sync: (options?: Record<string, unknown>) => Promise<unknown>;
-  upsert: (payload: ProductAggregateRecord) => Promise<unknown>;
 };
 
 type DashboardDailyCategorySaleModel = {
   bulkCreate: (payloads: CategoryAggregateRecord[], options?: Record<string, unknown>) => Promise<unknown>;
   destroy: (options?: Record<string, unknown>) => Promise<number>;
   sync: (options?: Record<string, unknown>) => Promise<unknown>;
-  upsert: (payload: CategoryAggregateRecord) => Promise<unknown>;
 };
 
 type OrderRecord = {
@@ -796,13 +794,17 @@ export class DashboardAggregateService {
 
   private async upsertProductRows(rows: ProductAggregateRecord[]): Promise<void> {
     for (const batch of this.chunkRows(rows, 250)) {
-      await Promise.all(batch.map((row) => dashboardDailyProductSaleModel.upsert(row)));
+      await dashboardDailyProductSaleModel.bulkCreate(batch, {
+        updateOnDuplicate: [...BULK_PRODUCT_UPDATE_FIELDS],
+      });
     }
   }
 
   private async upsertCategoryRows(rows: CategoryAggregateRecord[]): Promise<void> {
     for (const batch of this.chunkRows(rows, 250)) {
-      await Promise.all(batch.map((row) => dashboardDailyCategorySaleModel.upsert(row)));
+      await dashboardDailyCategorySaleModel.bulkCreate(batch, {
+        updateOnDuplicate: [...BULK_CATEGORY_UPDATE_FIELDS],
+      });
     }
   }
 
