@@ -180,14 +180,27 @@ export default function Shipments() {
     }
   };
 
-  const handleTabChange = (tabId: ShipmentTabId) => {
-    if (tabId === activeTab) return;
+  const markTabVisited = (tabId: ShipmentTabId) => {
     setVisitedTabs((current) => {
       if (current.has(tabId)) return current;
       const next = new Set(current);
       next.add(tabId);
       return next;
     });
+  };
+
+  const prepareTab = (tabId: ShipmentTabId) => {
+    prefetchTab(tabId);
+    if (tabId !== "shipments") {
+      // Render the panel at low priority while the pointer is travelling to it,
+      // rather than doing all of that synchronous work in the click itself.
+      React.startTransition(() => markTabVisited(tabId));
+    }
+  };
+
+  const handleTabChange = (tabId: ShipmentTabId) => {
+    if (tabId === activeTab) return;
+    markTabVisited(tabId);
     setActiveTab(tabId);
   };
 
@@ -414,8 +427,8 @@ export default function Shipments() {
                 role="tab"
                 aria-selected={active}
                 aria-controls={`shipment-tab-panel-${tab.id}`}
-                onPointerEnter={() => prefetchTab(tab.id)}
-                onFocus={() => prefetchTab(tab.id)}
+                onPointerEnter={() => prepareTab(tab.id)}
+                onFocus={() => prepareTab(tab.id)}
                 onClick={() => handleTabChange(tab.id)}
                 sx={{
                   flex: 1,

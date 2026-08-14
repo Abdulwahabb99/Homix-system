@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Box } from "@mui/material";
 import { ToastContainer } from "react-toastify";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -13,6 +13,11 @@ import ProductsSection from "./components/ProductsSection";
 import ShippingPaymentSection from "./components/ShippingPaymentSection";
 import OrderSummarySidebar from "./components/OrderSummarySidebar";
 import DraftInvoiceDialog from "./components/DraftInvoiceDialog";
+
+const MemoizedCustomerSection = React.memo(CustomerSection);
+const MemoizedProductsSection = React.memo(ProductsSection);
+const MemoizedShippingPaymentSection = React.memo(ShippingPaymentSection);
+const MemoizedOrderSummarySidebar = React.memo(OrderSummarySidebar);
 
 export default function OrderCreate() {
   const form = useOrderCreateForm();
@@ -46,34 +51,44 @@ export default function OrderCreate() {
     ]
   );
 
-  const handlePickProduct = (product: any) => {
+  const handlePickProduct = useCallback((product: any) => {
     if (product) form.addLineItem(productToLineItem(product));
     setIsPickerOpen(false);
-  };
+  }, [form.addLineItem]);
+
+  const openPicker = useCallback(() => setIsPickerOpen(true), []);
+  const closePicker = useCallback(() => setIsPickerOpen(false), []);
+  const openInvoice = useCallback(() => setIsInvoiceOpen(true), []);
+  const closeInvoice = useCallback(() => setIsInvoiceOpen(false), []);
+
+  const pageHeader = useMemo(
+    () => (
+      <HomixPageHeader
+        breadcrumb={<OrderCreateBreadcrumb />}
+        actions={
+          <OrderCreateHeaderActions
+            onSubmit={form.submit}
+            canSubmit={form.isValid}
+            isSubmitting={form.isSubmitting}
+            onPrintInvoice={openInvoice}
+            canPrintInvoice={form.lineItems.length > 0}
+          />
+        }
+      />
+    ),
+    [form.submit, form.isValid, form.isSubmitting, form.lineItems.length, openInvoice]
+  );
 
   return (
     <DashboardLayout
-      header={
-        <HomixPageHeader
-          breadcrumb={<OrderCreateBreadcrumb />}
-          actions={
-            <OrderCreateHeaderActions
-              onSubmit={form.submit}
-              canSubmit={form.isValid}
-              isSubmitting={form.isSubmitting}
-              onPrintInvoice={() => setIsInvoiceOpen(true)}
-              canPrintInvoice={form.lineItems.length > 0}
-            />
-          }
-        />
-      }
+      header={pageHeader}
     >
       <ToastContainer />
 
       {isInvoiceOpen && (
         <DraftInvoiceDialog
           open={isInvoiceOpen}
-          onClose={() => setIsInvoiceOpen(false)}
+          onClose={closeInvoice}
           form={draftForm}
         />
       )}
@@ -81,7 +96,7 @@ export default function OrderCreate() {
       {isPickerOpen && (
         <AddProductModal
           open={isPickerOpen}
-          onClose={() => setIsPickerOpen(false)}
+          onClose={closePicker}
           onConfirm={handlePickProduct}
           product={null}
         />
@@ -91,14 +106,14 @@ export default function OrderCreate() {
         <Box sx={{ display: "grid", gap: "16px", gridTemplateColumns: { xs: "1fr", lg: "1fr 330px" }, alignItems: "start" }}>
           {/* LEFT — form */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <CustomerSection customer={form.customer} onChange={form.setCustomerField} />
-            <ProductsSection
+            <MemoizedCustomerSection customer={form.customer} onChange={form.setCustomerField} />
+            <MemoizedProductsSection
               lineItems={form.lineItems}
-              onOpenPicker={() => setIsPickerOpen(true)}
+              onOpenPicker={openPicker}
               onRemove={form.removeLineItem}
               onQuantityChange={form.setLineItemQuantity}
             />
-            <ShippingPaymentSection
+            <MemoizedShippingPaymentSection
               orderDate={form.orderDate}
               setOrderDate={form.setOrderDate}
               expectedDeliveryDate={form.expectedDeliveryDate}
@@ -117,7 +132,7 @@ export default function OrderCreate() {
           </Box>
 
           {/* RIGHT — summary */}
-          <OrderSummarySidebar
+          <MemoizedOrderSummarySidebar
             totals={form.totals}
             itemsCount={form.lineItems.length}
             canSubmit={form.isValid}

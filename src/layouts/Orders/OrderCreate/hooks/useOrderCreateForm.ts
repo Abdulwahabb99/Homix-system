@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateOrderFormMutation } from "query/orderCreateForm.api";
 import { DEFAULT_DELIVERY_BY, DEFAULT_PAYMENT_STATUS } from "../constants";
@@ -46,26 +46,30 @@ export function useOrderCreateForm() {
   const [toBeCollectedTouched, setToBeCollectedTouched] = useState(false);
   const [toBeCollectedInput, setToBeCollectedInput] = useState<string>("");
 
-  const setCustomerField = (field: keyof CustomerForm, value: string) =>
+  const setCustomerField = useCallback((field: keyof CustomerForm, value: string) => {
     setCustomer((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  const addLineItem = (item: OrderLineItem) => setLineItems((prev) => [...prev, item]);
+  const addLineItem = useCallback((item: OrderLineItem) => {
+    setLineItems((prev) => [...prev, item]);
+  }, []);
 
-  const removeLineItem = (key: string) =>
+  const removeLineItem = useCallback((key: string) => {
     setLineItems((prev) => prev.filter((li) => li.key !== key));
+  }, []);
 
-  const setLineItemQuantity = (key: string, quantity: number) =>
+  const setLineItemQuantity = useCallback((key: string, quantity: number) =>
     setLineItems((prev) =>
       prev.map((li) => (li.key === key ? { ...li, quantity: Math.max(1, quantity) } : li))
-    );
+    ), []);
 
   const autoToBeCollected = suggestedToBeCollected(lineItems, shippingFees, downPayment);
   const toBeCollected = toBeCollectedTouched ? toBeCollectedInput : String(autoToBeCollected);
 
-  const setToBeCollected = (value: string) => {
+  const setToBeCollected = useCallback((value: string) => {
     setToBeCollectedTouched(true);
     setToBeCollectedInput(value);
-  };
+  }, []);
 
   const totals: OrderTotals = useMemo(
     () => ({
@@ -80,21 +84,35 @@ export function useOrderCreateForm() {
   const isValid =
     !!customer.firstName.trim() && !!customer.phone.trim() && lineItems.length > 0;
 
-  const submit = () => {
-    if (!isValid || mutation.isPending) return;
+  // Keep submit stable so typing does not invalidate the memoized header and
+  // summary. The ref always points at the latest form snapshot.
+  const submitSnapshotRef = useRef({
+    customer, lineItems, orderDate, expectedDeliveryDate, paymentStatus,
+    deliveryBy, downPayment, shippingFees, toBeCollected, isValid,
+  });
+  submitSnapshotRef.current = {
+    customer, lineItems, orderDate, expectedDeliveryDate, paymentStatus,
+    deliveryBy, downPayment, shippingFees, toBeCollected, isValid,
+  };
+  const isSubmittingRef = useRef(mutation.isPending);
+  isSubmittingRef.current = mutation.isPending;
+
+  const submit = useCallback(() => {
+    const current = submitSnapshotRef.current;
+    if (!current.isValid || isSubmittingRef.current) return;
     const payload = buildOrderPayload({
-      customer,
-      lineItems,
-      orderDate,
-      expectedDeliveryDate,
-      paymentStatus,
-      deliveryBy,
-      downPayment,
-      shippingFees,
-      toBeCollected,
+      customer: current.customer,
+      lineItems: current.lineItems,
+      orderDate: current.orderDate,
+      expectedDeliveryDate: current.expectedDeliveryDate,
+      paymentStatus: current.paymentStatus,
+      deliveryBy: current.deliveryBy,
+      downPayment: current.downPayment,
+      shippingFees: current.shippingFees,
+      toBeCollected: current.toBeCollected,
     });
     mutation.mutate(payload, { onSuccess: () => navigate("/orders") });
-  };
+  }, [mutation.mutate, navigate]);
 
   return {
     customer,

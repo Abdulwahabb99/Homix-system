@@ -9,6 +9,18 @@ import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
 import { useLocation } from "react-router-dom";
 import { useMaterialUIController, setLayout } from "context";
 
+const dashboardContentSx = ({ breakpoints, transitions, functions: { pxToRem } }: any) => ({
+  p: 3,
+  position: "relative",
+  [breakpoints.up("xl")]: {
+    marginInlineStart: pxToRem(220),
+    transition: transitions.create(["margin-inline-start", "margin-inline-end"], {
+      easing: transitions.easing.easeInOut,
+      duration: transitions.duration.standard,
+    }),
+  },
+});
+
 export interface DashboardLayoutProps {
   children: React.ReactNode;
   /**
@@ -49,18 +61,7 @@ export default function DashboardLayout({
 
   return (
     <MDBox
-      sx={({ breakpoints, transitions, functions: { pxToRem } }) => ({
-        p: 3,
-        position: "relative",
-
-        [breakpoints.up("xl")]: {
-          marginInlineStart: pxToRem(220),
-          transition: transitions.create(["margin-inline-start", "margin-inline-end"], {
-            easing: transitions.easing.easeInOut,
-            duration: transitions.duration.standard,
-          }),
-        },
-      })}
+      sx={dashboardContentSx}
     >
       {resolvedHeader}
       {children}
