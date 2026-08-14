@@ -246,7 +246,9 @@ const buildShipmentWhereClause = (
   }
 
   if (filters.shipmentType) {
-    andConditions.push(where(fn("lower", col("Order.shipmentType")), { [Op.like]: `%${filters.shipmentType.toLowerCase()}%` }));
+    andConditions.push(where(fn("lower", col("Order.shipmentType")), {
+      [Op.in]: filters.shipmentType.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean),
+    }));
   }
 
   if (filters.paymentStatus) {

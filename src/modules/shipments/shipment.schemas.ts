@@ -57,7 +57,7 @@ export const shipmentListQuerySchema = z.object({
   shippingCompany: csvString.optional(),
   shipmentNumber: z.string().trim().optional(),
   shipmentStatus: csvString.optional(),
-  shipmentType: z.string().trim().optional(),
+  shipmentType: csvString.optional(),
   sort: sortSchema,
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   startDate: dateString.optional(),
