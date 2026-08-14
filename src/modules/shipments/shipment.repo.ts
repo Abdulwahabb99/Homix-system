@@ -265,6 +265,12 @@ const buildShipmentWhereClause = (
     andConditions.push(where(col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
   }
 
+  if (filters.shippingCompany) {
+    andConditions.push(where(col("shippingCompanyRecord.id"), {
+      [Op.in]: filters.shippingCompany.split(",").map(Number).filter(Number.isFinite),
+    }));
+  }
+
   if (filters.deliveryStatus) {
     const statuses = filters.deliveryStatus.split(",").map(Number).filter((status) => [1, 2, 3].includes(status));
     const today = new Date();
@@ -338,6 +344,10 @@ const buildSummaryIncludes = (filters: Omit<ShipmentListQuery, "page" | "size">)
 
   if (filters.customerName || filters.customerPhone) {
     includes.push({ as: "customer", attributes: [], model: customerModel, required: true });
+  }
+
+  if (filters.shippingCompany) {
+    includes.push({ as: "shippingCompanyRecord", attributes: [], model: shippingCompanyModel, required: true });
   }
 
   return includes;

@@ -54,6 +54,7 @@ export const shipmentListQuerySchema = z.object({
   paymentStatus: csvString.optional(),
   priority: csvString.optional(),
   scheduleStatus: csvString.optional(),
+  shippingCompany: csvString.optional(),
   shipmentNumber: z.string().trim().optional(),
   shipmentStatus: csvString.optional(),
   shipmentType: z.string().trim().optional(),

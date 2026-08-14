@@ -739,6 +739,21 @@ describe("shipmentRouter", () => {
     );
   });
 
+  it("filters shipments by shipping company id", async () => {
+    const response = await request(app).get("/shipments").query({
+      page: 1,
+      shippingCompany: "3,4",
+      size: 20,
+    });
+
+    expect(response.status).toBe(200);
+    const whereClause = orderModel.findAndCountAll.mock.calls[0][0].where as Record<PropertyKey, unknown>;
+    const conditions = whereClause[Op.and] as Array<{ logic?: Record<PropertyKey, unknown> }>;
+    expect(conditions).toContainEqual(expect.objectContaining({
+      logic: expect.objectContaining({ [Op.in]: [3, 4] }),
+    }));
+  });
+
   it("filters shipments by manual priority", async () => {
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [
       makeShipment({
