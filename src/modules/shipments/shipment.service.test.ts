@@ -20,10 +20,11 @@ describe("ShipmentService", () => {
 
     const service = new ShipmentService(repository);
 
-    await expect(service.updateShipment(9802, { shipmentStatus: 3 })).resolves.toEqual({
+    await expect(service.updateShipment(9802, { shipmentStatus: 3 }, { id: 7 })).resolves.toEqual({
       data: { id: 9802, shipmentStatus: 3 },
       ok: true,
     });
+    expect(repository.updateShipment).toHaveBeenCalledWith(9802, { shipmentStatus: 3 }, 7);
   });
 
   it("forces deliveryBy to homix and recalculates amount to collect on shipment creation", async () => {
@@ -120,11 +121,12 @@ describe("ShipmentService", () => {
     const service = new ShipmentService(repository);
 
     await expect(
-      service.createVendorReturn({ orderId: 9802, reason: "منتج تالف", status: 2 }),
+      service.createVendorReturn({ orderId: 9802, reason: "منتج تالف", status: 2 }, { id: 7 }),
     ).resolves.toEqual({
       data: { id: 41, status: 2 },
       ok: true,
     });
+    expect(repository.createReturnRecord).toHaveBeenCalledWith(1, expect.any(Object), 7);
   });
 
   it("updates vendor returns through the typed repository path", async () => {

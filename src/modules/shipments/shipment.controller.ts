@@ -35,11 +35,17 @@ export class ShipmentController {
   };
 
   public createVendorReturn = async (request: Request, response: Response): Promise<void> => {
-    response.status(201).json({ data: unwrap(await this.shipmentService.createVendorReturn(request.body)), status: true });
+    response.status(201).json({
+      data: unwrap(await this.shipmentService.createVendorReturn(request.body, request.user ?? { id: 0 })),
+      status: true,
+    });
   };
 
   public createCustomerReturn = async (request: Request, response: Response): Promise<void> => {
-    response.status(201).json({ data: unwrap(await this.shipmentService.createCustomerReturn(request.body)), status: true });
+    response.status(201).json({
+      data: unwrap(await this.shipmentService.createCustomerReturn(request.body, request.user ?? { id: 0 })),
+      status: true,
+    });
   };
 
   public updateVendorReturn = async (request: Request, response: Response): Promise<void> => {
@@ -50,7 +56,14 @@ export class ShipmentController {
   };
 
   public updateCustomerReturn = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.shipmentService.updateCustomerReturn(Number(request.params.returnId), request.body)), status: true });
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateCustomerReturn(
+        Number(request.params.returnId),
+        request.body,
+        request.user ?? { id: 0 },
+      )),
+      status: true,
+    });
   };
 
   public listInventory = async (request: Request, response: Response): Promise<void> => {
@@ -141,7 +154,14 @@ export class ShipmentController {
   };
 
   public updateShipment = async (request: Request, response: Response): Promise<void> => {
-    response.status(200).json({ data: unwrap(await this.shipmentService.updateShipment(Number(request.params.shipmentId), request.body)), status: true });
+    response.status(200).json({
+      data: unwrap(await this.shipmentService.updateShipment(
+        Number(request.params.shipmentId),
+        request.body,
+        request.user ?? { id: 0 },
+      )),
+      status: true,
+    });
   };
 
   public deleteShipment = async (request: Request, response: Response): Promise<void> => {

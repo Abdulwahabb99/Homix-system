@@ -80,12 +80,12 @@ export class ShipmentService {
     return success(await this.shipmentRepository.listCustomerReturns(filters, vendorId));
   }
 
-  public async createVendorReturn(payload: ReturnMutationInput): Promise<Result<ReturnListResponse["items"][number]>> {
-    return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.TO_VENDOR, payload));
+  public async createVendorReturn(payload: ReturnMutationInput, user: ShipmentRequestUser): Promise<Result<ReturnListResponse["items"][number]>> {
+    return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.TO_VENDOR, payload, user.id));
   }
 
-  public async createCustomerReturn(payload: ReturnMutationInput): Promise<Result<ReturnListResponse["items"][number]>> {
-    return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.FROM_CUSTOMER, payload));
+  public async createCustomerReturn(payload: ReturnMutationInput, user: ShipmentRequestUser): Promise<Result<ReturnListResponse["items"][number]>> {
+    return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.FROM_CUSTOMER, payload, user.id));
   }
 
   public async updateVendorReturn(
@@ -106,7 +106,7 @@ export class ShipmentService {
       throw new UnauthorizedError("Only admins can modify forfeited vendor returns");
     }
 
-    const returnRecord = await this.shipmentRepository.updateReturnRecord(returnId, SHIPMENT_RETURN_TYPE.TO_VENDOR, payload);
+    const returnRecord = await this.shipmentRepository.updateReturnRecord(returnId, SHIPMENT_RETURN_TYPE.TO_VENDOR, payload, user.id);
     if (!returnRecord) {
       throw new NotFoundError("Return not found");
     }
@@ -114,8 +114,12 @@ export class ShipmentService {
     return success(returnRecord);
   }
 
-  public async updateCustomerReturn(returnId: number, payload: Partial<ReturnMutationInput>): Promise<Result<ReturnListResponse["items"][number]>> {
-    const returnRecord = await this.shipmentRepository.updateReturnRecord(returnId, SHIPMENT_RETURN_TYPE.FROM_CUSTOMER, payload);
+  public async updateCustomerReturn(
+    returnId: number,
+    payload: Partial<ReturnMutationInput>,
+    user: ShipmentRequestUser,
+  ): Promise<Result<ReturnListResponse["items"][number]>> {
+    const returnRecord = await this.shipmentRepository.updateReturnRecord(returnId, SHIPMENT_RETURN_TYPE.FROM_CUSTOMER, payload, user.id);
     if (!returnRecord) {
       throw new NotFoundError("Return not found");
     }
@@ -294,8 +298,8 @@ export class ShipmentService {
     response.end();
   }
 
-  public async updateShipment(shipmentId: number, payload: ShipmentMutationPayload): Promise<Result<unknown>> {
-    const shipment = await this.shipmentRepository.updateShipment(shipmentId, payload);
+  public async updateShipment(shipmentId: number, payload: ShipmentMutationPayload, user: ShipmentRequestUser): Promise<Result<unknown>> {
+    const shipment = await this.shipmentRepository.updateShipment(shipmentId, payload, user.id);
     if (!shipment) {
       throw new NotFoundError("Shipment not found");
     }

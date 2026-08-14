@@ -3,7 +3,7 @@ import { Op, fn, col, where } from "sequelize";
 import { sequelize } from "../../infrastructure/database";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { buildLogMessage } from "../orders/order.helpers";
-import { ORDER_SOURCE_ARABIC, ORDER_SOURCE, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
+import { DELIVERY_BY, ORDER_SOURCE_ARABIC, ORDER_SOURCE, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
@@ -98,6 +98,29 @@ const shippingCompanyModel = require("../../../app/modules/shipments/shippingCom
 const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
 const SHIPMENT_SCHEDULE_LABELS = SHIPMENT_SCHEDULE_STATUS_ARABIC as Record<number, string>;
 const SHIPMENT_SORTABLE_FIELDS = ["orderDate", "priority", "subTotalPrice", "totalPrice"] as const;
+
+const logShipmentStatusTransition = async (
+  orderId: number,
+  fromStatus: unknown,
+  toStatus: unknown,
+  userId?: number,
+): Promise<void> => {
+  const from = toNullableNumber(fromStatus);
+  const to = toNullableNumber(toStatus);
+  if (from === to) {
+    return;
+  }
+
+  await logModel.create({
+    action: "update",
+    entityId: orderId,
+    entityType: "order",
+    field: "shipmentStatus",
+    from: from === null ? null : String(from),
+    to: to === null ? null : String(to),
+    userId: userId ?? null,
+  });
+};
 
 type ShipmentSortField = (typeof SHIPMENT_SORTABLE_FIELDS)[number];
 type ShipmentSortDirection = 1 | -1;
@@ -1038,7 +1061,7 @@ export class ShipmentRepository {
     return this.listReturnsByStatus(SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER, filters, vendorId);
   }
 
-  public async createReturnRecord(returnType: number, payload: ReturnMutationInput): Promise<ReturnItem> {
+  public async createReturnRecord(returnType: number, payload: ReturnMutationInput, userId?: number): Promise<ReturnItem> {
     const shipment = await orderModel.findByPk(payload.orderId, {
       include: buildIncludes(),
     });
@@ -1061,9 +1084,9 @@ export class ShipmentRepository {
     const vendor = toPlain(toPlain(firstLine.product).vendor);
     const status = payload.status ?? getFallbackReturnStatus(returnType);
     const returnDate = payload.returnDate ? new Date(payload.returnDate) : new Date();
-    await shipment.update({
-      shipmentStatus: getShipmentStatusForReturnType(returnType),
-    });
+    const nextShipmentStatus = getShipmentStatusForReturnType(returnType);
+    await shipment.update({ shipmentStatus: nextShipmentStatus });
+    await logShipmentStatusTransition(payload.orderId, plainShipment.shipmentStatus, nextShipmentStatus, userId);
     const createdRecord = await shipmentReturnModel.create({
       completedAt: isFinalReturnStatus(returnType, status) ? returnDate : null,
       orderId: payload.orderId,
@@ -1126,7 +1149,12 @@ export class ShipmentRepository {
     });
   }
 
-  public async updateReturnRecord(returnId: number, returnType: number, payload: Partial<ReturnMutationInput>): Promise<ReturnItem | null> {
+  public async updateReturnRecord(
+    returnId: number,
+    returnType: number,
+    payload: Partial<ReturnMutationInput>,
+    userId?: number,
+  ): Promise<ReturnItem | null> {
     /* A shipment can be flipped to a "returned" status without a shipmentReturns
        row ever being created; the list then falls back to exposing the order id.
        So an id that matches no return row is treated as an order id and the
@@ -1161,6 +1189,12 @@ export class ShipmentRepository {
     const plainShipmentBeforeSync = toPlain(shipment);
     if (toNumber(plainShipmentBeforeSync.shipmentStatus) !== shipmentStatus) {
       await shipment.update({ shipmentStatus });
+      await logShipmentStatusTransition(
+        toNumber(plainShipmentBeforeSync.id),
+        plainShipmentBeforeSync.shipmentStatus,
+        shipmentStatus,
+        userId,
+      );
     }
 
     const nextStatus = payload.status ?? toNumber(plainReturn.status);
@@ -1600,30 +1634,10 @@ export class ShipmentRepository {
       SHIPMENT_STATUS.RETURNED_TO_VENDOR,
     ]);
     const whereClause: Record<string | symbol, unknown> = {
-      shippedFromInventory: true,
+      deliveryBy: DELIVERY_BY.HOMIX,
       shipmentStatus: { [Op.in]: performanceStatuses },
       ...(vendorId ? { "$orderLines.product.vendor.id$": vendorId } : {}),
     };
-
-    const reportDateRange: Record<symbol, Date> = {};
-    if (filters.startDate) {
-      const startDate = toDateRangeBoundary(filters.startDate, "start");
-      if (startDate) {
-        reportDateRange[Op.gte] = startDate;
-      }
-    }
-    if (filters.endDate) {
-      const endDate = toDateRangeBoundary(filters.endDate, "end");
-      if (endDate) {
-        reportDateRange[Op.lte] = endDate;
-      }
-    }
-    if (Reflect.ownKeys(reportDateRange).length > 0) {
-      whereClause[Op.or] = [
-        { deliveryDate: reportDateRange, shipmentStatus: SHIPMENT_STATUS.DELIVERED },
-        { shipmentStatus: { [Op.in]: [...returnedStatuses] }, updatedAt: reportDateRange },
-      ];
-    }
 
     const orders = await orderModel.findAll({
       include: buildIncludes(),
@@ -1632,10 +1646,74 @@ export class ShipmentRepository {
       where: whereClause,
     });
 
-    const items = orders.map((order: unknown) => ({
+    const unfilteredItems = orders.map((order: unknown) => ({
       item: mapShipmentListItem(order),
       order: toPlain(order),
     }));
+    const orderIds = unfilteredItems.map(({ item }) => item.id);
+    const [statusLogs, returnRecords] = orderIds.length > 0
+      ? await Promise.all([
+        logModel.findAll({
+          order: [["createdAt", "ASC"]],
+          where: {
+            action: "update",
+            entityId: { [Op.in]: orderIds },
+            entityType: "order",
+            field: "shipmentStatus",
+            to: { [Op.in]: performanceStatuses.map(String) },
+          },
+        }),
+        shipmentReturnModel.findAll({
+          order: [["createdAt", "ASC"]],
+          where: { orderId: { [Op.in]: orderIds } },
+        }),
+      ])
+      : [[], []];
+
+    const statusTransitionDates = new Map<string, Date>();
+    for (const logValue of statusLogs) {
+      const log = toPlain(logValue);
+      const createdAt = log.createdAt ? new Date(String(log.createdAt)) : null;
+      if (createdAt && !Number.isNaN(createdAt.getTime())) {
+        statusTransitionDates.set(`${toNumber(log.entityId)}::${toNumber(log.to)}`, createdAt);
+      }
+    }
+
+    const returnDates = new Map<string, Date>();
+    for (const returnValue of returnRecords) {
+      const returnRecord = toPlain(returnValue);
+      const dateValue = returnRecord.completedAt
+        ?? returnRecord.returnDate
+        ?? returnRecord.startedAt
+        ?? returnRecord.createdAt;
+      const returnDate = dateValue ? new Date(String(dateValue)) : null;
+      if (returnDate && !Number.isNaN(returnDate.getTime())) {
+        returnDates.set(`${toNumber(returnRecord.orderId)}::${toNumber(returnRecord.returnType)}`, returnDate);
+      }
+    }
+
+    const rangeStart = filters.startDate ? toDateRangeBoundary(filters.startDate, "start") : null;
+    const rangeEnd = filters.endDate ? toDateRangeBoundary(filters.endDate, "end") : null;
+    const items = unfilteredItems
+      .map(({ item, order }) => {
+        const shipmentStatus = item.shipmentStatus ?? 0;
+        const transitionDate = statusTransitionDates.get(`${item.id}::${shipmentStatus}`);
+        const returnType = shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR
+          ? SHIPMENT_RETURN_TYPE.TO_VENDOR
+          : SHIPMENT_RETURN_TYPE.FROM_CUSTOMER;
+        const fallbackValue = shipmentStatus === SHIPMENT_STATUS.DELIVERED
+          ? order.deliveryDate ?? order.updatedAt ?? order.orderDate
+          : returnDates.get(`${item.id}::${returnType}`) ?? order.updatedAt ?? order.deliveryDate ?? order.orderDate;
+        const fallbackDate = fallbackValue ? new Date(String(fallbackValue)) : null;
+        const reportDate = transitionDate
+          ?? (fallbackDate && !Number.isNaN(fallbackDate.getTime()) ? fallbackDate : null);
+        return { item, order, reportDate };
+      })
+      .filter(({ reportDate }) => {
+        if (!rangeStart && !rangeEnd) return true;
+        if (!reportDate) return false;
+        return (!rangeStart || reportDate >= rangeStart) && (!rangeEnd || reportDate <= rangeEnd);
+      });
     const chartMap = new Map<string, number>();
     const providerMap = new Map<string, {
       deliveredOrdersCount: number;
@@ -1652,16 +1730,12 @@ export class ShipmentRepository {
       totalGmv: number;
     }>();
 
-    for (const { item, order } of items) {
+    for (const { item, order, reportDate } of items) {
       const shipmentStatus = item.shipmentStatus ?? 0;
       const isDelivered = shipmentStatus === SHIPMENT_STATUS.DELIVERED;
       const isReturned = returnedStatuses.has(shipmentStatus);
-      const reportDateValue = isDelivered
-        ? order.deliveryDate ?? order.updatedAt ?? order.orderDate
-        : order.updatedAt ?? order.deliveryDate ?? order.orderDate;
-      const reportDate = reportDateValue ? new Date(String(reportDateValue)) : null;
 
-      if (isDelivered && reportDate && !Number.isNaN(reportDate.getTime())) {
+      if (isDelivered && reportDate) {
         let label = reportDate.toISOString().slice(0, 10);
         if (filters.period === "monthly") {
           label = reportDate.toISOString().slice(0, 7);
@@ -1707,7 +1781,7 @@ export class ShipmentRepository {
       vendorMap.set(vendorKey, vendorValue);
     }
 
-    const deliveredItems: Array<{ item: ShipmentListItem; order: Record<string, unknown> }> = items
+    const deliveredItems = items
       .filter(({ item }: { item: ShipmentListItem }) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED);
     const deliveredOrdersCount = deliveredItems.length;
     const totalGmv = deliveredItems.reduce(
@@ -1747,12 +1821,13 @@ export class ShipmentRepository {
     };
   }
 
-  public async updateShipment(shipmentId: number, payload: Record<string, unknown>): Promise<unknown | null> {
+  public async updateShipment(shipmentId: number, payload: Record<string, unknown>, userId?: number): Promise<unknown | null> {
     const shipment = await orderModel.findByPk(shipmentId);
     if (!shipment) {
       return null;
     }
 
+    const plainShipmentBeforeUpdate = toPlain(shipment);
     const nextPayload = await this.normalizeShippingCompanyPayload(payload);
     /* A cleared <select>/<input> arrives as "", which is not null and so is put
        through the column validators — `shipmentType: ""` failed its isIn rule
@@ -1773,6 +1848,14 @@ export class ShipmentRepository {
     }
 
     await shipment.update(nextPayload);
+    if (Object.prototype.hasOwnProperty.call(nextPayload, "shipmentStatus")) {
+      await logShipmentStatusTransition(
+        shipmentId,
+        plainShipmentBeforeUpdate.shipmentStatus,
+        nextPayload.shipmentStatus,
+        userId,
+      );
+    }
     return shipment;
   }
 
