@@ -751,7 +751,6 @@ export class ShipmentRepository {
    * row-by-row path; every other filter combination is handled by the database.
    */
   public async getSummary(filters: Omit<ShipmentListQuery, "page" | "size">, vendorId?: number | null): Promise<ShipmentSummaryResponse> {
-    const needsDerivedFilters = false;
     const whereClause = buildShipmentWhereClause(filters, vendorId);
 
     const buildCards = (
@@ -787,10 +786,9 @@ export class ShipmentRepository {
       SHIPMENT_STATUS.FAILED_DELIVERY,
     ];
 
-    if (!needsDerivedFilters) {
-      /* One grouped pass over the matching orders. The vendor/customer joins are
-         only included when a filter actually references them. */
-      const rows = await orderModel.findAll({
+    /* One grouped pass over the matching orders. The vendor/customer joins are
+       only included when a filter actually references them. */
+    const rows = await orderModel.findAll({
         attributes: [
           "shipmentStatus",
           "paymentStatus",
@@ -831,61 +829,12 @@ export class ShipmentRepository {
         }
       }
 
-      return buildCards(total, deliveredCount, inDeliveryCount, failedOrReturnedCount, totalGmv);
-    }
-
-    const orders = await orderModel.findAll({
-      include: buildShipmentListIncludes(),
-      subQuery: false,
-      where: whereClause,
-    });
-    const items: ShipmentListItem[] = orders
-      .map((order: unknown) => mapShipmentListItem(order))
-      .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority))
-      .filter((item: ShipmentListItem) => matchesShipmentDeliveryStatus(item, filters.deliveryStatus));
-
-    return buildCards(
-      items.length,
-      items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length,
-      items.filter((item: ShipmentListItem) => inDeliveryStatuses.includes(item.shipmentStatus ?? 0)).length,
-      items.filter((item: ShipmentListItem) => failedStatuses.includes(item.shipmentStatus ?? 0)).length,
-      items.reduce((sum: number, item: ShipmentListItem) => sum + item.amountToCollect, 0),
-    );
+    return buildCards(total, deliveredCount, inDeliveryCount, failedOrReturnedCount, totalGmv);
   }
 
   public async listShipments(filters: ShipmentListQuery, vendorId?: number | null): Promise<ShipmentListResponse> {
     const whereClause = buildShipmentWhereClause(filters, vendorId);
     const sortEntries = getShipmentSortEntries(filters.sort);
-
-    if (false) {
-      const rows = await orderModel.findAll({
-        include: buildShipmentListIncludes(),
-        order: buildShipmentSort(sortEntries),
-        subQuery: false,
-        where: whereClause,
-      });
-      const filteredItems = rows
-        .map((row: unknown) => ({ item: mapShipmentListItem(row), row: toPlain(row) }))
-        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentPriority(item, filters.priority))
-        .filter(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => matchesShipmentDeliveryStatus(item, filters.deliveryStatus));
-      if (sortEntries.length > 0) {
-        filteredItems.sort(
-          (
-            left: { item: ShipmentListItem; row: Record<string, unknown> },
-            right: { item: ShipmentListItem; row: Record<string, unknown> },
-          ) => compareShipmentEntries(left, right, sortEntries),
-        );
-      }
-      const start = (filters.page - 1) * filters.size;
-      const end = start + filters.size;
-
-      return {
-        items: filteredItems.slice(start, end).map(({ item }: { item: ShipmentListItem; row: Record<string, unknown> }) => item),
-        page: filters.page ?? DEFAULT_PAGE_NUMBER,
-        size: filters.size ?? DEFAULT_PAGE_SIZE,
-        totalCount: filteredItems.length,
-      };
-    }
 
     const result = await orderModel.findAndCountAll({
       distinct: true,

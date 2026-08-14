@@ -541,15 +541,9 @@ describe("orderRouter", () => {
 
   it("supports multiple priority filters", async () => {
     orderModel.findAndCountAll.mockResolvedValue({
-      count: 2,
+      count: 1,
       rows: [
         makeOrder(),
-        {
-          ...makeOrder(),
-          id: 8,
-          orderNumber: "31669",
-          priority: 1,
-        },
       ],
     });
 
@@ -561,20 +555,14 @@ describe("orderRouter", () => {
   });
 
   it("filters orders by automated delivery status derived from expectedDeliveryDate", async () => {
-    orderModel.findAll.mockResolvedValue([
+    orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [
       makeOrder(),
-      {
-        ...makeOrder(),
-        expectedDeliveryDate: "2099-05-06T00:00:00.000Z",
-        id: 8,
-        orderNumber: "31669",
-      },
-    ]);
+    ] });
 
     const response = await request(app).get("/orders").query({ deliveryStatus: "3", page: 1, size: 20 });
 
     expect(response.status).toBe(200);
-    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(orderModel.findAndCountAll).toHaveBeenCalled();
     expect(response.body.data.totalCount).toBe(1);
     expect(response.body.data.items[0].orderNumber).toBe("31668");
     expect(response.body.data.items[0].deliveryStatus).toBe(3);

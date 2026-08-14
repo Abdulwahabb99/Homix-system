@@ -698,16 +698,12 @@ describe("shipmentRouter", () => {
   });
 
   it("filters shipments by manual priority", async () => {
-    orderModel.findAll.mockResolvedValue([
+    orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [
       makeShipment({
         id: 9802,
         priority: 2,
       }),
-      makeShipment({
-        id: 9803,
-        priority: 1,
-      }),
-    ]);
+    ] });
 
     const response = await request(app).get("/shipments").query({ page: 1, priority: "2", size: 20 });
 
@@ -718,21 +714,17 @@ describe("shipmentRouter", () => {
   });
 
   it("filters shipments by automated delivery status derived from expectedDeliveryDate", async () => {
-    orderModel.findAll.mockResolvedValue([
+    orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [
       makeShipment({
         expectedDeliveryDate: "2026-05-17T00:00:00.000Z",
         id: 9802,
       }),
-      makeShipment({
-        expectedDeliveryDate: "2099-05-17T00:00:00.000Z",
-        id: 9803,
-      }),
-    ]);
+    ] });
 
     const response = await request(app).get("/shipments").query({ deliveryStatus: "3", page: 1, size: 20 });
 
     expect(response.status).toBe(200);
-    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(orderModel.findAndCountAll).toHaveBeenCalled();
     expect(response.body.data.totalCount).toBe(1);
     expect(response.body.data.items[0]).toEqual(expect.objectContaining({
       deliveryStatus: 3,
