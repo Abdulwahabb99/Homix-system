@@ -162,6 +162,7 @@ describe("ShipmentService", () => {
   it("creates expenses through the typed repository path", async () => {
     const repository = {
       createExpenseAccount: jest.fn().mockResolvedValue({ amount: 150, id: 9 }),
+      hasExpenseType: jest.fn().mockResolvedValue(true),
     } as never;
 
     const service = new ShipmentService(repository);

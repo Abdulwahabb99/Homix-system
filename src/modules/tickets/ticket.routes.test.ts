@@ -40,6 +40,18 @@ const logModel = {
   findAll: jest.fn(),
 };
 
+const mockTicketTypes = [
+  { id: 1, label: "تأخير في التوصيل" },
+  { id: 2, label: "إلغاء" },
+];
+const mockQuickReplies = [
+  { id: 1, label: "التوصيل خلال أسبوع" },
+  { id: 2, label: "تم التواصل" },
+];
+const mockListManagedOptions = jest.fn(async (group: string) => group === "ticket_type" ? mockTicketTypes : mockQuickReplies);
+const mockReplaceManagedOptions = jest.fn(async (_group: string, options: Array<{ id?: number; label: string }>) =>
+  options.map((option, index) => ({ id: option.id ?? index + 1, label: option.label })));
+
 jest.mock("../../../app/middlewares/protectApi", () => {
   return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     req.user = { id: 1, userType: "1" };
@@ -62,6 +74,16 @@ jest.mock("../../../app/modules/customer/customer.model", () => ({}));
 jest.mock("../../../app/modules/orderLines/orderline.model", () => ({}));
 jest.mock("../../../app/modules/product/product.model", () => ({}));
 jest.mock("../../../app/modules/vendor/vendor.model", () => ({}));
+jest.mock("../settings/managed-options", () => ({
+  MANAGED_OPTION_GROUP: {
+    EXPENSE_TYPE: "expense_type",
+    TICKET_QUICK_REPLY: "ticket_quick_reply",
+    TICKET_TYPE: "ticket_type",
+  },
+  getManagedOptionLabels: jest.fn(async () => ({ 1: "تأخير في التوصيل", 2: "إلغاء" })),
+  listManagedOptions: mockListManagedOptions,
+  replaceManagedOptions: mockReplaceManagedOptions,
+}));
 
 import { errorMiddleware } from "../../shared/http";
 import { ticketRouter } from "./ticket.routes";
@@ -180,6 +202,22 @@ describe("ticketRouter", () => {
         expect.objectContaining({ key: 1, label: "تأخير في التوصيل" }),
       ]),
     );
+    expect(response.body.data.quickReplies).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 1, label: "التوصيل خلال أسبوع" })]),
+    );
+  });
+
+  it("persists ticket types and quick replies", async () => {
+    const response = await request(app).put("/tickets/settings").send({
+      quickReplies: [{ id: 1, label: "تم التواصل مع العميل" }],
+      types: [{ id: 1, label: "تأخير الشحن" }, { label: "شكوى جديدة" }],
+    });
+
+    expect(response.status).toBe(200);
+    expect(mockReplaceManagedOptions).toHaveBeenCalledTimes(2);
+    expect(mockReplaceManagedOptions).toHaveBeenCalledWith("ticket_type", expect.arrayContaining([
+      expect.objectContaining({ label: "تأخير الشحن" }),
+    ]));
   });
 
   it("looks up an order by operation number", async () => {

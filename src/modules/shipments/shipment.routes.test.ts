@@ -61,6 +61,11 @@ const legacyOrderService = {
 };
 
 const sequelizeQuery = jest.fn();
+const mockListManagedOptions = jest.fn(async (group: string) => group === "expense_type"
+  ? [{ id: 1, label: "شحن" }, { id: 2, label: "تغليف" }, { id: 4, label: "إيجار مخزن" }]
+  : []);
+const mockReplaceManagedOptions = jest.fn(async (_group: string, options: Array<{ id?: number; label: string }>) =>
+  options.map((option, index) => ({ id: option.id ?? index + 1, label: option.label })));
 
 jest.mock("../../../app/middlewares/protectApi", () => {
   return (req: express.Request, _res: express.Response, next: express.NextFunction) => {
@@ -113,6 +118,16 @@ jest.mock("../../../app/modules/logs/log.model", () => ({
 jest.mock("../../../app/modules/product/productType.model", () => ({}));
 jest.mock("../../../app/modules/shipments/shipment.service", () => legacyShipmentService);
 jest.mock("../../../app/modules/order/order.service", () => legacyOrderService);
+jest.mock("../settings/managed-options", () => ({
+  MANAGED_OPTION_GROUP: {
+    EXPENSE_TYPE: "expense_type",
+    TICKET_QUICK_REPLY: "ticket_quick_reply",
+    TICKET_TYPE: "ticket_type",
+  },
+  getManagedOptionLabels: jest.fn(async () => ({ 1: "شحن", 2: "تغليف", 4: "إيجار مخزن" })),
+  listManagedOptions: mockListManagedOptions,
+  replaceManagedOptions: mockReplaceManagedOptions,
+}));
 
 import { errorMiddleware } from "../../shared/http";
 import { shipmentRouter } from "./shipment.routes";
@@ -1212,5 +1227,17 @@ describe("shipmentRouter", () => {
         typeLabel: "تغليف",
       }),
     );
+  });
+
+  it("persists expense types", async () => {
+    const response = await request(app).put("/shipments/accounts/expense-types").send({
+      options: [{ id: 1, label: "شحن ونقل" }, { label: "ضيافة" }],
+    });
+
+    expect(response.status).toBe(200);
+    expect(mockReplaceManagedOptions).toHaveBeenCalledWith("expense_type", [
+      { id: 1, label: "شحن ونقل" },
+      { label: "ضيافة" },
+    ]);
   });
 });
