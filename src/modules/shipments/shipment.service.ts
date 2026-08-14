@@ -258,6 +258,9 @@ export class ShipmentService {
   }
 
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<Result<ExpenseAccountsListResponse["items"][number]>> {
+    if (!(await this.shipmentRepository.hasExpenseType(payload.type))) {
+      throw new NotFoundError("Expense type not found");
+    }
     return success(await this.shipmentRepository.createExpenseAccount(payload));
   }
 
@@ -298,6 +301,9 @@ export class ShipmentService {
     expenseId: number,
     payload: Partial<ExpenseMutationInput>,
   ): Promise<Result<ExpenseAccountsListResponse["items"][number]>> {
+    if (payload.type !== undefined && !(await this.shipmentRepository.hasExpenseType(payload.type))) {
+      throw new NotFoundError("Expense type not found");
+    }
     const expense = await this.shipmentRepository.updateExpenseAccount(expenseId, payload);
     if (!expense) {
       throw new NotFoundError("Expense not found");

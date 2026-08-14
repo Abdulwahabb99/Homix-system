@@ -1638,6 +1638,11 @@ export class ShipmentRepository {
     return replaceManagedOptions(MANAGED_OPTION_GROUP.EXPENSE_TYPE, options);
   }
 
+  public async hasExpenseType(type: number): Promise<boolean> {
+    const types = await listManagedOptions(MANAGED_OPTION_GROUP.EXPENSE_TYPE);
+    return types.some((option) => option.id === type);
+  }
+
   public async deleteExpenseAccount(expenseId: number): Promise<boolean> {
     const expenseRecord = await shipmentExpenseModel.findByPk(expenseId);
     if (!expenseRecord) {

@@ -206,6 +206,10 @@ export class TicketService {
       ? existingTicket.toJSON()
       : existingTicket;
 
+    if (payload.type !== undefined && !(await this.ticketRepository.hasTicketType(payload.type))) {
+      throw new NotFoundError("Ticket type not found");
+    }
+
     if (payload.assignedToUserId) {
       const hasAssignee = await this.ticketRepository.hasAssignee(payload.assignedToUserId);
       if (!hasAssignee) {
