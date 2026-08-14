@@ -1626,12 +1626,20 @@ export class ShipmentRepository {
   public async getPerformance(filters: PerformanceQuery, vendorId?: number | null): Promise<PerformanceResponse> {
     const performanceStatuses = [
       SHIPMENT_STATUS.DELIVERED,
+      SHIPMENT_STATUS.CANCELED,
+      SHIPMENT_STATUS.REJECTED,
       SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
       SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+      SHIPMENT_STATUS.REPLACED,
+      SHIPMENT_STATUS.FAILED_DELIVERY,
     ];
     const returnedStatuses = new Set<number>([
+      SHIPMENT_STATUS.CANCELED,
+      SHIPMENT_STATUS.REJECTED,
       SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
       SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+      SHIPMENT_STATUS.REPLACED,
+      SHIPMENT_STATUS.FAILED_DELIVERY,
     ]);
     const whereClause: Record<string | symbol, unknown> = {
       deliveryBy: DELIVERY_BY.HOMIX,
@@ -1703,10 +1711,15 @@ export class ShipmentRepository {
         const transitionDate = statusTransitionDates.get(`${item.id}::${shipmentStatus}`);
         const returnType = shipmentStatus === SHIPMENT_STATUS.RETURNED_TO_VENDOR
           ? SHIPMENT_RETURN_TYPE.TO_VENDOR
-          : SHIPMENT_RETURN_TYPE.FROM_CUSTOMER;
+          : shipmentStatus === SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER
+            ? SHIPMENT_RETURN_TYPE.FROM_CUSTOMER
+            : null;
+        const persistedReturnDate = returnType === null
+          ? null
+          : returnDates.get(`${item.id}::${returnType}`);
         const fallbackValue = shipmentStatus === SHIPMENT_STATUS.DELIVERED
           ? order.deliveryDate ?? order.updatedAt ?? order.orderDate
-          : returnDates.get(`${item.id}::${returnType}`) ?? order.updatedAt ?? order.deliveryDate ?? order.orderDate;
+          : persistedReturnDate ?? order.updatedAt ?? order.deliveryDate ?? order.orderDate;
         const fallbackDate = fallbackValue ? new Date(String(fallbackValue)) : null;
         const reportDate = transitionDate
           ?? (fallbackDate && !Number.isNaN(fallbackDate.getTime()) ? fallbackDate : null);

@@ -1006,7 +1006,12 @@ describe("shipmentRouter", () => {
   it("returns performance overview", async () => {
     orderModel.findAll.mockResolvedValueOnce([
       makeShipment({ shipmentStatus: 4 }),
-      makeShipment({ id: 9803, shipmentStatus: 7 }),
+      makeShipment({ id: 9803, shipmentStatus: 5 }),
+      makeShipment({ id: 9804, shipmentStatus: 6 }),
+      makeShipment({ id: 9805, shipmentStatus: 7 }),
+      makeShipment({ id: 9806, shipmentStatus: 8 }),
+      makeShipment({ id: 9807, shipmentStatus: 9 }),
+      makeShipment({ id: 9808, shipmentStatus: 10 }),
     ]);
     const response = await request(app).get("/shipments/performance").query({ period: "daily" });
 
@@ -1020,7 +1025,7 @@ describe("shipmentRouter", () => {
     expect(response.body.data.providers[0]).toEqual(expect.objectContaining({
       deliveryBy: 1,
       deliveryByLabel: "هوميكس",
-      returnsCount: 1,
+      returnsCount: 6,
       shippingCompanyName: "J&T",
     }));
     expect(response.body.data.vendors[0]).toEqual(expect.objectContaining({
