@@ -24,7 +24,8 @@ describe("ShipmentService", () => {
       data: { id: 9802, shipmentStatus: 3 },
       ok: true,
     });
-    expect(repository.updateShipment).toHaveBeenCalledWith(9802, { shipmentStatus: 3 }, 7);
+    expect((repository as unknown as { updateShipment: jest.Mock }).updateShipment)
+      .toHaveBeenCalledWith(9802, { shipmentStatus: 3 }, 7);
   });
 
   it("forces deliveryBy to homix and recalculates amount to collect on shipment creation", async () => {
@@ -126,7 +127,8 @@ describe("ShipmentService", () => {
       data: { id: 41, status: 2 },
       ok: true,
     });
-    expect(repository.createReturnRecord).toHaveBeenCalledWith(1, expect.any(Object), 7);
+    expect((repository as unknown as { createReturnRecord: jest.Mock }).createReturnRecord)
+      .toHaveBeenCalledWith(1, expect.any(Object), 7);
   });
 
   it("updates vendor returns through the typed repository path", async () => {

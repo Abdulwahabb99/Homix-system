@@ -96,6 +96,7 @@ jest.mock("../../../app/modules/user/user.model", () => ({
   findAll: jest.fn(),
 }));
 jest.mock("../../../app/modules/logs/log.model", () => ({
+  create: jest.fn(),
   findAll: jest.fn().mockResolvedValue([
     {
       action: "create",
@@ -120,6 +121,7 @@ const userModel = jest.requireMock("../../../app/modules/user/user.model") as {
   findAll: jest.Mock;
 };
 const logModel = jest.requireMock("../../../app/modules/logs/log.model") as {
+  create: jest.Mock;
   findAll: jest.Mock;
 };
 
@@ -222,6 +224,14 @@ describe("shipmentRouter", () => {
     userModel.findAll.mockResolvedValue([{ firstName: "Ahmed", id: 1, lastName: "Hesham" }]);
     noteModel.findByPk.mockResolvedValue(null);
     shipmentReturnModel.findAll.mockResolvedValue([]);
+    logModel.findAll.mockResolvedValue([
+      {
+        action: "create",
+        createdAt: "2026-05-12T09:05:00.000Z",
+        field: "order_received",
+        id: 401,
+      },
+    ]);
     shipmentInventoryModel.count.mockResolvedValue(42);
     shipmentExpenseModel.count.mockResolvedValue(89);
     shipmentReturnModel.findOne.mockResolvedValue(null);
@@ -865,6 +875,15 @@ describe("shipmentRouter", () => {
     expect(shipmentRecord.update).toHaveBeenCalledWith(
       expect.objectContaining({ shipmentStatus: 8 }),
     );
+    expect(logModel.create).toHaveBeenCalledWith(expect.objectContaining({
+      action: "update",
+      entityId: 9802,
+      entityType: "order",
+      field: "shipmentStatus",
+      from: "2",
+      to: "8",
+      userId: 1,
+    }));
   });
 
   it("updates vendor returns through persisted workflow storage", async () => {
@@ -886,6 +905,29 @@ describe("shipmentRouter", () => {
     expect(shipmentRecord.update).toHaveBeenCalledWith(
       expect.objectContaining({ shipmentStatus: 8 }),
     );
+    expect(logModel.create).toHaveBeenCalledWith(expect.objectContaining({
+      entityId: 9802,
+      field: "shipmentStatus",
+      from: "2",
+      to: "8",
+      userId: 1,
+    }));
+  });
+
+  it("logs direct shipment status changes", async () => {
+    const shipmentRecord = makeShipmentRecord({ id: 9802, shipmentStatus: 2 });
+    orderModel.findByPk.mockResolvedValue(shipmentRecord);
+
+    const response = await request(app).put("/shipments/9802").send({ shipmentStatus: 4 });
+
+    expect(response.status).toBe(200);
+    expect(logModel.create).toHaveBeenCalledWith(expect.objectContaining({
+      entityId: 9802,
+      field: "shipmentStatus",
+      from: "2",
+      to: "4",
+      userId: 1,
+    }));
   });
 
   it("auto-forfeits overdue vendor returns after 12 days", async () => {
@@ -984,6 +1026,55 @@ describe("shipmentRouter", () => {
     expect(response.body.data.vendors[0]).toEqual(expect.objectContaining({
       sellerName: "ركنة للأثاث",
     }));
+  });
+
+  it("filters performance by the actual shipment status history date", async () => {
+    orderModel.findAll.mockResolvedValueOnce([
+      makeShipment({
+        deliveryDate: "2026-05-10T00:00:00.000Z",
+        id: 9802,
+        shipmentStatus: 4,
+        updatedAt: "2026-07-10T00:00:00.000Z",
+      }),
+      makeShipment({
+        deliveryDate: "2026-06-20T00:00:00.000Z",
+        id: 9803,
+        shipmentStatus: 4,
+        updatedAt: "2026-06-20T00:00:00.000Z",
+      }),
+    ]);
+    logModel.findAll.mockResolvedValueOnce([
+      {
+        action: "update",
+        createdAt: "2026-06-15T12:00:00.000Z",
+        entityId: 9802,
+        entityType: "order",
+        field: "shipmentStatus",
+        from: "3",
+        to: "4",
+      },
+      {
+        action: "update",
+        createdAt: "2026-07-01T12:00:00.000Z",
+        entityId: 9803,
+        entityType: "order",
+        field: "shipmentStatus",
+        from: "3",
+        to: "4",
+      },
+    ]);
+
+    const response = await request(app).get("/shipments/performance").query({
+      endDate: "2026-06-30",
+      period: "daily",
+      startDate: "2026-06-01",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.overview.deliveredOrdersCount).toBe(1);
+    expect(response.body.data.chart).toEqual([
+      { deliveredOrdersCount: 1, label: "2026-06-15" },
+    ]);
   });
 
   it("accepts ISO date filters for shipment performance", async () => {

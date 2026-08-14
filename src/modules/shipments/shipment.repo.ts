@@ -1646,7 +1646,10 @@ export class ShipmentRepository {
       where: whereClause,
     });
 
-    const unfilteredItems = orders.map((order: unknown) => ({
+    const unfilteredItems: Array<{
+      item: ShipmentListItem;
+      order: Record<string, unknown>;
+    }> = orders.map((order: unknown) => ({
       item: mapShipmentListItem(order),
       order: toPlain(order),
     }));
