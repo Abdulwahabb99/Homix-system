@@ -80,6 +80,27 @@ export class ShipmentService {
     return success(await this.shipmentRepository.listCustomerReturns(filters, vendorId));
   }
 
+  public async exportReturns(
+    response: Response,
+    type: "vendor" | "customer",
+    filters: Omit<ReturnListQuery, "page" | "size">,
+    vendorId?: number | null,
+  ): Promise<void> {
+    const report = type === "vendor"
+      ? await this.shipmentRepository.listVendorReturns({ ...filters, page: 1, size: 1_000_000 }, vendorId)
+      : await this.shipmentRepository.listCustomerReturns({ ...filters, page: 1, size: 1_000_000 }, vendorId);
+    await this.writeAccountsWorkbook(response, `${type}-returns.xlsx`, `${type}-returns`, [
+      { header: "رقم العملية", key: "operationNumber", width: 18 },
+      { header: "رقم الطلب", key: "orderNumber", width: 18 },
+      { header: "البائع", key: "sellerName", width: 24 },
+      { header: "السبب", key: "reason", width: 40 },
+      { header: "تاريخ الإرجاع", key: "returnDate", width: 22 },
+      { header: "عدد الأيام", key: "daysCounter", width: 14 },
+      { header: "نوع الإرجاع", key: "returnTypeLabel", width: 24 },
+      { header: "الحالة", key: "statusLabel", width: 24 },
+    ], report.items);
+  }
+
   public async createVendorReturn(payload: ReturnMutationInput, user: ShipmentRequestUser): Promise<Result<ReturnListResponse["items"][number]>> {
     return success(await this.shipmentRepository.createReturnRecord(SHIPMENT_RETURN_TYPE.TO_VENDOR, payload, user.id));
   }
@@ -141,6 +162,24 @@ export class ShipmentService {
 
   public async listInventory(filters: InventoryListQuery, vendorId?: number | null): Promise<Result<InventoryListResponse>> {
     return success(await this.shipmentRepository.listInventory(filters, vendorId));
+  }
+
+  public async exportInventory(
+    response: Response,
+    filters: Omit<InventoryListQuery, "page" | "size">,
+    vendorId?: number | null,
+  ): Promise<void> {
+    const report = await this.shipmentRepository.listInventory({ ...filters, page: 1, size: 1_000_000 }, vendorId);
+    await this.writeAccountsWorkbook(response, "inventory.xlsx", "inventory", [
+      { header: "كود المنتج", key: "productCode", width: 20 },
+      { header: "اسم المنتج", key: "productName", width: 36 },
+      { header: "البائع", key: "vendorName", width: 24 },
+      { header: "المقاس", key: "size", width: 18 },
+      { header: "اللون", key: "color", width: 18 },
+      { header: "الكمية", key: "quantity", width: 14 },
+      { header: "سعر التكلفة", key: "costPrice", width: 18 },
+      { header: "الحالة", key: "statusLabel", width: 18 },
+    ], report.items);
   }
 
   public async createInventoryItem(payload: InventoryMutationInput): Promise<Result<InventoryListResponse["items"][number]>> {
@@ -274,6 +313,32 @@ export class ShipmentService {
 
   public async getPerformance(filters: PerformanceQuery, vendorId?: number | null): Promise<Result<PerformanceResponse>> {
     return success(await this.shipmentRepository.getPerformance(filters, vendorId));
+  }
+
+  public async exportPerformance(
+    response: Response,
+    filters: PerformanceQuery,
+    vendorId?: number | null,
+  ): Promise<void> {
+    const report = await this.shipmentRepository.getPerformance(filters, vendorId);
+    const totalReturns = report.providers.reduce((sum, row) => sum + row.returnsCount, 0);
+    const rows = [
+      {
+        deliveredOrdersCount: report.overview.deliveredOrdersCount,
+        deliveryByLabel: "الإجمالي",
+        returnsCount: totalReturns,
+        shippingCompanyName: "",
+        totalGmv: report.overview.totalGmv,
+      },
+      ...report.providers,
+    ];
+    await this.writeAccountsWorkbook(response, "shipment-performance.xlsx", "performance", [
+      { header: "التوصيل بواسطة", key: "deliveryByLabel", width: 22 },
+      { header: "شركة الشحن", key: "shippingCompanyName", width: 24 },
+      { header: "الطلبات المسلمة", key: "deliveredOrdersCount", width: 18 },
+      { header: "المرتجعات", key: "returnsCount", width: 16 },
+      { header: "إجمالي GMV", key: "totalGmv", width: 18 },
+    ], rows);
   }
 
   public async exportShipments(response: Response, payload: Record<string, unknown>): Promise<void> {

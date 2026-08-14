@@ -17,6 +17,7 @@ import {
   shipmentIdParamsSchema,
   shipmentInventoryItemParamsSchema,
   shipmentInventoryMutationSchema,
+  shipmentInventoryExportQuerySchema,
   shipmentInventoryQuerySchema,
   shipmentListQuerySchema,
   shipmentMutationSchema,
@@ -27,6 +28,7 @@ import {
   shipmentShippingCompanyMutationSchema,
   shipmentShippingCompanyParamsSchema,
   shipmentReturnMutationSchema,
+  shipmentReturnsExportQuerySchema,
   shipmentReturnUpdateSchema,
   shipmentReturnParamsSchema,
   shipmentReturnsQuerySchema,
@@ -482,6 +484,13 @@ shipmentRouter.get(
   asyncHandler(shipmentController.listVendorReturns),
 );
 
+shipmentRouter.get(
+  "/returns/vendor/export",
+  requirePermission("ship_view"),
+  validateRequest({ query: shipmentReturnsExportQuerySchema }),
+  asyncHandler(shipmentController.exportVendorReturns),
+);
+
 shipmentRouter.post(
   "/returns/vendor",
   requirePermission("ship_edit"),
@@ -606,6 +615,13 @@ shipmentRouter.get(
   requirePermission("ship_view"),
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listCustomerReturns),
+);
+
+shipmentRouter.get(
+  "/returns/customer/export",
+  requirePermission("ship_view"),
+  validateRequest({ query: shipmentReturnsExportQuerySchema }),
+  asyncHandler(shipmentController.exportCustomerReturns),
 );
 
 shipmentRouter.post(
@@ -736,6 +752,13 @@ shipmentRouter.get(
   requirePermission("ship_view"),
   validateRequest({ query: shipmentInventoryQuerySchema }),
   asyncHandler(shipmentController.listInventory),
+);
+
+shipmentRouter.get(
+  "/inventory/export",
+  requirePermission("ship_view"),
+  validateRequest({ query: shipmentInventoryExportQuerySchema }),
+  asyncHandler(shipmentController.exportInventory),
 );
 
 shipmentRouter.post(
@@ -1077,6 +1100,13 @@ shipmentRouter.get(
   requirePermission("finance_view"),
   validateRequest({ query: shipmentPerformanceQuerySchema }),
   asyncHandler(shipmentController.getPerformance),
+);
+
+shipmentRouter.get(
+  "/performance/export",
+  requirePermission("finance_view"),
+  validateRequest({ query: shipmentPerformanceQuerySchema }),
+  asyncHandler(shipmentController.exportPerformance),
 );
 
 /**

@@ -157,6 +157,11 @@ export const shipmentReturnsQuerySchema = z.object({
   status: z.coerce.number().int().positive().optional(),
 });
 
+export const shipmentReturnsExportQuerySchema = shipmentReturnsQuerySchema.omit({
+  page: true,
+  size: true,
+});
+
 export const shipmentReturnMutationSchema = z.object({
   orderId: z.coerce.number().int().positive(),
   reason: z.string().trim().min(1),
@@ -178,6 +183,11 @@ export const shipmentInventoryQuerySchema = z.object({
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   status: z.coerce.number().int().positive().optional(),
   vendorName: z.string().trim().optional(),
+});
+
+export const shipmentInventoryExportQuerySchema = shipmentInventoryQuerySchema.omit({
+  page: true,
+  size: true,
 });
 
 export const shipmentInventoryMutationSchema = z.object({

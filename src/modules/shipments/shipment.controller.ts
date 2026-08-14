@@ -34,6 +34,14 @@ export class ShipmentController {
     response.status(200).json({ data: unwrap(await this.shipmentService.listCustomerReturns(request.query as never, request.vendorId)), status: true });
   };
 
+  public exportVendorReturns = async (request: Request, response: Response): Promise<void> => {
+    await this.shipmentService.exportReturns(response, "vendor", request.query as never, request.vendorId);
+  };
+
+  public exportCustomerReturns = async (request: Request, response: Response): Promise<void> => {
+    await this.shipmentService.exportReturns(response, "customer", request.query as never, request.vendorId);
+  };
+
   public createVendorReturn = async (request: Request, response: Response): Promise<void> => {
     response.status(201).json({
       data: unwrap(await this.shipmentService.createVendorReturn(request.body, request.user ?? { id: 0 })),
@@ -68,6 +76,10 @@ export class ShipmentController {
 
   public listInventory = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.listInventory(request.query as never, request.vendorId)), status: true });
+  };
+
+  public exportInventory = async (request: Request, response: Response): Promise<void> => {
+    await this.shipmentService.exportInventory(response, request.query as never, request.vendorId);
   };
 
   public createInventoryItem = async (request: Request, response: Response): Promise<void> => {
@@ -144,6 +156,10 @@ export class ShipmentController {
 
   public getPerformance = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.getPerformance(request.query as never, request.vendorId)), status: true });
+  };
+
+  public exportPerformance = async (request: Request, response: Response): Promise<void> => {
+    await this.shipmentService.exportPerformance(response, request.query as never, request.vendorId);
   };
 
   public exportShipments = async (request: Request, response: Response): Promise<void> => {
