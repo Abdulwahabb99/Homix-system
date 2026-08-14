@@ -793,33 +793,33 @@ const backfillUserPermissions = async (): Promise<void> => {
   }
 };
 
-const FINES_DEFAULT_WINDOW_DAYS = 90;
-const FINES_UPDATE_CHUNK_SIZE = 500;
+const FINES_UPDATE_CHUNK_SIZE = 10;
 
-/** `--fines-days=N` narrows the window; `--all-fines` recalculates every open order. */
-const getFinesWindowDays = (): number | null => {
-  if (hasFlag("--all-fines")) {
-    return null;
-  }
-
-  const flag = process.argv.find((argument) => argument.startsWith("--fines-days="));
+/** `--fines-limit=N` caps the recalculation to the newest N eligible orders. */
+const getFinesLimit = (): number | null => {
+  const flag = process.argv.find((argument) => argument.startsWith("--fines-limit="));
   const parsed = flag ? Number(flag.split("=")[1]) : NaN;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : FINES_DEFAULT_WINDOW_DAYS;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null;
 };
 
 /**
- * Only open orders can accrue a fine, and in practice only recent ones change,
- * so the default run is windowed by orderDate. Pass --all-fines for a full sweep.
+ * Recalculates only the orders a fine can actually apply to.
  *
- * Updates are batched: the previous version issued one UPDATE per order and
- * awaited each round trip, which took minutes against a remote database.
+ * `calculateOrderFine` returns 0 unless the order is past its delivery window,
+ * so scanning every open order was wasted work — and an arbitrary date window
+ * would be worse still, because it silently skips old orders that are overdue.
+ *
+ * An order is worth touching when it is either already carrying a fine (the
+ * value may need updating or clearing) or is genuinely overdue. Overdue mirrors
+ * calculateExceededDays: the vendor's delivery window is used when it exists,
+ * otherwise the expected delivery date.
  */
 const recalculateOrderFines = async (): Promise<void> => {
-  const windowDays = getFinesWindowDays();
+  const finesLimit = getFinesLimit();
   logStep(
-    windowDays === null
-      ? "Recalculating order fines (all open orders)"
-      : `Recalculating order fines (last ${windowDays} days — use --all-fines for a full sweep)`,
+    finesLimit === null
+      ? "Recalculating order fines (overdue or already fined)"
+      : `Recalculating order fines (newest ${finesLimit} overdue or already fined)`,
   );
 
   // DISTINCT ON collapses the order-line join in the database instead of
@@ -832,6 +832,7 @@ const recalculateOrderFines = async (): Promise<void> => {
     subTotalPrice: string | number | null;
     daysToDeliver: number | null;
   }>(`
+    select * from (
     select distinct on (o.id)
       o.id,
       o.fine,
@@ -844,7 +845,20 @@ const recalculateOrderFines = async (): Promise<void> => {
     left join products p on p.id = ol."productId"
     left join vendors v on v.id = p."vendorId"
     where o.status not in (:finalStatuses)
-      ${windowDays === null ? "" : `and o."orderDate" >= now() - interval '${windowDays} days'`}
+      and o."deletedAt" is null
+      and (
+        coalesce(o.fine, 0) <> 0
+        or (
+          coalesce(v."daysToDeliver", 0) > 0
+          and o."orderDate" is not null
+          and o."orderDate" + (v."daysToDeliver" * interval '1 day') < now()
+        )
+        or (
+          coalesce(v."daysToDeliver", 0) = 0
+          and o."expectedDeliveryDate" is not null
+          and o."expectedDeliveryDate" < now()
+        )
+      )
     order by o.id asc, ol.id asc
   `, {
     replacements: { finalStatuses: FINAL_FINE_STATUSES },
@@ -852,7 +866,7 @@ const recalculateOrderFines = async (): Promise<void> => {
   });
 
   // eslint-disable-next-line no-console
-  console.log(`  scanning ${rows.length} orders`);
+  console.log(`  ${rows.length} orders are overdue or already fined`);
 
   const pendingIds: number[] = [];
   const pendingFines: number[] = [];
@@ -879,6 +893,8 @@ const recalculateOrderFines = async (): Promise<void> => {
     return;
   }
 
+  /* Batched: the previous version issued one UPDATE per order and awaited each
+     round trip, which took minutes against a remote database. */
   for (let offset = 0; offset < pendingIds.length; offset += FINES_UPDATE_CHUNK_SIZE) {
     const ids = pendingIds.slice(offset, offset + FINES_UPDATE_CHUNK_SIZE);
     const fines = pendingFines.slice(offset, offset + FINES_UPDATE_CHUNK_SIZE);
