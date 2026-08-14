@@ -4,7 +4,7 @@ import request from "supertest";
 
 const binaryParser = (response: any, callback: (error: Error | null, body: any) => void): void => {
   const chunks: Buffer[] = [];
-  response.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+  response.on("data", (chunk: Uint8Array) => chunks.push(Buffer.from(chunk)));
   response.on("end", () => callback(null, Buffer.concat(chunks)));
   response.on("error", callback);
 };
