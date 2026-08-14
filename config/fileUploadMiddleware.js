@@ -2,6 +2,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs-extra");
 
+const { env } = require("../src/config/env");
+
 // Configure multer to store files in memory
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -66,7 +68,7 @@ function fileUploadMiddleware(folderName) {
       if (files && files.length > 0) {
         try {
           // Define the upload directory
-          const uploadDir = path.join(__dirname, "../uploads", folderName);
+          const uploadDir = path.resolve(env.UPLOADS_DIR, folderName);
           // Ensure the upload directory exists
           await fs.ensureDir(uploadDir);
 

@@ -48,6 +48,7 @@ const envSchema = z.object({
   SHOPIFY_APP_SECRET: z.string().min(1),
   SHOPIFY_STORE: z.string().min(1),
   SHOPIFY_TOKEN: z.string().min(1),
+  UPLOADS_DIR: z.string().min(1).default("uploads"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

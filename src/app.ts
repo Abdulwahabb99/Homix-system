@@ -1,7 +1,9 @@
 import bodyParser from "body-parser";
 import cors from "cors";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
+import path from "node:path";
 
+import { env } from "./config/env";
 import { createMainRouter } from "./modules/app-router";
 import { errorMiddleware, notFoundHandler, requestContextMiddleware } from "./shared/http";
 import { httpLogger } from "./shared/logger/http-logger";
@@ -45,7 +47,7 @@ export const createApp = (): Express => {
   app.use(bodyParser.json({ limit: JSON_LIMIT }));
   app.use(bodyParser.urlencoded({ extended: true, limit: URL_ENCODED_LIMIT }));
   app.use(cors());
-  app.use(UPLOADS_ROUTE, express.static("uploads"));
+  app.use(UPLOADS_ROUTE, express.static(path.resolve(env.UPLOADS_DIR)));
   app.use(applyCacheHeaders);
   app.use(createMainRouter());
   app.use(notFoundHandler);
