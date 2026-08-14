@@ -805,7 +805,7 @@ const backfillUserPermissions = async (): Promise<void> => {
   }
 };
 
-const FINES_UPDATE_CHUNK_SIZE = 100;
+const FINES_UPDATE_CHUNK_SIZE = 900;
 
 /** `--fines-limit=N` caps the recalculation to the newest N eligible orders. */
 const getFinesLimit = (): number | null => {
