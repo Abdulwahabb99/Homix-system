@@ -41,6 +41,10 @@ export class TicketController {
     response.status(200).json({ data: unwrap(result), status: true });
   };
 
+  public exportTickets = async (request: Request, response: Response): Promise<void> => {
+    await this.ticketService.exportTickets(response, request.query as never, request.vendorId);
+  };
+
   public getTicketById = async (request: Request, response: Response): Promise<void> => {
     const result = await this.ticketService.getTicketById(Number(request.params.ticketId), request.vendorId);
     response.status(200).json({ data: unwrap(result), status: true });

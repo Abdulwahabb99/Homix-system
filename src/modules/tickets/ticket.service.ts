@@ -1,4 +1,5 @@
 import { ConflictError, NotFoundError } from "../../shared/errors";
+import type { Response } from "express";
 import type { Result } from "../../shared/result";
 import { success } from "../../shared/result";
 import { TICKET_STATUS } from "./ticket.constants";
@@ -16,6 +17,9 @@ import type {
   TicketRequestUser,
   TicketUpdateInput,
 } from "./ticket.types";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const ExcelJS = require("exceljs");
 
 const toLogValue = (value: unknown): string => {
   if (value === null || value === undefined) {
@@ -118,6 +122,52 @@ export class TicketService {
     vendorId?: number | null,
   ): Promise<Result<TicketListResponse>> {
     return success(await this.ticketRepository.listTickets(filters, vendorId));
+  }
+
+  public async exportTickets(
+    response: Response,
+    filters: Omit<TicketListFilters, "page" | "size">,
+    vendorId?: number | null,
+  ): Promise<void> {
+    const report = await this.ticketRepository.listTickets({ ...filters, page: 1, size: 1_000_000 }, vendorId);
+    response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    response.setHeader("Content-Disposition", "attachment; filename=tickets.xlsx");
+
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: response });
+    const worksheet = workbook.addWorksheet("tickets");
+    worksheet.columns = [
+      { header: "رقم التذكرة", key: "id", width: 16 },
+      { header: "رقم العملية", key: "operationNumber", width: 18 },
+      { header: "رقم الطلب", key: "orderNumber", width: 18 },
+      { header: "العميل", key: "customerName", width: 24 },
+      { header: "البائع", key: "sellerName", width: 24 },
+      { header: "نوع المشكلة", key: "type", width: 26 },
+      { header: "الحالة", key: "status", width: 16 },
+      { header: "المسؤول", key: "assignee", width: 24 },
+      { header: "تاريخ الفتح", key: "createdAt", width: 22 },
+      { header: "تاريخ الإغلاق", key: "closedAt", width: 22 },
+      { header: "عدد الأيام", key: "daysOpen", width: 14 },
+      { header: "الملاحظات", key: "notes", width: 40 },
+    ];
+    report.items.forEach((ticket) => worksheet.addRow({
+      assignee: ticket.assignedTo
+        ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`.trim()
+        : "",
+      closedAt: ticket.closedAt ?? "",
+      createdAt: ticket.createdAt,
+      customerName: ticket.order.customerName,
+      daysOpen: ticket.daysOpen,
+      id: ticket.id,
+      notes: ticket.notes,
+      operationNumber: ticket.order.operationNumber,
+      orderNumber: ticket.order.orderNumber,
+      sellerName: ticket.order.sellerName,
+      status: ticket.statusLabel,
+      type: ticket.typeLabel,
+    }));
+    worksheet.commit();
+    await workbook.commit();
+    response.end();
   }
 
   public async getTicketById(

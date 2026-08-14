@@ -199,6 +199,11 @@ export const shipmentDeliveryAccountsQuerySchema = z.object({
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 
+export const shipmentDeliveryAccountsExportQuerySchema = shipmentDeliveryAccountsQuerySchema.omit({
+  page: true,
+  size: true,
+});
+
 export const shipmentDeliveryAccountParamsSchema = z.object({
   orderId: z.coerce.number().int().positive(),
 });
@@ -214,6 +219,11 @@ export const shipmentExpenseAccountsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   type: z.coerce.number().int().positive().optional(),
+});
+
+export const shipmentExpenseAccountsExportQuerySchema = shipmentExpenseAccountsQuerySchema.omit({
+  page: true,
+  size: true,
 });
 
 export const shipmentExpenseMutationSchema = z.object({

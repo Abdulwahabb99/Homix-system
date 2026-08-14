@@ -7,7 +7,9 @@ import {
   shipmentCreateSchema,
   shipmentDeliveryAccountMutationSchema,
   shipmentDeliveryAccountParamsSchema,
+  shipmentDeliveryAccountsExportQuerySchema,
   shipmentDeliveryAccountsQuerySchema,
+  shipmentExpenseAccountsExportQuerySchema,
   shipmentExportQuerySchema,
   shipmentExpenseMutationSchema,
   shipmentExpenseParamsSchema,
@@ -854,6 +856,13 @@ shipmentRouter.get(
   asyncHandler(shipmentController.listDeliveryAccounts),
 );
 
+shipmentRouter.get(
+  "/accounts/deliveries/export",
+  requirePermission("finance_export"),
+  validateRequest({ query: shipmentDeliveryAccountsExportQuerySchema }),
+  asyncHandler(shipmentController.exportDeliveryAccounts),
+);
+
 /**
  * @swagger
  * /shipments/accounts/deliveries/{orderId}:
@@ -953,6 +962,13 @@ shipmentRouter.get(
   requirePermission("finance_view"),
   validateRequest({ query: shipmentExpenseAccountsQuerySchema }),
   asyncHandler(shipmentController.listExpenseAccounts),
+);
+
+shipmentRouter.get(
+  "/accounts/expenses/export",
+  requirePermission("finance_export"),
+  validateRequest({ query: shipmentExpenseAccountsExportQuerySchema }),
+  asyncHandler(shipmentController.exportExpenseAccounts),
 );
 
 shipmentRouter.post(

@@ -1405,6 +1405,12 @@ export class ShipmentRepository {
       if (filters.accountingStatus && item.accountingStatus !== filters.accountingStatus) {
         return false;
       }
+      if (filters.settledDate) {
+        const requestedDate = toIsoString(filters.settledDate)?.slice(0, 10);
+        if (!requestedDate || item.accountingDate?.slice(0, 10) !== requestedDate) {
+          return false;
+        }
+      }
       return true;
     });
 

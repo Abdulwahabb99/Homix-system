@@ -53,6 +53,11 @@ export const ticketListQuerySchema = z.object({
   }
 });
 
+export const ticketExportQuerySchema = ticketListQuerySchema.omit({
+  page: true,
+  size: true,
+});
+
 export const ticketIdParamsSchema = z.object({
   ticketId: z.coerce.number().int().positive(positiveIntegerMessage),
 });

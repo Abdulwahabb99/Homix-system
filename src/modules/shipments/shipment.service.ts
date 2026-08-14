@@ -31,6 +31,9 @@ import type {
 import type { ShipmentMutationPayload, ShipmentRequestUser } from "./shipment.internal-types";
 import { RETURN_TO_VENDOR_STATUS, SHIPMENT_RETURN_TYPE } from "./shipment.constants";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const ExcelJS = require("exceljs");
+
 export class ShipmentService {
   public constructor(private readonly shipmentRepository: ShipmentRepository) {}
 
@@ -170,6 +173,45 @@ export class ShipmentService {
     return success(await this.shipmentRepository.listExpenseAccounts(filters));
   }
 
+  public async exportDeliveryAccounts(
+    response: Response,
+    filters: Omit<DeliveryAccountsListQuery, "page" | "size">,
+    vendorId?: number | null,
+  ): Promise<void> {
+    const report = await this.shipmentRepository.listDeliveryAccounts(
+      { ...filters, page: 1, size: 1_000_000 },
+      vendorId,
+    );
+    await this.writeAccountsWorkbook(response, "delivery-accounts.xlsx", "deliveries", [
+      { header: "رقم العملية", key: "operationNumber", width: 18 },
+      { header: "رقم الطلب", key: "orderNumber", width: 18 },
+      { header: "البائع", key: "sellerName", width: 24 },
+      { header: "كود المنتج", key: "productCode", width: 18 },
+      { header: "التوصيل بواسطة", key: "deliveryBy", width: 22 },
+      { header: "تاريخ التسليم", key: "deliveryDate", width: 22 },
+      { header: "طريقة الدفع", key: "paymentMethodLabel", width: 20 },
+      { header: "المبلغ", key: "amountToCollect", width: 16 },
+      { header: "تكلفة الشحن", key: "shippingCost", width: 16 },
+      { header: "حالة المحاسبة", key: "accountingStatusLabel", width: 20 },
+      { header: "تاريخ المحاسبة", key: "accountingDate", width: 22 },
+      { header: "المرجع", key: "reference", width: 22 },
+    ], report.items);
+  }
+
+  public async exportExpenseAccounts(
+    response: Response,
+    filters: Omit<ExpenseAccountsListQuery, "page" | "size">,
+  ): Promise<void> {
+    const report = await this.shipmentRepository.listExpenseAccounts({ ...filters, page: 1, size: 1_000_000 });
+    await this.writeAccountsWorkbook(response, "expenses.xlsx", "expenses", [
+      { header: "التاريخ", key: "accountingDate", width: 22 },
+      { header: "حالة المحاسبة", key: "accountingStatusLabel", width: 20 },
+      { header: "المبلغ", key: "amount", width: 16 },
+      { header: "السبب", key: "reason", width: 40 },
+      { header: "النوع", key: "typeLabel", width: 22 },
+    ], report.items);
+  }
+
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<Result<ExpenseAccountsListResponse["items"][number]>> {
     return success(await this.shipmentRepository.createExpenseAccount(payload));
   }
@@ -230,6 +272,24 @@ export class ShipmentService {
 
   public async exportShipments(response: Response, payload: Record<string, unknown>): Promise<void> {
     await shipmentLegacyGateway.exportShipments(response, payload);
+  }
+
+  private async writeAccountsWorkbook(
+    response: Response,
+    filename: string,
+    sheetName: string,
+    columns: Array<{ header: string; key: string; width: number }>,
+    rows: unknown[],
+  ): Promise<void> {
+    response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    response.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: response });
+    const worksheet = workbook.addWorksheet(sheetName);
+    worksheet.columns = columns;
+    rows.forEach((row) => worksheet.addRow(row));
+    worksheet.commit();
+    await workbook.commit();
+    response.end();
   }
 
   public async updateShipment(shipmentId: number, payload: ShipmentMutationPayload): Promise<Result<unknown>> {

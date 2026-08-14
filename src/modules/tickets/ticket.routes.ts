@@ -7,6 +7,7 @@ import { TicketRepository } from "./ticket.repo";
 import {
   ticketAttachmentParamsSchema,
   ticketCreateSchema,
+  ticketExportQuerySchema,
   ticketIdParamsSchema,
   ticketListQuerySchema,
   ticketOperationLookupQuerySchema,
@@ -378,6 +379,13 @@ ticketRouter.post(
   requireTicketWritePermission,
   validateRequest({ body: ticketCreateSchema }),
   asyncHandler(ticketController.createTicket),
+);
+
+ticketRouter.get(
+  "/export",
+  requirePermission("tickets_view"),
+  validateRequest({ query: ticketExportQuerySchema }),
+  asyncHandler(ticketController.exportTickets),
 );
 
 /**
