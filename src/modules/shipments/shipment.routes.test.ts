@@ -1152,6 +1152,26 @@ describe("shipmentRouter", () => {
     expect(shipmentExpenseModel.findAll).toHaveBeenCalled();
   });
 
+  it.each([
+    ["vendor returns", "/shipments/returns/vendor/export", "vendor-returns.xlsx"],
+    ["customer returns", "/shipments/returns/customer/export", "customer-returns.xlsx"],
+    ["inventory", "/shipments/inventory/export", "inventory.xlsx"],
+    ["performance", "/shipments/performance/export?period=daily", "shipment-performance.xlsx"],
+  ])("exports %s from its own Excel endpoint", async (_label, path, filename) => {
+    const response = await request(app)
+      .get(path)
+      .buffer(true)
+      .parse(binaryParser);
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(response.headers["content-disposition"]).toContain(filename);
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 2).toString()).toBe("PK");
+  });
+
   it("creates shipment expenses", async () => {
     const response = await request(app).post("/shipments/accounts/expenses").send({
       amount: 150,
