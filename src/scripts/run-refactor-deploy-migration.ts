@@ -699,6 +699,35 @@ const ensureIndexes = async (): Promise<void> => {
   await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_scope_idx", ["metricDate", "role", "scopeId", "categoryId"], { unique: true });
   await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_vendor_idx", ["vendorId", "metricDate"]);
 
+  /* Folded in from migrations/add-indexes.js so the deploy script is the single
+     place that has to run. ensureIndex is idempotent, so re-running is safe. */
+  await ensureIndex("orders", "orders_name_idx", ["name"]);
+  await ensureIndex("orders", "orders_number_idx", ["number"]);
+  await ensureIndex("orders", "orders_orderDate_idx", ["orderDate"]);
+  await ensureIndex("orders", "orders_expectedDeliveryDate_idx", ["expectedDeliveryDate"]);
+  await ensureIndex("orders", "orders_custom_idx", ["custom"]);
+  await ensureIndex("orders", "orders_deletedAt_idx", ["deletedAt"]);
+  await ensureIndex("orders", "order_date_status_idx", ["orderDate", "status"]);
+  await ensureIndex("orders", "status_expected_delivery_idx", ["status", "expectedDeliveryDate"]);
+  await ensureIndex("orders", "order_date_deleted_at_idx", ["orderDate", "deletedAt"]);
+  await ensureIndex("orderLines", "orderLines_orderId_idx", ["orderId"]);
+  await ensureIndex("orderLines", "orderLines_productId_idx", ["productId"]);
+  await ensureIndex("orderLines", "orderLines_shopifyId_idx", ["shopifyId"]);
+  await ensureIndex("orderLines", "orderLines_deletedAt_idx", ["deletedAt"]);
+  await ensureIndex("orderLines", "orderline_order_product_idx", ["orderId", "productId"]);
+  await ensureIndex("products", "products_vendorId_idx", ["vendorId"]);
+  await ensureIndex("products", "products_typeId_idx", ["typeId"]);
+  await ensureIndex("products", "products_shopifyId_idx", ["shopifyId"]);
+  await ensureIndex("products", "products_status_idx", ["status"]);
+  await ensureIndex("products", "products_deletedAt_idx", ["deletedAt"]);
+  await ensureIndex("products", "product_vendor_deleted_idx", ["vendorId", "deletedAt"]);
+  await ensureIndex("vendors", "vendors_name_idx", ["name"]);
+  await ensureIndex("vendors", "vendors_deletedAt_idx", ["deletedAt"]);
+  await ensureIndex("customers", "customers_shopifyId_idx", ["shopifyId"]);
+  await ensureIndex("customers", "customers_email_idx", ["email"]);
+  await ensureIndex("customers", "customers_phoneNumber_idx", ["phoneNumber"]);
+  await ensureIndex("customers", "customers_deletedAt_idx", ["deletedAt"]);
+
   await ensureTrigramSearchIndexes();
 };
 
@@ -764,9 +793,37 @@ const backfillUserPermissions = async (): Promise<void> => {
   }
 };
 
-const recalculateOrderFines = async (): Promise<void> => {
-  logStep("Recalculating order fines");
+const FINES_DEFAULT_WINDOW_DAYS = 90;
+const FINES_UPDATE_CHUNK_SIZE = 500;
 
+/** `--fines-days=N` narrows the window; `--all-fines` recalculates every open order. */
+const getFinesWindowDays = (): number | null => {
+  if (hasFlag("--all-fines")) {
+    return null;
+  }
+
+  const flag = process.argv.find((argument) => argument.startsWith("--fines-days="));
+  const parsed = flag ? Number(flag.split("=")[1]) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : FINES_DEFAULT_WINDOW_DAYS;
+};
+
+/**
+ * Only open orders can accrue a fine, and in practice only recent ones change,
+ * so the default run is windowed by orderDate. Pass --all-fines for a full sweep.
+ *
+ * Updates are batched: the previous version issued one UPDATE per order and
+ * awaited each round trip, which took minutes against a remote database.
+ */
+const recalculateOrderFines = async (): Promise<void> => {
+  const windowDays = getFinesWindowDays();
+  logStep(
+    windowDays === null
+      ? "Recalculating order fines (all open orders)"
+      : `Recalculating order fines (last ${windowDays} days — use --all-fines for a full sweep)`,
+  );
+
+  // DISTINCT ON collapses the order-line join in the database instead of
+  // shipping one row per line and de-duplicating in JS.
   const rows = await sequelize.query<{
     id: number;
     fine: string | number | null;
@@ -775,7 +832,7 @@ const recalculateOrderFines = async (): Promise<void> => {
     subTotalPrice: string | number | null;
     daysToDeliver: number | null;
   }>(`
-    select
+    select distinct on (o.id)
       o.id,
       o.fine,
       o."orderDate",
@@ -787,20 +844,20 @@ const recalculateOrderFines = async (): Promise<void> => {
     left join products p on p.id = ol."productId"
     left join vendors v on v.id = p."vendorId"
     where o.status not in (:finalStatuses)
+      ${windowDays === null ? "" : `and o."orderDate" >= now() - interval '${windowDays} days'`}
     order by o.id asc, ol.id asc
   `, {
     replacements: { finalStatuses: FINAL_FINE_STATUSES },
     type: QueryTypes.SELECT,
   });
 
-  const seen = new Set<number>();
+  // eslint-disable-next-line no-console
+  console.log(`  scanning ${rows.length} orders`);
+
+  const pendingIds: number[] = [];
+  const pendingFines: number[] = [];
 
   for (const row of rows) {
-    if (seen.has(row.id)) {
-      continue;
-    }
-    seen.add(row.id);
-
     const nextFine = calculateOrderFine({
       baseAmount: row.subTotalPrice,
       daysToDeliver: row.daysToDeliver,
@@ -812,15 +869,35 @@ const recalculateOrderFines = async (): Promise<void> => {
       continue;
     }
 
+    pendingIds.push(row.id);
+    pendingFines.push(nextFine);
+  }
+
+  if (pendingIds.length === 0) {
+    // eslint-disable-next-line no-console
+    console.log("  no fines needed updating");
+    return;
+  }
+
+  for (let offset = 0; offset < pendingIds.length; offset += FINES_UPDATE_CHUNK_SIZE) {
+    const ids = pendingIds.slice(offset, offset + FINES_UPDATE_CHUNK_SIZE);
+    const fines = pendingFines.slice(offset, offset + FINES_UPDATE_CHUNK_SIZE);
+
     await sequelize.query(
-      `update orders set fine = :fine, "updatedAt" = now() where id = :id`,
-      {
-        replacements: {
-          fine: nextFine,
-          id: row.id,
-        },
-      },
+      `
+        update orders as o
+        set fine = data.fine, "updatedAt" = now()
+        from (
+          select unnest(array[:ids]::int[]) as id,
+                 unnest(array[:fines]::numeric[]) as fine
+        ) as data
+        where o.id = data.id
+      `,
+      { replacements: { fines, ids } },
     );
+
+    // eslint-disable-next-line no-console
+    console.log(`  updated ${Math.min(offset + ids.length, pendingIds.length)}/${pendingIds.length} fines`);
   }
 };
 

@@ -230,6 +230,8 @@ export type ShipmentDetailsResponse = {
 export type ReturnItem = {
   daysCounter: number | null;
   id: number;
+  /** Real order id. The row is an order; `id` may be the return row's id. */
+  orderId: number;
   operationNumber: string;
   orderNumber: string;
   reason: string;

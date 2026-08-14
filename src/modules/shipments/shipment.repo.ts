@@ -252,6 +252,39 @@ const buildShipmentWhereClause = (
   return andConditions.length > 0 ? { [Op.and]: andConditions } : {};
 };
 
+/**
+ * The summary only groups and counts, so it joins the bare minimum: the vendor
+ * chain when a vendor filter is set, the customer when a customer filter is set,
+ * and nothing otherwise. `required: true` keeps the joins from multiplying rows.
+ */
+const buildSummaryIncludes = (filters: Omit<ShipmentListQuery, "page" | "size">) => {
+  const includes: Record<string, unknown>[] = [];
+
+  if (filters.vendorName) {
+    includes.push({
+      as: "orderLines",
+      attributes: [],
+      include: [
+        {
+          as: "product",
+          attributes: [],
+          include: [{ as: "vendor", attributes: [], model: vendorModel, required: true }],
+          model: productModel,
+          required: true,
+        },
+      ],
+      model: orderLineModel,
+      required: true,
+    });
+  }
+
+  if (filters.customerName || filters.customerPhone) {
+    includes.push({ as: "customer", attributes: [], model: customerModel, required: true });
+  }
+
+  return includes;
+};
+
 const buildIncludes = () => [
   {
     as: "orderLines",
@@ -613,8 +646,99 @@ export class ShipmentRepository {
     };
   }
 
+  /**
+   * The cards are six numbers, so they are aggregated in SQL.
+   *
+   * This used to `findAll` every matching shipment with the full include tree
+   * (order lines -> product -> vendor, customer, notes) and count the mapped
+   * rows in JS — roughly 17s for 1.5k shipments. Only the `priority` and
+   * `deliveryStatus` filters are derived in JS, so those still need the old
+   * row-by-row path; every other filter combination is handled by the database.
+   */
   public async getSummary(filters: Omit<ShipmentListQuery, "page" | "size">, vendorId?: number | null): Promise<ShipmentSummaryResponse> {
+    const needsDerivedFilters = Boolean(filters.priority || filters.deliveryStatus);
     const whereClause = buildShipmentWhereClause(filters, vendorId);
+
+    const buildCards = (
+      total: number,
+      deliveredCount: number,
+      inDeliveryCount: number,
+      failedOrReturnedCount: number,
+      totalGmv: number,
+    ) => {
+      const successRate = total > 0 ? Math.round((deliveredCount / total) * 1000) / 10 : 0;
+      return {
+        cards: [
+          { description: "إجمالي الشحنات ضمن الفلاتر الحالية", key: "totalShipments", label: "الشحنات", value: total },
+          { description: "الشحنات التي تم تسليمها", key: "deliveredShipments", label: "تم التسليم", value: deliveredCount },
+          { description: "الشحنات الجاهزة أو قيد التوصيل", key: "inDeliveryShipments", label: "قيد التوصيل", value: inDeliveryCount },
+          { description: "ملغي أو مرتجع أو فشل", key: "failedOrReturnedShipments", label: "مرتجع / ملغي / فاشل", value: failedOrReturnedCount },
+          { description: `معدل النجاح ${successRate}%`, key: "successRate", label: "معدل النجاح", value: successRate },
+          { description: "إجمالي المبلغ المطلوب تحصيله", key: "totalGmv", label: "إجمالي التحصيل", value: totalGmv },
+        ],
+      };
+    };
+
+    const inDeliveryStatuses: number[] = [
+      SHIPMENT_STATUS.READY_FOR_SHIPPING,
+      SHIPMENT_STATUS.SCHEDULED,
+      SHIPMENT_STATUS.OUT_FOR_DELIVERY,
+    ];
+    const failedStatuses: number[] = [
+      SHIPMENT_STATUS.CANCELED,
+      SHIPMENT_STATUS.REJECTED,
+      SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
+      SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+      SHIPMENT_STATUS.FAILED_DELIVERY,
+    ];
+
+    if (!needsDerivedFilters) {
+      /* One grouped pass over the matching orders. The vendor/customer joins are
+         only included when a filter actually references them. */
+      const rows = await orderModel.findAll({
+        attributes: [
+          "shipmentStatus",
+          "paymentStatus",
+          [fn("COUNT", col("Order.id")), "rowCount"],
+          [fn("SUM", col("Order.toBeCollected")), "collected"],
+          [fn("SUM", col("Order.totalPrice")), "totalPrice"],
+        ],
+        group: ["Order.shipmentStatus", "Order.paymentStatus"],
+        include: buildSummaryIncludes(filters),
+        raw: true,
+        subQuery: false,
+        where: whereClause,
+      });
+
+      let total = 0;
+      let deliveredCount = 0;
+      let inDeliveryCount = 0;
+      let failedOrReturnedCount = 0;
+      let totalGmv = 0;
+
+      for (const row of rows as Array<Record<string, unknown>>) {
+        const rowCount = toNumber(row.rowCount);
+        const shipmentStatus = toNumber(row.shipmentStatus);
+        total += rowCount;
+
+        if (shipmentStatus === SHIPMENT_STATUS.DELIVERED) {
+          deliveredCount += rowCount;
+        }
+        if (inDeliveryStatuses.includes(shipmentStatus)) {
+          inDeliveryCount += rowCount;
+        }
+        if (failedStatuses.includes(shipmentStatus)) {
+          failedOrReturnedCount += rowCount;
+        }
+        // Mirrors getShipmentCollectionAmount: paid shipments collect nothing.
+        if (toNumber(row.paymentStatus) !== PAYMENT_STATUS.PAID) {
+          totalGmv += toNumber(row.collected) || toNumber(row.totalPrice);
+        }
+      }
+
+      return buildCards(total, deliveredCount, inDeliveryCount, failedOrReturnedCount, totalGmv);
+    }
+
     const orders = await orderModel.findAll({
       include: buildIncludes(),
       subQuery: false,
@@ -624,37 +748,14 @@ export class ShipmentRepository {
       .map((order: unknown) => mapShipmentListItem(order))
       .filter((item: ShipmentListItem) => matchesShipmentPriority(item, filters.priority))
       .filter((item: ShipmentListItem) => matchesShipmentDeliveryStatus(item, filters.deliveryStatus));
-    const deliveredCount = items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length;
-    const inDeliveryStatuses = [
-      SHIPMENT_STATUS.READY_FOR_SHIPPING,
-      SHIPMENT_STATUS.SCHEDULED,
-      SHIPMENT_STATUS.OUT_FOR_DELIVERY,
-    ];
-    const inDeliveryCount = items.filter((item: ShipmentListItem) =>
-      inDeliveryStatuses.some((status) => status === (item.shipmentStatus ?? 0))).length;
-    const failedStatuses = [
-      SHIPMENT_STATUS.CANCELED,
-      SHIPMENT_STATUS.REJECTED,
-      SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
-      SHIPMENT_STATUS.RETURNED_TO_VENDOR,
-      SHIPMENT_STATUS.FAILED_DELIVERY,
-    ];
-    const failedOrReturnedCount = items.filter((item: ShipmentListItem) =>
-      failedStatuses.some((status) => status === (item.shipmentStatus ?? 0)))
-      .length;
-    const totalGmv = items.reduce((sum: number, item: ShipmentListItem) => sum + item.amountToCollect, 0);
-    const successRate = items.length > 0 ? Math.round((deliveredCount / items.length) * 1000) / 10 : 0;
 
-    return {
-      cards: [
-        { description: "إجمالي الشحنات ضمن الفلاتر الحالية", key: "totalShipments", label: "الشحنات", value: items.length },
-        { description: "الشحنات التي تم تسليمها", key: "deliveredShipments", label: "تم التسليم", value: deliveredCount },
-        { description: "الشحنات الجاهزة أو قيد التوصيل", key: "inDeliveryShipments", label: "قيد التوصيل", value: inDeliveryCount },
-        { description: "ملغي أو مرتجع أو فشل", key: "failedOrReturnedShipments", label: "مرتجع / ملغي / فاشل", value: failedOrReturnedCount },
-        { description: `معدل النجاح ${successRate}%`, key: "successRate", label: "معدل النجاح", value: successRate },
-        { description: "إجمالي المبلغ المطلوب تحصيله", key: "totalGmv", label: "إجمالي التحصيل", value: totalGmv },
-      ],
-    };
+    return buildCards(
+      items.length,
+      items.filter((item: ShipmentListItem) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED).length,
+      items.filter((item: ShipmentListItem) => inDeliveryStatuses.includes(item.shipmentStatus ?? 0)).length,
+      items.filter((item: ShipmentListItem) => failedStatuses.includes(item.shipmentStatus ?? 0)).length,
+      items.reduce((sum: number, item: ShipmentListItem) => sum + item.amountToCollect, 0),
+    );
   }
 
   public async listShipments(filters: ShipmentListQuery, vendorId?: number | null): Promise<ShipmentListResponse> {
@@ -886,6 +987,7 @@ export class ShipmentRepository {
       return {
         daysCounter: getDaysBetween(startedAt, completedAt),
         id: persistedReturn ? toNumber(persistedReturn.id) : toNumber(order.id),
+        orderId: toNumber(order.id),
         operationNumber: normalizeOperationCode(order.code),
         orderNumber: toText(order.orderNumber, toText(order.number, toText(order.name))),
         reason: toText(persistedReturn?.reason, toText(notes[0]?.text, toText(order.notes))),
@@ -958,6 +1060,7 @@ export class ShipmentRepository {
     return {
       daysCounter: getDaysBetween(record.startedAt, record.completedAt),
       id: toNumber(record.id),
+      orderId: toNumber(plainShipment.id),
       operationNumber: normalizeOperationCode(plainShipment.code),
       orderNumber: toText(plainShipment.orderNumber, toText(plainShipment.number, toText(plainShipment.name))),
       reason: toText(record.reason),
@@ -970,8 +1073,49 @@ export class ShipmentRepository {
     };
   }
 
+  /**
+   * Creates the missing shipmentReturns row for an order that already carries a
+   * "returned" shipment status. Returns null when the id is not a matching order,
+   * so a genuinely unknown id still surfaces as not-found.
+   */
+  private async createReturnRecordForOrder(orderId: number, returnType: number): Promise<unknown | null> {
+    const order = await orderModel.findByPk(orderId);
+    if (!order) {
+      return null;
+    }
+
+    const plainOrder = toPlain(order);
+    if (toNumber(plainOrder.shipmentStatus) !== getShipmentStatusForReturnType(returnType)) {
+      return null;
+    }
+
+    const existingRecord = await shipmentReturnModel.findOne({
+      where: { orderId, returnType },
+    });
+    if (existingRecord) {
+      return existingRecord;
+    }
+
+    const startedAt = plainOrder.updatedAt ?? new Date();
+    return shipmentReturnModel.create({
+      completedAt: null,
+      orderId,
+      reason: "",
+      returnDate: startedAt,
+      returnType,
+      startedAt,
+      status: getFallbackReturnStatus(returnType),
+    });
+  }
+
   public async updateReturnRecord(returnId: number, returnType: number, payload: Partial<ReturnMutationInput>): Promise<ReturnItem | null> {
-    const returnRecord = await shipmentReturnModel.findByPk(returnId);
+    /* A shipment can be flipped to a "returned" status without a shipmentReturns
+       row ever being created; the list then falls back to exposing the order id.
+       So an id that matches no return row is treated as an order id and the
+       record is created on first edit, which is what gives those rows an
+       editable status and reason. */
+    const returnRecord = (await shipmentReturnModel.findByPk(returnId))
+      ?? (await this.createReturnRecordForOrder(returnId, returnType));
     if (!returnRecord) {
       return null;
     }
@@ -1030,6 +1174,7 @@ export class ShipmentRepository {
     return {
       daysCounter: getDaysBetween(updated.startedAt, updated.completedAt),
       id: toNumber(updated.id),
+      orderId: toNumber(plainShipment.id),
       operationNumber: normalizeOperationCode(plainShipment.code),
       orderNumber: toText(plainShipment.orderNumber, toText(plainShipment.number, toText(plainShipment.name))),
       reason: toText(updated.reason),
@@ -1549,7 +1694,19 @@ export class ShipmentRepository {
     }
 
     const nextPayload = await this.normalizeShippingCompanyPayload(payload);
-    for (const key of ["shippingReceiveDate", "deliveryDate"]) {
+    /* A cleared <select>/<input> arrives as "", which is not null and so is put
+       through the column validators — `shipmentType: ""` failed its isIn rule
+       and the whole edit 500'd. Every nullable column here means "unset" by "". */
+    for (const key of [
+      "deliveryBy",
+      "deliveryDate",
+      "governorate",
+      "scheduleStatus",
+      "shipmentStatus",
+      "shipmentType",
+      "shippingCompany",
+      "shippingReceiveDate",
+    ]) {
       if (nextPayload[key] === "") {
         nextPayload[key] = null;
       }

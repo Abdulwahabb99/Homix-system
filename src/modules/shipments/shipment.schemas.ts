@@ -164,6 +164,14 @@ export const shipmentReturnMutationSchema = z.object({
   status: z.coerce.number().int().positive().optional(),
 });
 
+/**
+ * Updates accept an empty reason: clearing the field is a deliberate action, and
+ * `.partial()` alone still ran the create rule's min(1) whenever the key was sent.
+ */
+export const shipmentReturnUpdateSchema = shipmentReturnMutationSchema.partial().extend({
+  reason: z.string().trim().optional(),
+});
+
 export const shipmentInventoryQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),
   productCode: z.string().trim().optional(),

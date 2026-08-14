@@ -227,6 +227,11 @@ describe("orderRouter", () => {
   });
 
   it("returns orders summary cards", async () => {
+    // الملخّص يُجمَّع في SQL الآن، فالنتيجة صفوف مُجمَّعة لا صفوف طلبات
+    orderModel.findAll.mockResolvedValueOnce([
+      { isUrgent: false, rowCount: "1", status: 1 },
+    ]);
+
     const response = await request(app).get("/orders/summary").query({ page: 1, size: 20 });
 
     expect(response.status).toBe(200);

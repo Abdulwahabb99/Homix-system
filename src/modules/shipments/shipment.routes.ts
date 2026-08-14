@@ -25,6 +25,7 @@ import {
   shipmentShippingCompanyMutationSchema,
   shipmentShippingCompanyParamsSchema,
   shipmentReturnMutationSchema,
+  shipmentReturnUpdateSchema,
   shipmentReturnParamsSchema,
   shipmentReturnsQuerySchema,
   shipmentSummaryQuerySchema,
@@ -489,7 +490,7 @@ shipmentRouter.post(
 shipmentRouter.put(
   "/returns/vendor/:returnId",
   requirePermission("ship_edit"),
-  validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
+  validateRequest({ body: shipmentReturnUpdateSchema, params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateVendorReturn),
 );
 
@@ -615,7 +616,7 @@ shipmentRouter.post(
 shipmentRouter.put(
   "/returns/customer/:returnId",
   requirePermission("ship_edit"),
-  validateRequest({ body: shipmentReturnMutationSchema.partial(), params: shipmentReturnParamsSchema }),
+  validateRequest({ body: shipmentReturnUpdateSchema, params: shipmentReturnParamsSchema }),
   asyncHandler(shipmentController.updateCustomerReturn),
 );
 
