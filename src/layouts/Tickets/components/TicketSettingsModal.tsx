@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -16,15 +16,17 @@ import {
 import { alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
+import type { TicketMetaOption } from "query/ticketsList.api";
 
 const BRAND = "#6366f1";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  ticketTypes: string[];
-  quickReplies: string[];
-  onSave: (types: string[], replies: string[]) => void;
+  ticketTypes: TicketMetaOption[];
+  quickReplies: TicketMetaOption[];
+  saving?: boolean;
+  onSave: (types: TicketMetaOption[], replies: TicketMetaOption[]) => void;
 };
 
 export default function TicketSettingsModal({
@@ -32,18 +34,36 @@ export default function TicketSettingsModal({
   onClose,
   ticketTypes: initialTypes,
   quickReplies: initialReplies,
+  saving = false,
   onSave,
 }: Props) {
-  const [types, setTypes] = useState<string[]>(initialTypes);
-  const [replies, setReplies] = useState<string[]>(initialReplies);
+  const [types, setTypes] = useState<TicketMetaOption[]>(initialTypes);
+  const [replies, setReplies] = useState<TicketMetaOption[]>(initialReplies);
   const [newType, setNewType] = useState("");
   const [newReply, setNewReply] = useState("");
+  const [editingType, setEditingType] = useState<number | null>(null);
+  const [editingReply, setEditingReply] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setTypes(initialTypes);
+    setReplies(initialReplies);
+    setNewType("");
+    setNewReply("");
+    setEditingType(null);
+    setEditingReply(null);
+  }, [initialReplies, initialTypes, open]);
 
   function handleAddType() {
     const val = newType.trim();
-    if (!val || types.includes(val)) return;
-    setTypes((prev) => [...prev, val]);
+    if (!val || types.some((option, index) => option.label === val && index !== editingType)) return;
+    if (editingType !== null) {
+      setTypes((prev) => prev.map((option, index) => index === editingType ? { ...option, label: val } : option));
+    } else {
+      setTypes((prev) => [...prev, { key: -(Date.now()), label: val }]);
+    }
     setNewType("");
+    setEditingType(null);
   }
 
   function handleRemoveType(i: number) {
@@ -52,9 +72,14 @@ export default function TicketSettingsModal({
 
   function handleAddReply() {
     const val = newReply.trim();
-    if (!val || replies.includes(val)) return;
-    setReplies((prev) => [...prev, val]);
+    if (!val || replies.some((option, index) => option.label === val && index !== editingReply)) return;
+    if (editingReply !== null) {
+      setReplies((prev) => prev.map((option, index) => index === editingReply ? { ...option, label: val } : option));
+    } else {
+      setReplies((prev) => [...prev, { key: -(Date.now()), label: val }]);
+    }
     setNewReply("");
+    setEditingReply(null);
   }
 
   function handleRemoveReply(i: number) {
@@ -63,7 +88,6 @@ export default function TicketSettingsModal({
 
   function handleSave() {
     onSave(types, replies);
-    onClose();
   }
 
   return (
@@ -112,10 +136,12 @@ export default function TicketSettingsModal({
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
           {types.map((t, i) => (
             <Chip
-              key={t}
-              label={t}
+              key={t.key}
+              label={t.label}
               size="small"
+              onClick={() => { setEditingType(i); setNewType(t.label); }}
               onDelete={() => handleRemoveType(i)}
+              title="اضغط لتعديل الاسم"
               sx={{
                 fontWeight: 500,
                 fontSize: "0.78rem",
@@ -151,7 +177,7 @@ export default function TicketSettingsModal({
               "&:hover": { bgcolor: "#5254e0" },
             }}
           >
-            إضافة
+            {editingType !== null ? "حفظ" : "إضافة"}
           </Button>
         </Stack>
 
@@ -164,10 +190,12 @@ export default function TicketSettingsModal({
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
           {replies.map((r, i) => (
             <Chip
-              key={r}
-              label={r}
+              key={r.key}
+              label={r.label}
               size="small"
+              onClick={() => { setEditingReply(i); setNewReply(r.label); }}
               onDelete={() => handleRemoveReply(i)}
+              title="اضغط لتعديل الرد"
               sx={{
                 fontWeight: 500,
                 fontSize: "0.75rem",
@@ -202,7 +230,7 @@ export default function TicketSettingsModal({
               "&:hover": { bgcolor: "#5254e0" },
             }}
           >
-            إضافة
+            {editingReply !== null ? "حفظ" : "إضافة"}
           </Button>
         </Stack>
       </DialogContent>
@@ -210,6 +238,7 @@ export default function TicketSettingsModal({
       <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
         <Button
           onClick={handleSave}
+          disabled={saving || types.length === 0}
           variant="contained"
           disableElevation
           fullWidth
@@ -221,7 +250,7 @@ export default function TicketSettingsModal({
             "&:hover": { bgcolor: "#5254e0" },
           }}
         >
-          حفظ وإغلاق
+          {saving ? "جارٍ الحفظ..." : "حفظ وإغلاق"}
         </Button>
       </DialogActions>
     </Dialog>

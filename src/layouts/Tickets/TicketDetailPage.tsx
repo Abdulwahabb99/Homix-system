@@ -131,7 +131,7 @@ export default function TicketDetailPage() {
       <Box sx={{ maxWidth: 1680, mx: "auto", width: "100%", mt: 2.5 }}>
         <TicketDetailView
           ticket={t}
-          quickReplies={DEFAULT_QUICK_REPLIES}
+          quickReplies={metaQuery.data?.quickReplies?.map((option) => option.label) ?? DEFAULT_QUICK_REPLIES}
           onBack={handleBack}
           onUpdateTicket={handleUpdateTicket}
           onSendChatMessage={handleSendChatMessage}

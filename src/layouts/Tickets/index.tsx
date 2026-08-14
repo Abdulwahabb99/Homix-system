@@ -39,6 +39,7 @@ import {
   formatTicketMetaAssigneeName,
   useTicketsList,
   useTicketsMeta,
+  updateTicketSettings,
 } from "query/ticketsList.api";
 import {
   createTicket,
@@ -257,9 +258,6 @@ export default function Tickets() {
   const [ticketTablePage, setTicketTablePage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
-  const [ticketTypes, setTicketTypes] = useState<string[]>(DEFAULT_TICKET_TYPES);
-  const [quickReplies, setQuickReplies] = useState<string[]>(DEFAULT_QUICK_REPLIES);
-
   const metaQuery = useTicketsMeta();
 
   // views
@@ -422,8 +420,22 @@ export default function Tickets() {
 
   const typeOptionsForModal = useMemo((): TicketMetaOption[] => {
     if (metaQuery.data?.types?.length) return metaQuery.data.types;
-    return ticketTypes.map((label, i) => ({ key: i + 1, label }));
-  }, [metaQuery.data?.types, ticketTypes]);
+    return DEFAULT_TICKET_TYPES.map((label, i) => ({ key: i + 1, label }));
+  }, [metaQuery.data?.types]);
+  const quickReplyOptions = useMemo((): TicketMetaOption[] => {
+    if (metaQuery.data?.quickReplies?.length) return metaQuery.data.quickReplies;
+    return DEFAULT_QUICK_REPLIES.map((label, i) => ({ key: i + 1, label }));
+  }, [metaQuery.data?.quickReplies]);
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: updateTicketSettings,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ticketKeys.meta() });
+      NotificationMeassage("success", "تم حفظ أنواع التذاكر والردود السريعة");
+      setSettingsOpen(false);
+    },
+    onError: () => NotificationMeassage("error", "تعذّر حفظ الإعدادات"),
+  });
 
   const createTicketMutation = useMutation({
     mutationFn: (payload: CreateTicketPayload) => createTicket(navigate, payload),
@@ -821,12 +833,13 @@ export default function Tickets() {
       <TicketSettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        ticketTypes={ticketTypes}
-        quickReplies={quickReplies}
-        onSave={(types, replies) => {
-          setTicketTypes(types);
-          setQuickReplies(replies);
-        }}
+        ticketTypes={typeOptionsForModal}
+        quickReplies={quickReplyOptions}
+        saving={updateSettingsMutation.isPending}
+        onSave={(types, replies) => updateSettingsMutation.mutate({
+          types: types.map(({ key, label }) => ({ id: key > 0 ? key : undefined, label })),
+          quickReplies: replies.map(({ key, label }) => ({ id: key > 0 ? key : undefined, label })),
+        })}
       />
 
       <ConfirmDeleteModal

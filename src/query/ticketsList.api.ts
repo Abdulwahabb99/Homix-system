@@ -173,10 +173,18 @@ export interface TicketsMeta {
   openSubtitle?: string;
   closedSubtitle?: string;
   averageSubtitle?: string;
+  quickReplies: TicketMetaOption[];
   overdueSubtitle?: string;
   assignees: TicketMetaAssignee[];
   statuses: TicketMetaOption[];
   types: TicketMetaOption[];
+}
+
+export async function updateTicketSettings(payload: {
+  quickReplies: Array<{ id?: number; label: string }>;
+  types: Array<{ id?: number; label: string }>;
+}): Promise<void> {
+  await axiosRequest.put("/tickets/settings", payload);
 }
 
 export function formatTicketMetaAssigneeName(a: TicketMetaAssignee): string {
@@ -459,6 +467,7 @@ function mapKeyedOptions(raw: unknown): TicketMetaOption[] {
 function emptyTicketsMeta(): TicketsMeta {
   return {
     assignees: [],
+    quickReplies: [],
     statuses: [],
     types: [],
   };
@@ -489,6 +498,7 @@ function mapApiToTicketsMeta(raw: Record<string, unknown>): TicketsMeta {
     averageSubtitle: pickStr(raw.averageSubtitle ?? raw.average_subtitle),
     overdueSubtitle: pickStr(raw.overdueSubtitle ?? raw.overdue_subtitle),
     assignees: mapAssignees(raw.assignees),
+    quickReplies: mapKeyedOptions(raw.quickReplies ?? raw.quick_replies),
     statuses: mapKeyedOptions(raw.statuses),
     types: mapKeyedOptions(raw.types),
   };
