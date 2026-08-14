@@ -44,6 +44,7 @@ export class NavigationCountsRepository implements NavigationCountsRepositoryCon
         (select count(*)
            from "products" p
           where p."deletedAt" is null
+            and p."shopifyId" is not null
             and (cast(:vendorId as integer) is null or p."vendorId" = cast(:vendorId as integer))) as "products"`,
       {
         replacements: { vendorId: vendorId ?? null },

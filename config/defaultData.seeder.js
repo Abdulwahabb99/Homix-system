@@ -16,20 +16,26 @@ const createDefaultData = async () => {
       lastName: "user",
     });
   }
-  const vendor = await Vendor.findOne({
+  let vendor = await Vendor.findOne({
     where: { name: "Custom" },
   });
   if (!vendor) {
-    const customVendor = await Vendor.create({
+    vendor = await Vendor.create({
       name: "Custom",
       shopifyId: "custom",
     });
+  }
+
+  const customProduct = await Product.findOne({
+    where: { shopifyId: "custom" },
+  });
+  if (!customProduct) {
     await Product.create({
       title: "Custom Product",
       image: `${process.env.APP_URL}/uploads/default-product.png`,
       variants: [],
       shopifyId: "custom",
-      vendorId: customVendor.id,
+      vendorId: vendor.id,
     });
   }
 };

@@ -124,6 +124,12 @@ class ProductsService {
   ): Promise<ProductsResponse> {
     const whereClause: Record<string, unknown> = {};
 
+    // Products copied internally while assigning an order to another vendor
+    // deliberately have no Shopify id. They belong to that order relationship,
+    // not to the product catalogue, and must not appear as duplicate products
+    // (most visibly as many "Custom Product" cards).
+    whereClause.shopifyId = { [Op.not]: null };
+
     if (categories.length) {
       const validCategories = toNumberArray(categories);
       const productIds = (await ProductCategory.findAll({
