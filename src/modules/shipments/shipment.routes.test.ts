@@ -2,6 +2,13 @@ import express from "express";
 import { Op } from "sequelize";
 import request from "supertest";
 
+const binaryParser = (response: NodeJS.ReadableStream, callback: (error: Error | null, body?: Buffer) => void): void => {
+  const chunks: Buffer[] = [];
+  response.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+  response.on("end", () => callback(null, Buffer.concat(chunks)));
+  response.on("error", callback);
+};
+
 const orderModel = {
   count: jest.fn(),
   findAll: jest.fn(),
@@ -1016,26 +1023,36 @@ describe("shipmentRouter", () => {
   });
 
   it("exports delivery accounts as an Excel workbook", async () => {
-    const response = await request(app).get("/shipments/accounts/deliveries/export");
+    const response = await request(app)
+      .get("/shipments/accounts/deliveries/export")
+      .buffer(true)
+      .parse(binaryParser);
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     expect(response.headers["content-disposition"]).toContain("delivery-accounts.xlsx");
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 2).toString()).toBe("PK");
     expect(orderModel.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 1_000_000 }),
     );
   });
 
   it("exports expenses as an Excel workbook", async () => {
-    const response = await request(app).get("/shipments/accounts/expenses/export");
+    const response = await request(app)
+      .get("/shipments/accounts/expenses/export")
+      .buffer(true)
+      .parse(binaryParser);
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     expect(response.headers["content-disposition"]).toContain("expenses.xlsx");
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 2).toString()).toBe("PK");
     expect(shipmentExpenseModel.findAll).toHaveBeenCalled();
   });
 

@@ -1,6 +1,13 @@
 import express from "express";
 import request from "supertest";
 
+const binaryParser = (response: NodeJS.ReadableStream, callback: (error: Error | null, body?: Buffer) => void): void => {
+  const chunks: Buffer[] = [];
+  response.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+  response.on("end", () => callback(null, Buffer.concat(chunks)));
+  response.on("error", callback);
+};
+
 const ticketModel = {
   create: jest.fn(),
   findAll: jest.fn(),
@@ -225,13 +232,17 @@ describe("ticketRouter", () => {
   it("exports the filtered tickets as an Excel workbook", async () => {
     const response = await request(app)
       .get("/tickets/export")
-      .query({ status: 1 });
+      .query({ status: 1 })
+      .buffer(true)
+      .parse(binaryParser);
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     expect(response.headers["content-disposition"]).toContain("tickets.xlsx");
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 2).toString()).toBe("PK");
     expect(ticketModel.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 1_000_000 }),
     );
