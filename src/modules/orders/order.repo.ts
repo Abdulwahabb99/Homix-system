@@ -1,5 +1,5 @@
 import moment from "moment-timezone";
-import { Op } from "sequelize";
+import { col, fn, literal, Op } from "sequelize";
 
 import {
   DELIVERY_BY,
@@ -14,7 +14,7 @@ import {
   PAYMENT_STATUS_ARABIC,
   SHIPMENTS_STATUS,
 } from "../../../config/constants";
-import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_STATUS_LABELS, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
+import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_PRIORITY, ORDER_STATUS_LABELS, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
   buildLogMessage,
   getDaysSince,
@@ -131,6 +131,38 @@ const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record
   }
 
   return andConditions.length > 0 ? { [Op.and]: andConditions } : {};
+};
+
+/**
+ * The summary only groups and counts, so it joins the vendor chain only when a
+ * filter references it. `required: true` keeps the join from multiplying rows.
+ */
+const buildSummaryIncludes = (filters: OrderListQuery, vendorId?: number | null) => {
+  const includes: Record<string, unknown>[] = [];
+
+  if (filters.vendorName || filters.vendorId || filters.productCode || vendorId) {
+    includes.push({
+      as: "orderLines",
+      attributes: [],
+      include: [
+        {
+          as: "product",
+          attributes: [],
+          include: [{ as: "vendor", attributes: [], model: vendorModel, required: true }],
+          model: productModel,
+          required: true,
+        },
+      ],
+      model: orderLineModel,
+      required: true,
+    });
+  }
+
+  if (filters.customerName) {
+    includes.push({ as: "customer", attributes: [], model: customerModel, required: true });
+  }
+
+  return includes;
 };
 
 const buildIncludes = (): Record<string, unknown>[] => {
@@ -807,33 +839,63 @@ export class OrderRepository {
     };
   }
 
+  /**
+   * Counted with a single grouped query.
+   *
+   * This previously loaded every matching order through the full include tree
+   * (order lines -> product -> vendor, customer, notes) just to tally six
+   * numbers — around 20s on the live data set.
+   *
+   * The urgency expression mirrors `resolveOrderPriority`: an explicit priority
+   * wins, otherwise it is derived from the expected delivery date. The old code
+   * limited `attributes` to status/expectedDeliveryDate, so `priority` was
+   * always undefined and the card silently disagreed with the priority shown in
+   * the orders list; counting the stored priority makes the two consistent.
+   */
   private async getSummaryCountsFromOrders(
     filters: OrderListQuery,
     vendorId?: number | null,
   ): Promise<{ canceledOrRefundedOrders: number; deliveredOrders: number; inProgressOrders: number; pendingOrders: number; totalOrders: number; urgentOrders: number }> {
-    const orders = await orderModel.findAll({
-      attributes: ["expectedDeliveryDate", "status"],
-      include: buildIncludes(),
+    const urgentExpression = literal(`(
+      CASE WHEN COALESCE("Order"."priority", 0) IN (1, 2, 3)
+        THEN "Order"."priority" = ${ORDER_PRIORITY.URGENT}
+        ELSE "Order"."expectedDeliveryDate" IS NOT NULL
+             AND "Order"."expectedDeliveryDate" < NOW()
+      END
+    )`);
+
+    const rows = await orderModel.findAll({
+      attributes: [
+        "status",
+        [urgentExpression, "isUrgent"],
+        [fn("COUNT", col("Order.id")), "rowCount"],
+      ],
+      group: ["Order.status", urgentExpression],
+      include: buildSummaryIncludes(filters, vendorId),
+      raw: true,
       subQuery: false,
       where: buildFilters(filters, vendorId),
     });
+
     const counts = {
       canceledOrRefundedOrders: 0,
       deliveredOrders: 0,
       inProgressOrders: 0,
       pendingOrders: 0,
-      totalOrders: orders.length,
+      totalOrders: 0,
       urgentOrders: 0,
     };
 
-    for (const order of orders) {
-      const plainOrder = toPlain(order);
-      const status = toNumber(plainOrder.status);
-      if (ORDER_SUMMARY_STATUS_GROUPS.pending.includes(status)) counts.pendingOrders += 1;
-      if (ORDER_SUMMARY_STATUS_GROUPS.inProgress.includes(status)) counts.inProgressOrders += 1;
-      if (ORDER_SUMMARY_STATUS_GROUPS.delivered.includes(status)) counts.deliveredOrders += 1;
-      if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += 1;
-      if (resolveOrderPriority(plainOrder.priority, plainOrder.deliveryStatus, plainOrder.expectedDeliveryDate) === 3 && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += 1;
+    for (const row of rows as Array<Record<string, unknown>>) {
+      const rowCount = toNumber(row.rowCount);
+      const status = toNumber(row.status);
+      counts.totalOrders += rowCount;
+
+      if (ORDER_SUMMARY_STATUS_GROUPS.pending.includes(status)) counts.pendingOrders += rowCount;
+      if (ORDER_SUMMARY_STATUS_GROUPS.inProgress.includes(status)) counts.inProgressOrders += rowCount;
+      if (ORDER_SUMMARY_STATUS_GROUPS.delivered.includes(status)) counts.deliveredOrders += rowCount;
+      if (ORDER_SUMMARY_STATUS_GROUPS.canceledOrRefunded.includes(status)) counts.canceledOrRefundedOrders += rowCount;
+      if (row.isUrgent === true && !FINAL_ORDER_STATUSES.includes(status)) counts.urgentOrders += rowCount;
     }
 
     return counts;
