@@ -69,19 +69,21 @@ export async function fetchCustomerReturns(params: ReturnsParams): Promise<Retur
   return normalizeResponse(data);
 }
 
-export function useVendorReturnsQuery(params: ReturnsParams) {
+export function useVendorReturnsQuery(params: ReturnsParams, enabled = true) {
   return useQuery({
     queryKey: shipmentKeys.returns("vendor", JSON.stringify(params)),
     queryFn:  () => fetchVendorReturns(params),
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 }
 
-export function useCustomerReturnsQuery(params: ReturnsParams) {
+export function useCustomerReturnsQuery(params: ReturnsParams, enabled = true) {
   return useQuery({
     queryKey: shipmentKeys.returns("customer", JSON.stringify(params)),
     queryFn:  () => fetchCustomerReturns(params),
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });

@@ -335,8 +335,10 @@ export default function ReturnsPanel() {
   const vendorParams: ReturnsParams   = { page: vendorPage,   ...applied };
   const customerParams: ReturnsParams = { page: customerPage, ...applied };
 
-  const vendorQ   = useVendorReturnsQuery(vendorParams);
-  const customerQ = useCustomerReturnsQuery(customerParams);
+  // Only the visible return list is requested. Previously opening this panel
+  // always fired both endpoints and made the first tab switch contend for work.
+  const vendorQ   = useVendorReturnsQuery(vendorParams, activeTab === "vendor");
+  const customerQ = useCustomerReturnsQuery(customerParams, activeTab === "customer");
 
   const vendorCount   = vendorQ.data?.totalCount   ?? 0;
   const customerCount = customerQ.data?.totalCount ?? 0;
