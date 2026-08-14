@@ -1662,10 +1662,18 @@ export class ShipmentRepository {
     const unfilteredItems: Array<{
       item: ShipmentListItem;
       order: Record<string, unknown>;
-    }> = orders.map((order: unknown) => ({
-      item: mapShipmentListItem(order),
-      order: toPlain(order),
-    }));
+    }> = orders.map((order: unknown) => {
+      const plainOrder = toPlain(order);
+      const mappedItem = mapShipmentListItem(order);
+      const item = mappedItem.deliveryBy === null && plainOrder.shippedFromInventory === true
+        ? {
+          ...mappedItem,
+          deliveryBy: DELIVERY_BY.HOMIX,
+          deliveryByLabel: DELIVERY_BY_LABELS[DELIVERY_BY.HOMIX],
+        }
+        : mappedItem;
+      return { item, order: plainOrder };
+    });
     const orderIds = unfilteredItems.map(({ item }) => item.id);
     const [statusLogs, returnRecords] = orderIds.length > 0
       ? await Promise.all([
