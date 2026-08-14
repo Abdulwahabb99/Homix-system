@@ -50,6 +50,7 @@ export function buildOrderPayload(form: OrderCreateFormState): NewOrderPayload {
       title: li.title,
       price: toNumber(li.price),
       quantity: toNumber(li.quantity) || 1,
+      product_id: li.productId,
       variant_id: li.variantId,
     })),
     orderDate: dateInputToIso(form.orderDate),

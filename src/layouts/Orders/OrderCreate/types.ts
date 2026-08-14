@@ -4,6 +4,7 @@ export interface OrderLineItem {
   title: string;
   price: number;
   quantity: number;
+  productId: number | string;
   variantId: number | string;
   image?: string | null;
   sku?: string;

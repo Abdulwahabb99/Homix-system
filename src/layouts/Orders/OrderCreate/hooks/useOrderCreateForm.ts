@@ -22,6 +22,7 @@ export function productToLineItem(product: any): OrderLineItem {
     title: product?.title ?? "",
     price: toNumber(variant.price),
     quantity: 1,
+    productId: product?.shopifyId ?? "",
     variantId: variant.shopifyId ?? variant.id ?? "",
     image: product?.image ?? null,
     sku: variant.sku,

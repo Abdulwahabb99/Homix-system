@@ -8,6 +8,7 @@ const baseURI = `${process.env.REACT_APP_API_URL}`;
 export interface NewOrderLineItem {
   title: string;
   price: number;
+  product_id: number | string;
   quantity: number;
   variant_id: number | string;
 }
