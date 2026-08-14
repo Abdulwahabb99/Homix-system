@@ -526,7 +526,9 @@ export function useTicketsMeta(enabled = true) {
   return useQuery({
     queryKey: ticketKeys.meta(),
     queryFn: () => fetchTicketsMeta(navigate),
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
     enabled,
   });
 }
@@ -558,7 +560,9 @@ export function useTicketDetail(ticketId: string, enabled = true) {
   return useQuery({
     queryKey: ticketKeys.detail(ticketId),
     queryFn: () => fetchTicketById(navigate, ticketId),
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
     enabled: enabled && Boolean(ticketId),
   });
 }
@@ -618,7 +622,9 @@ export function useTicketsList({ page, pageSize, filters, enabled = true }: UseT
   return useQuery({
     queryKey: ticketKeys.list(page, pageSize, filtersKey),
     queryFn: () => fetchTicketsList(navigate, { page, pageSize, filters }),
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
     enabled,
   });
 }
