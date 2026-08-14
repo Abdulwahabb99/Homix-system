@@ -589,16 +589,18 @@ describe("orderRouter", () => {
     }));
   });
 
-  it("sorts orders by manual priority in memory", async () => {
-    orderModel.findAll.mockResolvedValue([
-      { ...makeOrder(), code: "3002", id: 8, orderNumber: "31669", priority: 1 },
+  it("sorts orders by manual priority in the database query", async () => {
+    orderModel.findAndCountAll.mockResolvedValue({ count: 2, rows: [
       { ...makeOrder(), code: "3003", id: 9, orderNumber: "31670", priority: 3 },
-    ]);
+      { ...makeOrder(), code: "3002", id: 8, orderNumber: "31669", priority: 1 },
+    ] });
 
     const response = await request(app).get("/orders").query({ page: 1, size: 20, sort: { priority: -1 } });
 
     expect(response.status).toBe(200);
-    expect(orderModel.findAll).toHaveBeenCalled();
+    expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+      order: [["priority", "DESC"]],
+    }));
     expect(response.body.data.items.map((item: { orderNumber: string }) => item.orderNumber)).toEqual(["31670", "31669"]);
   });
 

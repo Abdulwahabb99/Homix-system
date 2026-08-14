@@ -240,8 +240,28 @@ const buildShipmentWhereClause = (
     }));
   }
 
+  if (filters.priority) {
+    andConditions.push(where(col("Order.priority"), {
+      [Op.in]: filters.priority.split(",").map(Number),
+    }));
+  }
+
   if (filters.deliveryBy) {
     andConditions.push(where(col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
+  }
+
+  if (filters.deliveryStatus) {
+    const statuses = filters.deliveryStatus.split(",").map(Number).filter((status) => [1, 2, 3].includes(status));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const almostDueDate = new Date(today);
+    almostDueDate.setDate(almostDueDate.getDate() + 2);
+    const deliveryConditions: Array<Record<PropertyKey, unknown>> = [];
+    if (statuses.includes(1)) deliveryConditions.push({ expectedDeliveryDate: { [Op.gte]: almostDueDate } });
+    if (statuses.includes(2)) deliveryConditions.push({ expectedDeliveryDate: { [Op.gte]: today, [Op.lt]: almostDueDate } });
+    if (statuses.includes(3)) deliveryConditions.push({ expectedDeliveryDate: { [Op.lt]: today } });
+    deliveryConditions.push({ deliveryStatus: { [Op.in]: statuses }, expectedDeliveryDate: null });
+    andConditions.push({ [Op.or]: deliveryConditions });
   }
 
   if (filters.startDate) {
@@ -353,6 +373,35 @@ const buildIncludes = () => [
     as: "user",
     attributes: ["firstName", "lastName"],
     model: userModel,
+    required: false,
+  },
+];
+
+/** Keep list requests small; details/returns still use the complete include tree. */
+const buildShipmentListIncludes = () => [
+  {
+    as: "orderLines",
+    attributes: ["id", "orderId", "productId", "sku"],
+    include: [{
+      as: "product",
+      attributes: ["id", "vendorId"],
+      include: [{ as: "vendor", attributes: ["id", "name"], model: vendorModel, required: false }],
+      model: productModel,
+      required: false,
+    }],
+    model: orderLineModel,
+    required: false,
+  },
+  {
+    as: "shippingCompanyRecord",
+    attributes: ["id", "name"],
+    model: shippingCompanyModel,
+    required: false,
+  },
+  {
+    as: "customer",
+    attributes: ["id", "firstName", "lastName", "phoneNumber"],
+    model: customerModel,
     required: false,
   },
 ];
@@ -477,7 +526,6 @@ const compareShipmentEntries = (
 
 const buildShipmentSort = (sortEntries: ShipmentSortEntry[]): Array<[string, "ASC" | "DESC"]> => {
   const databaseEntries = sortEntries
-    .filter(([field]) => field !== "priority")
     .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
 
   return databaseEntries.length > 0 ? databaseEntries : [["shippingReceiveDate", "DESC"]];
@@ -703,7 +751,7 @@ export class ShipmentRepository {
    * row-by-row path; every other filter combination is handled by the database.
    */
   public async getSummary(filters: Omit<ShipmentListQuery, "page" | "size">, vendorId?: number | null): Promise<ShipmentSummaryResponse> {
-    const needsDerivedFilters = Boolean(filters.priority || filters.deliveryStatus);
+    const needsDerivedFilters = false;
     const whereClause = buildShipmentWhereClause(filters, vendorId);
 
     const buildCards = (
@@ -787,7 +835,7 @@ export class ShipmentRepository {
     }
 
     const orders = await orderModel.findAll({
-      include: buildIncludes(),
+      include: buildShipmentListIncludes(),
       subQuery: false,
       where: whereClause,
     });
@@ -809,9 +857,9 @@ export class ShipmentRepository {
     const whereClause = buildShipmentWhereClause(filters, vendorId);
     const sortEntries = getShipmentSortEntries(filters.sort);
 
-    if (filters.priority || filters.deliveryStatus || sortEntries.some(([field]) => field === "priority")) {
+    if (false) {
       const rows = await orderModel.findAll({
-        include: buildIncludes(),
+        include: buildShipmentListIncludes(),
         order: buildShipmentSort(sortEntries),
         subQuery: false,
         where: whereClause,
@@ -841,7 +889,7 @@ export class ShipmentRepository {
 
     const result = await orderModel.findAndCountAll({
       distinct: true,
-      include: buildIncludes(),
+      include: buildShipmentListIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
       order: buildShipmentSort(sortEntries),

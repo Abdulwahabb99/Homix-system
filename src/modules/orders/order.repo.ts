@@ -67,6 +67,22 @@ const SUMMARY_AGGREGATE_UNSUPPORTED_FILTERS: Array<keyof OrderListQuery> = [
   "vendorName",
 ];
 
+const buildDeliveryStatusCondition = (value: string): Record<PropertyKey, unknown> => {
+  const statuses = value.split(",").map(Number).filter((status) => [1, 2, 3].includes(status));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const almostDueDate = new Date(today);
+  almostDueDate.setDate(almostDueDate.getDate() + 2);
+  const conditions: Array<Record<PropertyKey, unknown>> = [];
+
+  if (statuses.includes(1)) conditions.push({ expectedDeliveryDate: { [Op.gte]: almostDueDate } });
+  if (statuses.includes(2)) conditions.push({ expectedDeliveryDate: { [Op.gte]: today, [Op.lt]: almostDueDate } });
+  if (statuses.includes(3)) conditions.push({ expectedDeliveryDate: { [Op.lt]: today } });
+  conditions.push({ deliveryStatus: { [Op.in]: statuses }, expectedDeliveryDate: null });
+
+  return { [Op.or]: conditions };
+};
+
 const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record<string, unknown> => {
   const andConditions: unknown[] = [];
   const pushDateCondition = (key: string, operator: symbol, value: string): void => {
@@ -110,8 +126,14 @@ const buildFilters = (filters: OrderListQuery, vendorId?: number | null): Record
   if (filters.paymentStatus) {
     andConditions.push(sequelize.where(sequelize.col("Order.paymentStatus"), { [Op.in]: filters.paymentStatus.split(",").map(Number) }));
   }
+  if (filters.priority) {
+    andConditions.push(sequelize.where(sequelize.col("Order.priority"), { [Op.in]: filters.priority.split(",").map(Number) }));
+  }
   if (filters.deliveryBy) {
     andConditions.push(sequelize.where(sequelize.col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
+  }
+  if (filters.deliveryStatus) {
+    andConditions.push(buildDeliveryStatusCondition(filters.deliveryStatus));
   }
   if (filters.orderSource) {
     andConditions.push(sequelize.where(sequelize.col("Order.orderSource"), { [Op.in]: filters.orderSource.split(",").map(Number) }));
@@ -184,6 +206,32 @@ const buildIncludes = (): Record<string, unknown>[] => {
   ];
 };
 
+/** Only select associations and columns rendered by the orders table. */
+const buildOrderListIncludes = (): Record<string, unknown>[] => [
+  {
+    as: "orderLines",
+    attributes: ["id", "orderId", "productId", "sku", "title"],
+    include: [{
+      as: "product",
+      attributes: ["id", "image", "title", "typeId", "vendorId"],
+      include: [
+        { as: "vendor", attributes: ["id", "name"], model: vendorModel },
+        { as: "type", attributes: ["id", "name"], model: productTypeModel },
+      ],
+      model: productModel,
+    }],
+    model: orderLineModel,
+    required: true,
+  },
+  {
+    as: "customer",
+    attributes: ["id", "firstName", "lastName"],
+    model: customerModel,
+    required: false,
+  },
+  { as: "user", attributes: ["id", "firstName", "lastName"], model: userModel, required: false },
+];
+
 const parseCsvNumbers = (value?: string): number[] => {
   if (!value) {
     return [];
@@ -242,7 +290,6 @@ const compareOrderEntries = (
 
 const buildOrderSort = (sortEntries: OrderSortEntry[]): Array<[string, "ASC" | "DESC"]> => {
   const databaseEntries = sortEntries
-    .filter(([field]) => field !== "priority")
     .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
 
   return databaseEntries.length > 0 ? databaseEntries : [["orderDate", "DESC"]];
@@ -475,11 +522,11 @@ export class OrderRepository {
 
   public async listOrders(filters: OrderListQuery, vendorId?: number | null): Promise<OrderListResponse> {
     const sortEntries = getOrderSortEntries(filters.sort);
-    const requiresInMemoryProcessing = Boolean(filters.priority || filters.deliveryStatus || sortEntries.some(([field]) => field === "priority"));
+    const requiresInMemoryProcessing = false;
 
     if (requiresInMemoryProcessing) {
       const rows = await orderModel.findAll({
-        include: [...buildIncludes(), { as: "user", attributes: ["firstName", "lastName"], model: userModel, required: false }],
+        include: buildOrderListIncludes(),
         order: buildOrderSort(sortEntries),
         subQuery: false,
         where: buildFilters(filters, vendorId),
@@ -517,7 +564,7 @@ export class OrderRepository {
 
     const result = await orderModel.findAndCountAll({
       distinct: true,
-      include: [...buildIncludes(), { as: "user", attributes: ["firstName", "lastName"], model: userModel, required: false }],
+      include: buildOrderListIncludes(),
       limit: filters.size,
       offset: (filters.page - 1) * filters.size,
       order: buildOrderSort(sortEntries),
