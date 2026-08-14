@@ -1659,38 +1659,38 @@ export class ShipmentRepository {
 
     if (hasDateRange) {
       const candidates = await sequelize.query<{ id: number; reportDate: Date | string }>(`
-        WITH performance_orders AS (
+        WITH latest_status_logs AS (
+          SELECT DISTINCT ON (l."entityId", l."to")
+            l."entityId",
+            l."to",
+            l."createdAt"
+          FROM logs l
+          WHERE l."entityType" = 'order'
+            AND l.action = 'update'
+            AND l.field = 'shipmentStatus'
+            AND l."to" IN (:performanceStatusTexts)
+          ORDER BY l."entityId", l."to", l."createdAt" DESC
+        ),
+        latest_returns AS (
+          SELECT DISTINCT ON (sr."orderId", sr."returnType")
+            sr."orderId",
+            sr."returnType",
+            COALESCE(sr."completedAt", sr."returnDate", sr."startedAt", sr."createdAt") AS "reportDate"
+          FROM "shipmentReturns" sr
+          WHERE sr."deletedAt" IS NULL
+          ORDER BY sr."orderId", sr."returnType", sr."createdAt" DESC
+        ),
+        performance_orders AS (
           SELECT
             o.id,
             COALESCE(
-              (
-                SELECT l."createdAt"
-                FROM logs l
-                WHERE l."entityType" = 'order'
-                  AND l.action = 'update'
-                  AND l.field = 'shipmentStatus'
-                  AND l."entityId" = o.id
-                  AND l."to" = o."shipmentStatus"::text
-                ORDER BY l."createdAt" DESC
-                LIMIT 1
-              ),
+              latest_log."createdAt",
               CASE
                 WHEN o."shipmentStatus" = :deliveredStatus
                   THEN COALESCE(o."deliveryDate", o."updatedAt", o."orderDate")
                 WHEN o."shipmentStatus" IN (:persistedReturnStatuses)
                   THEN COALESCE(
-                    (
-                      SELECT COALESCE(sr."completedAt", sr."returnDate", sr."startedAt", sr."createdAt")
-                      FROM "shipmentReturns" sr
-                      WHERE sr."orderId" = o.id
-                        AND sr."returnType" = CASE
-                          WHEN o."shipmentStatus" = :returnedToVendorStatus THEN :vendorReturnType
-                          ELSE :customerReturnType
-                        END
-                        AND sr."deletedAt" IS NULL
-                      ORDER BY sr."createdAt" DESC
-                      LIMIT 1
-                    ),
+                    latest_return."reportDate",
                     o."updatedAt",
                     o."deliveryDate",
                     o."orderDate"
@@ -1699,6 +1699,16 @@ export class ShipmentRepository {
               END
             ) AS "reportDate"
           FROM orders o
+          LEFT JOIN latest_status_logs latest_log
+            ON latest_log."entityId" = o.id
+            AND latest_log."to" = o."shipmentStatus"::text
+          LEFT JOIN latest_returns latest_return
+            ON latest_return."orderId" = o.id
+            AND latest_return."returnType" = CASE
+              WHEN o."shipmentStatus" = :returnedToVendorStatus THEN :vendorReturnType
+              WHEN o."shipmentStatus" = :returnedFromCustomerStatus THEN :customerReturnType
+              ELSE NULL
+            END
           WHERE o."deletedAt" IS NULL
             AND o."shipmentStatus" IN (:performanceStatuses)
             AND (
@@ -1717,12 +1727,14 @@ export class ShipmentRepository {
           deliveredStatus: SHIPMENT_STATUS.DELIVERED,
           homixDeliveryBy: DELIVERY_BY.HOMIX,
           performanceStatuses,
+          performanceStatusTexts: performanceStatuses.map(String),
           persistedReturnStatuses: [
             SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
             SHIPMENT_STATUS.RETURNED_TO_VENDOR,
           ],
           rangeEnd,
           rangeStart,
+          returnedFromCustomerStatus: SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
           returnedToVendorStatus: SHIPMENT_STATUS.RETURNED_TO_VENDOR,
           vendorReturnType: SHIPMENT_RETURN_TYPE.TO_VENDOR,
         },
