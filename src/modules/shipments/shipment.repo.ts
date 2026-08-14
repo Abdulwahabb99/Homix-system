@@ -1659,26 +1659,43 @@ export class ShipmentRepository {
 
     if (hasDateRange) {
       const candidates = await sequelize.query<{ id: number; reportDate: Date | string }>(`
-        WITH latest_status_logs AS (
-          SELECT DISTINCT ON (l."entityId", l."to")
+        WITH eligible_orders AS MATERIALIZED (
+          SELECT o.*
+          FROM orders o
+          WHERE o."deletedAt" IS NULL
+            AND o."shipmentStatus" IN (:performanceStatuses)
+            AND (
+              o."deliveryBy" = :homixDeliveryBy
+              OR (o."deliveryBy" IS NULL AND o."shippedFromInventory" IS TRUE)
+            )
+        ),
+        latest_status_logs AS (
+          SELECT DISTINCT ON (l."entityId")
             l."entityId",
-            l."to",
             l."createdAt"
           FROM logs l
+          INNER JOIN eligible_orders o
+            ON o.id = l."entityId"
+            AND l."to" = o."shipmentStatus"::text
           WHERE l."entityType" = 'order'
             AND l.action = 'update'
             AND l.field = 'shipmentStatus'
-            AND l."to" IN (:performanceStatusTexts)
-          ORDER BY l."entityId", l."to", l."createdAt" DESC
+          ORDER BY l."entityId", l."createdAt" DESC
         ),
         latest_returns AS (
-          SELECT DISTINCT ON (sr."orderId", sr."returnType")
+          SELECT DISTINCT ON (sr."orderId")
             sr."orderId",
-            sr."returnType",
             COALESCE(sr."completedAt", sr."returnDate", sr."startedAt", sr."createdAt") AS "reportDate"
           FROM "shipmentReturns" sr
+          INNER JOIN eligible_orders o
+            ON o.id = sr."orderId"
+            AND sr."returnType" = CASE
+              WHEN o."shipmentStatus" = :returnedToVendorStatus THEN :vendorReturnType
+              WHEN o."shipmentStatus" = :returnedFromCustomerStatus THEN :customerReturnType
+              ELSE NULL
+            END
           WHERE sr."deletedAt" IS NULL
-          ORDER BY sr."orderId", sr."returnType", sr."createdAt" DESC
+          ORDER BY sr."orderId", sr."createdAt" DESC
         ),
         performance_orders AS (
           SELECT
@@ -1698,23 +1715,11 @@ export class ShipmentRepository {
                 ELSE COALESCE(o."updatedAt", o."deliveryDate", o."orderDate")
               END
             ) AS "reportDate"
-          FROM orders o
+          FROM eligible_orders o
           LEFT JOIN latest_status_logs latest_log
             ON latest_log."entityId" = o.id
-            AND latest_log."to" = o."shipmentStatus"::text
           LEFT JOIN latest_returns latest_return
             ON latest_return."orderId" = o.id
-            AND latest_return."returnType" = CASE
-              WHEN o."shipmentStatus" = :returnedToVendorStatus THEN :vendorReturnType
-              WHEN o."shipmentStatus" = :returnedFromCustomerStatus THEN :customerReturnType
-              ELSE NULL
-            END
-          WHERE o."deletedAt" IS NULL
-            AND o."shipmentStatus" IN (:performanceStatuses)
-            AND (
-              o."deliveryBy" = :homixDeliveryBy
-              OR (o."deliveryBy" IS NULL AND o."shippedFromInventory" IS TRUE)
-            )
         )
         SELECT id, "reportDate"
         FROM performance_orders
@@ -1727,7 +1732,6 @@ export class ShipmentRepository {
           deliveredStatus: SHIPMENT_STATUS.DELIVERED,
           homixDeliveryBy: DELIVERY_BY.HOMIX,
           performanceStatuses,
-          performanceStatusTexts: performanceStatuses.map(String),
           persistedReturnStatuses: [
             SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
             SHIPMENT_STATUS.RETURNED_TO_VENDOR,
