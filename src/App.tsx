@@ -29,6 +29,8 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import { addNotification } from "store/slices/notificationsSlice";
 import { setNotifications } from "store/slices/notificationsSlice";
 import axiosRequest from "shared/functions/axiosRequest";
+import { useQueryClient } from "@tanstack/react-query";
+import { navigationCountKeys } from "query/navigationCounts";
 import {
   isJwtExpired,
   subscribeAuthStorage,
@@ -82,6 +84,7 @@ export default function App() {
   const [isUserInteracted, setIsUserInteracted] = useState(false);
 
   const reduxDispatch = useDispatch();
+  const queryClient = useQueryClient();
 
   const isVendor = user?.userType === "2";
   const isAdmin = user?.userType === "1";
@@ -109,17 +112,24 @@ export default function App() {
       }),
     []
   );
-  useSocket(user?.id != null ? Number(user.id) : undefined, (data) => {
-    if (data?.message === "Successfully subscribed to notifications") return;
-    if (isUserInteracted) {
-      playNotificationSound();
-    }
-    reduxDispatch(addNotification(data));
-    const current = JSON.parse(localStorage.getItem("notifications")) || [];
-    const updated = [data, ...current];
-    localStorage.setItem("notifications", JSON.stringify(updated));
-    NotificationMeassage("info", "لديك إشعار جديد");
-  });
+  useSocket(
+    user?.id != null ? Number(user.id) : undefined,
+    (data) => {
+      if (data?.message === "Successfully subscribed to notifications") return;
+      void queryClient.invalidateQueries({ queryKey: navigationCountKeys.all });
+      if (isUserInteracted) {
+        playNotificationSound();
+      }
+      reduxDispatch(addNotification(data));
+      const current = JSON.parse(localStorage.getItem("notifications")) || [];
+      const updated = [data, ...current];
+      localStorage.setItem("notifications", JSON.stringify(updated));
+      NotificationMeassage("info", "لديك إشعار جديد");
+    },
+    () => {
+      void queryClient.invalidateQueries({ queryKey: navigationCountKeys.all });
+    },
+  );
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {

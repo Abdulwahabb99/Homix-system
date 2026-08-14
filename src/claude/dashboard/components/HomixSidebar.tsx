@@ -7,6 +7,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { clearAuthStorage, SIGN_IN_PATH } from "shared/functions/sessionGuard";
 import { clearUser } from "store/slices/authSlice";
 import { usePermissions, type PermissionKey } from "shared/permissions";
+import {
+  useNavigationCounts,
+  type NavigationCountKey,
+} from "query/navigationCounts";
 
 function brandIcon() {
   return (
@@ -101,6 +105,7 @@ type NavItem = {
   label: string;
   icon: React.ReactNode;
   badge?: string;
+  badgeKey?: NavigationCountKey;
   badgeType?: "warn" | "danger" | "default";
   end?: boolean;
   /** صلاحية العرض المطلوبة لإظهار العنصر (`*_view`)؛ بدونها يظهر دائمًا */
@@ -109,14 +114,14 @@ type NavItem = {
 
 const adminMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
-  { to: "/orders", label: "الطلبات", icon: icons.orders, badge: "72", badgeType: "warn", perm: "orders_view" },
-  { to: "/products", label: "المنتجات", icon: icons.product, badge: "1.2K", badgeType: "default", perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", badgeType: "default", perm: "products_view" },
   { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
 
 const adminManage: NavItem[] = [
-  { to: "/factories", label: "الصُنّاع", icon: icons.makers, badge: "3", badgeType: "danger", perm: "factory_view" },
+  { to: "/factories", label: "الصُنّاع", icon: icons.makers, badgeKey: "factories", badgeType: "danger", perm: "factory_view" },
   { to: "/vendors", label: "الموردين", icon: icons.suppliers, perm: "vendors_view" },
   { to: "/users", label: "المستخدمين", icon: icons.users, perm: "users_view" },
   { to: "/financialReports", label: "التقارير", icon: icons.reports, perm: "finance_view" },
@@ -124,23 +129,23 @@ const adminManage: NavItem[] = [
 
 const vendorMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
-  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
-  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", perm: "products_view" },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
   { to: "/financialReports", label: "تقارير مالية", icon: icons.reports, perm: "finance_view" },
 ];
 
 const operationsMain: NavItem[] = [
-  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
-  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
-  { to: "/factories", label: "المصانع", icon: icons.suppliers, perm: "factory_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
+  { to: "/factories", label: "المصانع", icon: icons.suppliers, badgeKey: "factories", badgeType: "danger", perm: "factory_view" },
   { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
 
 const logisticsMain: NavItem[] = [
-  { to: "/products", label: "المنتجات", icon: icons.product, perm: "products_view" },
-  { to: "/orders", label: "الطلبات", icon: icons.orders, perm: "orders_view" },
+  { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", perm: "products_view" },
+  { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
   { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
 ];
@@ -213,7 +218,7 @@ function NavButton({
           {isActive ? <div className="h-active-bar" /> : null}
           {icon}
           {label}
-          {badge ? (
+          {badge !== undefined ? (
             <span
               className={`h-ni-badge ${
                 badgeType === "warn" ? "h-warn" : badgeType === "danger" ? "h-danger" : ""
@@ -240,6 +245,23 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
   const initials = useMemo(() => getInitials(), []);
   const navigate = useNavigate();
   const nav = onNavigate;
+  const { data: navigationCounts } = useNavigationCounts();
+
+  const formatCount = (count: number): string => {
+    if (count < 1_000) return String(count);
+    return new Intl.NumberFormat("en", {
+      compactDisplay: "short",
+      maximumFractionDigits: 1,
+      notation: "compact",
+    }).format(count);
+  };
+
+  const withLiveBadge = (item: NavItem): NavItem => ({
+    ...item,
+    badge: item.badgeKey && navigationCounts
+      ? formatCount(navigationCounts[item.badgeKey])
+      : undefined,
+  });
 
   const { can } = usePermissions();
   /** يُبقي فقط عناصر القائمة التي يملك المستخدم صلاحية عرضها */
@@ -277,7 +299,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
           <div className="h-nav-section">
             <div className="h-nav-label">القائمة الرئيسية</div>
             {visibleNav(vendorMain).map((it) => (
-              <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
+              <NavButton key={it.to + it.label} {...withLiveBadge(it)} onNavigate={nav} />
             ))}
           </div>
           <div className="h-nav-section">
@@ -302,13 +324,13 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
           <div className="h-nav-section">
             <div className="h-nav-label">القائمة الرئيسية</div>
             {visibleNav(adminMain).map((it) => (
-              <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
+              <NavButton key={it.to + it.label} {...withLiveBadge(it)} onNavigate={nav} />
             ))}
           </div>
           <div className="h-nav-section">
             <div className="h-nav-label">الإدارة</div>
             {visibleNav(adminManage).map((it) => (
-              <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
+              <NavButton key={it.to + it.label} {...withLiveBadge(it)} onNavigate={nav} />
             ))}
           </div>
           <div className="h-nav-section">
@@ -332,7 +354,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
         <div className="h-nav-section">
           <div className="h-nav-label">القائمة الرئيسية</div>
           {visibleNav(operationsMain).map((it) => (
-            <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
+            <NavButton key={it.to + it.label} {...withLiveBadge(it)} onNavigate={nav} />
           ))}
         </div>
       )}
@@ -341,7 +363,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
         <div className="h-nav-section">
           <div className="h-nav-label">القائمة الرئيسية</div>
           {visibleNav(logisticsMain).map((it) => (
-            <NavButton key={it.to + it.label} {...it} onNavigate={nav} />
+            <NavButton key={it.to + it.label} {...withLiveBadge(it)} onNavigate={nav} />
           ))}
         </div>
       )}

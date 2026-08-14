@@ -3,9 +3,10 @@ import { io } from "socket.io-client";
 
 const SOCKET_URL = process.env.REACT_APP_API_URL;
 
-export default function useSocket(userId, onNotification) {
+export default function useSocket(userId, onNotification, onNavigationCountsChanged) {
   const socketRef = useRef(null);
   const handlerRef = useRef(onNotification);
+  const navigationCountsHandlerRef = useRef(onNavigationCountsChanged);
 
   // Keep the latest callback in a ref so the socket always invokes the
   // current closure (e.g. up-to-date isUserInteracted) without forcing a
@@ -13,6 +14,10 @@ export default function useSocket(userId, onNotification) {
   useEffect(() => {
     handlerRef.current = onNotification;
   }, [onNotification]);
+
+  useEffect(() => {
+    navigationCountsHandlerRef.current = onNavigationCountsChanged;
+  }, [onNavigationCountsChanged]);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -25,15 +30,21 @@ export default function useSocket(userId, onNotification) {
 
     // Re-subscribe on every (re)connection so notifications keep flowing
     // after a network drop, not just on the first connect.
-    const subscribe = () => socket.emit("subscribe", { userId });
+    const subscribe = () => {
+      socket.emit("subscribe", { userId });
+      // A reconnect may have missed mutations while the socket was offline.
+      navigationCountsHandlerRef.current?.();
+    };
     socket.on("connect", subscribe);
 
     socket.on("notification", (data) => handlerRef.current?.(data));
+    socket.on("navigationCountsChanged", () => navigationCountsHandlerRef.current?.());
 
     socketRef.current = socket;
 
     return () => {
       socket.off("connect", subscribe);
+      socket.off("navigationCountsChanged");
       socket.disconnect();
       socketRef.current = null;
     };
