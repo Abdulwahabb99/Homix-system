@@ -2014,7 +2014,6 @@ const swaggerOptions = {
                 overview: {
                   type: "object",
                   properties: {
-                    averageDeliveryDays: { example: 3.2, type: "number" },
                     deliveredOrdersCount: { example: 98, type: "integer" },
                     totalGmv: { example: 284500, type: "number" },
                   },
@@ -2023,13 +2022,11 @@ const swaggerOptions = {
                   items: {
                     type: "object",
                     properties: {
-                      averageDeliveryDays: { example: 2.8, type: "number" },
                       deliveredOrdersCount: { example: 42, type: "integer" },
                       deliveryBy: { example: 1, nullable: true, type: "integer" },
                       deliveryByLabel: { example: "هوميكس", type: "string" },
                       returnsCount: { example: 3, type: "integer" },
                       shippingCompanyName: { example: "J&T", type: "string" },
-                      successRate: { example: 94, type: "number" },
                       totalGmv: { example: 181400, type: "number" },
                     },
                   },
@@ -2039,11 +2036,9 @@ const swaggerOptions = {
                   items: {
                     type: "object",
                     properties: {
-                      averageDeliveryDays: { example: 2.8, type: "number" },
                       deliveredOrdersCount: { example: 42, type: "integer" },
                       returnsCount: { example: 3, type: "integer" },
                       sellerName: { example: "ركنة للأثاث", type: "string" },
-                      successRate: { example: 94, type: "number" },
                       totalGmv: { example: 181400, type: "number" },
                     },
                   },

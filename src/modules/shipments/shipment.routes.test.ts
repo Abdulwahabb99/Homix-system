@@ -17,12 +17,14 @@ const productModel = {
 };
 
 const shipmentInventoryModel = {
+  count: jest.fn(),
   create: jest.fn(),
   findAll: jest.fn(),
   findByPk: jest.fn(),
 };
 
 const shipmentExpenseModel = {
+  count: jest.fn(),
   create: jest.fn(),
   findAll: jest.fn(),
   findByPk: jest.fn(),
@@ -213,6 +215,8 @@ describe("shipmentRouter", () => {
     userModel.findAll.mockResolvedValue([{ firstName: "Ahmed", id: 1, lastName: "Hesham" }]);
     noteModel.findByPk.mockResolvedValue(null);
     shipmentReturnModel.findAll.mockResolvedValue([]);
+    shipmentInventoryModel.count.mockResolvedValue(42);
+    shipmentExpenseModel.count.mockResolvedValue(89);
     shipmentReturnModel.findOne.mockResolvedValue(null);
     shipmentReturnModel.create.mockResolvedValue({
       toJSON: () => ({
@@ -951,6 +955,10 @@ describe("shipmentRouter", () => {
   });
 
   it("returns performance overview", async () => {
+    orderModel.findAll.mockResolvedValueOnce([
+      makeShipment({ shipmentStatus: 4 }),
+      makeShipment({ id: 9803, shipmentStatus: 7 }),
+    ]);
     const response = await request(app).get("/shipments/performance").query({ period: "daily" });
 
     expect(response.status).toBe(200);
@@ -963,6 +971,7 @@ describe("shipmentRouter", () => {
     expect(response.body.data.providers[0]).toEqual(expect.objectContaining({
       deliveryBy: 1,
       deliveryByLabel: "هوميكس",
+      returnsCount: 1,
       shippingCompanyName: "J&T",
     }));
     expect(response.body.data.vendors[0]).toEqual(expect.objectContaining({

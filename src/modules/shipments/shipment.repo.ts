@@ -1584,24 +1584,39 @@ export class ShipmentRepository {
   }
 
   public async getPerformance(filters: PerformanceQuery, vendorId?: number | null): Promise<PerformanceResponse> {
-    const dateColumn = "deliveryDate";
-    const whereClause: Record<string, unknown> = {
+    const performanceStatuses = [
+      SHIPMENT_STATUS.DELIVERED,
+      SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
+      SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+    ];
+    const returnedStatuses = new Set<number>([
+      SHIPMENT_STATUS.RETURNED_FROM_CUSTOMER,
+      SHIPMENT_STATUS.RETURNED_TO_VENDOR,
+    ]);
+    const whereClause: Record<string | symbol, unknown> = {
       shippedFromInventory: true,
-      shipmentStatus: SHIPMENT_STATUS.DELIVERED,
+      shipmentStatus: { [Op.in]: performanceStatuses },
       ...(vendorId ? { "$orderLines.product.vendor.id$": vendorId } : {}),
     };
 
+    const reportDateRange: Record<symbol, Date> = {};
     if (filters.startDate) {
       const startDate = toDateRangeBoundary(filters.startDate, "start");
       if (startDate) {
-        whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.gte]: startDate };
+        reportDateRange[Op.gte] = startDate;
       }
     }
     if (filters.endDate) {
       const endDate = toDateRangeBoundary(filters.endDate, "end");
       if (endDate) {
-        whereClause[dateColumn] = { ...(whereClause[dateColumn] as Record<string, unknown> ?? {}), [Op.lte]: endDate };
+        reportDateRange[Op.lte] = endDate;
       }
+    }
+    if (Reflect.ownKeys(reportDateRange).length > 0) {
+      whereClause[Op.or] = [
+        { deliveryDate: reportDateRange, shipmentStatus: SHIPMENT_STATUS.DELIVERED },
+        { shipmentStatus: { [Op.in]: [...returnedStatuses] }, updatedAt: reportDateRange },
+      ];
     }
 
     const orders = await orderModel.findAll({
@@ -1611,31 +1626,47 @@ export class ShipmentRepository {
       where: whereClause,
     });
 
-    const items: ShipmentListItem[] = orders.map((order: unknown) => mapShipmentListItem(order));
+    const items = orders.map((order: unknown) => ({
+      item: mapShipmentListItem(order),
+      order: toPlain(order),
+    }));
     const chartMap = new Map<string, number>();
     const providerMap = new Map<string, {
       deliveredOrdersCount: number;
       deliveryBy: number | null;
       deliveryByLabel: string;
       shippingCompanyName: string;
-      totalDays: number;
       totalGmv: number;
+      returnsCount: number;
     }>();
     const vendorMap = new Map<string, {
       deliveredOrdersCount: number;
+      returnsCount: number;
       sellerName: string;
-      totalDays: number;
       totalGmv: number;
     }>();
 
-    for (const item of items) {
-      const deliveryDate = item.deliveryDate ? new Date(item.deliveryDate) : null;
-      const label = deliveryDate
-        ? (filters.period === "monthly"
-          ? deliveryDate.toISOString().slice(0, 7)
-          : deliveryDate.toISOString().slice(0, 10))
-        : "غير محدد";
-      chartMap.set(label, (chartMap.get(label) ?? 0) + 1);
+    for (const { item, order } of items) {
+      const shipmentStatus = item.shipmentStatus ?? 0;
+      const isDelivered = shipmentStatus === SHIPMENT_STATUS.DELIVERED;
+      const isReturned = returnedStatuses.has(shipmentStatus);
+      const reportDateValue = isDelivered
+        ? order.deliveryDate ?? order.updatedAt ?? order.orderDate
+        : order.updatedAt ?? order.deliveryDate ?? order.orderDate;
+      const reportDate = reportDateValue ? new Date(String(reportDateValue)) : null;
+
+      if (isDelivered && reportDate && !Number.isNaN(reportDate.getTime())) {
+        let label = reportDate.toISOString().slice(0, 10);
+        if (filters.period === "monthly") {
+          label = reportDate.toISOString().slice(0, 7);
+        } else if (filters.period === "weekly") {
+          const weekStart = new Date(reportDate);
+          const daysSinceMonday = (weekStart.getUTCDay() + 6) % 7;
+          weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceMonday);
+          label = weekStart.toISOString().slice(0, 10);
+        }
+        chartMap.set(label, (chartMap.get(label) ?? 0) + 1);
+      }
 
       const providerKey = `${item.deliveryBy ?? "null"}::${item.shippingCompanyName || ""}`;
       const providerValue = providerMap.get(providerKey) ?? {
@@ -1643,65 +1674,70 @@ export class ShipmentRepository {
         deliveryBy: item.deliveryBy,
         deliveryByLabel: item.deliveryByLabel,
         shippingCompanyName: item.shippingCompanyName,
-        totalDays: 0,
         totalGmv: 0,
+        returnsCount: 0,
       };
-      providerValue.deliveredOrdersCount += 1;
-      providerValue.totalDays += item.daysCounter ?? 0;
-      providerValue.totalGmv += item.amountToCollect;
+      if (isDelivered) {
+        providerValue.deliveredOrdersCount += 1;
+        providerValue.totalGmv += toNumber(order.totalPrice ?? order.toBeCollected);
+      } else if (isReturned) {
+        providerValue.returnsCount += 1;
+      }
       providerMap.set(providerKey, providerValue);
 
       const vendorKey = item.sellerName || "غير محدد";
       const vendorValue = vendorMap.get(vendorKey) ?? {
         deliveredOrdersCount: 0,
+        returnsCount: 0,
         sellerName: item.sellerName || "غير محدد",
-        totalDays: 0,
         totalGmv: 0,
       };
-      vendorValue.deliveredOrdersCount += 1;
-      vendorValue.totalDays += item.daysCounter ?? 0;
-      vendorValue.totalGmv += item.amountToCollect;
+      if (isDelivered) {
+        vendorValue.deliveredOrdersCount += 1;
+        vendorValue.totalGmv += toNumber(order.totalPrice ?? order.toBeCollected);
+      } else if (isReturned) {
+        vendorValue.returnsCount += 1;
+      }
       vendorMap.set(vendorKey, vendorValue);
     }
 
-    const deliveredOrdersCount = items.length;
-    const totalGmv = items.reduce((sum: number, item: ShipmentListItem) => sum + item.amountToCollect, 0);
-    const averageDeliveryDays = items.length > 0
-      ? Math.round((items.reduce((sum: number, item: ShipmentListItem) => sum + (item.daysCounter ?? 0), 0) / items.length) * 10) / 10
-      : 0;
+    const deliveredItems: Array<{ item: ShipmentListItem; order: Record<string, unknown> }> = items
+      .filter(({ item }: { item: ShipmentListItem }) => item.shipmentStatus === SHIPMENT_STATUS.DELIVERED);
+    const deliveredOrdersCount = deliveredItems.length;
+    const totalGmv = deliveredItems.reduce(
+      (sum: number, { order }) => sum + toNumber(order.totalPrice ?? order.toBeCollected),
+      0,
+    );
 
     return {
-      chart: Array.from(chartMap.entries()).map(([label, deliveredOrdersCountValue]) => ({
-        deliveredOrdersCount: deliveredOrdersCountValue,
-        label,
+      chart: Array.from(chartMap.entries())
+        .sort(([leftLabel], [rightLabel]) => leftLabel.localeCompare(rightLabel))
+        .map(([label, deliveredOrdersCountValue]) => ({
+          deliveredOrdersCount: deliveredOrdersCountValue,
+          label,
       })),
       overview: {
-        averageDeliveryDays,
         deliveredOrdersCount,
         totalGmv,
       },
-      providers: Array.from(providerMap.values()).map((providerValue) => ({
-        averageDeliveryDays: providerValue.deliveredOrdersCount > 0
-          ? Math.round((providerValue.totalDays / providerValue.deliveredOrdersCount) * 10) / 10
-          : 0,
-        deliveredOrdersCount: providerValue.deliveredOrdersCount,
-        deliveryBy: providerValue.deliveryBy,
-        deliveryByLabel: providerValue.deliveryByLabel,
-        returnsCount: 0,
-        shippingCompanyName: providerValue.shippingCompanyName,
-        successRate: 100,
-        totalGmv: providerValue.totalGmv,
-      })),
-      vendors: Array.from(vendorMap.values()).map((vendorValue) => ({
-        averageDeliveryDays: vendorValue.deliveredOrdersCount > 0
-          ? Math.round((vendorValue.totalDays / vendorValue.deliveredOrdersCount) * 10) / 10
-          : 0,
-        deliveredOrdersCount: vendorValue.deliveredOrdersCount,
-        returnsCount: 0,
-        sellerName: vendorValue.sellerName,
-        successRate: 100,
-        totalGmv: vendorValue.totalGmv,
-      })),
+      providers: Array.from(providerMap.values())
+        .map((providerValue) => ({
+            deliveredOrdersCount: providerValue.deliveredOrdersCount,
+            deliveryBy: providerValue.deliveryBy,
+            deliveryByLabel: providerValue.deliveryByLabel,
+            returnsCount: providerValue.returnsCount,
+            shippingCompanyName: providerValue.shippingCompanyName,
+            totalGmv: providerValue.totalGmv,
+          }))
+        .sort((left, right) => right.deliveredOrdersCount - left.deliveredOrdersCount),
+      vendors: Array.from(vendorMap.values())
+        .map((vendorValue) => ({
+            deliveredOrdersCount: vendorValue.deliveredOrdersCount,
+            returnsCount: vendorValue.returnsCount,
+            sellerName: vendorValue.sellerName,
+            totalGmv: vendorValue.totalGmv,
+          }))
+        .sort((left, right) => right.deliveredOrdersCount - left.deliveredOrdersCount),
     };
   }
 

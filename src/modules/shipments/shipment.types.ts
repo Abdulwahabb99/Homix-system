@@ -334,7 +334,6 @@ export type ExpenseAccountsListResponse = {
 };
 
 export type PerformanceOverview = {
-  averageDeliveryDays: number;
   deliveredOrdersCount: number;
   totalGmv: number;
 };
@@ -345,22 +344,18 @@ export type PerformanceChartItem = {
 };
 
 export type PerformanceDeliveryProviderItem = {
-  averageDeliveryDays: number;
   deliveredOrdersCount: number;
   deliveryBy: number | null;
   deliveryByLabel: string;
   returnsCount: number;
   shippingCompanyName: string;
-  successRate: number;
   totalGmv: number;
 };
 
 export type PerformanceVendorItem = {
-  averageDeliveryDays: number;
   deliveredOrdersCount: number;
   returnsCount: number;
   sellerName: string;
-  successRate: number;
   totalGmv: number;
 };
 
