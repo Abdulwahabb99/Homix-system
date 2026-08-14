@@ -543,9 +543,7 @@ const buildShipmentSort = (sortEntries: ShipmentSortEntry[]): Array<[string, "AS
   const databaseEntries = sortEntries
     .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
 
-  return databaseEntries.length > 0
-    ? databaseEntries
-    : [["createdAt", "DESC"], ["id", "DESC"]];
+  return databaseEntries.length > 0 ? databaseEntries : [["shippingReceiveDate", "DESC"]];
 };
 
 const mapShipmentNote = (noteValue: unknown) => {

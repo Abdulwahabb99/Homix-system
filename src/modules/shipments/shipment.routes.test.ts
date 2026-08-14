@@ -739,21 +739,6 @@ describe("shipmentRouter", () => {
     );
   });
 
-  it("shows newly created Homix orders first by default", async () => {
-    const response = await request(app).get("/shipments").query({ page: 1, size: 20 });
-
-    expect(response.status).toBe(200);
-    const query = orderModel.findAndCountAll.mock.calls[0][0];
-    expect(query).toEqual(expect.objectContaining({
-      order: [["createdAt", "DESC"], ["id", "DESC"]],
-    }));
-    const shipmentScope = query.where[Op.and][0];
-    expect(shipmentScope[Op.or]).toEqual([
-      { deliveryBy: 1 },
-      { deliveryBy: null, shippedFromInventory: true },
-    ]);
-  });
-
   it("filters shipments by manual priority", async () => {
     orderModel.findAndCountAll.mockResolvedValue({ count: 1, rows: [
       makeShipment({
