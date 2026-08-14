@@ -2,7 +2,7 @@ import express from "express";
 import { Op } from "sequelize";
 import request from "supertest";
 
-const binaryParser = (response: NodeJS.ReadableStream, callback: (error: Error | null, body?: Buffer) => void): void => {
+const binaryParser = (response: any, callback: (error: Error | null, body: any) => void): void => {
   const chunks: Buffer[] = [];
   response.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
   response.on("end", () => callback(null, Buffer.concat(chunks)));
