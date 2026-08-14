@@ -128,6 +128,29 @@ function ProductDetails() {
                     <Typography variant="h5" fontWeight={700} sx={{ mt: 0.5, mb: 2 }}>
                       {productDetails.title}
                     </Typography>
+                    <Box
+                      sx={{
+                        display: "inline-flex",
+                        flexDirection: "column",
+                        gap: 0.25,
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: 2,
+                        bgcolor: "action.hover",
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        كود المنتج
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        dir="ltr"
+                        sx={{ fontFamily: "monospace", textAlign: "left" }}
+                      >
+                        {productDetails.shopifyId || "—"}
+                      </Typography>
+                    </Box>
                     <Divider sx={{ my: 2 }} />
                     <Box
                       onClick={() => setOptionsPricesOpen((v) => !v)}
@@ -233,6 +256,38 @@ function ProductDetails() {
                                   {variant.title}
                                 </Typography>
                               )}
+                              <Stack
+                                direction={{ xs: "column", sm: "row" }}
+                                spacing={2}
+                                sx={{ mb: 1.5 }}
+                              >
+                                <Box sx={{ minWidth: 150 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    SKU
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    dir="ltr"
+                                    sx={{ fontFamily: "monospace", textAlign: "left" }}
+                                  >
+                                    {variant.sku || "—"}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ minWidth: 150 }}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    كود الخيار
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    dir="ltr"
+                                    sx={{ fontFamily: "monospace", textAlign: "left" }}
+                                  >
+                                    {variant.shopifyId || "—"}
+                                  </Typography>
+                                </Box>
+                              </Stack>
                               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">

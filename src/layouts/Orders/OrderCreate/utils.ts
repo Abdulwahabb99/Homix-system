@@ -8,8 +8,19 @@ export function todayInputValue(): string {
 /** yyyy-mm-dd (date input) → ISO string, or undefined when empty/invalid. */
 export function dateInputToIso(value: string): string | undefined {
   if (!value) return undefined;
-  const d = new Date(value);
+  const d = new Date(`${value}T00:00:00`);
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+/** Preserve the selected day but attach the actual submission time. */
+export function orderDateInputToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const parts = value.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) return undefined;
+  const [year, month, day] = parts;
+  const timestamp = new Date();
+  timestamp.setFullYear(year, month - 1, day);
+  return Number.isNaN(timestamp.getTime()) ? undefined : timestamp.toISOString();
 }
 
 export function toNumber(value: string | number | null | undefined): number {
@@ -53,7 +64,7 @@ export function buildOrderPayload(form: OrderCreateFormState): NewOrderPayload {
       product_id: li.productId,
       variant_id: li.variantId,
     })),
-    orderDate: dateInputToIso(form.orderDate),
+    orderDate: orderDateInputToIso(form.orderDate),
     paymentStatus: form.paymentStatus,
     deliveryBy: form.deliveryBy,
     expectedDeliveryDate: dateInputToIso(form.expectedDeliveryDate),
