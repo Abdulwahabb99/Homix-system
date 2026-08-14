@@ -25,12 +25,13 @@ import {
   useShipmentsSummaryQuery,
   SHIPMENTS_LIST_PAGE_SIZE,
   type ShipmentItem,
+  type ShipmentSummaryCard,
 } from "query/shipmentsList";
 import { fetchVendorReturns, type ReturnsParams } from "query/shipmentsReturns";
 import { fetchShipmentsInventory, type InventoryParams } from "query/shipmentsInventory";
 import { fetchDeliveryAccounts, type AccountsParams } from "query/shipmentsAccounts";
 import { fetchShipmentsPerformance, type PerformanceParams } from "query/shipmentsPerformance";
-import { useShipmentsMetaQuery } from "query/shipmentsMeta";
+import { useShipmentsMetaQuery, type ShipmentsMeta } from "query/shipmentsMeta";
 import { shipmentKeys } from "query/keys";
 import moment from "moment";
 
@@ -124,6 +125,69 @@ function dateFromUrl(str: string): any {
   return m.isValid() ? m : null;
 }
 
+interface ShipmentsTabContentProps {
+  cards?: ShipmentSummaryCard[];
+  isSummaryLoading: boolean;
+  filterDefaults: FilterValues;
+  meta?: ShipmentsMeta;
+  isVendor: boolean;
+  onApply: (values: FilterValues) => void;
+  onReset: () => void;
+  shipments: ShipmentItem[];
+  isLoading: boolean;
+  isFetching: boolean;
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  onPageChange: (page: number) => void;
+  onEdit: (shipment: ShipmentItem) => void;
+  onDelete: (shipment: ShipmentItem) => void;
+}
+
+const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
+  cards,
+  isSummaryLoading,
+  filterDefaults,
+  meta,
+  isVendor,
+  onApply,
+  onReset,
+  shipments,
+  isLoading,
+  isFetching,
+  page,
+  totalPages,
+  totalCount,
+  onPageChange,
+  onEdit,
+  onDelete,
+}: ShipmentsTabContentProps) {
+  return (
+    <>
+      <ShipmentsKpiRow cards={cards} isLoading={isSummaryLoading} />
+      <ShipmentsFiltersBar
+        defaultValues={filterDefaults}
+        meta={meta}
+        isVendor={isVendor}
+        onApply={onApply}
+        onReset={onReset}
+      />
+      <ShipmentsTable
+        shipments={shipments}
+        isVendor={isVendor}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        page={page}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={onPageChange}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    </>
+  );
+});
+
 export default function Shipments() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -216,8 +280,10 @@ export default function Shipments() {
   const shippingCompany = searchParams.get("shippingCompany") || "";
   const scheduleStatus = searchParams.get("scheduleStatus") || "";
   const vendorName     = searchParams.get("vendorName")     || "";
-  const startDate      = dateFromUrl(searchParams.get("startDate") || "");
-  const endDate        = dateFromUrl(searchParams.get("endDate")   || "");
+  const startDateParam = searchParams.get("startDate") || "";
+  const endDateParam   = searchParams.get("endDate") || "";
+  const startDate      = React.useMemo(() => dateFromUrl(startDateParam), [startDateParam]);
+  const endDate        = React.useMemo(() => dateFromUrl(endDateParam), [endDateParam]);
 
   // Modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -225,11 +291,15 @@ export default function Shipments() {
   const [isExportLoading, setIsExportLoading]     = useState(false);
 
   // React Query
-  const queryParams = {
+  const queryParams = React.useMemo(() => ({
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
-  };
+  }), [
+    page, operationCode, orderNumber, customerName, customerPhone,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
+    scheduleStatus, vendorName, startDate, endDate,
+  ]);
 
   const isShipmentsTab = activeTab === "shipments";
   const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams, isShipmentsTab);
@@ -252,7 +322,7 @@ export default function Shipments() {
   };
 
   // Apply all filter values to URL at once
-  const handleApply = (values: FilterValues) => {
+  const handleApply = React.useCallback((values: FilterValues) => {
     const urlParams = new URLSearchParams();
     if (values.operationCode)  urlParams.set("operationCode",  values.operationCode);
     if (values.orderNumber)    urlParams.set("orderNumber",    values.orderNumber);
@@ -279,15 +349,15 @@ export default function Shipments() {
     }
     urlParams.set("page", "1");
     navigate(`?${urlParams.toString()}`);
-  };
+  }, [navigate]);
 
-  const handleReset = () => navigate("?");
+  const handleReset = React.useCallback(() => navigate("?"), [navigate]);
 
-  const updatePageParam = (value: number) => {
+  const updatePageParam = React.useCallback((value: number) => {
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set("page", String(value));
     navigate(`?${urlParams.toString()}`);
-  };
+  }, [navigate]);
 
   // Export
   const handleExport = () => {
@@ -333,11 +403,24 @@ export default function Shipments() {
   };
 
   // Default values snapshot for filter bar (from current URL)
-  const filterDefaults: FilterValues = {
+  const filterDefaults: FilterValues = React.useMemo(() => ({
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
-  };
+  }), [
+    operationCode, orderNumber, customerName, customerPhone,
+    shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
+    scheduleStatus, vendorName, startDate, endDate,
+  ]);
+
+  const handleEditShipment = React.useCallback(
+    (shipment: ShipmentItem) => navigate(`/shipments/edit/${shipment.id}`),
+    [navigate]
+  );
+  const handleDeleteShipment = React.useCallback((shipment: ShipmentItem) => {
+    setSelectedShipment(shipment);
+    setIsDeleteModalOpen(true);
+  }, []);
 
   return (
     <DashboardLayout
@@ -482,27 +565,23 @@ export default function Shipments() {
           hidden={activeTab !== "shipments"}
           sx={{ display: activeTab === "shipments" ? "flex" : "none", flexDirection: "column", gap: "14px" }}
         >
-            <ShipmentsKpiRow cards={summaryData} isLoading={isSummaryLoading} />
-
-            <ShipmentsFiltersBar
-              defaultValues={filterDefaults}
+            <ShipmentsTabContent
+              cards={summaryData}
+              isSummaryLoading={isSummaryLoading}
+              filterDefaults={filterDefaults}
               meta={metaData}
               isVendor={isVendor}
-              onApply={handleApply}
-              onReset={handleReset}
-            />
-
-            <ShipmentsTable
               shipments={shipments}
-              isVendor={isVendor}
               isLoading={isLoading}
               isFetching={isFetching}
               page={page}
               totalPages={totalPages}
               totalCount={totalCount}
               onPageChange={updatePageParam}
-              onEdit={(s) => navigate(`/shipments/edit/${s.id}`)}
-              onDelete={(s) => { setSelectedShipment(s); setIsDeleteModalOpen(true); }}
+              onApply={handleApply}
+              onReset={handleReset}
+              onEdit={handleEditShipment}
+              onDelete={handleDeleteShipment}
             />
         </Box>
 
