@@ -98,10 +98,25 @@ export type OrderFinancialReportVendorRow = {
   collectionTotal: number;
   companyDue: number;
   fines: number;
+  orders: OrderFinancialReportOrderRow[];
   ordersCount: number;
   vendorDue: number;
   vendorId: number | null;
   vendorName: string;
+  warehouseCost: number;
+};
+
+export type OrderFinancialReportOrderRow = {
+  collectionTotal: number;
+  companyDue: number;
+  fines: number;
+  id: number;
+  operationNumber: string;
+  orderNumber: string;
+  paymentStatus: number | null;
+  paymentStatusLabel: string;
+  productCode: string;
+  vendorDue: number;
   warehouseCost: number;
 };
 

@@ -361,6 +361,7 @@ const createFinancialRow = (vendorId: number | null, vendorName: string): OrderF
   collectionTotal: 0,
   companyDue: 0,
   fines: 0,
+  orders: [],
   ordersCount: 0,
   vendorDue: 0,
   vendorId,
@@ -1020,6 +1021,20 @@ export class OrderRepository {
         0,
       );
       const warehouseCost = vendorDue + fines;
+      const paymentStatus = toNumber(plainOrder.paymentStatus) || null;
+      const orderDetail = {
+        collectionTotal,
+        companyDue,
+        fines,
+        id: toNumber(plainOrder.id),
+        operationNumber: toText(plainOrder.code),
+        orderNumber: toText(plainOrder.orderNumber, toText(plainOrder.number, toText(plainOrder.name))),
+        paymentStatus,
+        paymentStatusLabel: paymentStatus ? PAYMENT_STATUS_ARABIC[paymentStatus as keyof typeof PAYMENT_STATUS_ARABIC] ?? String(paymentStatus) : "",
+        productCode: toText(firstLine.sku),
+        vendorDue,
+        warehouseCost,
+      };
       const isWarehouseDelivery =
         Boolean(plainOrder.shippedFromInventory)
         && toNumber(plainOrder.shipmentStatus) === SHIPMENTS_STATUS.DELIVERED;
@@ -1035,6 +1050,7 @@ export class OrderRepository {
         vendorDue,
         warehouseCost,
       });
+      fullRow.orders.push(orderDetail);
 
       if (isVendorDelivery) {
         const vendorRow = vendorDeliveryRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
@@ -1047,6 +1063,7 @@ export class OrderRepository {
           vendorDue,
           warehouseCost,
         });
+        vendorRow.orders.push(orderDetail);
       }
 
       if (isWarehouseDelivery) {
@@ -1060,6 +1077,7 @@ export class OrderRepository {
           vendorDue,
           warehouseCost,
         });
+        warehouseRow.orders.push(orderDetail);
       }
     }
 
