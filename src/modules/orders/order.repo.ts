@@ -1036,9 +1036,9 @@ export class OrderRepository {
         warehouseCost,
       };
       const isWarehouseDelivery =
-        Boolean(plainOrder.shippedFromInventory)
+        toNumber(plainOrder.deliveryBy) === DELIVERY_BY.HOMIX
         && toNumber(plainOrder.shipmentStatus) === SHIPMENTS_STATUS.DELIVERED;
-      const isVendorDelivery = !Boolean(plainOrder.shippedFromInventory);
+      const isVendorDelivery = toNumber(plainOrder.deliveryBy) !== DELIVERY_BY.HOMIX;
 
       const fullRow = fullInvoiceRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
       fullInvoiceRows.set(vendorKey, fullRow);

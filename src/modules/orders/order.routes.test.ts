@@ -347,6 +347,7 @@ describe("orderRouter", () => {
     orderModel.findAll.mockResolvedValue([
       makeOrder({
         commission: "500",
+        deliveryBy: 2,
         deliveryDate: "2026-07-12T00:00:00.000Z",
         fine: "100",
         shippedFromInventory: false,
@@ -355,6 +356,7 @@ describe("orderRouter", () => {
       }),
       makeOrder({
         commission: "700",
+        deliveryBy: 1,
         deliveryDate: "2026-07-10T00:00:00.000Z",
         fine: "200",
         id: 8,
@@ -381,6 +383,36 @@ describe("orderRouter", () => {
     expect(response.body.data.vendorDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.warehouseDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.fullInvoice.items[0].vendorName).toBe("ركنة للأثاث");
+    expect(response.body.data.fullInvoice.items[0].orders).toEqual([
+      expect.objectContaining({
+        collectionTotal: 3000,
+        companyDue: 500,
+        fines: 100,
+        id: 7,
+        operationNumber: "3001",
+        orderNumber: "31668",
+        paymentStatus: 1,
+        productCode: "RKA-001",
+        vendorDue: 2400,
+        warehouseCost: 2500,
+      }),
+      expect.objectContaining({
+        collectionTotal: 5000,
+        companyDue: 700,
+        fines: 200,
+        id: 8,
+        operationNumber: "3001",
+        orderNumber: "31669",
+        paymentStatus: 1,
+        productCode: "RKA-001",
+        vendorDue: 4100,
+        warehouseCost: 4300,
+      }),
+    ]);
+    expect(response.body.data.vendorDeliveries.items[0].orders).toHaveLength(1);
+    expect(response.body.data.vendorDeliveries.items[0].orders[0].id).toBe(7);
+    expect(response.body.data.warehouseDeliveries.items[0].orders).toHaveLength(1);
+    expect(response.body.data.warehouseDeliveries.items[0].orders[0].id).toBe(8);
     const findAllWhere = orderModel.findAll.mock.calls[0]?.[0]?.where as Record<PropertyKey, unknown>;
     const andKey = Object.getOwnPropertySymbols(findAllWhere)[0];
     const conditions = andKey && Array.isArray(findAllWhere[andKey])

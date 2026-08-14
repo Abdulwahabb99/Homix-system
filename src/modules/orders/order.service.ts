@@ -1,7 +1,7 @@
 import { ConflictError, NotFoundError, UnauthorizedError } from "../../shared/errors";
 import type { Result } from "../../shared/result";
 import { success } from "../../shared/result";
-import { USER_TYPES } from "../../../config/constants";
+import { DELIVERY_BY, USER_TYPES } from "../../../config/constants";
 import { DashboardAggregateService } from "../dashboard/dashboard-aggregate.service";
 import type { DashboardMetricSnapshot } from "../dashboard/dashboard.types";
 import { orderLegacyGateway, type LegacyOrderGateway } from "./order.legacy-gateway";
@@ -88,9 +88,15 @@ export class OrderService {
     user: OrderRequestUser,
   ): Promise<Result<{ message: string }>> {
     const orderIds = Array.isArray(payload.orderIds) ? payload.orderIds.map(Number).filter(Boolean) : [];
+    const orderData = { ...((payload.orderData as Record<string, unknown> | undefined) ?? {}) };
+    delete orderData.shippedFromInventory;
+    if (orderData.deliveryBy !== undefined && orderData.deliveryBy !== null && orderData.deliveryBy !== "") {
+      orderData.shippedFromInventory = Number(orderData.deliveryBy) === DELIVERY_BY.HOMIX;
+    }
     const existingOrders = await this.orderRepository.findOrderEntities(orderIds);
-    const response = ensureLegacySuccess(await this.legacyGateway.bulkUpdate(payload, user));
-    const nextOrderDate = this.getBulkOrderDate(payload);
+    const normalizedPayload = { ...payload, orderData };
+    const response = ensureLegacySuccess(await this.legacyGateway.bulkUpdate(normalizedPayload, user));
+    const nextOrderDate = this.getBulkOrderDate(normalizedPayload);
     await this.refreshAggregateForDates([
       ...existingOrders.map((order) => this.getOrderDate(order)),
       nextOrderDate,

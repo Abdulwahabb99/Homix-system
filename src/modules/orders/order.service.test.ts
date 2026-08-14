@@ -109,6 +109,7 @@ describe("OrderService", () => {
       expect.objectContaining({
         deliveryBy: 2,
         priority: 1,
+        shippedFromInventory: false,
         toBeCollected: 1850,
       }),
     ], false, undefined);
@@ -156,8 +157,34 @@ describe("OrderService", () => {
       7,
       expect.objectContaining({
         deliveryBy: 1,
+        shippedFromInventory: true,
         shipmentType: "warehouse",
         toBeCollected: 1810,
+      }),
+      { id: 1 },
+    );
+  });
+
+  it("uses deliveryBy as the source of truth when switching from homix to vendor delivery", async () => {
+    const repository = {
+      findOrderEntity: jest.fn().mockResolvedValue({
+        deliveryBy: 1,
+        shippedFromInventory: true,
+        shipmentType: "warehouse",
+      }),
+    } as never;
+    const legacyGateway = {
+      updateOrder: jest.fn().mockResolvedValue({ data: { id: 7 }, status: true }),
+    };
+    const service = new OrderService(repository, legacyGateway as never);
+
+    await service.updateOrder(7, { deliveryBy: 2 }, { id: 1 } as never);
+
+    expect(legacyGateway.updateOrder).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        deliveryBy: 2,
+        shippedFromInventory: false,
       }),
       { id: 1 },
     );

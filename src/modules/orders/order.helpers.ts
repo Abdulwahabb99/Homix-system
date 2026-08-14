@@ -386,15 +386,15 @@ export const normalizeOrderMutationPayload = (
 ): Record<string, unknown> => {
   const payload = { ...payloadValue };
   const existing = existingValue ?? {};
-  const shippedFromInventory = payload.shippedFromInventory !== undefined
-    ? Boolean(payload.shippedFromInventory)
-    : Boolean(existing.shippedFromInventory);
   const shipmentType = toText(payload.shipmentType, toText(existing.shipmentType)).trim();
   const nextStatus = toNumber(payload.status ?? existing.status);
 
-  payload.deliveryBy = shipmentType === "warehouse" || shippedFromInventory
-    ? DELIVERY_BY.HOMIX
-    : toNumber(payload.deliveryBy) || toNumber(existing.deliveryBy) || DELIVERY_BY.VENDOR;
+  const explicitDeliveryBy = toNumber(payload.deliveryBy);
+  payload.deliveryBy = explicitDeliveryBy
+    || (shipmentType === "warehouse" ? DELIVERY_BY.HOMIX : 0)
+    || toNumber(existing.deliveryBy)
+    || DELIVERY_BY.VENDOR;
+  payload.shippedFromInventory = payload.deliveryBy === DELIVERY_BY.HOMIX;
 
   if (nextStatus === ORDER_STATUS.DELIVERED) {
     const currentDeliveryDate = toIsoString(payload.deliveryDate) ?? toIsoString(existing.deliveryDate);
