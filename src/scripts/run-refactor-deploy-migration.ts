@@ -391,6 +391,29 @@ const ensureTicketTable = async (): Promise<void> => {
 const normalizeShipmentData = async (): Promise<void> => {
   logStep("Normalizing shipment data and shipping companies");
 
+  /* deliveryBy is now the source of truth, but older rows only stored the
+     shippedFromInventory boolean. Fill only missing deliveryBy values first,
+     then make the legacy boolean agree with every canonical value. Deliberately
+     leave updatedAt untouched because this is data normalization, not a new
+     shipment event (performance dates come from the status history). */
+  await runSql(`
+    UPDATE orders
+    SET "deliveryBy" = CASE
+      WHEN "shippedFromInventory" IS TRUE THEN 1
+      WHEN "shippedFromInventory" IS FALSE THEN 2
+      ELSE NULL
+    END
+    WHERE "deliveryBy" IS NULL
+      AND "shippedFromInventory" IS NOT NULL;
+  `);
+
+  await runSql(`
+    UPDATE orders
+    SET "shippedFromInventory" = ("deliveryBy" = 1)
+    WHERE "deliveryBy" IN (1, 2)
+      AND "shippedFromInventory" IS DISTINCT FROM ("deliveryBy" = 1);
+  `);
+
   /* The orders -> shippingCompanies foreign key is enforced across every row,
      including soft-deleted ones, so the normalization below deliberately does
      NOT filter on "deletedAt". Filtering it left values like 'خاص ' (note the
