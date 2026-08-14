@@ -13,6 +13,7 @@ import {
   TextField,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { HX } from "layouts/Orders/ordersHomixTheme";
@@ -20,6 +21,7 @@ import { FONT } from "../ShipmentDetails/constants";
 import {
   useShippingCompaniesQuery,
   useCreateShippingCompanyMutation,
+  useDeleteShippingCompanyMutation,
   useUpdateShippingCompanyMutation,
   type ShippingCompany,
 } from "query/shippingCompanies";
@@ -58,12 +60,14 @@ const acSx = {
 export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
   const createMutation = useCreateShippingCompanyMutation();
+  const deleteMutation = useDeleteShippingCompanyMutation();
   const updateMutation = useUpdateShippingCompanyMutation();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   /** null = وضع الإضافة، رقم = وضع تعديل شركة بهذا المعرّف */
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nameInput, setNameInput] = useState("");
+  const [deletingCompany, setDeletingCompany] = useState<ShippingCompany | null>(null);
 
   const saving = createMutation.isPending || updateMutation.isPending;
 
@@ -114,6 +118,17 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
     }
   };
 
+  const handleDelete = () => {
+    if (!deletingCompany || deleteMutation.isPending) return;
+    const deletedId = deletingCompany.id;
+    deleteMutation.mutate(deletedId, {
+      onSuccess: () => {
+        if (selected?.id === deletedId) onChange("");
+        setDeletingCompany(null);
+      },
+    });
+  };
+
   return (
     <>
       <Autocomplete<ShippingCompany>
@@ -153,18 +168,34 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
               >
                 {option.name}
               </Box>
-              <IconButton
-                size="small"
-                aria-label="تعديل شركة الشحن"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEdit(option);
-                }}
-                sx={{ p: "3px", flexShrink: 0, color: HX.tx3, "&:hover": { color: HX.accent } }}
-              >
-                <EditOutlinedIcon sx={{ fontSize: 15 }} />
-              </IconButton>
+              <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                <IconButton
+                  size="small"
+                  aria-label="تعديل شركة الشحن"
+                  title="تعديل"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEdit(option);
+                  }}
+                  sx={{ p: "3px", color: HX.accent, bgcolor: HX.accentLight, "&:hover": { bgcolor: HX.accentBorder } }}
+                >
+                  <EditOutlinedIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  aria-label="حذف شركة الشحن"
+                  title="حذف"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeletingCompany(option);
+                  }}
+                  sx={{ p: "3px", mr: "3px", color: "#dc2626", bgcolor: HX.redLight, "&:hover": { bgcolor: "#fee2e2" } }}
+                >
+                  <DeleteOutlineIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Box>
             </Box>
           );
         }}
@@ -234,6 +265,54 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
               "حفظ"
             ) : (
               "إضافة"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deletingCompany != null}
+        onClose={() => !deleteMutation.isPending && setDeletingCompany(null)}
+        dir="rtl"
+      >
+        <DialogTitle sx={{ fontFamily: FONT, fontWeight: 800, fontSize: "15px" }}>
+          حذف شركة الشحن
+        </DialogTitle>
+        <DialogContent sx={{ pt: "8px !important", minWidth: 360 }}>
+          <Box sx={{ fontFamily: FONT, fontSize: "13px", lineHeight: 1.9, color: HX.tx2 }}>
+            {deletingCompany && deletingCompany.linkedOrdersCount > 0 ? (
+              <>
+                شركة <strong>{deletingCompany.name}</strong> موجودة في{" "}
+                <strong>{deletingCompany.linkedOrdersCount}</strong> طلب. عند الحذف ستتم إزالة
+                شركة الشحن من هذه الطلبات، ولن يتم حذف الطلبات نفسها.
+              </>
+            ) : (
+              <>
+                هل تريد حذف شركة <strong>{deletingCompany?.name}</strong>؟ لا توجد طلبات مرتبطة بها.
+              </>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: "16px", pb: "12px" }}>
+          <Button
+            disabled={deleteMutation.isPending}
+            onClick={() => setDeletingCompany(null)}
+            sx={{ fontFamily: FONT, color: HX.tx2 }}
+          >
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleDelete}
+            variant="contained"
+            disableElevation
+            disabled={deleteMutation.isPending}
+            color="error"
+            sx={{ fontFamily: FONT, fontWeight: 700 }}
+          >
+            {deleteMutation.isPending ? (
+              <CircularProgress size={16} sx={{ color: "#fff" }} />
+            ) : (
+              "حذف"
             )}
           </Button>
         </DialogActions>

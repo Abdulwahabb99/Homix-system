@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Box, Collapse, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, Button, Collapse, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
@@ -8,6 +8,8 @@ import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangeP
 import { SHIPMENT_STATUS_VALUES, SHIPMENT_TYPE_VALUES } from "shared/utils/constants";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import type { ShipmentsMeta } from "query/shipmentsMeta";
+import ShippingCompanySelect from "./ShipmentEdit/ShippingCompanySelect";
+import MultiSelect from "components/MultiSelect/MultiSelect";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -99,39 +101,27 @@ function FilterSelect({
   options: { label: string; value: string | number }[];
   onChange: (v: string) => void;
 }) {
+  const normalizedOptions = options.map((option) => ({
+    label: option.label,
+    value: String(option.value),
+  }));
+  const selectedValues = value ? value.split(",").map((item) => item.trim()).filter(Boolean) : [];
+
   return (
-    <FormControl size="small" sx={{ width: "100%", minWidth: 0 }}>
-      <InputLabel
-        sx={{
-          fontFamily: FONT, fontSize: "12px", color: "#000",
-          "&.MuiInputLabel-shrink": { fontSize: "11px" },
-          "&.Mui-focused": { color: HX.accent },
-        }}
-      >
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Typography component="label" sx={{
+        display: "block", mb: "4px", color: HX.tx2,
+        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+      }}>
         {label}
-      </InputLabel>
-      <Select
-        value={value}
-        onChange={(e) => onChange(e.target.value as string)}
-        label={label}
-        sx={{
-          fontFamily: FONT, fontSize: "12px", height: 38,
-          bgcolor: HX.surface, borderRadius: "10px",
-          "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border },
-          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent },
-          "& .MuiSelect-select": { fontSize: "12px", fontFamily: FONT, color: "#000" },
-        }}
-        MenuProps={{ PaperProps: { sx: { fontFamily: FONT } } }}
-      >
-        <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>الكل</MenuItem>
-        {options.map((opt) => (
-          <MenuItem key={opt.value} value={String(opt.value)} sx={{ fontFamily: FONT, fontSize: "12px" }}>
-            {opt.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+      </Typography>
+      <MultiSelect<string>
+        value={selectedValues}
+        onChange={(next) => onChange(next.join(","))}
+        options={normalizedOptions}
+        placeholder="الكل"
+      />
+    </Box>
   );
 }
 
@@ -151,41 +141,24 @@ export default function ShipmentsFiltersBar({
     setVals(defaultValues);
   }, [defKey]);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // القوائم والتاريخ تُطبَّق فوراً، وحقول النص بعد توقّف الكتابة (debounce)
-  const applyNow = (next: FilterValues) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    onApply(next);
-  };
-  const applyDebounced = (next: FilterValues) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => onApply(next), 500);
-  };
-
   const setSelect = (field: keyof FilterValues) => (v: any) => {
     const next = { ...vals, [field]: v };
     setVals(next);
-    applyNow(next);
   };
   const setText = (field: keyof FilterValues) => (v: any) => {
     const next = { ...vals, [field]: v };
     setVals(next);
-    applyDebounced(next);
   };
   const handleDatesChange = (start: any, end: any) => {
     const next = { ...vals, startDate: start, endDate: end };
     setVals(next);
-    applyNow(next);
   };
   const handleDateReset = () => {
     const next = { ...vals, startDate: null, endDate: null };
     setVals(next);
-    applyNow(next);
   };
 
   const handleReset = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     const empty: FilterValues = {
       operationCode: "", orderNumber: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
@@ -196,6 +169,8 @@ export default function ShipmentsFiltersBar({
     onReset();
   };
 
+  const handleApply = () => onApply(vals);
+
   const shipmentStatuses = meta?.shipmentStatuses ?? SHIPMENT_STATUS_VALUES;
   const shipmentTypes    = meta?.shipmentTypes    ?? SHIPMENT_TYPE_VALUES;
   const paymentStatuses  = meta?.paymentStatuses  ?? [
@@ -203,15 +178,22 @@ export default function ShipmentsFiltersBar({
     { value: 2, label: "مدفوع" },
   ];
   const deliveryByOptions = meta?.deliveryByOptions ?? [];
-  const shippingCompanies = meta?.shippingCompanies ?? [];
   const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
 
+  const selectedCount = (value: string) => value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean).length;
   const activeCount =
-    [
-      vals.operationCode, vals.orderNumber, vals.customerName, vals.customerPhone,
-      vals.shipmentStatus, vals.paymentStatus, isVendor ? "" : vals.shipmentType,
-      vals.deliveryBy, vals.shippingCompany, vals.scheduleStatus, vals.vendorName,
-    ].filter(Boolean).length + (vals.startDate && vals.endDate ? 1 : 0);
+    [vals.operationCode, vals.orderNumber, vals.customerName, vals.customerPhone, vals.vendorName]
+      .filter(Boolean).length
+    + selectedCount(vals.shipmentStatus)
+    + selectedCount(vals.paymentStatus)
+    + (isVendor ? 0 : selectedCount(vals.shipmentType))
+    + selectedCount(vals.deliveryBy)
+    + selectedCount(vals.shippingCompany)
+    + selectedCount(vals.scheduleStatus)
+    + (vals.startDate || vals.endDate ? 1 : 0);
 
   return (
     <Box
@@ -320,11 +302,13 @@ export default function ShipmentsFiltersBar({
               onChange={setSelect("deliveryBy")}
             />
 
-            <FilterSelect
-              label="شركة الشحن"
+            <ShippingCompanySelect
               value={vals.shippingCompany}
-              options={shippingCompanies}
               onChange={setSelect("shippingCompany")}
+              sx={{
+                "& .MuiOutlinedInput-root": { minHeight: "38px", height: 38 },
+                "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
+              }}
             />
 
             <FilterSelect
@@ -349,24 +333,37 @@ export default function ShipmentsFiltersBar({
             </Box>
           </Box>
 
-          {/* Row 2: reset (الفلاتر تُطبَّق مباشرة عند التغيير) */}
+          {/* Row 2: all draft filters are committed only from the apply button. */}
           <Box sx={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-            <Box
-              component="button"
-              type="button"
+            <Button
+              size="small"
               onClick={handleReset}
+              startIcon={<RestartAltIcon sx={{ fontSize: "14px !important" }} />}
               sx={{
-                display: "flex", alignItems: "center", gap: "5px",
-                px: "14px", height: 38, borderRadius: "10px",
+                px: "14px", height: 34, borderRadius: "8px",
                 border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
-                color: HX.tx2, cursor: "pointer", fontSize: "13px",
+                color: HX.tx2, fontSize: "12.5px", textTransform: "none",
                 fontFamily: FONT, fontWeight: 600, whiteSpace: "nowrap",
                 transition: ".15s", "&:hover": { bgcolor: HX.surface3, borderColor: HX.accent, color: HX.accent },
               }}
             >
-              <RestartAltIcon sx={{ fontSize: 16 }} />
               إعادة ضبط
-            </Box>
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              disableElevation
+              onClick={handleApply}
+              startIcon={<FilterAltIcon sx={{ fontSize: "14px !important" }} />}
+              sx={{
+                px: "16px", height: 34, borderRadius: "8px",
+                bgcolor: HX.accent, color: "#fff", fontSize: "12.5px",
+                fontFamily: FONT, fontWeight: 600, textTransform: "none",
+                "&:hover": { bgcolor: "#5254e0" },
+              }}
+            >
+              تطبيق الفلاتر
+            </Button>
           </Box>
         </Box>
       </Collapse>

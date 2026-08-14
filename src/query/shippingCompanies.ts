@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { shipmentKeys } from "./keys";
+import { orderKeys, shipmentKeys } from "./keys";
 
 /** شركة شحن كما تُرجعها /shipments/shipping-companies */
 export interface ShippingCompany {
   id: number;
+  linkedOrdersCount: number;
   name: string;
   createdAt?: string;
   updatedAt?: string;
@@ -73,6 +74,41 @@ export function useUpdateShippingCompanyMutation() {
     },
     onError: () => {
       NotificationMeassage("error", "تعذّر تعديل شركة الشحن");
+    },
+  });
+}
+
+export interface DeleteShippingCompanyResponse {
+  linkedOrdersCount: number;
+  message: string;
+}
+
+/** DELETE /shipments/shipping-companies/{id}; linked orders remain, without a shipping company. */
+export async function deleteShippingCompany(
+  id: number | string
+): Promise<DeleteShippingCompanyResponse> {
+  const { data } = await axiosRequest.delete(`/shipments/shipping-companies/${id}`);
+  return {
+    linkedOrdersCount: Number(data?.linkedOrdersCount) || 0,
+    message: String(data?.message ?? ""),
+  };
+}
+
+export function useDeleteShippingCompanyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) => deleteShippingCompany(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.shippingCompanies() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
+      ]);
+      NotificationMeassage("success", "تم حذف شركة الشحن");
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر حذف شركة الشحن");
     },
   });
 }
