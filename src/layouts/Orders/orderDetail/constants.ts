@@ -3,10 +3,10 @@
  * (DELIVERY_STATUS / statusoptions …) تبقى في `layouts/Orders/utils/constants`.
  */
 
-/** خيارا «مكان التسليم» — يُحدّثان الحقل shippedFromInventory */
-export const DELIVERY_LOCATION_OPTIONS: { value: string; label: string }[] = [
-  { value: "inventory", label: "مخازن هوميكس" },
-  { value: "customer", label: "عنوان العميل" },
+/** خيارا «التوصيل بواسطة» كقيم احتياطية عند تعذّر جلب الـ meta. */
+export const DELIVERY_BY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "هوميكس" },
+  { value: 2, label: "بائع" },
 ];
 
 /** أنواع الصور المسموح بها في مرفقات الملاحظات */

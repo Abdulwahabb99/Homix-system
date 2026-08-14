@@ -7,15 +7,12 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import {
   Autocomplete,
-  Checkbox,
   CircularProgress,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
   TextField,
-  Typography,
 } from "@mui/material";
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { useOrdersMeta } from "query/ordersMeta.api";
@@ -38,9 +35,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const [toBeCollected, setToBeCollected] = useState(data.toBeCollected);
   const [selectedVendor, setSelectedVendor] = useState(data.items[0].product.vendorId);
   const [administrator, setAdministrator] = useState(data?.userId ? data?.userId : null);
-  const [shippedFromInventory, setShippedFromInventory] = useState(
-    data.shippedFromInventory ? data.shippedFromInventory : false
-  );
   const [totalVendorDue, setTotalVendorDue] = useState(data.totalVendorDue);
   const [totalCompanyDue, setTotalCompanyDue] = useState(data.totalCompanyDue);
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(
@@ -273,27 +267,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               }}
             />
           </FormControl> */}
-          <FormControlLabel
-            sx={{ display: "flex", alignItems: "center" }}
-            control={
-              <Checkbox
-                checked={shippedFromInventory}
-                onChange={(e) => setShippedFromInventory(e.target.checked)}
-                color="primary"
-                sx={{
-                  "& .MuiSvgIcon-root": {
-                    border: "1px solid rgb(135, 134, 134)",
-                    fontSize: 18,
-                  },
-                }}
-              />
-            }
-            label={
-              <Typography color={"#000"} fontSize={"13px"} fontWeight="bold">
-                شحن للمخزن
-              </Typography>
-            }
-          />
         </div>
       </DialogContent>
       <DialogActions>
@@ -313,7 +286,6 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               shippingCost,
               selectedVendor,
               administrator,
-              shippedFromInventory,
               totalCompanyDue,
               expectedDeliveryDate,
               orderSource,

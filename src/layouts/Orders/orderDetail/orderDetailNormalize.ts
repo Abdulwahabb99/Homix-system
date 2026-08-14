@@ -124,7 +124,6 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     downPayment: Number(financial.downPayment ?? 0),
     toBeCollected: Number(financial.amountToCollect ?? 0),
     commission: Number(financial.commission ?? 0),
-    shippedFromInventory: order.deliveryBy === 1 || order.deliveryBy === "1",
     /**
      * «المسؤول» — الاستجابة الجديدة ترسله كـ `assigneeId` (على الطلب وعلى الجذر)
      * ولا ترسل `userId` إطلاقاً، فنقرأ منه أولاً ونُبقي `userId` بديلاً للشكل القديم.

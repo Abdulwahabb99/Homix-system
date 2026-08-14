@@ -42,7 +42,7 @@ export type OrderDetailsViewProps = {
   changeOrderStatus: (status: number | null) => void;
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
-  changeDeliveryLocation: (shippedFromInventory: boolean) => void;
+  changeDeliveryBy: (deliveryBy: number | null) => void;
   changeDownPayment: (downPayment: number) => void;
   changeShippingFees: (shippingFees: number) => void;
   changeDiscount: (totalDiscounts: number) => void;
@@ -83,7 +83,7 @@ export default function OrderDetailsView({
   changeOrderStatus,
   changeDeliveryStatus,
   changeAssignee,
-  changeDeliveryLocation,
+  changeDeliveryBy,
   changeDownPayment,
   changeShippingFees,
   changeDiscount,
@@ -102,7 +102,7 @@ export default function OrderDetailsView({
   /* نافذة تعديل بيانات العميل */
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
 
-  const showCustomerCard = orderDetails?.customer || orderDetails?.shippedFromInventory;
+  const showCustomerCard = orderDetails?.customer || Number(orderDetails?.deliveryBy) === 1;
 
   return (
     <Box sx={{ width: "100%", bgcolor: OD.bg, minHeight: "50vh" }}>
@@ -145,7 +145,7 @@ export default function OrderDetailsView({
               changeOrderStatus={changeOrderStatus}
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
-              changeDeliveryLocation={changeDeliveryLocation}
+              changeDeliveryBy={changeDeliveryBy}
               changeManufactureStatus={changeManufactureStatus}
               changePriority={changePriority}
             />

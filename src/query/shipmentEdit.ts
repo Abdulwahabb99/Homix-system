@@ -18,7 +18,6 @@ export interface UpdateShipmentPayload {
   scheduleStatus?: number;
   shippingCompany?: number | string;
   shippingFees?: number;
-  shippedFromInventory?: boolean;
   shippingReceiveDate?: string;
   expectedDeliveryDate?: string;
   deliveryDate?: string;

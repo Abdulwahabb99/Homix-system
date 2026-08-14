@@ -19,7 +19,7 @@ interface OrderStatusCardProps {
   changeOrderStatus: (status: number | null) => void;
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
-  changeDeliveryLocation: (shippedFromInventory: boolean) => void;
+  changeDeliveryBy: (deliveryBy: number | null) => void;
   changeManufactureStatus: (status: number | null) => void;
   changePriority: (priority: number | null) => void;
 }
@@ -31,7 +31,7 @@ export default function OrderStatusCard({
   changeOrderStatus,
   changeDeliveryStatus,
   changeAssignee,
-  changeDeliveryLocation,
+  changeDeliveryBy,
   changeManufactureStatus,
   changePriority,
 }: OrderStatusCardProps) {
@@ -40,7 +40,7 @@ export default function OrderStatusCard({
     manufactureOptions,
     assigneeOptions,
     deliveryStatusOptions,
-    deliveryLocationOptions,
+    deliveryByOptions,
   } = useOrderStatusOptions(users);
 
   const selectedAssignee =
@@ -114,14 +114,14 @@ export default function OrderStatusCard({
           />
         </Box>
 
-        {/* مكان التسليم */}
+        {/* التوصيل بواسطة */}
         <Box>
-          <Typography sx={statusFieldLabelSx}>مكان التسليم</Typography>
+          <Typography sx={statusFieldLabelSx}>التوصيل بواسطة</Typography>
           <SelectComponent
-            id="order-delivery-location"
-            options={deliveryLocationOptions}
-            value={orderDetails.shippedFromInventory ? "inventory" : "customer"}
-            onChange={(v: string) => changeDeliveryLocation(v === "inventory")}
+            id="order-delivery-by"
+            options={deliveryByOptions}
+            value={orderDetails.deliveryBy != null ? Number(orderDetails.deliveryBy) : null}
+            onChange={changeDeliveryBy}
             withSectionBorder={false}
             boxSx={{ p: 0 }}
             formControlSx={statusSelectSx}

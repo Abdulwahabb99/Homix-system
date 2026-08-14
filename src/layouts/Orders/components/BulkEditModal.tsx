@@ -2,22 +2,20 @@ import React, { useState } from "react";
 import PropTypes from "prop-types";
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
+import { useOrdersMeta } from "query/ordersMeta.api";
 
 const PRIMARY = "primary.main";
 
@@ -50,7 +48,8 @@ const menuProps = {
 const BulkEditModal = ({ open, onEdit, onClose }) => {
   const [orderStatus, setOrderStatus] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
-  const [shippedFromInventory, setShippedFromInventory] = useState(false);
+  const [deliveryBy, setDeliveryBy] = useState("");
+  const { data: ordersMeta } = useOrdersMeta();
 
   return (
     <Dialog
@@ -115,21 +114,22 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
             </Select>
           </FormControl>
 
-          <FormControlLabel
-            sx={{ alignItems: "center", mr: 0, gap: 1 }}
-            control={
-              <Checkbox
-                checked={shippedFromInventory}
-                onChange={(e) => setShippedFromInventory(e.target.checked)}
-                color="primary"
-              />
-            }
-            label={
-              <Typography variant="body2" fontWeight={600} color="primary.main">
-                شحن للمخزن
-              </Typography>
-            }
-          />
+          <FormControl fullWidth variant="outlined" sx={formControlSx}>
+            <InputLabel id="bulk-delivery-by-label">التوصيل بواسطة</InputLabel>
+            <Select
+              labelId="bulk-delivery-by-label"
+              id="bulk-delivery-by-select"
+              value={deliveryBy}
+              label="التوصيل بواسطة"
+              onChange={(e) => setDeliveryBy(e.target.value)}
+              color="primary"
+              MenuProps={menuProps}
+            >
+              {(ordersMeta?.deliveryByOptions ?? []).map((option) => (
+                <MenuItem key={option.id} value={option.id}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 2.5, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
@@ -152,7 +152,7 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
           إلغاء
         </Button>
         <Button
-          onClick={() => onEdit(orderStatus, paymentStatus, shippedFromInventory)}
+          onClick={() => onEdit(orderStatus, paymentStatus, deliveryBy)}
           variant="contained"
           color="primary"
         >

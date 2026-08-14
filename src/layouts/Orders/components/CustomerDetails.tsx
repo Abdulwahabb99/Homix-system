@@ -28,10 +28,10 @@ const rowSx = (theme) => ({
 });
 
 // eslint-disable-next-line react/prop-types
-function CustomerDetails({ customerName, email, address, phoneNumber, shippedFromInventory }) {
+function CustomerDetails({ customerName, email, address, phoneNumber, deliveryBy }) {
   const theme = useTheme();
 
-  if (shippedFromInventory) {
+  if (Number(deliveryBy) === 1) {
     return (
       <Card sx={cardShell(theme)}>
         <Box

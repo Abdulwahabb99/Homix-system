@@ -370,7 +370,7 @@ function Orders() {
   const onEditConfirm = (
     id: any, orderSt: any, commission: any, totalVendorDue: any, pay: any,
     downPayment: any, toBeCollected: any, shippingFees: any, selectedV: any,
-    administrator: any, shippedFromInventory: any, totalCompanyDue: any, expectedDeliveryDate: any,
+    administrator: any, totalCompanyDue: any, expectedDeliveryDate: any,
     orderSource: any, deliveryBy: any
   ) => {
     setIsSubmitting(true);
@@ -383,7 +383,7 @@ function Orders() {
         ...(orderSource !== "" && orderSource != null && { orderSource }),
         ...(deliveryBy !== "" && deliveryBy != null && { deliveryBy }),
         commission, paymentStatus: pay, downPayment, shippingFees,
-        toBeCollected, shippedFromInventory, totalVendorDue, totalCompanyDue,
+        toBeCollected, totalVendorDue, totalCompanyDue,
       })
       .then(() => {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
@@ -480,7 +480,7 @@ function Orders() {
     [orders, selectionModel]
   );
 
-  const bulkEdit = (orderSt: any, pay: any, shippedFromInventory: any) => {
+  const bulkEdit = (orderSt: any, pay: any, deliveryBy: any) => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
     axiosRequest
       .put(`${baseURI}/orders/bulk-update`, {
@@ -488,7 +488,7 @@ function Orders() {
         orderData: {
           ...(orderSt && { status: orderSt }),
           ...(pay && { paymentStatus: pay }),
-          shippedFromInventory,
+          ...(deliveryBy && { deliveryBy }),
         },
       })
       .then(() => {

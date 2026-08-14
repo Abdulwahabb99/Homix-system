@@ -124,7 +124,7 @@ function BasicsInfoCard({ orderDetails }) {
               color="text.primary"
               sx={{ fontSize: "0.88rem" }}
             >
-              {orderDetails.shippedFromInventory ? "مخازن هوميكس" : "عنوان العميل"}
+              {Number(orderDetails.deliveryBy) === 1 ? "مخازن هوميكس" : "عنوان العميل"}
             </Typography>
           </Box>
         </Stack>

@@ -53,14 +53,6 @@ function buildQueryString(p) {
   return query.toString();
 }
 
-function inferShippedFromInventory(deliveryBy) {
-  if (deliveryBy == null || deliveryBy === "") return undefined;
-  const s = String(deliveryBy).toLowerCase();
-  if (s.includes("inventory") || s.includes("warehouse") || s.includes("مخزن")) return true;
-  if (s.includes("vendor") || s.includes("seller") || s.includes("بائع")) return false;
-  return undefined;
-}
-
 /** صف قائمة الطلبات الجديد (سطر منتج داخل `data.items`) */
 function mapListItemRow(row) {
   const rowId = row.id;
@@ -94,8 +86,6 @@ function mapListItemRow(row) {
     paymentStatus: row.paymentStatus,
     PoDate: row.expectedDeliveryDate ?? undefined,
     createdAt: row.orderDate,
-    // الاستنتاج من التسمية أولاً — `deliveryBy` قد يكون معرّفاً رقمياً لا نصاً
-    shippedFromInventory: inferShippedFromInventory(row.deliveryByLabel ?? row.deliveryBy),
     /** المعرّف — يُستخدم لتعبئة نموذج التعديل */
     deliveryBy: row.deliveryBy,
     /** التسمية المعروضة كما يرسلها الـ API ("هوميكس" / "بائع") */
@@ -153,7 +143,6 @@ function mapOrderRow(order) {
     totalCompanyDue: order.totalCompanyDue,
     expectedDeliveryDate: order.expectedDeliveryDate,
     type: order.itemType ?? order.orderLines[0]?.product?.type?.name,
-    shippedFromInventory: order.shippedFromInventory,
     deliveryBy: order.deliveryBy,
     deliveryByLabel: order.deliveryByLabel,
     vendorId: order.vendorId,

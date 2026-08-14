@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useOrdersMeta } from "query/ordersMeta.api";
 import { manufactureStatusOptions } from "shared/utils/constants";
 import { DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
-import { DELIVERY_LOCATION_OPTIONS } from "../constants";
+import { DELIVERY_BY_OPTIONS } from "../constants";
 
 export interface SelectOption {
   value: number | string;
@@ -18,7 +18,7 @@ export interface OrderStatusOptions {
   manufactureOptions: SelectOption[];
   assigneeOptions: SelectOption[];
   deliveryStatusOptions: SelectOption[];
-  deliveryLocationOptions: SelectOption[];
+  deliveryByOptions: SelectOption[];
 }
 
 export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
@@ -40,6 +40,13 @@ export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
       : statusoptions;
   }, [metaQuery.data]);
 
+  const deliveryByOptions = useMemo(() => {
+    const fromMeta = metaQuery.data?.deliveryByOptions;
+    return fromMeta?.length
+      ? fromMeta.map((option) => ({ value: Number(option.id), label: option.label }))
+      : DELIVERY_BY_OPTIONS;
+  }, [metaQuery.data]);
+
   /* «المسؤول» من users API (endpoint /users) مباشرةً */
   const assigneeOptions = useMemo(
     () =>
@@ -55,6 +62,6 @@ export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
     manufactureOptions,
     assigneeOptions,
     deliveryStatusOptions: DELIVERY_STATUS,
-    deliveryLocationOptions: DELIVERY_LOCATION_OPTIONS,
+    deliveryByOptions,
   };
 }

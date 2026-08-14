@@ -109,9 +109,10 @@ export function useOrderDetailsPage() {
     [updateOrderField, users]
   );
 
-  const changeDeliveryLocation = useCallback(
-    (shippedFromInventory: boolean) => {
-      updateOrderField({ shippedFromInventory });
+  const changeDeliveryBy = useCallback(
+    (deliveryBy: number | null) => {
+      if (deliveryBy == null) return;
+      updateOrderField({ deliveryBy });
     },
     [updateOrderField]
   );
@@ -485,7 +486,7 @@ export function useOrderDetailsPage() {
     changeOrderStatus,
     changeDeliveryStatus,
     changeAssignee,
-    changeDeliveryLocation,
+    changeDeliveryBy,
     changeDownPayment,
     changeShippingFees,
     changeDiscount,
