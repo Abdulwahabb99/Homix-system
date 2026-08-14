@@ -14,4 +14,4 @@ fingerprintstat.csv
 .vscode/launch.json
 .DS_Store
 /*.env
-dist/
+/dist/
