@@ -78,6 +78,38 @@ const toNumberArray = (values: string[]): number[] => {
   return values.map((value) => Number(value)).filter(Boolean);
 };
 
+const buildProductSearch = (searchQuery: string): Record<symbol, unknown> | undefined => {
+  const terms = searchQuery
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 10);
+
+  if (terms.length === 0) return undefined;
+
+  return {
+    [Op.and]: terms.map((term) => ({
+      [Op.or]: [
+        sequelize.where(sequelize.fn("lower", sequelize.col("Product.title")), {
+          [Op.like]: `%${term}%`,
+        }),
+        sequelize.where(sequelize.fn("lower", sequelize.col("vendor.name")), {
+          [Op.like]: `%${term}%`,
+        }),
+        sequelize.where(sequelize.fn("lower", sequelize.col("Product.shopifyId")), {
+          [Op.like]: `%${term}%`,
+        }),
+        // SKU and variant Shopify codes are stored inside the variants JSON.
+        sequelize.where(
+          sequelize.fn("lower", sequelize.cast(sequelize.col("Product.variants"), "text")),
+          { [Op.like]: `%${term}%` },
+        ),
+      ],
+    })),
+  };
+};
+
 class ProductsService {
   public static async getExistingTypesMap(typesNames: string[]): Promise<Record<string, number>> {
     const typesMap: Record<string, number> = {};
@@ -189,18 +221,7 @@ class ProductsService {
       offset: (Number(page) - 1) * Number(size),
       where: {
         ...whereClause,
-        ...(searchQuery
-          ? {
-              [Op.or]: [
-                sequelize.where(sequelize.fn("lower", sequelize.col("Product.title")), {
-                  [Op.like]: `%${searchQuery.toLowerCase()}%`,
-                }),
-                sequelize.where(sequelize.fn("lower", sequelize.col("vendor.name")), {
-                  [Op.like]: `%${searchQuery.toLowerCase()}%`,
-                }),
-              ],
-            }
-          : {}),
+        ...(buildProductSearch(searchQuery) ?? {}),
       },
     });
 
