@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Box, FormControl, InputLabel, MenuItem, Select, Tooltip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { useQueryClient } from "@tanstack/react-query";
 import moment from "moment";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
+import { shipmentKeys } from "query/keys";
 import {
   useVendorReturnsQuery,
   useCustomerReturnsQuery,
@@ -328,6 +330,7 @@ interface ReturnsPanelProps {
 }
 
 export default function ReturnsPanel({ onExporterChange }: ReturnsPanelProps) {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab]     = useState<"vendor" | "customer">("vendor");
   const [filters, setFilters]         = useState<FilterState>(EMPTY_FILTERS);
   const [applied, setApplied]         = useState<FilterState>(EMPTY_FILTERS);
@@ -400,6 +403,7 @@ export default function ReturnsPanel({ onExporterChange }: ReturnsPanelProps) {
 
   const handleTabChange = (id: "vendor" | "customer") => {
     if (id === activeTab) return;
+    queryClient.removeQueries({ queryKey: shipmentKeys.returnsRoot() });
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setEditItem(null);
     setActiveTab(id);

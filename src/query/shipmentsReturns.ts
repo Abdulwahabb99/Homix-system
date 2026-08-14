@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
@@ -83,8 +83,9 @@ export function useVendorReturnsQuery(params: ReturnsParams, enabled = true) {
     queryKey: shipmentKeys.returns("vendor", JSON.stringify(params)),
     queryFn:  () => fetchVendorReturns(params),
     enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 
@@ -93,8 +94,9 @@ export function useCustomerReturnsQuery(params: ReturnsParams, enabled = true) {
     queryKey: shipmentKeys.returns("customer", JSON.stringify(params)),
     queryFn:  () => fetchCustomerReturns(params),
     enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 

@@ -55,6 +55,7 @@ export const shipmentKeys = {
   returnsRoot: () => [...shipmentKeys.all(), "returns"] as const,
   inventoryRoot: () => [...shipmentKeys.all(), "inventory"] as const,
   accountsRoot: () => [...shipmentKeys.all(), "accounts"] as const,
+  performanceRoot: () => [...shipmentKeys.all(), "performance"] as const,
   summariesRoot: () => [...shipmentKeys.all(), "summary"] as const,
 };
 

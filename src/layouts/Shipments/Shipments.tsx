@@ -27,10 +27,6 @@ import {
   type ShipmentItem,
   type ShipmentSummaryCard,
 } from "query/shipmentsList";
-import { fetchVendorReturns, type ReturnsParams } from "query/shipmentsReturns";
-import { fetchShipmentsInventory, type InventoryParams } from "query/shipmentsInventory";
-import { fetchDeliveryAccounts, type AccountsParams } from "query/shipmentsAccounts";
-import { fetchShipmentsPerformance, type PerformanceParams } from "query/shipmentsPerformance";
 import { useShipmentsMetaQuery, type ShipmentsMeta } from "query/shipmentsMeta";
 import { shipmentKeys } from "query/keys";
 import moment from "moment";
@@ -39,21 +35,6 @@ const FONT = "'Cairo', sans-serif";
 
 type ShipmentTabId = "shipments" | "returns" | "inventory" | "accounts" | "reports";
 
-const DEFAULT_VENDOR_RETURNS_PARAMS: ReturnsParams = {
-  page: 1, orderNumber: "", operationCode: "", status: "", sellerName: "",
-};
-const DEFAULT_INVENTORY_PARAMS: InventoryParams = { page: 1 };
-const DEFAULT_ACCOUNTS_PARAMS: AccountsParams = {
-  page: 1, accountingStatus: "", orderNumber: "", paymentMethod: "", settledDate: "",
-};
-const DEFAULT_PERFORMANCE_PARAMS: PerformanceParams = {
-  endDate: moment().format("YYYY-MM-DD"),
-  period: "daily",
-  startDate: moment().startOf("month").format("YYYY-MM-DD"),
-};
-
-// Once a panel has been visited it stays mounted; memoization prevents an
-// unrelated main-tab click from rendering every hidden panel again.
 const MemoizedReturnsPanel = React.memo(ReturnsPanel);
 const MemoizedInventoryPanel = React.memo(InventoryPanel);
 const MemoizedAccountsPanel = React.memo(AccountsPanel);
@@ -201,9 +182,6 @@ export default function Shipments() {
 
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState<ShipmentTabId>("shipments");
-  const [visitedTabs, setVisitedTabs] = useState<Set<ShipmentTabId>>(
-    () => new Set<ShipmentTabId>(["shipments"])
-  );
   const { can } = usePermissions();
 
   /* Tabs the user has no permission for are hidden outright — showing them only
@@ -211,65 +189,35 @@ export default function Shipments() {
   const visibleTabs = MAIN_TABS.filter((tab) => !tab.permission || can(tab.permission));
   const isTabVisible = (id: string) => visibleTabs.some((tab) => tab.id === id);
 
-  // Start the default request during the user's pointer/focus travel to the tab.
-  // React Query de-duplicates it if the panel mounts before the request finishes.
-  const prefetchTab = (tabId: ShipmentTabId) => {
+  const clearTabQueries = (tabId: ShipmentTabId) => {
     switch (tabId) {
       case "returns":
-        void queryClient.prefetchQuery({
-          queryKey: shipmentKeys.returns("vendor", JSON.stringify(DEFAULT_VENDOR_RETURNS_PARAMS)),
-          queryFn: () => fetchVendorReturns(DEFAULT_VENDOR_RETURNS_PARAMS),
-          staleTime: 30_000,
-        });
+        queryClient.removeQueries({ queryKey: shipmentKeys.returnsRoot() });
         break;
       case "inventory":
-        void queryClient.prefetchQuery({
-          queryKey: shipmentKeys.inventory(JSON.stringify(DEFAULT_INVENTORY_PARAMS)),
-          queryFn: () => fetchShipmentsInventory(DEFAULT_INVENTORY_PARAMS),
-          staleTime: 30_000,
-        });
+        queryClient.removeQueries({ queryKey: shipmentKeys.inventoryRoot() });
         break;
       case "accounts":
-        void queryClient.prefetchQuery({
-          queryKey: shipmentKeys.accounts("deliveries", JSON.stringify(DEFAULT_ACCOUNTS_PARAMS)),
-          queryFn: () => fetchDeliveryAccounts(DEFAULT_ACCOUNTS_PARAMS),
-          staleTime: 30_000,
-        });
+        queryClient.removeQueries({ queryKey: shipmentKeys.accountsRoot() });
         break;
       case "reports":
-        void queryClient.prefetchQuery({
-          queryKey: shipmentKeys.performance(JSON.stringify(DEFAULT_PERFORMANCE_PARAMS)),
-          queryFn: () => fetchShipmentsPerformance(DEFAULT_PERFORMANCE_PARAMS),
-          staleTime: 60_000,
-        });
+        queryClient.removeQueries({ queryKey: shipmentKeys.performanceRoot() });
+        break;
+      case "shipments":
+        queryClient.removeQueries({ queryKey: shipmentKeys.lists() });
+        queryClient.removeQueries({ queryKey: shipmentKeys.summariesRoot() });
         break;
       default:
         break;
     }
   };
 
-  const markTabVisited = (tabId: ShipmentTabId) => {
-    setVisitedTabs((current) => {
-      if (current.has(tabId)) return current;
-      const next = new Set(current);
-      next.add(tabId);
-      return next;
-    });
-  };
-
-  const prepareTab = (tabId: ShipmentTabId) => {
-    prefetchTab(tabId);
-    if (tabId !== "shipments") {
-      // Render the panel at low priority while the pointer is travelling to it,
-      // rather than doing all of that synchronous work in the click itself.
-      React.startTransition(() => markTabVisited(tabId));
-    }
-  };
-
   const handleTabChange = (tabId: ShipmentTabId) => {
     if (tabId === activeTab) return;
-    markTabVisited(tabId);
+    clearTabQueries(activeTab);
+    clearTabQueries(tabId);
     setActiveTab(tabId);
+    void queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() });
   };
 
   // All filter values come from URL
@@ -549,8 +497,6 @@ export default function Shipments() {
                 role="tab"
                 aria-selected={active}
                 aria-controls={`shipment-tab-panel-${tab.id}`}
-                onPointerEnter={() => prepareTab(tab.id)}
-                onFocus={() => prepareTab(tab.id)}
                 onClick={() => handleTabChange(tab.id)}
                 sx={{
                   flex: 1,
@@ -604,7 +550,7 @@ export default function Shipments() {
           hidden={activeTab !== "shipments"}
           sx={{ display: activeTab === "shipments" ? "flex" : "none", flexDirection: "column", gap: "14px" }}
         >
-            <ShipmentsTabContent
+            {activeTab === "shipments" && <ShipmentsTabContent
               cards={summaryData}
               isSummaryLoading={isSummaryLoading}
               filterDefaults={filterDefaults}
@@ -621,26 +567,26 @@ export default function Shipments() {
               onReset={handleReset}
               onEdit={handleEditShipment}
               onDelete={handleDeleteShipment}
-            />
+            />}
         </Box>
 
-        {visitedTabs.has("returns") && (
-          <Box id="shipment-tab-panel-returns" role="tabpanel" hidden={activeTab !== "returns"} sx={{ display: activeTab === "returns" ? "block" : "none" }}>
+        {activeTab === "returns" && (
+          <Box id="shipment-tab-panel-returns" role="tabpanel">
             <MemoizedReturnsPanel onExporterChange={setReturnsExporter} />
           </Box>
         )}
-        {visitedTabs.has("inventory") && isTabVisible("inventory") && (
-          <Box id="shipment-tab-panel-inventory" role="tabpanel" hidden={activeTab !== "inventory"} sx={{ display: activeTab === "inventory" ? "block" : "none" }}>
+        {activeTab === "inventory" && isTabVisible("inventory") && (
+          <Box id="shipment-tab-panel-inventory" role="tabpanel">
             <MemoizedInventoryPanel onExporterChange={setInventoryExporter} />
           </Box>
         )}
-        {visitedTabs.has("accounts") && isTabVisible("accounts") && (
-          <Box id="shipment-tab-panel-accounts" role="tabpanel" hidden={activeTab !== "accounts"} sx={{ display: activeTab === "accounts" ? "block" : "none" }}>
+        {activeTab === "accounts" && isTabVisible("accounts") && (
+          <Box id="shipment-tab-panel-accounts" role="tabpanel">
             <MemoizedAccountsPanel onExporterChange={setAccountsExporter} />
           </Box>
         )}
-        {visitedTabs.has("reports") && (
-          <Box id="shipment-tab-panel-reports" role="tabpanel" hidden={activeTab !== "reports"} sx={{ display: activeTab === "reports" ? "block" : "none" }}>
+        {activeTab === "reports" && (
+          <Box id="shipment-tab-panel-reports" role="tabpanel">
             <MemoizedReportsPanel onExporterChange={setReportsExporter} />
           </Box>
         )}

@@ -89,6 +89,8 @@ export function useShipmentsMetaQuery() {
   return useQuery({
     queryKey: shipmentKeys.meta(),
     queryFn: fetchShipmentsMeta,
-    staleTime: 5 * 60_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }

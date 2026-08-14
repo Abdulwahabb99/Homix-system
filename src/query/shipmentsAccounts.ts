@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -101,8 +101,9 @@ export function useDeliveryAccountsQuery(params: AccountsParams) {
   return useQuery({
     queryKey: shipmentKeys.accounts("deliveries", JSON.stringify(params)),
     queryFn: () => fetchDeliveryAccounts(params),
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 
@@ -110,8 +111,9 @@ export function useExpenseAccountsQuery(params: AccountsParams) {
   return useQuery({
     queryKey: shipmentKeys.accounts("expenses", JSON.stringify(params)),
     queryFn: () => fetchExpenseAccounts(params),
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 

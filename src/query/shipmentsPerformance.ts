@@ -101,8 +101,10 @@ export async function exportShipmentsPerformance(params: PerformanceParams): Pro
 export function useShipmentsPerformanceQuery(params: PerformanceParams, enabled = true) {
   return useQuery({
     enabled,
+    gcTime: 0,
     queryKey: shipmentKeys.performance(JSON.stringify(params)),
     queryFn: () => fetchShipmentsPerformance(params),
-    staleTime: 60_000,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }

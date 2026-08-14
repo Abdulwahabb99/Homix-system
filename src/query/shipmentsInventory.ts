@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { shipmentKeys } from "./keys";
@@ -72,8 +72,9 @@ export function useShipmentsInventoryQuery(params: InventoryParams) {
   return useQuery({
     queryKey: shipmentKeys.inventory(JSON.stringify(params)),
     queryFn: () => fetchShipmentsInventory(params),
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 

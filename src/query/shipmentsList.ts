@@ -1,5 +1,5 @@
 import moment from "moment";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { shipmentKeys } from "./keys";
 
@@ -114,8 +114,9 @@ export function useShipmentsListQuery(params: ShipmentsListParams, enabled = tru
     queryKey: shipmentKeys.list(JSON.stringify(params)),
     queryFn: () => fetchShipmentsList(params),
     enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 
@@ -135,6 +136,8 @@ export function useShipmentsSummaryQuery(params: ShipmentsListParams, enabled = 
     queryKey: shipmentKeys.summary(JSON.stringify(params)),
     queryFn: () => fetchShipmentsSummary(params),
     enabled,
-    staleTime: 30_000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
