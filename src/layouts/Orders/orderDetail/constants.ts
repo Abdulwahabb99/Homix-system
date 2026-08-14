@@ -5,7 +5,7 @@
 
 /** خيارا «مكان التسليم» — يُحدّثان الحقل shippedFromInventory */
 export const DELIVERY_LOCATION_OPTIONS: { value: string; label: string }[] = [
-  { value: "inventory", label: "مخازن هومكس" },
+  { value: "inventory", label: "مخازن هوميكس" },
   { value: "customer", label: "عنوان العميل" },
 ];
 

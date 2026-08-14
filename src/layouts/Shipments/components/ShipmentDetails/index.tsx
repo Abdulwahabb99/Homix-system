@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { ToastContainer } from "react-toastify";
@@ -23,6 +23,10 @@ import ClientCard from "./components/ClientCard";
 import SellerCard from "./components/SellerCard";
 import FinancialsCard from "./components/FinancialsCard";
 import StatusControlCard from "./components/StatusControlCard";
+import OrderInvoiceDocument from "layouts/Orders/orderInvoice/OrderInvoiceDocument";
+import { downloadOrderInvoicePdf } from "layouts/Orders/utils/invoicePdf";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { buildShipmentInvoiceModel } from "./shipmentInvoiceAdapter";
 
 export default function ShipmentDetails() {
   const { id } = useParams();
@@ -61,13 +65,51 @@ function LoadedShipmentDetails({
   const status = useUpdateShipmentStatus(shipmentDetailId, shipment);
   const note = useAddShipmentNote(shipmentDetailId, shipment.id);
 
-  const shipNumber = shipment.shipmentNumber || `SH-${shipment.id}`;
+  const shipNumber = shipment.shipmentNumber || `SH${shipment.orderNumber}`;
+
+  /* فاتورة الشحنة = نفس مستند فاتورة الطلب، تُرسم خارج الشاشة ثم تُصدَّر PDF. */
+  const invoiceRef = useRef<HTMLDivElement | null>(null);
+  const [invoicePdfLoading, setInvoicePdfLoading] = useState(false);
+  const invoiceModel = buildShipmentInvoiceModel(data);
+
+  const handleExportPdf = async () => {
+    if (!invoiceRef.current) {
+      NotificationMeassage("error", "تعذر تجهيز الفاتورة");
+      return;
+    }
+    setInvoicePdfLoading(true);
+    try {
+      await downloadOrderInvoicePdf(invoiceRef.current, `فاتورة-${shipNumber}`);
+      NotificationMeassage("success", "تم تحميل الفاتورة");
+    } catch (e) {
+      console.error(e);
+      NotificationMeassage("error", "تعذر تصدير الفاتورة");
+    } finally {
+      setInvoicePdfLoading(false);
+    }
+  };
 
   return (
     <DashboardLayout
-      header={<HomixPageHeader breadcrumb={<ShipmentBreadcrumb shipNumber={shipNumber} />} actions={<ShipmentHeaderActions shipmentId={shipmentDetailId} />} />}
+      header={<HomixPageHeader breadcrumb={<ShipmentBreadcrumb shipNumber={shipNumber} />} actions={<ShipmentHeaderActions shipmentId={shipmentDetailId} onExportPdf={handleExportPdf} exportPdfLoading={invoicePdfLoading} />} />}
     >
       <ToastContainer />
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: 0,
+          width: 800,
+          maxWidth: "100vw",
+          zIndex: -1,
+          pointerEvents: "none",
+          overflow: "hidden",
+          background: "#fff",
+        }}
+      >
+        <OrderInvoiceDocument ref={invoiceRef} orderDetails={invoiceModel} />
+      </div>
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px" }}>
         <ShipmentHeaderStrip shipment={shipment} />
 

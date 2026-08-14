@@ -274,6 +274,8 @@ export default function ShipmentEdit() {
   }
 
   const goBack = () => navigate(`/shipments/${shipmentId}`);
+  /** بعد تأكيد التعديل نعود لقائمة الشحنات، لا لصفحة تفاصيل الشحنة. */
+  const goToShipmentsList = () => navigate("/shipments");
 
   const handleSave = () => {
     if (updateMutation.isPending || !shipmentId) return;
@@ -281,7 +283,7 @@ export default function ShipmentEdit() {
       NotificationMeassage("error", "اختر حالة الشحنة");
       return;
     }
-    updateMutation.mutate(buildPayload(), { onSuccess: goBack });
+    updateMutation.mutate(buildPayload(), { onSuccess: goToShipmentsList });
   };
 
   // --- header (breadcrumb + cancel/save actions) ---

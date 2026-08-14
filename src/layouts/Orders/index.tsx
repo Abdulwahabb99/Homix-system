@@ -325,7 +325,7 @@ function Orders() {
     queryFn: async () => {
       const { data: body } = await axiosRequest.get("/vendors");
       return [
-        { label: "هومكس", value: "0" },
+        { label: "هوميكس", value: "0" },
         ...body.data.map((v: any) => ({ label: v.name, value: v.id })),
       ];
     },

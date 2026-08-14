@@ -15,6 +15,9 @@ import {
 
 const FONT = "'Cairo', sans-serif";
 
+/** بطاقات لم تعد مطلوبة في تقارير الأداء */
+const HIDDEN_OVERVIEW_KEYS = ["avgDeliveryDays", "successRate", "deliveryRate"];
+
 const TH: React.CSSProperties = {
   fontFamily: FONT, fontSize: "11px", fontWeight: 700, color: HX.tx2,
   padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap",
@@ -138,7 +141,10 @@ export default function ReportsPanel() {
                 <SkeletonCard />
               </Grid>
             ))
-          : overview.map((card, i) => (
+          : overview
+              // متوسط وقت التوصيل ونسبة النجاح غير مطلوبين في هذا التقرير
+              .filter((card) => !HIDDEN_OVERVIEW_KEYS.includes(card.key))
+              .map((card, i) => (
               <Grid item xs={6} sm={4} md={4} lg={4} key={card.key}>
                 <OverviewCard card={card} idx={i} />
               </Grid>
@@ -219,8 +225,6 @@ export default function ReportsPanel() {
                     <th style={{ ...TH, textAlign: "center" }}>الإجمالي</th>
                     <th style={{ ...TH, textAlign: "center" }}>تم التسليم</th>
                     <th style={{ ...TH, textAlign: "center" }}>المرتجع</th>
-                    <th style={{ ...TH, textAlign: "center", minWidth: 160 }}>نسبة التسليم</th>
-                    <th style={{ ...TH, textAlign: "center" }}>متوسط الأيام</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,12 +246,6 @@ export default function ReportsPanel() {
                       </td>
                       <td style={{ ...TD, textAlign: "center" }}>
                         <Box component="span" sx={{ fontSize: "12px", fontWeight: 700, color: HX.red }}>{row.returned?.toLocaleString("en-US") ?? 0}</Box>
-                      </td>
-                      <td style={{ ...TD, textAlign: "center" }}>
-                        <DeliveryRateBar rate={row.deliveryRate ?? 0} />
-                      </td>
-                      <td style={{ ...TD, textAlign: "center" }}>
-                        <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{row.avgDays?.toFixed(1) ?? "—"}</Box>
                       </td>
                     </tr>
                   ))}

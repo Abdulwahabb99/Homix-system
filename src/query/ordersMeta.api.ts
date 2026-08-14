@@ -150,10 +150,10 @@ export function useOrdersMeta(enabled = true) {
   });
 }
 
-/** تجهيز قائمة البائعين للفلتر (هومكس اختياري + من الـ meta) */
+/** تجهيز قائمة البائعين للفلتر (هوميكس اختياري + من الـ meta) */
 export function mergeHomixVendorOptions(
   metaVendors: OrdersMetaIdLabel[],
-  homixLabel = "هومكس",
+  homixLabel = "هوميكس",
   homixValue = "0"
 ): { label: string; value: string }[] {
   const fromMeta = metaVendors.map((v) => ({ label: v.label, value: String(v.id) }));

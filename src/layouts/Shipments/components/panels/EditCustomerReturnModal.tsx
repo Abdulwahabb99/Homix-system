@@ -9,6 +9,7 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
 import {
   useUpdateCustomerReturnMutation,
+  useUpdateVendorReturnMutation,
   type ReturnItem,
   type UpdateCustomerReturnPayload,
 } from "query/shipmentsReturns";
@@ -143,16 +144,27 @@ interface Props {
   open: boolean;
   onClose: () => void;
   item: ReturnItem | null;
-  /** meta.customerReturnStatuses من useShipmentsMetaQuery */
+  /** meta.customerReturnStatuses أو meta.vendorReturnStatuses من useShipmentsMetaQuery */
   statusOptions: ShipmentsMetaOption[];
+  /** أي قائمة مرتجعات نُحرّر — يحدّد نقطة النهاية المستخدمة */
+  returnKind?: "customer" | "vendor";
 }
 
-export default function EditCustomerReturnModal({ open, onClose, item, statusOptions }: Props) {
+export default function EditCustomerReturnModal({
+  open,
+  onClose,
+  item,
+  statusOptions,
+  returnKind = "customer",
+}: Props) {
   const [status, setStatus] = useState<number | "">("");
   const [reason, setReason] = useState("");
   const [returnDate, setReturnDate] = useState("");
 
-  const updateMutation = useUpdateCustomerReturnMutation();
+  // كلا الـ hookين يُستدعى دائماً (قواعد الـ hooks) ونستخدم المناسب منهما فقط.
+  const customerMutation = useUpdateCustomerReturnMutation();
+  const vendorMutation = useUpdateVendorReturnMutation();
+  const updateMutation = returnKind === "vendor" ? vendorMutation : customerMutation;
 
   const initial = useMemo(
     () => ({
@@ -235,7 +247,7 @@ export default function EditCustomerReturnModal({ open, onClose, item, statusOpt
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 900, color: HX.tx, lineHeight: 1.3 }}>
-              تعديل مرتجع العميل
+              {returnKind === "vendor" ? "تعديل مرتجع المورد" : "تعديل مرتجع العميل"}
             </Typography>
             <Typography sx={{ fontFamily: FONT, fontSize: "11.5px", color: HX.tx3, ...plainDigits }}>
               {item?.orderNumber ? `طلب #${item.orderNumber}` : "—"}

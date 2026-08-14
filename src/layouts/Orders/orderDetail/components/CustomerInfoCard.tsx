@@ -106,7 +106,7 @@ export default function CustomerInfoCard({ orderDetails, isVendor, onEdit }: Cus
               <Typography sx={{ fontSize: "0.69rem", color: OD.tx3, fontWeight: 500, minWidth: 56, pt: 0.5 }}>العنوان</Typography>
               <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: OD.tx, flex: 1 }}>
                 {orderDetails.shippedFromInventory
-                  ? "الشحن من مخازن هومكس"
+                  ? "الشحن من مخازن هوميكس"
                   : customer.address || customer.address2 || "—"}
               </Typography>
             </Stack>

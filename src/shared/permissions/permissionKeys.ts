@@ -56,7 +56,6 @@ export type KnownPermissionKey =
   | "settings_view" | "settings_edit";
 
 /** نوع مفتاح الصلاحية — يقبل المفاتيح المعروفة (بإكمال تلقائي) أو أي نص آخر */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type PermissionKey = KnownPermissionKey | (string & {});
 
 /** خريطة صلاحيات المستخدم كما تأتي من الـ API */

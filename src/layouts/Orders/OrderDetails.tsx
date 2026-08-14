@@ -54,6 +54,9 @@ function OrderDetails() {
     changeAssignee,
     changeDeliveryLocation,
     changeDownPayment,
+    changeShippingFees,
+    changeDiscount,
+    changePriority,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,
@@ -176,6 +179,9 @@ function OrderDetails() {
               changeAssignee={changeAssignee}
               changeDeliveryLocation={changeDeliveryLocation}
               changeDownPayment={changeDownPayment}
+              changeShippingFees={changeShippingFees}
+              changeDiscount={changeDiscount}
+              changePriority={changePriority}
               updateCustomer={updateCustomer}
               isUpdatingCustomer={isUpdatingCustomer}
               updateComment={updateComment}

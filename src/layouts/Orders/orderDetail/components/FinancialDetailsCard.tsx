@@ -13,7 +13,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { OD } from "../odTheme";
 import { formatMoney } from "../utils";
-import { useInlineNumberEdit } from "../hooks/useInlineNumberEdit";
+import { useInlineNumberEdit, InlineNumberEdit } from "../hooks/useInlineNumberEdit";
 import SectionCard from "./SectionCard";
 
 interface FinancialDetailsCardProps {
@@ -24,6 +24,8 @@ interface FinancialDetailsCardProps {
   orderTotalCost: number | null;
   isVendor: boolean;
   changeDownPayment: (downPayment: number) => void;
+  changeShippingFees: (shippingFees: number) => void;
+  changeDiscount: (totalDiscounts: number) => void;
 }
 
 /** صف واحد في جدول التفاصيل المالية */
@@ -73,6 +75,72 @@ function MoneyValue({ value, zeroMuted = false }: { value: number; zeroMuted?: b
   );
 }
 
+/** مبلغ قابل للتعديل inline (يظهر زر التعديل لغير البائع فقط) */
+function EditableMoneyValue({
+  edit,
+  value,
+  isVendor,
+  ariaLabel,
+}: {
+  edit: InlineNumberEdit;
+  value: number;
+  isVendor: boolean;
+  ariaLabel: string;
+}) {
+  if (edit.editing) {
+    return (
+      <Stack direction="row" alignItems="center" spacing={0.5}>
+        <TextField
+          autoFocus
+          type="number"
+          size="small"
+          value={edit.draft}
+          onChange={(e) => edit.setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") edit.save(value);
+            if (e.key === "Escape") edit.cancel();
+          }}
+          inputProps={{ min: 0, style: { textAlign: "center", fontWeight: 800, width: 90, padding: "5px 6px" } }}
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", bgcolor: OD.sur } }}
+        />
+        <IconButton size="small" onClick={() => edit.save(value)} aria-label="حفظ" sx={{ color: OD.green }}>
+          <CheckIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+        <IconButton size="small" onClick={edit.cancel} aria-label="إلغاء" sx={{ color: OD.red }}>
+          <CloseIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+      {!isVendor && (
+        <IconButton
+          size="small"
+          onClick={() => edit.start(value)}
+          aria-label={ariaLabel}
+          sx={{ color: OD.tx3, "&:hover": { color: OD.accent } }}
+        >
+          <EditIcon sx={{ fontSize: 15 }} />
+        </IconButton>
+      )}
+      <Typography
+        component="span"
+        onClick={!isVendor ? () => edit.start(value) : undefined}
+        sx={{
+          fontWeight: 700,
+          fontSize: "0.81rem",
+          color: value === 0 ? OD.tx3 : OD.tx,
+          cursor: !isVendor ? "pointer" : "default",
+        }}
+      >
+        {formatMoney(value)} ج.م
+      </Typography>
+    </Stack>
+  );
+}
+
 export default function FinancialDetailsCard({
   orderDetails,
   orderTotalPrice,
@@ -81,6 +149,8 @@ export default function FinancialDetailsCard({
   orderTotalCost,
   isVendor,
   changeDownPayment,
+  changeShippingFees,
+  changeDiscount,
 }: FinancialDetailsCardProps) {
   const sell = Number(orderDetails.subTotalPrice ?? orderTotalPrice ?? 0);
   const ship = Number(orderDetails.shippingFees ?? orderTotalShipping ?? 0);
@@ -96,55 +166,8 @@ export default function FinancialDetailsCard({
   const collect = Number(orderDetails.toBeCollected ?? orderTotalToBeCollected ?? 0);
 
   const downEdit = useInlineNumberEdit(changeDownPayment);
-
-  const downNode = downEdit.editing ? (
-    <Stack direction="row" alignItems="center" spacing={0.5}>
-      <TextField
-        autoFocus
-        type="number"
-        size="small"
-        value={downEdit.draft}
-        onChange={(e) => downEdit.setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") downEdit.save(down);
-          if (e.key === "Escape") downEdit.cancel();
-        }}
-        inputProps={{ min: 0, style: { textAlign: "center", fontWeight: 800, width: 90, padding: "5px 6px" } }}
-        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", bgcolor: OD.sur } }}
-      />
-      <IconButton size="small" onClick={() => downEdit.save(down)} aria-label="حفظ" sx={{ color: OD.green }}>
-        <CheckIcon sx={{ fontSize: 18 }} />
-      </IconButton>
-      <IconButton size="small" onClick={downEdit.cancel} aria-label="إلغاء" sx={{ color: OD.red }}>
-        <CloseIcon sx={{ fontSize: 18 }} />
-      </IconButton>
-    </Stack>
-  ) : (
-    <Stack direction="row" alignItems="center" spacing={0.5}>
-      {!isVendor && (
-        <IconButton
-          size="small"
-          onClick={() => downEdit.start(down)}
-          aria-label="تعديل جدية الشراء"
-          sx={{ color: OD.tx3, "&:hover": { color: OD.accent } }}
-        >
-          <EditIcon sx={{ fontSize: 15 }} />
-        </IconButton>
-      )}
-      <Typography
-        component="span"
-        onClick={!isVendor ? () => downEdit.start(down) : undefined}
-        sx={{
-          fontWeight: 700,
-          fontSize: "0.81rem",
-          color: down === 0 ? OD.tx3 : OD.tx,
-          cursor: !isVendor ? "pointer" : "default",
-        }}
-      >
-        {formatMoney(down)} ج.م
-      </Typography>
-    </Stack>
-  );
+  const shipEdit = useInlineNumberEdit(changeShippingFees);
+  const discEdit = useInlineNumberEdit(changeDiscount);
 
   return (
     <SectionCard
@@ -165,13 +188,23 @@ export default function FinancialDetailsCard({
         </Typography>
       </FinancialRow>
       <FinancialRow label="تكلفة الشحن">
-        <MoneyValue value={ship} zeroMuted />
+        <EditableMoneyValue
+          edit={shipEdit}
+          value={ship}
+          isVendor={isVendor}
+          ariaLabel="تعديل تكلفة الشحن"
+        />
       </FinancialRow>
       <FinancialRow label="الخصم">
-        <MoneyValue value={disc} zeroMuted />
+        <EditableMoneyValue edit={discEdit} value={disc} isVendor={isVendor} ariaLabel="تعديل الخصم" />
       </FinancialRow>
       <FinancialRow label="جدية الشراء">
-        {downNode}
+        <EditableMoneyValue
+          edit={downEdit}
+          value={down}
+          isVendor={isVendor}
+          ariaLabel="تعديل جدية الشراء"
+        />
       </FinancialRow>
       <FinancialRow label="المبلغ المطلوب تحصيله" isTotal>
         <Typography

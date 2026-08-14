@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Box } from "@mui/material";
 import { ToastContainer } from "react-toastify";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -12,10 +12,39 @@ import CustomerSection from "./components/CustomerSection";
 import ProductsSection from "./components/ProductsSection";
 import ShippingPaymentSection from "./components/ShippingPaymentSection";
 import OrderSummarySidebar from "./components/OrderSummarySidebar";
+import DraftInvoiceDialog from "./components/DraftInvoiceDialog";
 
 export default function OrderCreate() {
   const form = useOrderCreateForm();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+
+  /* لقطة من الطلب قيد الإنشاء تُمرَّر لحوار الفاتورة (قبل الحفظ).
+     مُذكَّرة حتى لا يُعاد بناؤها مع كل ضغطة مفتاح في نموذج الطلب. */
+  const draftForm = useMemo(
+    () => ({
+      customer: form.customer,
+      lineItems: form.lineItems,
+      orderDate: form.orderDate,
+      expectedDeliveryDate: form.expectedDeliveryDate,
+      paymentStatus: form.paymentStatus,
+      deliveryBy: form.deliveryBy,
+      downPayment: form.downPayment,
+      shippingFees: form.shippingFees,
+      toBeCollected: form.toBeCollected,
+    }),
+    [
+      form.customer,
+      form.lineItems,
+      form.orderDate,
+      form.expectedDeliveryDate,
+      form.paymentStatus,
+      form.deliveryBy,
+      form.downPayment,
+      form.shippingFees,
+      form.toBeCollected,
+    ]
+  );
 
   const handlePickProduct = (product: any) => {
     if (product) form.addLineItem(productToLineItem(product));
@@ -32,12 +61,22 @@ export default function OrderCreate() {
               onSubmit={form.submit}
               canSubmit={form.isValid}
               isSubmitting={form.isSubmitting}
+              onPrintInvoice={() => setIsInvoiceOpen(true)}
+              canPrintInvoice={form.lineItems.length > 0}
             />
           }
         />
       }
     >
       <ToastContainer />
+
+      {isInvoiceOpen && (
+        <DraftInvoiceDialog
+          open={isInvoiceOpen}
+          onClose={() => setIsInvoiceOpen(false)}
+          form={draftForm}
+        />
+      )}
 
       {isPickerOpen && (
         <AddProductModal

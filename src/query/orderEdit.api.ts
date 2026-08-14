@@ -9,10 +9,18 @@ const baseURI = `${process.env.REACT_APP_API_URL}`;
 /** PUT /orders/{orderId} — شكل الباك الحالي */
 export type UpdateOrderPayload = {
   customerId: number;
+  /** 1..3 — حالة التأخير، حقل مستقل عن حالة التصنيع */
+  deliveryStatus?: number;
+  downPayment?: number;
   expectedDeliveryDate: string;
   manufactureStatus: number;
   paymentStatus: number;
+  /** 1..3 — أولوية الطلب */
+  priority?: number;
+  shippingFees?: number;
   status: number;
+  /** الباك إند يعيد حساب totalPrice و toBeCollected من هذه القيمة */
+  totalDiscounts?: number;
   totalPrice: number;
 };
 

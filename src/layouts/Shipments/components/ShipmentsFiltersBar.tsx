@@ -13,6 +13,7 @@ const FONT = "'Cairo', sans-serif";
 
 export interface FilterValues {
   operationCode: string;
+  orderNumber: string;
   customerName: string;
   customerPhone: string;
   shipmentStatus: string;
@@ -186,7 +187,7 @@ export default function ShipmentsFiltersBar({
   const handleReset = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const empty: FilterValues = {
-      operationCode: "", customerName: "", customerPhone: "",
+      operationCode: "", orderNumber: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
       deliveryBy: "", shippingCompany: "", scheduleStatus: "", vendorName: "",
       startDate: null, endDate: null,
@@ -207,7 +208,7 @@ export default function ShipmentsFiltersBar({
 
   const activeCount =
     [
-      vals.operationCode, vals.customerName, vals.customerPhone,
+      vals.operationCode, vals.orderNumber, vals.customerName, vals.customerPhone,
       vals.shipmentStatus, vals.paymentStatus, isVendor ? "" : vals.shipmentType,
       vals.deliveryBy, vals.shippingCompany, vals.scheduleStatus, vals.vendorName,
     ].filter(Boolean).length + (vals.startDate && vals.endDate ? 1 : 0);
@@ -272,6 +273,11 @@ export default function ShipmentsFiltersBar({
               placeholder="بحث برقم العملية..."
               value={vals.operationCode}
               onChange={setText("operationCode")}
+            />
+            <FilterInput
+              placeholder="بحث برقم الطلب..."
+              value={vals.orderNumber}
+              onChange={setText("orderNumber")}
             />
             <FilterInput
               placeholder="بحث باسم العميل..."

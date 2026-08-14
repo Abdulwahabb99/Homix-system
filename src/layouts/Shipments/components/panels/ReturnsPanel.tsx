@@ -232,7 +232,7 @@ function ReturnsTable({
   items: ReturnItem[]; isLoading: boolean; isFetching: boolean;
   page: number; totalPages: number; totalCount: number; onPageChange: (p: number) => void;
   columns: ReturnColumn[];
-  /** عند تمريرها يظهر عمود التعديل — مرتجعات العملاء فقط */
+  /** عند تمريرها يظهر عمود التعديل — مرتجعات العملاء والموردين */
   onEdit?: (item: ReturnItem) => void;
 }) {
   if (isLoading) return <SkeletonRows />;
@@ -443,7 +443,7 @@ export default function ReturnsPanel() {
       <Box sx={{ px: "14px", py: "10px", borderBottom: `0.5px solid ${HX.border}`, bgcolor: HX.surface }}>
         <Box sx={{
           display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap",
-          width: { xs: "100%", md: "50%" },
+          width: "100%",
         }}>
           <SearchInput
             placeholder="بحث برقم الطلب..."
@@ -482,14 +482,18 @@ export default function ReturnsPanel() {
         totalCount={totalCount}
         onPageChange={setPage}
         columns={activeTab === "vendor" ? VENDOR_COLUMNS : CUSTOMER_COLUMNS}
-        onEdit={activeTab === "customer" ? setEditItem : undefined}
+        onEdit={setEditItem}
       />
 
       <EditCustomerReturnModal
         open={editItem !== null}
         onClose={() => setEditItem(null)}
         item={editItem}
-        statusOptions={meta?.customerReturnStatuses ?? NO_OPTIONS}
+        returnKind={activeTab === "vendor" ? "vendor" : "customer"}
+        statusOptions={
+          (activeTab === "vendor" ? meta?.vendorReturnStatuses : meta?.customerReturnStatuses) ??
+          NO_OPTIONS
+        }
       />
     </Box>
   );

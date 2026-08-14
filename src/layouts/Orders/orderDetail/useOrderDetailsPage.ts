@@ -126,6 +126,55 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
+  /* «تكلفة الشحن» و«الخصم» — الباك إند يعيد حساب totalPrice و toBeCollected من
+     هذين الحقلين، لذا نعيد جلب الطلب بعد الحفظ بدل التخمين محلياً. */
+  const updateFinancialField = useCallback(
+    (patch: Record<string, number>) => {
+      if (orderDetails?.id == null) return;
+      const prev = orderDetails;
+      setOrderDetails((o: any) => ({ ...o, ...patch }));
+      axiosRequest
+        .put(`/orders/${orderDetails.id}`, patch)
+        .then(() => axiosRequest.get(`/orders/${orderDetails.id}`))
+        .then(({ data: res }) => {
+          const normalized = normalizeOrderDetailPayload(res);
+          if (normalized?.id) {
+            setOrderDetails(normalized);
+            setOrderTotalShipping(normalized.shippingFees ?? null);
+            setOrderTotalToBeCollected(normalized.toBeCollected ?? null);
+          }
+          NotificationMeassage("success", "تم التعديل بنجاح");
+        })
+        .catch((error) => {
+          setOrderDetails(prev);
+          NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
+        });
+    },
+    [orderDetails]
+  );
+
+  const changeShippingFees = useCallback(
+    (shippingFees: number) => {
+      updateFinancialField({ shippingFees });
+    },
+    [updateFinancialField]
+  );
+
+  const changeDiscount = useCallback(
+    (totalDiscounts: number) => {
+      updateFinancialField({ totalDiscounts });
+    },
+    [updateFinancialField]
+  );
+
+  const changePriority = useCallback(
+    (priority: number | null) => {
+      if (priority == null) return;
+      updateOrderField({ priority });
+    },
+    [updateOrderField]
+  );
+
   /* تحديث بيانات العميل عبر PUT /customers/{customerId} — تحديث متفائل لبطاقة العميل.
      يعيد Promise لتغلق النافذة عند النجاح فقط، ويرجع للحالة السابقة عند الفشل. */
   const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false);
@@ -438,6 +487,9 @@ export function useOrderDetailsPage() {
     changeAssignee,
     changeDeliveryLocation,
     changeDownPayment,
+    changeShippingFees,
+    changeDiscount,
+    changePriority,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,

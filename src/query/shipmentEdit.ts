@@ -44,7 +44,14 @@ export function useUpdateShipmentMutation(shipmentId: string | undefined) {
         await queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(shipmentId) });
       }
       await queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() });
-      await queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+      /* تعديل شحنة يمسّ القائمة والملخّص والتفاصيل، وقد ينقلها من/إلى المرتجعات
+         عند تغيير الحالة — لكنه لا يمسّ المخزون أو الحسابات أو التقارير. */
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
       NotificationMeassage("success", "تم تعديل الشحنة");
     },
     onError: () => {

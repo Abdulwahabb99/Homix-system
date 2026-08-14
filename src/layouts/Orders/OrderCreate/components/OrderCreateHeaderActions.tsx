@@ -3,6 +3,7 @@ import { Box, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "../constants";
 
@@ -17,11 +18,14 @@ export interface OrderCreateHeaderActionsProps {
   onSubmit: () => void;
   canSubmit: boolean;
   isSubmitting: boolean;
+  /** إصدار فاتورة للطلب قبل حفظه */
+  onPrintInvoice?: () => void;
+  canPrintInvoice?: boolean;
 }
 
 /** Top-bar actions: رجوع + إنشاء الطلب. */
 export default function OrderCreateHeaderActions({
-  onSubmit, canSubmit, isSubmitting,
+  onSubmit, canSubmit, isSubmitting, onPrintInvoice, canPrintInvoice = false,
 }: OrderCreateHeaderActionsProps) {
   const navigate = useNavigate();
   return (
@@ -34,6 +38,24 @@ export default function OrderCreateHeaderActions({
       >
         <ArrowBackIosNewIcon sx={{ transform: "scaleX(-1)" }} /> رجوع
       </Box>
+      {onPrintInvoice && (
+        <Box
+          component="button"
+          type="button"
+          onClick={onPrintInvoice}
+          disabled={!canPrintInvoice}
+          sx={{
+            ...btnBase,
+            border: `0.5px solid ${HX.border}`,
+            bgcolor: HX.surface2,
+            color: canPrintInvoice ? HX.tx2 : HX.tx3,
+            cursor: canPrintInvoice ? "pointer" : "not-allowed",
+            "&:hover": canPrintInvoice ? { borderColor: HX.accent, color: HX.accent } : {},
+          }}
+        >
+          <PictureAsPdfOutlinedIcon /> فاتورة
+        </Box>
+      )}
       <Box
         component="button"
         type="button"

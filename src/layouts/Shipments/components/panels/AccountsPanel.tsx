@@ -1,10 +1,17 @@
 import React, { useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Button, IconButton, MenuItem, TextField } from "@mui/material";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { useShipmentsMetaQuery } from "query/shipmentsMeta";
+import EditDeliveryAccountModal from "./EditDeliveryAccountModal";
+import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import {
   useDeliveryAccountsQuery,
+  useUpdateDeliveryAccountMutation,
+  useDeleteExpenseMutation,
   useExpenseAccountsQuery,
   ACCOUNTS_PAGE_SIZE,
   type DeliveryAccountItem,
@@ -70,23 +77,134 @@ function SkeletonRows() {
   );
 }
 
+/** فشل الطلب كان يمرّ صامتاً فيظهر الجدول فارغاً وكأن الوحدة «لا تعمل». */
+/** يطابق ACCOUNTING_STATUS بالباك إند */
+interface DeliveryFilterState {
+  accountingStatus: string;
+  orderNumber: string;
+  paymentMethod: string;
+  settledDate: string;
+}
+
+const filterFieldSx = {
+  minWidth: 150,
+  fontFamily: FONT,
+  "& .MuiOutlinedInput-root": { borderRadius: "10px", fontSize: "12px", fontFamily: FONT, height: 38 },
+  "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "12px" },
+} as const;
+
+const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
+  accountingStatus: "",
+  orderNumber: "",
+  paymentMethod: "",
+  settledDate: "",
+};
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <Box sx={{ ...cardSx, py: 5, textAlign: "center", fontFamily: FONT, fontSize: "13px", color: HX.red ?? "#dc2626" }}>
+      {message}
+    </Box>
+  );
+}
+
 function DeliveriesTab() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, isFetching } = useDeliveryAccountsQuery({ page });
+  const [editItem, setEditItem] = useState<DeliveryAccountItem | null>(null);
+  const [filters, setFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
+  const { data: meta } = useShipmentsMetaQuery();
+  const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
 
-  if (isLoading) return <SkeletonRows />;
-  if (items.length === 0) {
-    return (
-      <Box sx={{ ...cardSx, py: 5, textAlign: "center", fontFamily: FONT, fontSize: "13px", color: HX.tx3, opacity: isFetching ? 0.5 : 1 }}>
-        لا توجد حسابات تسليم
-      </Box>
-    );
-  }
+  const setFilter = (field: keyof DeliveryFilterState) => (value: string) =>
+    setFilters((current) => ({ ...current, [field]: value }));
 
   return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {/* شريط الفلاتر — يُطبَّق عند الضغط حتى لا يُعاد الجلب مع كل حرف */}
+      <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <TextField
+          size="small"
+          placeholder="بحث برقم الطلب..."
+          value={filters.orderNumber}
+          onChange={(e) => setFilter("orderNumber")(e.target.value)}
+          sx={filterFieldSx}
+        />
+        <TextField
+          select
+          size="small"
+          label="حالة المحاسبة"
+          value={filters.accountingStatus}
+          onChange={(e) => setFilter("accountingStatus")(e.target.value)}
+          sx={filterFieldSx}
+          InputLabelProps={{ shrink: true }}
+        >
+          <MenuItem value="" sx={{ fontSize: "12px" }}>الكل</MenuItem>
+          {(meta?.accountingStatuses ?? []).map((option) => (
+            <MenuItem key={option.value} value={String(option.value)} sx={{ fontSize: "12px" }}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="طريقة الدفع"
+          value={filters.paymentMethod}
+          onChange={(e) => setFilter("paymentMethod")(e.target.value)}
+          sx={filterFieldSx}
+          InputLabelProps={{ shrink: true }}
+        >
+          <MenuItem value="" sx={{ fontSize: "12px" }}>الكل</MenuItem>
+          {(meta?.paymentStatuses ?? []).map((option) => (
+            <MenuItem key={option.value} value={String(option.value)} sx={{ fontSize: "12px" }}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          type="date"
+          size="small"
+          label="تاريخ المحاسبة"
+          value={filters.settledDate}
+          onChange={(e) => setFilter("settledDate")(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <Button
+          variant="contained"
+          onClick={() => { setPage(1); setAppliedFilters(filters); }}
+          sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px" }}
+        >
+          تطبيق
+        </Button>
+        <Button
+          onClick={() => { setPage(1); setFilters(EMPTY_DELIVERY_FILTERS); setAppliedFilters(EMPTY_DELIVERY_FILTERS); }}
+          sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
+        >
+          إعادة ضبط
+        </Button>
+      </Box>
+
+      <EditDeliveryAccountModal
+        open={editItem !== null}
+        onClose={() => setEditItem(null)}
+        item={editItem}
+        statusOptions={meta?.accountingStatuses ?? []}
+      />
+
+      {isLoading ? (
+        <SkeletonRows />
+      ) : isError ? (
+        <ErrorBox message="تعذّر تحميل حسابات التسليم" />
+      ) : items.length === 0 ? (
+        <Box sx={{ ...cardSx, py: 5, textAlign: "center", fontFamily: FONT, fontSize: "13px", color: HX.tx3, opacity: isFetching ? 0.5 : 1 }}>
+          لا توجد حسابات تسليم
+        </Box>
+      ) : (
     <Box sx={{ ...cardSx, opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s" }}>
       <Box sx={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
@@ -104,6 +222,7 @@ function DeliveriesTab() {
               <th style={TH}>حالة المحاسبة</th>
               <th style={TH}>تاريخ المحاسبة</th>
               <th style={TH}>المرجع</th>
+              <th style={{ ...TH, width: 48 }}>تعديل</th>
             </tr>
           </thead>
           <tbody>
@@ -130,6 +249,16 @@ function DeliveriesTab() {
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{item.reference || "—"}</Box></td>
+                <td style={TD}>
+                  <IconButton
+                    size="small"
+                    aria-label="تعديل حالة المحاسبة"
+                    onClick={() => setEditItem(item)}
+                    sx={{ color: HX.tx3, "&:hover": { color: HX.accent } }}
+                  >
+                    <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -140,26 +269,31 @@ function DeliveriesTab() {
         totalCount={totalCount} onPageChange={(p) => setPage(p + 1)} itemLabel="سجل"
       />
     </Box>
+      )}
+    </Box>
   );
 }
 
 function ExpensesTab() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, isFetching } = useExpenseAccountsQuery({ page });
+  const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page });
+  const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
 
-  if (isLoading) return <SkeletonRows />;
-  if (items.length === 0) {
-    return (
-      <Box sx={{ ...cardSx, py: 5, textAlign: "center", fontFamily: FONT, fontSize: "13px", color: HX.tx3, opacity: isFetching ? 0.5 : 1 }}>
-        لا توجد مصروفات
-      </Box>
-    );
-  }
-
   return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <AddExpenseForm />
+      {isLoading ? (
+        <SkeletonRows />
+      ) : isError ? (
+        <ErrorBox message="تعذّر تحميل المصروفات" />
+      ) : items.length === 0 ? (
+        <Box sx={{ ...cardSx, py: 5, textAlign: "center", fontFamily: FONT, fontSize: "13px", color: HX.tx3, opacity: isFetching ? 0.5 : 1 }}>
+          لا توجد مصروفات
+        </Box>
+      ) : (
     <Box sx={{ ...cardSx, opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s" }}>
       <Box sx={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
@@ -170,6 +304,7 @@ function ExpensesTab() {
               <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
               <th style={TH}>السبب</th>
               <th style={TH}>النوع</th>
+              <th style={{ ...TH, width: 48 }} />
             </tr>
           </thead>
           <tbody>
@@ -189,6 +324,17 @@ function ExpensesTab() {
                   </Box>
                 </td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.typeLabel || "—"}</Box></td>
+                <td style={TD}>
+                  <IconButton
+                    size="small"
+                    aria-label="حذف المصروف"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate(item.id)}
+                    sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
+                  >
+                    <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -198,6 +344,8 @@ function ExpensesTab() {
         page={page - 1} totalPages={totalPages} pageSize={ACCOUNTS_PAGE_SIZE}
         totalCount={totalCount} onPageChange={(p) => setPage(p + 1)} itemLabel="مصروف"
       />
+    </Box>
+      )}
     </Box>
   );
 }

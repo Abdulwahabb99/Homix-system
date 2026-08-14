@@ -5,7 +5,6 @@
  */
 import React from "react";
 import logo from "../../../assets/images/homix.png";
-import { orderStatusValues } from "layouts/Orders/utils/constants";
 import { getOrderDetailPaymentLabel } from "../orderDetail/orderDetailPayment";
 import {
   INVOICE_SELLER,
@@ -66,8 +65,6 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
       orderDetails?.name || orderDetails?.orderNumber || orderDetails?.code || "—"
     ).replace(/^#/, "");
     const paymentLabel = getOrderDetailPaymentLabel(orderDetails?.paymentStatus) || "—";
-    const statusLabel =
-      orderStatusValues[Number(orderDetails?.status)] ?? orderDetails?.statusLabel ?? "—";
     const issueDate = formatDateArabic(orderDetails?.createdAt ?? orderDetails?.orderDate);
 
     // نفس مصادر بطاقة «التفاصيل المالية» بالضبط ليتطابق الرقمان.
@@ -103,19 +100,13 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
               <span className={styles.metaLbl}>رقم المستند</span>
               <span className={styles.metaVal}>#{invoiceNumber}</span>
             </div>
-            {orderDetails?.code ? (
-              <div className={styles.metaItem}>
-                <span className={styles.metaLbl}>كود الطلب</span>
-                <span className={styles.metaVal}>{orderDetails.code}</span>
-              </div>
-            ) : null}
+            <div className={styles.metaItem}>
+              <span className={styles.metaLbl}>كود الطلب</span>
+              <span className={styles.metaVal}>{invoiceNumber}</span>
+            </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLbl}>تاريخ الإصدار</span>
               <span className={styles.metaVal}>{issueDate}</span>
-            </div>
-            <div className={styles.metaItem}>
-              <span className={styles.metaLbl}>حالة الفاتورة</span>
-              <span className={`${styles.metaVal} ${styles.metaValPending}`}>{statusLabel}</span>
             </div>
           </div>
 
@@ -150,7 +141,6 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
               <div className={styles.addrLine}>
                 <span className={styles.ltr}>{INVOICE_SELLER.phone}</span>
               </div>
-              <div className={styles.addrLine}>{INVOICE_SELLER.address}</div>
             </div>
           </div>
 

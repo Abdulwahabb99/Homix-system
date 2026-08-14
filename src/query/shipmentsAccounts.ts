@@ -1,9 +1,12 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { shipmentKeys } from "./keys";
 
 export interface DeliveryAccountItem {
+  /** معرّف الطلب — صف الحساب هو الطلب المُسلَّم نفسه */
   id: number;
+  accountingStatus: number;
   operationNumber: string;
   orderNumber: string;
   sellerName: string;
@@ -31,13 +34,23 @@ export const ACCOUNTS_PAGE_SIZE = 20;
 
 export interface AccountsParams {
   page: number;
+  /** فلاتر تبويب التسليمات — تُرسل فقط عند ضبطها */
+  accountingStatus?: string;
+  orderNumber?: string;
+  paymentMethod?: string;
+  settledDate?: string;
 }
 
 function buildQuery(p: AccountsParams): string {
-  return new URLSearchParams({
+  const query = new URLSearchParams({
     page: String(p.page),
     size: String(ACCOUNTS_PAGE_SIZE),
-  }).toString();
+  });
+  if (p.accountingStatus) query.set("accountingStatus", p.accountingStatus);
+  if (p.orderNumber)      query.set("orderNumber", p.orderNumber);
+  if (p.paymentMethod)    query.set("paymentMethod", p.paymentMethod);
+  if (p.settledDate)      query.set("settledDate", new Date(p.settledDate).toISOString());
+  return query.toString();
 }
 
 function normalizeList<T>(data: any): { items: T[]; page: number; size: number; totalCount: number } {
@@ -75,5 +88,85 @@ export function useExpenseAccountsQuery(params: AccountsParams) {
     queryFn: () => fetchExpenseAccounts(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+/** PUT /shipments/accounts/deliveries/{orderId} — تغيير حالة المحاسبة لتسليم. */
+export interface UpdateDeliveryAccountPayload {
+  accountingDate?: string | null;
+  accountingReference?: string;
+  accountingStatus?: number;
+}
+
+export async function putDeliveryAccount(
+  orderId: number,
+  body: UpdateDeliveryAccountPayload
+): Promise<void> {
+  await axiosRequest.put(`/shipments/accounts/deliveries/${orderId}`, body);
+}
+
+export function useUpdateDeliveryAccountMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { orderId: number; body: UpdateDeliveryAccountPayload }) =>
+      putDeliveryAccount(vars.orderId, vars.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تحديث حالة المحاسبة");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء تحديث حالة المحاسبة");
+    },
+  });
+}
+
+/** POST/PUT/DELETE /shipments/accounts/expenses — المصروفات تُدخَل يدوياً. */
+export interface ExpenseMutationPayload {
+  accountingDate?: string | null;
+  accountingStatus?: number;
+  amount: number;
+  reason: string;
+  type: number;
+}
+
+export async function postExpense(body: ExpenseMutationPayload): Promise<void> {
+  await axiosRequest.post(`/shipments/accounts/expenses`, body);
+}
+
+export async function deleteExpense(expenseId: number): Promise<void> {
+  await axiosRequest.delete(`/shipments/accounts/expenses/${expenseId}`);
+}
+
+export function useCreateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: postExpense,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم حفظ المصروف");
+    },
+    onError: () => NotificationMeassage("error", "تعذّر حفظ المصروف"),
+  });
+}
+
+export function useDeleteExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم حذف المصروف");
+    },
+    onError: () => NotificationMeassage("error", "تعذّر حذف المصروف"),
   });
 }

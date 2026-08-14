@@ -39,15 +39,18 @@ export async function downloadOrderInvoicePdf(
   const opt = {
     margin: [5, 5, 5, 5] as [number, number, number, number],
     filename,
-    image: { type: "jpeg", quality: 0.92 },
+    // PNG is lossless, so Arabic glyphs and thin table rules stay crisp; JPEG at
+    // 0.92 was visibly smearing them.
+    image: { type: "png", quality: 1 },
     html2canvas: {
-      scale: 2,
+      // Render at >=3x device pixels and let jsPDF downscale into the A4 page.
+      scale: Math.max(3, typeof window === "undefined" ? 3 : window.devicePixelRatio * 2),
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
       /* مهم: scale في onclone يفسد أشكال الحروف على canvas */
     },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
     pagebreak: { mode: ["avoid-all", "css", "legacy"] as const },
   };
 

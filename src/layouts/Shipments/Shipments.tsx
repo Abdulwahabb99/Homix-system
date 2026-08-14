@@ -18,6 +18,7 @@ import ShipmentsTable from "./components/ShipmentsTable";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
 import AccountsPanel from "./components/panels/AccountsPanel";
+import { usePermissions, type PermissionKey } from "shared/permissions";
 import ReportsPanel from "./components/panels/ReportsPanel";
 import {
   useShipmentsListQuery,
@@ -31,7 +32,7 @@ import moment from "moment";
 
 const FONT = "'Cairo', sans-serif";
 
-const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
+const MAIN_TABS: { id: string; label: string; icon: React.ReactNode; permission?: PermissionKey }[] = [
   {
     id: "shipments",
     label: "الشحنات",
@@ -57,6 +58,7 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
   {
     id: "inventory",
     label: "المخزون",
+    permission: "ship_view",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -67,6 +69,7 @@ const MAIN_TABS: { id: string; label: string; icon: React.ReactNode }[] = [
   {
     id: "accounts",
     label: "الحسابات",
+    permission: "finance_view",
     icon: (
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="1" x2="12" y2="23" />
@@ -108,9 +111,16 @@ export default function Shipments() {
 
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState("shipments");
+  const { can } = usePermissions();
+
+  /* Tabs the user has no permission for are hidden outright — showing them only
+     to fail with a 403 reads as a broken module. */
+  const visibleTabs = MAIN_TABS.filter((tab) => !tab.permission || can(tab.permission));
+  const isTabVisible = (id: string) => visibleTabs.some((tab) => tab.id === id);
 
   // All filter values come from URL
   const operationCode  = searchParams.get("operationCode")  || "";
+  const orderNumber    = searchParams.get("orderNumber")    || "";
   const customerName   = searchParams.get("customerName")   || "";
   const customerPhone  = searchParams.get("customerPhone")  || "";
   const shipmentStatus = searchParams.get("shipmentStatus") || "";
@@ -130,13 +140,14 @@ export default function Shipments() {
 
   // React Query
   const queryParams = {
-    page, operationCode, customerName, customerPhone,
+    page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
   };
 
-  const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams);
-  const { data: summaryData, isLoading: isSummaryLoading }    = useShipmentsSummaryQuery({ ...queryParams, page: 1 });
+  const isShipmentsTab = activeTab === "shipments";
+  const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams, isShipmentsTab);
+  const { data: summaryData, isLoading: isSummaryLoading }    = useShipmentsSummaryQuery({ ...queryParams, page: 1 }, isShipmentsTab);
   const { data: metaData }                                    = useShipmentsMetaQuery();
 
   const shipments  = data?.items      ?? [];
@@ -158,6 +169,7 @@ export default function Shipments() {
   const handleApply = (values: FilterValues) => {
     const urlParams = new URLSearchParams();
     if (values.operationCode)  urlParams.set("operationCode",  values.operationCode);
+    if (values.orderNumber)    urlParams.set("orderNumber",    values.orderNumber);
     if (values.customerName)   urlParams.set("customerName",   values.customerName);
     if (values.customerPhone)  urlParams.set("customerPhone",  values.customerPhone);
     if (values.shipmentStatus) urlParams.set("shipmentStatus", values.shipmentStatus);
@@ -195,6 +207,7 @@ export default function Shipments() {
   const handleExport = () => {
     const q = new URLSearchParams();
     if (operationCode)  q.set("operationCode",  operationCode);
+    if (orderNumber)    q.set("orderNumber",    orderNumber);
     if (customerName)   q.set("customerName",   customerName);
     if (customerPhone)  q.set("customerPhone",  customerPhone);
     if (shipmentStatus) q.set("shipmentStatus", shipmentStatus);
@@ -227,13 +240,15 @@ export default function Shipments() {
       .delete(`${process.env.REACT_APP_API_URL}/shipments/${selectedShipment.id}`)
       .then(() => {
         setIsDeleteModalOpen(false);
-        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() });
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() });
       });
   };
 
   // Default values snapshot for filter bar (from current URL)
   const filterDefaults: FilterValues = {
-    operationCode, customerName, customerPhone,
+    operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
   };
@@ -313,7 +328,7 @@ export default function Shipments() {
             "&::-webkit-scrollbar": { display: "none" },
           }}
         >
-          {MAIN_TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const active = activeTab === tab.id;
             const count = tabCounts[tab.id as keyof typeof tabCounts] ?? 0;
             return (
@@ -394,8 +409,8 @@ export default function Shipments() {
         )}
 
         {activeTab === "returns"   && <ReturnsPanel />}
-        {activeTab === "inventory" && <InventoryPanel />}
-        {activeTab === "accounts"  && <AccountsPanel />}
+        {activeTab === "inventory" && isTabVisible("inventory") && <InventoryPanel />}
+        {activeTab === "accounts"  && isTabVisible("accounts")  && <AccountsPanel />}
         {activeTab === "reports"   && <ReportsPanel />}
       </Box>
     </DashboardLayout>

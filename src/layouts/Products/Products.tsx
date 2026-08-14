@@ -97,7 +97,7 @@ function Products() {
   const getVendors = () => {
     axiosRequest.get(`${process.env.REACT_APP_API_URL}/vendors`).then(({ data: { data } }) => {
       const vendorOptions = data.map((v) => ({ label: v.name, value: v.id }));
-      setVendors([{ label: "هومكس", value: 0 }, ...vendorOptions]);
+      setVendors([{ label: "هوميكس", value: 0 }, ...vendorOptions]);
     });
   };
 

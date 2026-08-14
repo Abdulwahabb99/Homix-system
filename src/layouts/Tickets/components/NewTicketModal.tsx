@@ -146,6 +146,10 @@ export default function NewTicketModal({
         setSearchError("لم يتم العثور على الطلب. تأكد من رقم الطلب أو رقم العملية.");
         return;
       }
+      // نعكس بيانات الطلب المُستخرَجة على الحقلين: عند الفتح من صفحة الطلب كنا
+      // نبحث برقم العملية فقط فيبقى «رقم الطلب» فارغاً.
+      setOrderNumberInput(res.orderNumber ?? "");
+      setOperationInput(res.operationNumber ?? "");
       setFoundOrder(res);
     } catch {
       setSearchError("تعذّر البحث عن الطلب");
@@ -182,6 +186,10 @@ export default function NewTicketModal({
     if (createPending || searchPending) return;
     onClose();
   }
+
+  /* الحقول الأساسية للطلب للقراءة فقط بعد تحديد الطلب (أو عند الفتح من صفحة الطلب)
+     حتى لا يُعدّل المستخدم رقم الطلب/العملية بعد ربط التذكرة. */
+  const orderFieldsLocked = Boolean(initialOperationNumber) || Boolean(foundOrder);
 
   const firstTypeKey = typeOptions[0]?.key;
   const canSubmit =
@@ -241,6 +249,7 @@ export default function NewTicketModal({
           onChange={(e) => setOrderNumberInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
           disabled={searchPending || createPending}
+          InputProps={{ readOnly: orderFieldsLocked }}
           sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
         />
 
@@ -256,6 +265,7 @@ export default function NewTicketModal({
           onChange={(e) => setOperationInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
           disabled={searchPending || createPending}
+          InputProps={{ readOnly: orderFieldsLocked }}
           sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
         />
 

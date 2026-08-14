@@ -48,6 +48,7 @@ export interface ShipmentsListResponse {
 export interface ShipmentsListParams {
   page: number;
   operationCode?: string;
+  orderNumber?: string;
   customerName?: string;
   customerPhone?: string;
   shipmentStatus?: string;
@@ -75,6 +76,7 @@ function buildQuery(p: ShipmentsListParams): string {
     size: String(SHIPMENTS_LIST_PAGE_SIZE),
   });
   if (p.operationCode)  q.set("operationCode",  p.operationCode);
+  if (p.orderNumber)    q.set("orderNumber",    p.orderNumber);
   if (p.customerName)   q.set("customerName",   p.customerName);
   if (p.customerPhone)  q.set("customerPhone",  p.customerPhone);
   if (p.shipmentStatus) q.set("shipmentStatus", p.shipmentStatus);
@@ -102,10 +104,16 @@ export async function fetchShipmentsList(
   return data.data;
 }
 
-export function useShipmentsListQuery(params: ShipmentsListParams) {
+/**
+ * `enabled` يمنع تشغيل الاستعلام خارج تبويب الشحنات. كان يعمل في كل التبويبات
+ * (المرتجعات/المخزون/الحسابات/التقارير) فيُجلب 1482 صفاً بلا داعٍ ويُعاد جلبها
+ * مع أي إبطال، وهو سبب بطء التنقّل بين التبويبات.
+ */
+export function useShipmentsListQuery(params: ShipmentsListParams, enabled = true) {
   return useQuery({
     queryKey: shipmentKeys.list(JSON.stringify(params)),
     queryFn: () => fetchShipmentsList(params),
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
@@ -122,10 +130,11 @@ export async function fetchShipmentsSummary(
   ) as ShipmentSummaryCard[];
 }
 
-export function useShipmentsSummaryQuery(params: ShipmentsListParams) {
+export function useShipmentsSummaryQuery(params: ShipmentsListParams, enabled = true) {
   return useQuery({
     queryKey: shipmentKeys.summary(JSON.stringify(params)),
     queryFn: () => fetchShipmentsSummary(params),
+    enabled,
     staleTime: 30_000,
   });
 }

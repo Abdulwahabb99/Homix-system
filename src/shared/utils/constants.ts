@@ -163,10 +163,15 @@ export const getDeliveryStatusValue = (status) => {
   return resultValue;
 };
 
+// Keys must stay aligned with MANUFACTURE_STATUS_ARABIC in the backend config/constants.js
 export const manufactureStatusOptions = [
   { label: "مقبول", value: 1 },
   { label: "قيد التصنيع", value: 2 },
   { label: "جاهز للشحن", value: 3 },
-  { label: "تم التوصيل", value: 4 },
+  { label: "تم الشحن", value: 4 },
   { label: "فشل في التوصيل", value: 5 },
+  { label: "تم التوصيل", value: 6 },
 ];
+
+export const getManufactureStatusLabel = (value) =>
+  manufactureStatusOptions.find((option) => option.value === Number(value))?.label ?? "";

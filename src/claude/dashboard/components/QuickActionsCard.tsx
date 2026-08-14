@@ -33,7 +33,7 @@ export default function QuickActionsCard({ isVendor }: Props) {
               type="button"
               key={a.title}
               className="h-qa"
-              // onClick={() => navigate(a.path)}
+              onClick={() => navigate(a.path)}
             >
               <div className="h-qa-icon">{a.emoji}</div>
               <div>

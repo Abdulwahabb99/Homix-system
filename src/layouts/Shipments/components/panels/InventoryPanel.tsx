@@ -1,7 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { Button, IconButton } from "@mui/material";
+import InventoryItemModal from "./InventoryItemModal";
+import ConfirmDeleteModal from "../ConfirmDeleteModal";
+import { useDeleteInventoryItemMutation } from "query/shipmentsInventory";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import { useShipmentsInventoryQuery, INVENTORY_PAGE_SIZE, type InventoryItem } from "query/shipmentsInventory";
@@ -62,7 +68,9 @@ function InvTag({ icon, value }: { icon: string; value: string }) {
   );
 }
 
-function InventoryCard({ item }: { item: InventoryItem }) {
+function InventoryCard({
+  item, onEdit, onDelete,
+}: { item: InventoryItem; onEdit: (item: InventoryItem) => void; onDelete: (item: InventoryItem) => void }) {
   const available = item.quantity > 0;
   const qtyColor = item.quantity === 0 ? HX.red : item.quantity <= 2 ? HX.amber : HX.tx;
   return (
@@ -73,6 +81,24 @@ function InventoryCard({ item }: { item: InventoryItem }) {
     }}>
       <Box sx={{ position: "relative" }}>
         <InventoryImage image={item.image} name={item.productName} />
+        <Box sx={{ position: "absolute", top: 8, right: 8, display: "flex", gap: "4px" }}>
+          <IconButton
+            size="small"
+            aria-label="تعديل الصنف"
+            onClick={() => onEdit(item)}
+            sx={{ bgcolor: HX.surface, border: `0.5px solid ${HX.border}`, "&:hover": { color: HX.accent } }}
+          >
+            <EditOutlinedIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="حذف الصنف"
+            onClick={() => onDelete(item)}
+            sx={{ bgcolor: HX.surface, border: `0.5px solid ${HX.border}`, "&:hover": { color: HX.red } }}
+          >
+            <DeleteOutlineIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Box>
         <Box sx={{ position: "absolute", top: 8, left: 8 }}>
           <StockBadge available={available} />
         </Box>
@@ -152,27 +178,42 @@ export default function InventoryPanel() {
   const [codeSearch, setCodeSearch] = useState("");
   const [vendorFilter, setVendorFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<InventoryItem | null>(null);
+  const deleteMutation = useDeleteInventoryItemMutation();
 
-  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({ page });
+  /* الفلاتر تُرسَل للـ API. البحث النصّي مؤجَّل قليلاً حتى لا يُطلَب مع كل حرف. */
+  const [debouncedCode, setDebouncedCode] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedCode(codeSearch.trim()); setPage(1); }, 350);
+    return () => clearTimeout(timer);
+  }, [codeSearch]);
+
+  const { data, isLoading, isFetching } = useShipmentsInventoryQuery({
+    page,
+    productCode: debouncedCode || undefined,
+    status: stockFilter === "available" ? "1" : stockFilter === "out" ? "2" : undefined,
+    vendorName: vendorFilter || undefined,
+  });
 
   const rawItems   = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / INVENTORY_PAGE_SIZE);
 
-  const vendors = useMemo(
-    () => Array.from(new Set(rawItems.map((i) => i.vendorName).filter(Boolean))),
+  const vendors = useMemo<string[]>(
+    () => {
+      const uniqueVendors = new Set<string>();
+      rawItems.forEach((item) => {
+        if (item.vendorName) uniqueVendors.add(item.vendorName);
+      });
+      return [...uniqueVendors];
+    },
     [rawItems]
   );
 
-  const items = useMemo(() => {
-    return rawItems.filter((i) => {
-      if (codeSearch && !(i.productCode || "").toLowerCase().includes(codeSearch.toLowerCase())) return false;
-      if (vendorFilter && i.vendorName !== vendorFilter) return false;
-      if (stockFilter === "available" && i.quantity <= 0) return false;
-      if (stockFilter === "out" && i.quantity > 0) return false;
-      return true;
-    });
-  }, [rawItems, codeSearch, vendorFilter, stockFilter]);
+  // الخادم يفلتر بالفعل، فلا نُعيد الفلترة على الصفحة المعروضة
+  const items = rawItems;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -197,16 +238,25 @@ export default function InventoryPanel() {
           />
         </Box>
 
-        <Box component="select" sx={selectSx} value={vendorFilter} onChange={(e: any) => setVendorFilter(e.target.value)}>
+        <Box component="select" sx={selectSx} value={vendorFilter} onChange={(e: any) => { setVendorFilter(e.target.value); setPage(1); }}>
           <option value="">كل البائعين</option>
           {vendors.map((v) => <option key={v} value={v}>{v}</option>)}
         </Box>
 
-        <Box component="select" sx={selectSx} value={stockFilter} onChange={(e: any) => setStockFilter(e.target.value)}>
+        <Box component="select" sx={selectSx} value={stockFilter} onChange={(e: any) => { setStockFilter(e.target.value); setPage(1); }}>
           <option value="">حالة المخزون</option>
           <option value="available">متوفر</option>
           <option value="out">نفذ</option>
         </Box>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+          sx={{ ml: "auto", color: "#fff", height: 34, fontFamily: FONT, fontSize: "12px", whiteSpace: "nowrap" }}
+        >
+          إضافة صنف
+        </Button>
       </Box>
 
       {/* Cards grid */}
@@ -225,9 +275,32 @@ export default function InventoryPanel() {
           opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s",
           gridTemplateColumns: { xs: "repeat(1,1fr)", sm: "repeat(2,1fr)", md: "repeat(3,1fr)", lg: "repeat(4,1fr)" },
         }}>
-          {items.map((item) => <InventoryCard key={item.id} item={item} />)}
+          {items.map((item) => (
+            <InventoryCard
+              key={item.id}
+              item={item}
+              onEdit={(target) => { setEditingItem(target); setIsModalOpen(true); }}
+              onDelete={setPendingDelete}
+            />
+          ))}
         </Box>
       )}
+
+      <InventoryItemModal
+        open={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setEditingItem(null); }}
+        item={editingItem}
+      />
+
+      <ConfirmDeleteModal
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        handleConfirmDelete={() => {
+          if (pendingDelete) {
+            deleteMutation.mutate(pendingDelete.id, { onSuccess: () => setPendingDelete(null) });
+          }
+        }}
+      />
 
       {totalPages > 1 && (
         <Box sx={{ bgcolor: HX.surface, borderRadius: HX.r, border: `0.5px solid ${HX.border}`, overflow: "hidden" }}>

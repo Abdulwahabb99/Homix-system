@@ -16,7 +16,16 @@ const btnBase = {
 } as const;
 
 /** Top-bar action buttons: تعديل / تصدير PDF / إعادة جدولة / تتبع الشحنة. */
-export default function ShipmentHeaderActions({ shipmentId }: { shipmentId?: string }) {
+export default function ShipmentHeaderActions({
+  shipmentId,
+  onExportPdf,
+  exportPdfLoading = false,
+}: {
+  shipmentId?: string;
+  /** عند تمريرها تُصدَّر فاتورة الشحنة كـ PDF بدل طباعة الصفحة */
+  onExportPdf?: () => void;
+  exportPdfLoading?: boolean;
+}) {
   const navigate = useNavigate();
   return (
     <>
@@ -28,11 +37,18 @@ export default function ShipmentHeaderActions({ shipmentId }: { shipmentId?: str
           <EditOutlinedIcon /> تعديل
         </Box>
       )}
-      <Box component="button" type="button" onClick={() => window.print()} sx={{
-        ...btnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
-        "&:hover": { borderColor: HX.accent, color: HX.accent },
-      }}>
-        <PictureAsPdfOutlinedIcon /> تصدير PDF
+      <Box
+        component="button"
+        type="button"
+        disabled={exportPdfLoading}
+        onClick={() => (onExportPdf ? onExportPdf() : window.print())}
+        sx={{
+          ...btnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
+          "&:hover": { borderColor: HX.accent, color: HX.accent },
+          "&:disabled": { opacity: 0.6, cursor: "default" },
+        }}
+      >
+        <PictureAsPdfOutlinedIcon /> {exportPdfLoading ? "جارٍ التصدير..." : "تصدير PDF"}
       </Box>
       <Box component="button" type="button" sx={{
         ...btnBase, border: "0.5px solid rgba(245,158,11,0.25)", bgcolor: HX.amberLight, color: "#92400e",

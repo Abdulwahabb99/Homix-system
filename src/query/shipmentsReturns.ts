@@ -112,7 +112,39 @@ export function useUpdateCustomerReturnMutation() {
       putCustomerReturn(vars.returnId, vars.body),
     onSuccess: async () => {
       // يشمل قوائم المرتجعات وعدّادات التبويبات في الـ meta
-      await queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تحديث حالة المرتجع");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء تحديث المرتجع");
+    },
+  });
+}
+
+/** PUT /shipments/returns/vendor/{returnId} — تحديث مرتجع المورد (نفس شكل جسم مرتجع العميل). */
+export type UpdateVendorReturnPayload = UpdateCustomerReturnPayload;
+
+export async function putVendorReturn(
+  returnId: number | string,
+  body: UpdateVendorReturnPayload
+): Promise<void> {
+  await axiosRequest.put(`/shipments/returns/vendor/${returnId}`, body);
+}
+
+export function useUpdateVendorReturnMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { returnId: number | string; body: UpdateVendorReturnPayload }) =>
+      putVendorReturn(vars.returnId, vars.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
       NotificationMeassage("success", "تم تحديث حالة المرتجع");
     },
     onError: () => {

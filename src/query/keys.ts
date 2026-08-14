@@ -49,6 +49,13 @@ export const shipmentKeys = {
   inventory: (filtersKey: string) => [...shipmentKeys.all(), "inventory", filtersKey] as const,
   accounts: (tab: string, filtersKey: string) => [...shipmentKeys.all(), "accounts", tab, filtersKey] as const,
   performance: (filtersKey: string) => [...shipmentKeys.all(), "performance", filtersKey] as const,
+
+  /* بادئات للإبطال الموجّه. الإبطال بالجذر ["shipments"] كان يعيد جلب قائمة
+     الشحنات والملخّص والمرتجعات والمخزون والحسابات والتقارير معاً بعد كل تعديل. */
+  returnsRoot: () => [...shipmentKeys.all(), "returns"] as const,
+  inventoryRoot: () => [...shipmentKeys.all(), "inventory"] as const,
+  accountsRoot: () => [...shipmentKeys.all(), "accounts"] as const,
+  summariesRoot: () => [...shipmentKeys.all(), "summary"] as const,
 };
 
 export const financialKeys = {

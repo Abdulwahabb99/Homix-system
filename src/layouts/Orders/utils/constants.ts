@@ -18,6 +18,19 @@ export const DELIVERY_STATUS = [
   { label: "متأخر", value: 3 },
 ];
 
+/** يجب أن يطابق ORDER_PRIORITY في src/modules/orders/order.constants.ts بالباك إند */
+export const PRIORITY_VALUES = [
+  { label: "بالمدة", value: 1 },
+  { label: "مستعجل", value: 2 },
+  { label: "مستعجل جدا", value: 3 },
+];
+
+export const priorityValues: Record<number, string> = {
+  1: "بالمدة",
+  2: "مستعجل",
+  3: "مستعجل جدا",
+};
+
 /** خيارات ترتيب قائمة الطلبات — تُرسَل للـ API كـ sort[field]=dir (-1 تنازلي، 1 تصاعدي) */
 export const ORDERS_SORT_OPTIONS = [
   { key: "newest",       label: "الأحدث أولاً",   field: "orderDate",  dir: -1 },

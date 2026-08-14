@@ -44,6 +44,9 @@ export type OrderDetailsViewProps = {
   changeAssignee: (userId: number | null) => void;
   changeDeliveryLocation: (shippedFromInventory: boolean) => void;
   changeDownPayment: (downPayment: number) => void;
+  changeShippingFees: (shippingFees: number) => void;
+  changeDiscount: (totalDiscounts: number) => void;
+  changePriority: (priority: number | null) => void;
   updateCustomer: (values: CustomerFormValues) => Promise<unknown>;
   isUpdatingCustomer: boolean;
   updateComment: (noteId: number | string) => void;
@@ -82,6 +85,9 @@ export default function OrderDetailsView({
   changeAssignee,
   changeDeliveryLocation,
   changeDownPayment,
+  changeShippingFees,
+  changeDiscount,
+  changePriority,
   updateCustomer,
   isUpdatingCustomer,
   updateComment,
@@ -141,6 +147,7 @@ export default function OrderDetailsView({
               changeAssignee={changeAssignee}
               changeDeliveryLocation={changeDeliveryLocation}
               changeManufactureStatus={changeManufactureStatus}
+              changePriority={changePriority}
             />
 
             <OrderNotesCard
@@ -182,6 +189,8 @@ export default function OrderDetailsView({
               orderTotalCost={orderTotalCost}
               isVendor={isVendor}
               changeDownPayment={changeDownPayment}
+              changeShippingFees={changeShippingFees}
+              changeDiscount={changeDiscount}
             />
 
             <QuickActionsCard

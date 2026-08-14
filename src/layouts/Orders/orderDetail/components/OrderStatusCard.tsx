@@ -10,6 +10,7 @@ import { OD } from "../odTheme";
 import { statusFieldLabelSx, statusSelectSx, assigneeAutocompleteSx } from "../styles";
 import { useOrderStatusOptions } from "../hooks/useOrderStatusOptions";
 import SectionCard from "./SectionCard";
+import { PRIORITY_VALUES } from "../../utils/constants";
 
 interface OrderStatusCardProps {
   orderDetails: any;
@@ -20,6 +21,7 @@ interface OrderStatusCardProps {
   changeAssignee: (userId: number | null) => void;
   changeDeliveryLocation: (shippedFromInventory: boolean) => void;
   changeManufactureStatus: (status: number | null) => void;
+  changePriority: (priority: number | null) => void;
 }
 
 export default function OrderStatusCard({
@@ -31,6 +33,7 @@ export default function OrderStatusCard({
   changeAssignee,
   changeDeliveryLocation,
   changeManufactureStatus,
+  changePriority,
 }: OrderStatusCardProps) {
   const {
     orderStatusOptions,
@@ -74,6 +77,20 @@ export default function OrderStatusCard({
             options={deliveryStatusOptions}
             value={orderDetails.deliveryStatus != null ? Number(orderDetails.deliveryStatus) : null}
             onChange={changeDeliveryStatus}
+            withSectionBorder={false}
+            boxSx={{ p: 0 }}
+            formControlSx={statusSelectSx}
+          />
+        </Box>
+
+        {/* الأولوية */}
+        <Box>
+          <Typography sx={statusFieldLabelSx}>الأولوية</Typography>
+          <SelectComponent
+            id="order-priority"
+            options={PRIORITY_VALUES}
+            value={orderDetails.priority != null ? Number(orderDetails.priority) : null}
+            onChange={changePriority}
             withSectionBorder={false}
             boxSx={{ p: 0 }}
             formControlSx={statusSelectSx}

@@ -20,6 +20,7 @@ import moment from "moment";
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { manufactureStatusOptions } from "shared/utils/constants";
+import { DELIVERY_STATUS, PRIORITY_VALUES } from "../utils/constants";
 import {
   useOrderDetailQuery,
   useUpdateOrderMutation,
@@ -68,6 +69,11 @@ function buildUpdatePayload(
     customerId: string;
     totalPrice: string;
     expectedDeliveryDate: string;
+    deliveryStatus: number | "";
+    priority: number | "";
+    shippingFees: string;
+    totalDiscounts: string;
+    downPayment: string;
   }
 ): UpdateOrderPayload | null {
   const cidStr = String(fields.customerId).trim() || resolveCustomerIdFromOrder(order);
@@ -110,12 +116,31 @@ function buildUpdatePayload(
     return null;
   }
 
+  /** حقل رقمي اختياري: نتجاهله فقط إذا تُرك فارغاً — الصفر قيمة صالحة. */
+  const optionalNumber = (raw: string): number | undefined => {
+    const trimmed = raw.trim();
+    if (trimmed === "") return undefined;
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
   return {
     customerId,
+    ...(fields.deliveryStatus !== "" ? { deliveryStatus: Number(fields.deliveryStatus) } : {}),
+    ...(optionalNumber(fields.downPayment) !== undefined
+      ? { downPayment: optionalNumber(fields.downPayment) }
+      : {}),
     expectedDeliveryDate,
     manufactureStatus: manufactureStatusNum,
     paymentStatus: Number.isFinite(paymentStatus) ? paymentStatus : 0,
+    ...(fields.priority !== "" ? { priority: Number(fields.priority) } : {}),
+    ...(optionalNumber(fields.shippingFees) !== undefined
+      ? { shippingFees: optionalNumber(fields.shippingFees) }
+      : {}),
     status: Number.isFinite(status) ? status : 0,
+    ...(optionalNumber(fields.totalDiscounts) !== undefined
+      ? { totalDiscounts: optionalNumber(fields.totalDiscounts) }
+      : {}),
     totalPrice: tp,
   };
 }
@@ -135,6 +160,11 @@ function OrderEdit() {
   const [customerName, setCustomerName] = useState("");
   const [totalPrice, setTotalPrice] = useState("");
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
+  const [deliveryStatus, setDeliveryStatus] = useState<number | "">("");
+  const [priority, setPriority] = useState<number | "">("");
+  const [shippingFees, setShippingFees] = useState("");
+  const [totalDiscounts, setTotalDiscounts] = useState("");
+  const [downPayment, setDownPayment] = useState("");
 
   useEffect(() => {
     if (isError) {
@@ -158,6 +188,11 @@ function OrderEdit() {
     setTotalPrice(tp != null ? String(tp) : "");
     const exp = order.expectedDeliveryDate ?? order.orderDate;
     setExpectedDeliveryDate(exp ? toYmdFromOrderDate(exp) : "");
+    setDeliveryStatus(order.deliveryStatus != null ? Number(order.deliveryStatus) : "");
+    setPriority(order.priority != null ? Number(order.priority) : "");
+    setShippingFees(order.shippingFees != null ? String(order.shippingFees) : "");
+    setTotalDiscounts(order.totalDiscounts != null ? String(order.totalDiscounts) : "");
+    setDownPayment(order.downPayment != null ? String(order.downPayment) : "");
   }, [order?.id]);
 
   /* تعطيل الزر فقط أثناء الحفظ — التحقق من الحقول عند الضغط (مع قيم احتياطية من الطلب المحمّل). */
@@ -172,6 +207,11 @@ function OrderEdit() {
       customerId,
       totalPrice,
       expectedDeliveryDate,
+      deliveryStatus,
+      priority,
+      shippingFees,
+      totalDiscounts,
+      downPayment,
     });
     if (!payload) return;
     updateMutation.mutate(payload, {
@@ -180,6 +220,14 @@ function OrderEdit() {
   };
 
   const displayCustomerId = customerId || resolveCustomerIdFromOrder(order);
+
+  /* يطابق normalizeOrderMutationPayload في الباك إند حتى لا تختلف القيمة عن صفحة التفاصيل. */
+  const toAmount = (raw: string) => {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const computedToBeCollected =
+    toAmount(totalPrice) + toAmount(shippingFees) - toAmount(downPayment);
 
   return (
     <DashboardLayout>
@@ -246,13 +294,13 @@ function OrderEdit() {
 
           <Grid item xs={12} md={6} lg={6}>
             <FormControl fullWidth>
-              <InputLabel id="mfgStatus">حالة التأخير</InputLabel>
+              <InputLabel id="mfgStatus">حالة التصنيع</InputLabel>
               <Select<number>
                 fullWidth
                 labelId="mfgStatus"
                 id="mfgStatus-select"
                 value={manufactureStatus === "" ? "" : Number(manufactureStatus)}
-                label="حالة التأخير"
+                label="حالة التصنيع"
                 onChange={(e) => setManufactureStatus(Number(e.target.value))}
                 sx={{ height: 43 }}
               >
@@ -273,6 +321,92 @@ function OrderEdit() {
               onChange={(e) => setTotalPrice(e.target.value)}
               type="number"
               inputProps={{ min: 0, step: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <FormControl fullWidth>
+              <InputLabel id="deliveryStatus">حالة التأخير</InputLabel>
+              <Select<number>
+                fullWidth
+                labelId="deliveryStatus"
+                id="deliveryStatus-select"
+                value={deliveryStatus === "" ? "" : Number(deliveryStatus)}
+                label="حالة التأخير"
+                onChange={(e) => setDeliveryStatus(Number(e.target.value))}
+                sx={{ height: 43 }}
+              >
+                {DELIVERY_STATUS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <FormControl fullWidth>
+              <InputLabel id="priority">الأولوية</InputLabel>
+              <Select<number>
+                fullWidth
+                labelId="priority"
+                id="priority-select"
+                value={priority === "" ? "" : Number(priority)}
+                label="الأولوية"
+                onChange={(e) => setPriority(Number(e.target.value))}
+                sx={{ height: 43 }}
+              >
+                {PRIORITY_VALUES.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <TextField
+              fullWidth
+              label="تكلفة الشحن"
+              value={shippingFees}
+              onChange={(e) => setShippingFees(e.target.value)}
+              type="number"
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <TextField
+              fullWidth
+              label="الخصم"
+              value={totalDiscounts}
+              onChange={(e) => setTotalDiscounts(e.target.value)}
+              type="number"
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <TextField
+              fullWidth
+              label="جدية الشراء"
+              value={downPayment}
+              onChange={(e) => setDownPayment(e.target.value)}
+              type="number"
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6}>
+            <TextField
+              fullWidth
+              label="المبلغ المطلوب تحصيله"
+              value={computedToBeCollected}
+              type="number"
+              InputProps={{ readOnly: true }}
+              helperText="إجمالي السعر + الشحن - جدية الشراء (يحسبه النظام)"
             />
           </Grid>
 
