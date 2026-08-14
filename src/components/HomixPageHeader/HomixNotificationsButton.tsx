@@ -31,7 +31,7 @@ type Notif = {
   createdAt?: string;
 };
 
-export default function HomixNotificationsButton() {
+function HomixNotificationsButton() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const reduxDispatch = useDispatch();
@@ -270,3 +270,7 @@ export default function HomixNotificationsButton() {
     </>
   );
 }
+
+// The menu can contain a large notification history. Parent page renders
+// (typing, pagination, tab changes) must not rebuild that unrelated list.
+export default React.memo(HomixNotificationsButton);
