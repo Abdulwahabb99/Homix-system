@@ -309,6 +309,7 @@ export type DeliveryAccountsListResponse = {
 export type ShippingCompanyItem = {
   createdAt: string;
   id: number;
+  linkedOrdersCount: number;
   name: string;
   updatedAt: string;
 };

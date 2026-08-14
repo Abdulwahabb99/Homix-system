@@ -61,6 +61,8 @@ const legacyOrderService = {
 };
 
 const sequelizeQuery = jest.fn();
+const sequelizeTransaction = jest.fn(async (callback: (transaction: { LOCK: { UPDATE: string } }) => unknown) =>
+  callback({ LOCK: { UPDATE: "UPDATE" } }));
 const mockListManagedOptions = jest.fn(async (group: string) => group === "expense_type"
   ? [{ id: 1, label: "شحن" }, { id: 2, label: "تغليف" }, { id: 4, label: "إيجار مخزن" }]
   : []);
@@ -84,6 +86,7 @@ jest.mock("../../infrastructure/database", () => ({
     col: jest.fn((value: string) => value),
     fn: jest.fn((...args: string[]) => args.join(".")),
     query: sequelizeQuery,
+    transaction: sequelizeTransaction,
     where: jest.fn((_left: unknown, right: unknown) => right),
   },
 }));
@@ -564,11 +567,14 @@ describe("shipmentRouter", () => {
   });
 
   it("lists shipping companies", async () => {
+    orderModel.count.mockReset();
+    orderModel.count.mockResolvedValue([{ count: 5, shippingCompany: "J&T" }]);
+
     const response = await request(app).get("/shipments/shipping-companies");
 
     expect(response.status).toBe(200);
     expect(response.body.data.items).toEqual([
-      expect.objectContaining({ id: 3, name: "J&T" }),
+      expect.objectContaining({ id: 3, linkedOrdersCount: 5, name: "J&T" }),
     ]);
   });
 
@@ -606,7 +612,28 @@ describe("shipmentRouter", () => {
     const response = await request(app).delete("/shipments/shipping-companies/3");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: "Shipping company deleted successfully", status: true });
+    expect(response.body).toEqual({
+      linkedOrdersCount: 0,
+      message: "Shipping company deleted successfully",
+      status: true,
+    });
+  });
+
+  it("removes a deleted shipping company from linked orders", async () => {
+    orderModel.count.mockReset();
+    orderModel.count.mockResolvedValue(4);
+
+    const response = await request(app).delete("/shipments/shipping-companies/3");
+
+    expect(response.status).toBe(200);
+    expect(response.body.linkedOrdersCount).toBe(4);
+    expect(orderModel.update).toHaveBeenCalledWith(
+      { shippingCompany: null },
+      expect.objectContaining({
+        transaction: expect.any(Object),
+        where: { shippingCompany: "J&T" },
+      }),
+    );
   });
 
   it("rejects shipment creation payloads without line items", async () => {
@@ -710,6 +737,21 @@ describe("shipmentRouter", () => {
         }),
       }),
     );
+  });
+
+  it("shows newly created Homix orders first by default", async () => {
+    const response = await request(app).get("/shipments").query({ page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    const query = orderModel.findAndCountAll.mock.calls[0][0];
+    expect(query).toEqual(expect.objectContaining({
+      order: [["createdAt", "DESC"], ["id", "DESC"]],
+    }));
+    const shipmentScope = query.where[Op.and][0];
+    expect(shipmentScope[Op.or]).toEqual([
+      { deliveryBy: 1 },
+      { deliveryBy: null, shippedFromInventory: true },
+    ]);
   });
 
   it("filters shipments by manual priority", async () => {

@@ -21,6 +21,7 @@ const {
   PAYMENT_STATUS_ARABIC,
   DELIVERY_STATUS,
   DELIVERY_STATUS_ARABIC,
+  DELIVERY_BY,
   DELIVERY_BY_ARABIC,
   ORDER_SOURCE_ARABIC,
   MANUFACTURE_STATUS_ARABIC,
@@ -368,6 +369,12 @@ class OrderService {
           expectedDeliveryDate: order.expectedDeliveryDate,
           orderDate,
         });
+        const requestedDeliveryBy = Number(order.deliveryBy);
+        const deliveryBy = isShipment
+          ? DELIVERY_BY.HOMIX
+          : [DELIVERY_BY.HOMIX, DELIVERY_BY.VENDOR].includes(requestedDeliveryBy)
+            ? requestedDeliveryBy
+            : null;
         let obj = {
           shopifyId: order.id ? String(order.id) : null,
           name,
@@ -382,7 +389,7 @@ class OrderService {
           customerId: customersNamesMap[customerKey],
           totalCost,
           custom,
-          shippedFromInventory: isShipment ? true : false,
+          shippedFromInventory: deliveryBy === DELIVERY_BY.HOMIX,
           shippingReceiveDate: order.shippingReceiveDate || null,
           shippingCompany: order.shippingCompany || null,
           deliveryDate: order.deliveryDate || null,
@@ -390,7 +397,7 @@ class OrderService {
           shipmentStatus: order.shipmentStatus || null,
           scheduleStatus: order.scheduleStatus || null,
           shipmentType: order.shipmentType || "separate",
-          deliveryBy: order.deliveryBy || null,
+          deliveryBy,
           expectedDate: order.expectedDate || null,
           expectedDeliveryDate,
           receivedAmount: order.receivedAmount || 0,

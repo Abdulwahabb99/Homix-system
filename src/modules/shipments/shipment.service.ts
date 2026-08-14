@@ -288,13 +288,18 @@ export class ShipmentService {
     return success(company);
   }
 
-  public async deleteShippingCompany(shippingCompanyId: number): Promise<Result<{ message: string }>> {
-    const deleted = await this.shipmentRepository.deleteShippingCompany(shippingCompanyId);
-    if (!deleted) {
+  public async deleteShippingCompany(
+    shippingCompanyId: number,
+  ): Promise<Result<{ linkedOrdersCount: number; message: string }>> {
+    const deletion = await this.shipmentRepository.deleteShippingCompany(shippingCompanyId);
+    if (!deletion) {
       throw new NotFoundError("Shipping company not found");
     }
 
-    return success({ message: "Shipping company deleted successfully" });
+    return success({
+      linkedOrdersCount: deletion.linkedOrdersCount,
+      message: "Shipping company deleted successfully",
+    });
   }
 
   public async updateExpenseAccount(

@@ -137,6 +137,14 @@ const getShipmentCollectionAmount = (order: Record<string, unknown>): number => 
   toNumber(order.paymentStatus) === PAYMENT_STATUS.PAID ? 0 : toNumber(order.toBeCollected || order.totalPrice)
 );
 
+/** deliveryBy is authoritative; the second branch keeps pre-migration shipments visible. */
+const buildHomixShipmentScope = (): Record<PropertyKey, unknown> => ({
+  [Op.or]: [
+    { deliveryBy: DELIVERY_BY.HOMIX },
+    { deliveryBy: null, shippedFromInventory: true },
+  ],
+});
+
 const buildInventoryItem = (inventoryValue: unknown): InventoryItem => {
   const inventory = toPlain(inventoryValue);
   const product = toPlain(inventory.product);
@@ -166,7 +174,7 @@ const buildShipmentWhereClause = (
   filters: Omit<ShipmentListQuery, "page" | "size">,
   vendorId?: number | null,
 ): Record<string, unknown> => {
-  const andConditions: unknown[] = [{ shippedFromInventory: true }];
+  const andConditions: unknown[] = [buildHomixShipmentScope()];
 
   if (vendorId) {
     andConditions.push(where(col("orderLines.product.vendor.id"), { [Op.eq]: vendorId }));
@@ -535,7 +543,9 @@ const buildShipmentSort = (sortEntries: ShipmentSortEntry[]): Array<[string, "AS
   const databaseEntries = sortEntries
     .map(([field, direction]) => [field, direction === -1 ? "DESC" : "ASC"] as [string, "ASC" | "DESC"]);
 
-  return databaseEntries.length > 0 ? databaseEntries : [["shippingReceiveDate", "DESC"]];
+  return databaseEntries.length > 0
+    ? databaseEntries
+    : [["createdAt", "DESC"], ["id", "DESC"]];
 };
 
 const mapShipmentNote = (noteValue: unknown) => {
@@ -635,6 +645,7 @@ const mapShippingCompanyItem = (companyValue: unknown): ShippingCompanyItem => {
   return {
     createdAt: toIsoString(company.createdAt) ?? "",
     id: toNumber(company.id),
+    linkedOrdersCount: toNumber(company.linkedOrdersCount),
     name: toText(company.name),
     updatedAt: toIsoString(company.updatedAt) ?? "",
   };
@@ -692,7 +703,7 @@ export class ShipmentRepository {
         attributes: ["shipmentStatus", [fn("COUNT", col("Order.id")), "rowCount"]],
         group: ["Order.shipmentStatus"],
         raw: true,
-        where: { shippedFromInventory: true },
+        where: buildHomixShipmentScope(),
       }),
       shippingCompanyModel.findAll({ order: [["name", "ASC"]] }),
       shipmentInventoryModel.count(),
@@ -1397,8 +1408,8 @@ export class ShipmentRepository {
   }
 
   public async listDeliveryAccounts(filters: DeliveryAccountsListQuery, vendorId?: number | null): Promise<DeliveryAccountsListResponse> {
-    const whereClause: Record<string, unknown> = {
-      shippedFromInventory: true,
+    const whereClause: Record<PropertyKey, unknown> = {
+      ...buildHomixShipmentScope(),
       shipmentStatus: SHIPMENT_STATUS.DELIVERED,
     };
 
@@ -1520,8 +1531,29 @@ export class ShipmentRepository {
         : undefined,
     });
 
+    const companyNames = companies
+      .map((company: unknown) => toText(toPlain(company).name))
+      .filter(Boolean);
+    const groupedCounts = companyNames.length > 0
+      ? await orderModel.count({
+        attributes: ["shippingCompany"],
+        group: ["shippingCompany"],
+        where: { shippingCompany: { [Op.in]: companyNames } },
+      })
+      : [];
+    const countsByName = new Map<string, number>();
+    if (Array.isArray(groupedCounts)) {
+      groupedCounts.forEach((countValue: unknown) => {
+        const countRow = toPlain(countValue);
+        countsByName.set(toText(countRow.shippingCompany), toNumber(countRow.count));
+      });
+    }
+
     return {
-      items: companies.map((company: unknown) => mapShippingCompanyItem(company)),
+      items: companies.map((company: unknown) => {
+        const item = mapShippingCompanyItem(company);
+        return { ...item, linkedOrdersCount: countsByName.get(item.name) ?? 0 };
+      }),
     };
   }
 
@@ -1568,22 +1600,33 @@ export class ShipmentRepository {
     return mapShippingCompanyItem(company);
   }
 
-  public async deleteShippingCompany(shippingCompanyId: number): Promise<boolean> {
-    const company = await shippingCompanyModel.findByPk(shippingCompanyId);
-    if (!company) {
-      return false;
-    }
+  public async deleteShippingCompany(
+    shippingCompanyId: number,
+  ): Promise<{ linkedOrdersCount: number } | null> {
+    return sequelize.transaction(async (transaction) => {
+      const company = await shippingCompanyModel.findByPk(shippingCompanyId, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
+      if (!company) {
+        return null;
+      }
 
-    const companyName = toText(toPlain(company).name);
-    const linkedOrdersCount = await orderModel.count({
-      where: { shippingCompany: companyName },
+      const companyName = toText(toPlain(company).name);
+      const linkedOrdersCount = await orderModel.count({
+        transaction,
+        where: { shippingCompany: companyName },
+      });
+      if (linkedOrdersCount > 0) {
+        await orderModel.update(
+          { shippingCompany: null },
+          { transaction, where: { shippingCompany: companyName } },
+        );
+      }
+
+      await company.destroy({ transaction });
+      return { linkedOrdersCount };
     });
-    if (linkedOrdersCount > 0) {
-      throw new ConflictError("Shipping company is linked to shipments");
-    }
-
-    await company.destroy();
-    return true;
   }
 
   public async createExpenseAccount(payload: ExpenseMutationInput): Promise<ExpenseAccountItem> {
@@ -1672,12 +1715,7 @@ export class ShipmentRepository {
       SHIPMENT_STATUS.FAILED_DELIVERY,
     ]);
     const whereClause: Record<string | symbol, unknown> = {
-      [Op.or]: [
-        { deliveryBy: DELIVERY_BY.HOMIX },
-        // Legacy shipments used only shippedFromInventory. Keep them visible
-        // until their nullable deliveryBy value is naturally backfilled.
-        { deliveryBy: null, shippedFromInventory: true },
-      ],
+      ...buildHomixShipmentScope(),
       shipmentStatus: { [Op.in]: performanceStatuses },
       ...(vendorId ? { "$orderLines.product.vendor.id$": vendorId } : {}),
     };
