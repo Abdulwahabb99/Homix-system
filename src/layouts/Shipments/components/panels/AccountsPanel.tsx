@@ -382,6 +382,11 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
 
 export default function AccountsPanel({ onExporterChange }: AccountsPanelProps) {
   const [activeSubTab, setActiveSubTab] = useState("deliveries");
+  const { data: meta } = useShipmentsMetaQuery();
+  const subTabCounts: Record<string, number> = {
+    deliveries: meta?.subTabCounts.accountDeliveries ?? 0,
+    expenses: meta?.subTabCounts.accountExpenses ?? 0,
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -407,6 +412,21 @@ export default function AccountsPanel({ onExporterChange }: AccountsPanelProps) 
               }}
             >
               {tab.label}
+              <Box component="span" sx={{
+                minWidth: 18,
+                height: 18,
+                px: "5px",
+                borderRadius: "100px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: active ? "rgba(99, 102, 241, 0.16)" : HX.surface3,
+                color: active ? HX.accent : HX.tx3,
+                fontSize: "10px",
+                fontWeight: 700,
+              }}>
+                {subTabCounts[tab.id] ?? 0}
+              </Box>
             </Box>
           );
         })}

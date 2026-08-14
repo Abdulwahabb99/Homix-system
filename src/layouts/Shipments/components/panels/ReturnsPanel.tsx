@@ -361,8 +361,8 @@ export default function ReturnsPanel({ onExporterChange }: ReturnsPanelProps) {
   const vendorQ   = useVendorReturnsQuery(vendorParams, activeTab === "vendor");
   const customerQ = useCustomerReturnsQuery(customerParams, activeTab === "customer");
 
-  const vendorCount   = vendorQ.data?.totalCount   ?? 0;
-  const customerCount = customerQ.data?.totalCount ?? 0;
+  const vendorCount = meta?.subTabCounts.vendorReturns ?? 0;
+  const customerCount = meta?.subTabCounts.customerReturns ?? 0;
 
   const active    = activeTab === "vendor" ? vendorQ   : customerQ;
   const items     = active.data?.items      ?? [];

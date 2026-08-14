@@ -27,6 +27,12 @@ export interface ShipmentsMeta {
   inventoryStatuses: ShipmentsMetaOption[];
   expenseTypes: ShipmentsMetaOption[];
   scheduleStatuses: ShipmentsMetaOption[];
+  subTabCounts: {
+    accountDeliveries: number;
+    accountExpenses: number;
+    customerReturns: number;
+    vendorReturns: number;
+  };
   tabs: ShipmentsTabCount[];
 }
 
@@ -57,6 +63,12 @@ function normalizeMeta(raw: any): ShipmentsMeta {
     inventoryStatuses:      pick("inventoryStatuses",      []),
     expenseTypes:           pick("expenseTypes",           []),
     scheduleStatuses:       pick("scheduleStatuses",       []),
+    subTabCounts: {
+      accountDeliveries: Number(raw.subTabCounts?.accountDeliveries) || 0,
+      accountExpenses: Number(raw.subTabCounts?.accountExpenses) || 0,
+      customerReturns: Number(raw.subTabCounts?.customerReturns) || 0,
+      vendorReturns: Number(raw.subTabCounts?.vendorReturns) || 0,
+    },
     tabs: Array.isArray(raw.tabs) ? raw.tabs : [],
   };
 }
@@ -77,6 +89,12 @@ const FALLBACK: ShipmentsMeta = {
   inventoryStatuses: [],
   expenseTypes: [],
   scheduleStatuses: [],
+  subTabCounts: {
+    accountDeliveries: 0,
+    accountExpenses: 0,
+    customerReturns: 0,
+    vendorReturns: 0,
+  },
   tabs: [],
 };
 
