@@ -420,6 +420,12 @@ describe("shipmentRouter", () => {
     expect(response.body.data.tabs).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "shipments", label: "الشحنات" })]),
     );
+    expect(response.body.data.subTabCounts).toEqual(expect.objectContaining({
+      accountDeliveries: expect.any(Number),
+      accountExpenses: expect.any(Number),
+      customerReturns: expect.any(Number),
+      vendorReturns: expect.any(Number),
+    }));
     expect(response.body.data.shipmentTypes).toEqual([
       { id: "grouped", label: "شحن مجمع" },
       { id: "separate", label: "شحن منفصل" },
