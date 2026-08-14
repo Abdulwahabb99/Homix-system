@@ -110,6 +110,11 @@ describe("develop baseline characterization", () => {
       currentModulePath,
       {
         "../attachments/attachment.model": {},
+        "../customer/customer.model": {},
+        "../order/order.model": {},
+        "../orderLines/orderline.model": {},
+        "../product/product.model": {},
+        "../vendor/vendor.model": {},
         "./factory.model": factoryModelMock,
       },
     );
@@ -279,7 +284,9 @@ describe("develop baseline characterization", () => {
     const developModulePath = path.join(DEVELOP_ROOT, "app/modules/factory/factory.service.js");
     const attachmentModelMock = {};
     const factoryModelMock = {
+      count: jest.fn().mockResolvedValue(0),
       findAll: jest.fn().mockResolvedValue([]),
+      findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
     };
     const databaseMock = {
       sequelize: {
@@ -293,6 +300,11 @@ describe("develop baseline characterization", () => {
       {
         "../../../src/infrastructure/database": databaseMock,
         "../attachments/attachment.model": attachmentModelMock,
+        "../customer/customer.model": {},
+        "../order/order.model": {},
+        "../orderLines/orderline.model": {},
+        "../product/product.model": {},
+        "../vendor/vendor.model": {},
         "./factory.model": factoryModelMock,
       },
     );
@@ -308,7 +320,12 @@ describe("develop baseline characterization", () => {
 
     const filterPayload = { factoryCategory: undefined, status: "online" };
 
+    // The point of this characterization: develop blows up on filters, the
+    // refactored service does not. It now answers with a paginated envelope
+    // rather than the bare array the old implementation returned.
     await expect(developService.getAll(filterPayload)).rejects.toBeInstanceOf(ReferenceError);
-    await expect(currentService.getAll(filterPayload)).resolves.toEqual([]);
+    await expect(currentService.getAll(filterPayload)).resolves.toEqual(
+      expect.objectContaining({ items: [] }),
+    );
   });
 });

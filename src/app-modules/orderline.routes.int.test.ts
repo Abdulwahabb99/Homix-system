@@ -13,7 +13,7 @@ describe("orderLine routes", () => {
       "../../middlewares/isAdmin": (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
       "../../middlewares/isNotLogistic": (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
       "../../middlewares/protectApi": (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-        req.user = { id: 1 };
+        req.user = { id: 1, userType: "1" };
         next();
       },
       "./orderLine.controller": {

@@ -76,6 +76,10 @@ export class ShipmentController {
     response.status(200).json({ data: unwrap(await this.shipmentService.listDeliveryAccounts(request.query as never, request.vendorId)), status: true });
   };
 
+  public updateDeliveryAccount = async (request: Request, response: Response): Promise<void> => {
+    response.status(200).json({ ...unwrap(await this.shipmentService.updateDeliveryAccount(Number(request.params.orderId), request.body)), status: true });
+  };
+
   public listExpenseAccounts = async (request: Request, response: Response): Promise<void> => {
     response.status(200).json({ data: unwrap(await this.shipmentService.listExpenseAccounts(request.query as never)), status: true });
   };

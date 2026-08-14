@@ -118,6 +118,18 @@ export class ShipmentService {
     return success(returnRecord);
   }
 
+  public async updateDeliveryAccount(
+    orderId: number,
+    payload: { accountingDate?: string | null; accountingReference?: string; accountingStatus?: number },
+  ): Promise<Result<{ message: string }>> {
+    const updated = await this.shipmentRepository.updateDeliveryAccount(orderId, payload);
+    if (!updated) {
+      throw new NotFoundError("Delivery account not found");
+    }
+
+    return success({ message: "Delivery account updated successfully" });
+  }
+
   public async listInventory(filters: InventoryListQuery, vendorId?: number | null): Promise<Result<InventoryListResponse>> {
     return success(await this.shipmentRepository.listInventory(filters, vendorId));
   }

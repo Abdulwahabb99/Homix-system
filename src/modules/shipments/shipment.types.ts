@@ -273,6 +273,8 @@ export type InventoryListResponse = {
 
 export type DeliveryAccountItem = {
   accountingDate: string | null;
+  /** Order id — the ledger row is the delivered order itself. */
+  id: number;
   accountingStatus: number;
   accountingStatusLabel: string;
   amountToCollect: number;

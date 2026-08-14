@@ -12,7 +12,7 @@ describe("product routes", () => {
   it("returns product list", async () => {
     const router = loadModuleWithMocks<express.Router>(PRODUCT_ROUTES_PATH, {
       "../../middlewares/protectApi": (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-        req.user = { id: 1 };
+        req.user = { id: 1, userType: "1" };
         next();
       },
       "./product.controller": {
@@ -38,7 +38,7 @@ describe("product routes", () => {
   it("returns category list", async () => {
     const router = loadModuleWithMocks<express.Router>(CATEGORY_ROUTES_PATH, {
       "../../middlewares/protectApi": (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-        req.user = { id: 1 };
+        req.user = { id: 1, userType: "1" };
         next();
       },
       "./product.controller": {

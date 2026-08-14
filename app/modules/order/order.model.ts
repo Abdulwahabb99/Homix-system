@@ -219,6 +219,24 @@ const Order = sequelize.define(
         isIn: [Object.values(DELIVERY_BY)],
       },
     },
+    // Accounting state for the deliveries ledger (shipments/accounts/deliveries).
+    // Null means "never set by a user" so the ledger falls back to deriving it
+    // from the payment status, keeping historical rows looking unchanged.
+    accountingStatus: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        isIn: [[1, 2]],
+      },
+    },
+    accountingDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    accountingReference: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     totalVendorDue: {
       type: DataTypes.DECIMAL,
       allowNull: true,

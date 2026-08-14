@@ -5,6 +5,8 @@ import { ShipmentController } from "./shipment.controller";
 import { ShipmentRepository } from "./shipment.repo";
 import {
   shipmentCreateSchema,
+  shipmentDeliveryAccountMutationSchema,
+  shipmentDeliveryAccountParamsSchema,
   shipmentDeliveryAccountsQuerySchema,
   shipmentExportQuerySchema,
   shipmentExpenseMutationSchema,
@@ -849,6 +851,46 @@ shipmentRouter.get(
   requirePermission("finance_view"),
   validateRequest({ query: shipmentDeliveryAccountsQuerySchema }),
   asyncHandler(shipmentController.listDeliveryAccounts),
+);
+
+/**
+ * @swagger
+ * /shipments/accounts/deliveries/{orderId}:
+ *   put:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Shipments]
+ *     summary: Update the accounting state of a delivered shipment
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               accountingStatus:
+ *                 type: integer
+ *                 description: 1 = pending, 2 = settled
+ *               accountingDate:
+ *                 type: string
+ *               accountingReference:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Delivery account updated successfully
+ *       404:
+ *         description: Delivery account not found
+ */
+shipmentRouter.put(
+  "/accounts/deliveries/:orderId",
+  requirePermission("finance_settle"),
+  validateRequest({ body: shipmentDeliveryAccountMutationSchema, params: shipmentDeliveryAccountParamsSchema }),
+  asyncHandler(shipmentController.updateDeliveryAccount),
 );
 
 /**

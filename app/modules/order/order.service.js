@@ -26,6 +26,9 @@ const {
   MANUFACTURE_STATUS_ARABIC,
 } = require("../../../config/constants");
 const {
+  applyOrderLinesToInventory,
+} = require("../../../src/modules/shipments/inventory.movements");
+const {
   getDeliveryPriorityLabel,
   resolveDeliveryStatus,
   resolveOrderPriority,
@@ -514,6 +517,17 @@ class OrderService {
       }
     }
     await OrderLine.bulkCreate(orderLines);
+
+    // New orders consume stock for the products they contain; the helper clamps
+    // at zero so an order larger than the stock on hand just empties the row.
+    await applyOrderLinesToInventory(
+      orderLines.map((line) => ({
+        productCode: line.sku,
+        productId: line.productId,
+        quantity: line.quantity,
+      })),
+      "consume",
+    );
     for (const order of savedOrders) {
       orderLogs.push({
         action: "create",

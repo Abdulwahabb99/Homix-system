@@ -10,6 +10,7 @@ const EMPLOYEE_ROUTES_PATH = path.join(ROOT, "app/modules/employee/employee.rout
 describe("employee routes", () => {
   it("returns employee list", async () => {
     const router = loadModuleWithMocks<express.Router>(EMPLOYEE_ROUTES_PATH, {
+      "../../middlewares/requirePermission": () => (_req: express.Request, _res: express.Response, next: express.NextFunction) => next(),
       "./employee.controller": {
         create: jest.fn(),
         delete: jest.fn(),

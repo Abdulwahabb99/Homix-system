@@ -191,6 +191,16 @@ export const shipmentDeliveryAccountsQuerySchema = z.object({
   size: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 
+export const shipmentDeliveryAccountParamsSchema = z.object({
+  orderId: z.coerce.number().int().positive(),
+});
+
+export const shipmentDeliveryAccountMutationSchema = z.object({
+  accountingDate: dateString.optional().nullable(),
+  accountingReference: z.string().trim().optional(),
+  accountingStatus: z.coerce.number().int().positive().optional(),
+}).refine((value) => Object.keys(value).length > 0, "No fields to update");
+
 export const shipmentExpenseAccountsQuerySchema = z.object({
   accountingStatus: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE_NUMBER),

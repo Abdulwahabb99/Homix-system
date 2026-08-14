@@ -197,6 +197,22 @@ const ensureCoreColumns = async (): Promise<void> => {
     type: DataTypes.INTEGER,
   });
 
+  /* Accounting state for the deliveries ledger. Nullable on purpose: a null
+     accountingStatus means "never set by a user", so the ledger keeps falling
+     back to the payment status and existing rows read as they did before. */
+  await ensureColumn("orders", "accountingStatus", {
+    allowNull: true,
+    type: DataTypes.INTEGER,
+  });
+  await ensureColumn("orders", "accountingDate", {
+    allowNull: true,
+    type: DataTypes.DATE,
+  });
+  await ensureColumn("orders", "accountingReference", {
+    allowNull: true,
+    type: DataTypes.STRING,
+  });
+
   await ensureColumn("vendors", "accountManagerUserId", {
     allowNull: true,
     type: DataTypes.INTEGER,
@@ -375,6 +391,10 @@ const ensureTicketTable = async (): Promise<void> => {
 const normalizeShipmentData = async (): Promise<void> => {
   logStep("Normalizing shipment data and shipping companies");
 
+  /* The orders -> shippingCompanies foreign key is enforced across every row,
+     including soft-deleted ones, so the normalization below deliberately does
+     NOT filter on "deletedAt". Filtering it left values like 'خاص ' (note the
+     trailing space) on archived orders and the FK then failed to install. */
   await runSql(`
     INSERT INTO "shippingCompanies" ("name", "createdAt", "updatedAt")
     SELECT source."name", NOW(), NOW()
@@ -383,14 +403,12 @@ const normalizeShipmentData = async (): Promise<void> => {
       FROM orders
       WHERE "shippingCompany" IS NOT NULL
         AND TRIM("shippingCompany") <> ''
-        AND "deletedAt" IS NULL
       GROUP BY LOWER(TRIM("shippingCompany"))
     ) AS source
     WHERE NOT EXISTS (
       SELECT 1
       FROM "shippingCompanies" company
       WHERE LOWER(company."name") = LOWER(source."name")
-        AND company."deletedAt" IS NULL
     );
   `);
 
@@ -398,11 +416,18 @@ const normalizeShipmentData = async (): Promise<void> => {
     UPDATE orders AS "Order"
     SET "shippingCompany" = company."name"
     FROM "shippingCompanies" company
-    WHERE "Order"."deletedAt" IS NULL
-      AND company."deletedAt" IS NULL
-      AND "Order"."shippingCompany" IS NOT NULL
+    WHERE "Order"."shippingCompany" IS NOT NULL
       AND TRIM("Order"."shippingCompany") <> ''
-      AND LOWER(TRIM("Order"."shippingCompany")) = LOWER(company."name");
+      AND LOWER(TRIM("Order"."shippingCompany")) = LOWER(company."name")
+      AND "Order"."shippingCompany" <> company."name";
+  `);
+
+  /* Blank-but-not-null values can never satisfy the FK. */
+  await runSql(`
+    UPDATE orders
+    SET "shippingCompany" = NULL
+    WHERE "shippingCompany" IS NOT NULL
+      AND TRIM("shippingCompany") = '';
   `);
 
   await runSql(`
@@ -525,6 +550,24 @@ const normalizeShipmentData = async (): Promise<void> => {
 const ensureConstraints = async (): Promise<void> => {
   logStep("Ensuring foreign keys and unique constraints");
 
+  /* A foreign key needs a unique constraint on the referenced column, and
+     ensureIndexes runs later, so create it here first. */
+  await ensureIndex("shippingCompanies", "shipping_companies_name_idx", ["name"], { unique: true });
+
+  /* Last line of defence: any shippingCompany that still has no matching row
+     would abort the whole migration, so detach it rather than fail. Runs after
+     normalizeShipmentData, which registers every legitimate name first. */
+  await runSql(`
+    UPDATE orders
+    SET "shippingCompany" = NULL
+    WHERE "shippingCompany" IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "shippingCompanies" company
+        WHERE company."name" = orders."shippingCompany"
+      );
+  `);
+
   await runSql(`
     DO $$
     BEGIN
@@ -627,6 +670,13 @@ const ensureIndexes = async (): Promise<void> => {
   await ensureIndex("orders", "orders_deliveryBy_idx", ["deliveryBy"]);
   await ensureIndex("orders", "orders_priority_idx", ["priority"]);
   await ensureIndex("orders", "orders_shipping_company_idx", ["shippingCompany"]);
+  /* Every shipments query starts from shippedFromInventory and usually narrows
+     by shipmentStatus (the deliveries ledger pins it to DELIVERED). */
+  await ensureIndex("orders", "orders_shipped_from_inventory_idx", ["shippedFromInventory"]);
+  await ensureIndex("orders", "orders_shipped_from_inventory_status_idx", ["shippedFromInventory", "shipmentStatus"]);
+  await ensureIndex("orders", "orders_accounting_status_idx", ["accountingStatus"]);
+  await ensureIndex("orders", "orders_accounting_date_idx", ["accountingDate"]);
+  await ensureIndex("orders", "orders_schedule_status_idx", ["scheduleStatus"]);
   await ensureIndex("shipmentInventoryItems", "shipment_inventory_product_id_idx", ["productId"]);
   await ensureIndex("shipmentInventoryItems", "shipment_inventory_product_code_idx", ["productCode"]);
   await ensureIndex("shipmentInventoryItems", "shipment_inventory_status_idx", ["status"]);
@@ -648,6 +698,45 @@ const ensureIndexes = async (): Promise<void> => {
   await ensureIndex("dashboardDailyProductSales", "dashboard_daily_product_sale_vendor_idx", ["vendorId", "metricDate"]);
   await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_scope_idx", ["metricDate", "role", "scopeId", "categoryId"], { unique: true });
   await ensureIndex("dashboardDailyCategorySales", "dashboard_daily_category_sale_vendor_idx", ["vendorId", "metricDate"]);
+
+  await ensureTrigramSearchIndexes();
+};
+
+/**
+ * Order/shipment lookups match with LOWER(col) LIKE '%term%'. A leading wildcard
+ * makes a btree index useless, so these searches fall back to a sequential scan.
+ * pg_trgm GIN indexes serve them directly.
+ *
+ * Creating an extension needs elevated rights on some managed instances, so a
+ * failure here is logged and skipped rather than aborting the whole migration —
+ * the indexes are an optimisation, not a correctness requirement.
+ */
+const ensureTrigramSearchIndexes = async (): Promise<void> => {
+  try {
+    await runSql(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn("  ! skipping trigram search indexes (pg_trgm unavailable)", error instanceof Error ? error.message : error);
+    return;
+  }
+
+  const trigramIndexes: [string, string, string][] = [
+    ["orders_name_trgm_idx", "orders", "name"],
+    ["orders_number_trgm_idx", "orders", "number"],
+    ["orders_order_number_trgm_idx", "orders", "orderNumber"],
+    ["orders_code_trgm_idx", "orders", "code"],
+  ];
+
+  for (const [indexName, tableName, columnName] of trigramIndexes) {
+    try {
+      await runSql(
+        `CREATE INDEX IF NOT EXISTS "${indexName}" ON ${tableName} USING gin (LOWER("${columnName}") gin_trgm_ops);`,
+      );
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn(`  ! skipping ${indexName}`, error instanceof Error ? error.message : error);
+    }
+  }
 };
 
 const backfillUserPermissions = async (): Promise<void> => {

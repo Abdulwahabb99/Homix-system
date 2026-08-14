@@ -50,6 +50,7 @@ import {
   toPlain,
   toText,
 } from "./shipment.helpers";
+import { applyOrderLinesToInventory } from "./inventory.movements";
 import type {
   DeliveryAccountItem,
   DeliveryAccountsListQuery,
@@ -90,6 +91,7 @@ const userModel = require("../../../app/modules/user/user.model");
 const logModel = require("../../../app/modules/logs/log.model");
 const productTypeModel = require("../../../app/modules/product/productType.model");
 const shipmentInventoryModel = require("../../../app/modules/shipments/shipmentInventory.model");
+
 const shipmentExpenseModel = require("../../../app/modules/shipments/shipmentExpense.model");
 const shipmentReturnModel = require("../../../app/modules/shipments/shipmentReturn.model");
 const shippingCompanyModel = require("../../../app/modules/shipments/shippingCompany.model");
@@ -476,6 +478,30 @@ const isFinalReturnStatus = (returnType: number, status: number): boolean => {
   return returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR
     ? RETURN_TO_VENDOR_FINAL_STATUSES.includes(status as never)
     : CUSTOMER_RETURN_FINAL_STATUSES.includes(status as never);
+};
+
+/** Both return kinds have their own "forfeit" id. */
+const isForfeitReturnStatus = (returnType: number, status: unknown): boolean => {
+  const statusId = toNumber(status);
+  return returnType === SHIPMENT_RETURN_TYPE.TO_VENDOR
+    ? statusId === RETURN_TO_VENDOR_STATUS.FORFEIT
+    : statusId === CUSTOMER_RETURN_STATUS.FORFEIT;
+};
+
+/** Maps an order's lines onto inventory movement targets. */
+const getShipmentInventoryTargets = (plainOrder: Record<string, unknown>) => {
+  const lines = Array.isArray(plainOrder.orderLines) ? plainOrder.orderLines : [];
+
+  return lines.map((lineValue) => {
+    const line = toPlain(lineValue);
+    const product = toPlain(line.product);
+
+    return {
+      productCode: toText(line.sku),
+      productId: toNullableNumber(product.id ?? line.productId),
+      quantity: toNumber(line.quantity) || 1,
+    };
+  });
 };
 
 const shouldAutoForfeitVendorReturn = (returnValue: unknown): boolean => {
@@ -993,6 +1019,14 @@ export class ShipmentRepository {
     const firstLine = Array.isArray(plainShipment.orderLines) ? toPlain(plainShipment.orderLines[0]) : {};
     const vendor = toPlain(toPlain(firstLine.product).vendor);
 
+    /* A return that ends as "forfeit" means the goods stay with us, so they go
+       back into stock. Only on the transition, never on a repeated save. */
+    const becameForfeit = isForfeitReturnStatus(returnType, nextStatus)
+      && !isForfeitReturnStatus(returnType, toNumber(plainReturn.status));
+    if (becameForfeit) {
+      await applyOrderLinesToInventory(getShipmentInventoryTargets(plainShipment), "restock");
+    }
+
     return {
       daysCounter: getDaysBetween(updated.startedAt, updated.completedAt),
       id: toNumber(updated.id),
@@ -1114,6 +1148,41 @@ export class ShipmentRepository {
     return true;
   }
 
+  /**
+   * Sets the accounting state of one delivered shipment. Only delivered
+   * shipments appear in the ledger, so anything else is rejected outright.
+   */
+  public async updateDeliveryAccount(
+    orderId: number,
+    payload: { accountingDate?: string | null; accountingReference?: string; accountingStatus?: number },
+  ): Promise<boolean> {
+    const order = await orderModel.findByPk(orderId);
+    if (!order) {
+      return false;
+    }
+
+    const plainOrder = toPlain(order);
+    if (toNumber(plainOrder.shipmentStatus) !== SHIPMENT_STATUS.DELIVERED) {
+      throw new NotFoundError("Delivery account not found");
+    }
+
+    const nextStatus = payload.accountingStatus ?? toNumber(plainOrder.accountingStatus) ?? undefined;
+    await order.update({
+      ...(payload.accountingReference !== undefined ? { accountingReference: payload.accountingReference } : {}),
+      ...(payload.accountingStatus !== undefined ? { accountingStatus: payload.accountingStatus } : {}),
+      // Settling stamps the date when the caller did not supply one; reverting clears it.
+      ...(payload.accountingDate !== undefined
+        ? { accountingDate: payload.accountingDate ? new Date(payload.accountingDate) : null }
+        : nextStatus === ACCOUNTING_STATUS.SETTLED && !plainOrder.accountingDate
+          ? { accountingDate: new Date() }
+          : nextStatus === ACCOUNTING_STATUS.PENDING
+            ? { accountingDate: null }
+            : {}),
+    });
+
+    return true;
+  }
+
   public async listDeliveryAccounts(filters: DeliveryAccountsListQuery, vendorId?: number | null): Promise<DeliveryAccountsListResponse> {
     const whereClause: Record<string, unknown> = {
       shippedFromInventory: true,
@@ -1138,23 +1207,27 @@ export class ShipmentRepository {
       const product = toPlain(firstLine.product);
       const vendor = toPlain(product.vendor);
       const paymentStatus = toNumber(order.paymentStatus);
-      const accountingStatus = paymentStatus === 2 ? ACCOUNTING_STATUS.SETTLED : ACCOUNTING_STATUS.PENDING;
+      // A user-set accounting status wins; otherwise fall back to the payment status.
+      const storedAccountingStatus = toNullableNumber(order.accountingStatus);
+      const accountingStatus = storedAccountingStatus
+        ?? (paymentStatus === 2 ? ACCOUNTING_STATUS.SETTLED : ACCOUNTING_STATUS.PENDING);
       const deliveryBy = toNullableNumber(order.deliveryBy);
 
       return {
-        accountingDate: toIsoString(order.updatedAt),
+        accountingDate: toIsoString(order.accountingDate ?? order.updatedAt),
         accountingStatus,
         accountingStatusLabel: ACCOUNT_STATUS_LABELS[accountingStatus] ?? String(accountingStatus),
         amountToCollect: toNumber(order.toBeCollected || order.totalPrice),
         deliveryBy: toText(toPlain(order.shippingCompanyRecord).name, toText(order.shippingCompany))
           || (deliveryBy ? DELIVERY_BY_LABELS[deliveryBy] ?? String(deliveryBy) : ""),
         deliveryDate: toIsoString(order.deliveryDate),
+        id: toNumber(order.id),
         operationNumber: normalizeOperationCode(order.code),
         orderNumber: toText(order.orderNumber, toText(order.number, toText(order.name))),
         paymentMethod: String(paymentStatus || ""),
         paymentMethodLabel: PAYMENT_STATUS_LABELS[paymentStatus] ?? "",
         productCode: toText(firstLine.sku),
-        reference: toText(order.shopifyId),
+        reference: toText(order.accountingReference, toText(order.shopifyId)),
         sellerName: toText(vendor.name),
         sellingPrice: toNumber(firstLine.price) * Math.max(1, toNumber(firstLine.quantity)),
         shippingCost: toNumber(order.shippingFees),
