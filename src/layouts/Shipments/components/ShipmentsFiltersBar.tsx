@@ -38,17 +38,25 @@ export interface ShipmentsFiltersBarProps {
 }
 
 function FilterInput({
+  label,
   placeholder,
   value,
   onChange,
 }: {
+  label: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   return (
-    <Box
-      sx={{
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Typography component="label" sx={{
+        display: "block", mb: "4px", color: HX.tx2,
+        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+      }}>
+        {label}
+      </Typography>
+      <Box sx={{
         display: "flex",
         alignItems: "center",
         gap: "6px",
@@ -63,29 +71,29 @@ function FilterInput({
           borderColor: HX.accent,
           boxShadow: `0 0 0 2px ${HX.accentLight}`,
         },
-      }}
-    >
-      <Box sx={{ color: HX.tx3, display: "flex", alignItems: "center", flexShrink: 0 }}>
-        <SearchIcon sx={{ fontSize: 15 }} />
+      }}>
+        <Box sx={{ color: HX.tx3, display: "flex", alignItems: "center", flexShrink: 0 }}>
+          <SearchIcon sx={{ fontSize: 15 }} />
+        </Box>
+        <Box
+          component="input"
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          sx={{
+            border: "none",
+            outline: "none",
+            flex: 1,
+            minWidth: 0,
+            fontSize: "12px",
+            fontFamily: FONT,
+            color: "#000",
+            bgcolor: "transparent",
+            "&::placeholder": { color: HX.tx3, fontSize: "12px" },
+          }}
+        />
       </Box>
-      <Box
-        component="input"
-        type="text"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-        sx={{
-          border: "none",
-          outline: "none",
-          flex: 1,
-          minWidth: 0,
-          fontSize: "12px",
-          fontFamily: FONT,
-          color: "#000",
-          bgcolor: "transparent",
-          "&::placeholder": { color: HX.tx3, fontSize: "12px" },
-        }}
-      />
     </Box>
   );
 }
@@ -133,12 +141,12 @@ export default function ShipmentsFiltersBar({
   onReset,
 }: ShipmentsFiltersBarProps) {
   const [open, setOpen] = useState(false);
-  const [vals, setVals] = useState<FilterValues>(defaultValues);
+  const [vals, setVals] = useState<FilterValues>({ ...defaultValues, deliveryBy: "" });
 
   // أعِد المزامنة عند تغيّر القيم الخارجية (إعادة ضبط / تنقّل بالرابط)
   const defKey = JSON.stringify(defaultValues);
   useEffect(() => {
-    setVals(defaultValues);
+    setVals({ ...defaultValues, deliveryBy: "" });
   }, [defKey]);
 
   const setSelect = (field: keyof FilterValues) => (v: any) => {
@@ -177,7 +185,6 @@ export default function ShipmentsFiltersBar({
     { value: 1, label: "الدفع عند الاستلام" },
     { value: 2, label: "مدفوع" },
   ];
-  const deliveryByOptions = meta?.deliveryByOptions ?? [];
   const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
 
   const selectedCount = (value: string) => value
@@ -190,7 +197,6 @@ export default function ShipmentsFiltersBar({
     + selectedCount(vals.shipmentStatus)
     + selectedCount(vals.paymentStatus)
     + (isVendor ? 0 : selectedCount(vals.shipmentType))
-    + selectedCount(vals.deliveryBy)
     + selectedCount(vals.shippingCompany)
     + selectedCount(vals.scheduleStatus)
     + (vals.startDate || vals.endDate ? 1 : 0);
@@ -239,34 +245,40 @@ export default function ShipmentsFiltersBar({
 
       <Collapse in={open}>
         <Box sx={{ p: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
-          {/* Row 1: text inputs + selects — 8 per row on large screens */}
+          {/* Responsive, evenly-spaced filter grid. */}
           <Box
             sx={{
               display: "grid",
-              gap: "8px",
+              columnGap: "10px",
+              rowGap: "12px",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(4, 1fr)",
-                md: "repeat(8, 1fr)",
+                xs: "minmax(0, 1fr)",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr))",
               },
+              alignItems: "start",
             }}
           >
             <FilterInput
+              label="رقم العملية"
               placeholder="بحث برقم العملية..."
               value={vals.operationCode}
               onChange={setText("operationCode")}
             />
             <FilterInput
+              label="رقم الطلب"
               placeholder="بحث برقم الطلب..."
               value={vals.orderNumber}
               onChange={setText("orderNumber")}
             />
             <FilterInput
+              label="اسم العميل"
               placeholder="بحث باسم العميل..."
               value={vals.customerName}
               onChange={setText("customerName")}
             />
             <FilterInput
+              label="هاتف العميل"
               placeholder="بحث برقم هاتف العميل..."
               value={vals.customerPhone}
               onChange={setText("customerPhone")}
@@ -295,18 +307,12 @@ export default function ShipmentsFiltersBar({
               />
             )}
 
-            <FilterSelect
-              label="التوصيل بواسطة"
-              value={vals.deliveryBy}
-              options={deliveryByOptions}
-              onChange={setSelect("deliveryBy")}
-            />
-
             <ShippingCompanySelect
               value={vals.shippingCompany}
               onChange={setSelect("shippingCompany")}
+              multiple
               sx={{
-                "& .MuiOutlinedInput-root": { minHeight: "38px", height: 38 },
+                "& .MuiOutlinedInput-root": { minHeight: "38px", height: 38, overflow: "hidden", flexWrap: "nowrap" },
                 "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
               }}
             />
@@ -320,7 +326,7 @@ export default function ShipmentsFiltersBar({
 
 
             {/* Date range — part of the same grid, spans 2 cols on large screens */}
-            <Box sx={{ gridColumn: { xs: "span 2", sm: "span 4", md: "span 2" } }}>
+            <Box sx={{ gridColumn: { xs: "span 1", sm: "span 2", lg: "span 2" } }}>
               <DateRangePickerWrapper
                 startDate={vals.startDate}
                 endDate={vals.endDate}
@@ -334,7 +340,7 @@ export default function ShipmentsFiltersBar({
           </Box>
 
           {/* Row 2: all draft filters are committed only from the apply button. */}
-          <Box sx={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          <Box sx={{ display: "flex", gap: "8px", justifyContent: "flex-start", direction: "rtl" }}>
             <Button
               size="small"
               onClick={handleReset}

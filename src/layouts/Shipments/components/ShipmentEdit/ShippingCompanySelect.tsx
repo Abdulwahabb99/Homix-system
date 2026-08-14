@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -27,9 +28,11 @@ import {
 } from "query/shippingCompanies";
 
 type Props = {
-  /** معرّف الشركة المختارة (كنص) أو "" */
+  /** معرّف الشركة المختارة، أو معرّفات مفصولة بفاصلة عند تفعيل multiple */
   value: string;
   onChange: (id: string) => void;
+  /** يُستخدم في الفلاتر فقط؛ نموذج تعديل الشحنة يظل باختيار واحد. */
+  multiple?: boolean;
   /** أنماط إضافية تُدمج فوق المظهر الافتراضي (مثلاً لتصغير الارتفاع داخل الفلاتر) */
   sx?: SxProps<Theme>;
 };
@@ -57,7 +60,7 @@ const acSx = {
   },
 } as const;
 
-export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
+export default function ShippingCompanySelect({ value, onChange, multiple = false, sx }: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
   const createMutation = useCreateShippingCompanyMutation();
   const deleteMutation = useDeleteShippingCompanyMutation();
@@ -71,22 +74,32 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
 
   const saving = createMutation.isPending || updateMutation.isPending;
 
+  const rawValues = useMemo(
+    () => value.split(",").map((item) => item.trim()).filter(Boolean),
+    [value]
+  );
+
   // القيمة الواردة قد تكون معرّفاً أو اسماً (بيانات قديمة) — طبّعها إلى معرّف بعد تحميل القائمة.
   useEffect(() => {
     if (value === "" || value == null || companies.length === 0) return;
-    if (companies.some((c) => String(c.id) === String(value))) return;
-    const byName = companies.find((c) => c.name === value);
-    if (byName) onChange(String(byName.id));
-  }, [companies, value, onChange]);
+    const normalized = rawValues.map((rawValue) => {
+      const company = companies.find((c) => String(c.id) === rawValue || c.name === rawValue);
+      return company ? String(company.id) : rawValue;
+    });
+    const nextValue = normalized.join(",");
+    if (nextValue !== value) onChange(nextValue);
+  }, [companies, value, rawValues, onChange]);
+
+  const selectedOptions = useMemo<ShippingCompany[]>(() => {
+    const selectedValues = new Set(rawValues);
+    return companies.filter((company) => (
+      selectedValues.has(String(company.id)) || selectedValues.has(company.name)
+    ));
+  }, [companies, rawValues]);
 
   const selected = useMemo<ShippingCompany | null>(() => {
-    if (value === "" || value == null) return null;
-    return (
-      companies.find((c) => String(c.id) === String(value)) ??
-      companies.find((c) => c.name === value) ??
-      null
-    );
-  }, [companies, value]);
+    return selectedOptions[0] ?? null;
+  }, [selectedOptions]);
 
   const openAdd = () => {
     setEditingId(null);
@@ -112,7 +125,10 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
       createMutation.mutate(name, {
         onSuccess: (created) => {
           setDialogOpen(false);
-          if (created?.id != null) onChange(String(created.id));
+          if (created?.id != null) {
+            const createdId = String(created.id);
+            onChange(multiple ? [...rawValues, createdId].join(",") : createdId);
+          }
         },
       });
     }
@@ -123,7 +139,9 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
     const deletedId = deletingCompany.id;
     deleteMutation.mutate(deletedId, {
       onSuccess: () => {
-        if (selected?.id === deletedId) onChange("");
+        if (rawValues.includes(String(deletedId))) {
+          onChange(rawValues.filter((id) => id !== String(deletedId)).join(","));
+        }
         setDeletingCompany(null);
       },
     });
@@ -131,15 +149,46 @@ export default function ShippingCompanySelect({ value, onChange, sx }: Props) {
 
   return (
     <>
-      <Autocomplete<ShippingCompany>
+      <Autocomplete<ShippingCompany, boolean, false, false>
         fullWidth
         size="small"
         loading={isLoading}
+        multiple={multiple}
+        disableCloseOnSelect={multiple}
         options={companies}
-        value={selected}
+        value={multiple ? selectedOptions : selected}
         getOptionLabel={(o) => o?.name ?? ""}
         isOptionEqualToValue={(o, v) => o.id === v?.id}
-        onChange={(_, opt) => onChange(opt ? String(opt.id) : "")}
+        onChange={(_, opt) => {
+          if (Array.isArray(opt)) {
+            onChange(opt.map((company) => String(company.id)).join(","));
+            return;
+          }
+          onChange(opt ? String(opt.id) : "");
+        }}
+        renderTags={(tagValue, getTagProps) => {
+          const visible = tagValue.slice(0, 1);
+          const hiddenCount = tagValue.length - visible.length;
+          return [
+            ...visible.map((option, index) => (
+              <Chip
+                {...getTagProps({ index })}
+                key={option.id}
+                size="small"
+                label={option.name}
+                sx={{ maxWidth: 110, height: 24, fontFamily: FONT, fontSize: "11px" }}
+              />
+            )),
+            ...(hiddenCount > 0 ? [
+              <Chip
+                key="selected-count"
+                size="small"
+                label={`+${hiddenCount}`}
+                sx={{ height: 24, fontFamily: FONT, fontSize: "11px", bgcolor: HX.accentLight, color: HX.accent }}
+              />,
+            ] : []),
+          ];
+        }}
         noOptionsText="لا توجد شركات"
         loadingText="جارٍ التحميل…"
         sx={[acSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])] as SxProps<Theme>}
