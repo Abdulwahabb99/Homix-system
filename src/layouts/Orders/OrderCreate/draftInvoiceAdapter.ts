@@ -59,12 +59,19 @@ export function buildDraftInvoiceModel(
 
   const shippingFees = round2(toNumber(form.shippingFees) * share);
   const downPayment = round2(toNumber(form.downPayment) * share);
+  const customerAddress = [
+    form.customer.address1,
+    form.customer.address2,
+    form.customer.city,
+    form.customer.province,
+    form.customer.country,
+  ].map((part) => part.trim()).filter(Boolean).join("، ");
 
   return {
     code: "",
     createdAt: form.orderDate || null,
     customer: {
-      address: "",
+      address: customerAddress,
       name: `${form.customer.firstName} ${form.customer.lastName}`.trim(),
       phoneNumber: form.customer.phone,
     },

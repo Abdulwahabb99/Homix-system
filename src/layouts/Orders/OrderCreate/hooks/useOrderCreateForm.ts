@@ -36,7 +36,17 @@ export function useOrderCreateForm() {
   const navigate = useNavigate();
   const mutation = useCreateOrderFormMutation();
 
-  const [customer, setCustomer] = useState<CustomerForm>({ firstName: "", lastName: "", phone: "" });
+  const [customer, setCustomer] = useState<CustomerForm>({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    address1: "",
+    address2: "",
+    city: "",
+    province: "",
+    country: "مصر",
+  });
   const [lineItems, setLineItems] = useState<OrderLineItem[]>([]);
   const [orderDate, setOrderDate] = useState<string>(todayInputValue());
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<string>("");

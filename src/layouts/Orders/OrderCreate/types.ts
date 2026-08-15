@@ -16,6 +16,12 @@ export interface CustomerForm {
   firstName: string;
   lastName: string;
   phone: string;
+  email: string;
+  address1: string;
+  address2: string;
+  city: string;
+  province: string;
+  country: string;
 }
 
 export interface OrderCreateFormState {

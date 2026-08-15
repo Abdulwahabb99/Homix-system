@@ -11,6 +11,7 @@ export interface NewOrderLineItem {
   product_id: number | string;
   quantity: number;
   variant_id: number | string;
+  sku?: string;
 }
 
 /** POST /orders — manual order creation payload (matches the create-order form). */
@@ -19,6 +20,12 @@ export interface NewOrderPayload {
     first_name: string;
     last_name: string;
     phone: string;
+    email?: string;
+    address1?: string;
+    address2?: string;
+    city?: string;
+    province?: string;
+    country?: string;
   };
   line_items: NewOrderLineItem[];
   orderDate?: string;
