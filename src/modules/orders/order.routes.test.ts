@@ -174,7 +174,7 @@ const makeOrder = (overrides: Record<string, unknown> = {}) => ({
         image: "https://example.com/product.png",
         title: "ركنة للأثاث",
         type: { name: "غرفة نوم" },
-        vendor: { daysToDeliver: 5, id: 3, name: "ركنة للأثاث" },
+        vendor: { daysToDeliver: 5, id: 3, name: "ركنة للأثاث", shippingCost: 200 },
       },
       quantity: 1,
       size: "100x100",
@@ -395,9 +395,9 @@ describe("orderRouter", () => {
     expect(response.body.status).toBe(true);
     expect(response.body.data.cycle.billingDay).toBe(13);
     expect(response.body.data.summary.totalSales).toBe(8000);
-    expect(response.body.data.summary.companyDue).toBe(1200);
+    expect(response.body.data.summary.companyDue).toBe(1399);
     expect(response.body.data.summary.fines).toBe(300);
-    expect(response.body.data.summary.vendorDue).toBe(6500);
+    expect(response.body.data.summary.vendorDue).toBe(4100);
     expect(response.body.data.fullInvoice.summary.warehouseCost).toBe(2400);
     expect(response.body.data.vendorDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.warehouseDeliveries.summary.ordersCount).toBe(1);
@@ -405,7 +405,7 @@ describe("orderRouter", () => {
     expect(response.body.data.fullInvoice.items[0].orders).toEqual([
       expect.objectContaining({
         collectionTotal: 3000,
-        companyDue: 500,
+        companyDue: 699,
         fines: 100,
         id: 7,
         operationNumber: "3001",
@@ -415,7 +415,8 @@ describe("orderRouter", () => {
         productCode: "RKA-001",
         productId: 812,
         shipmentId: null,
-        vendorDue: 2400,
+        vendorDue: 0,
+        vendorShippingCost: 200,
         warehouseCost: 1200,
       }),
       expect.objectContaining({
@@ -431,11 +432,18 @@ describe("orderRouter", () => {
         productId: 812,
         shipmentId: 8,
         vendorDue: 4100,
+        vendorShippingCost: 200,
         warehouseCost: 1200,
       }),
     ]);
     expect(response.body.data.vendorDeliveries.items[0].orders).toHaveLength(1);
     expect(response.body.data.vendorDeliveries.items[0].orders[0].id).toBe(7);
+    expect(response.body.data.vendorDeliveries.items[0].orders[0]).toEqual(expect.objectContaining({
+      collectionTotal: 2099,
+      companyDue: 699,
+      vendorDue: 0,
+      vendorShippingCost: 200,
+    }));
     expect(response.body.data.warehouseDeliveries.items[0].orders).toHaveLength(1);
     expect(response.body.data.warehouseDeliveries.items[0].orders[0].id).toBe(8);
     const findAllWhere = orderModel.findAll.mock.calls[0]?.[0]?.where as Record<PropertyKey, unknown>;

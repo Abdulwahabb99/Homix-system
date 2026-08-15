@@ -120,6 +120,7 @@ export type OrderFinancialReportOrderRow = {
   productId: number | null;
   shipmentId: number | null;
   vendorDue: number;
+  vendorShippingCost: number;
   warehouseCost: number;
 };
 

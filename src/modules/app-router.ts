@@ -1298,9 +1298,10 @@ const swaggerOptions = {
             productId: { example: 812, nullable: true, type: "integer" },
             shipmentId: { example: 2402, nullable: true, type: "integer" },
             vendorDue: { example: 11700, type: "number" },
+            vendorShippingCost: { example: 200, description: "Shipping cost configured on the vendor and used only for seller-delivery settlements.", type: "number" },
             warehouseCost: { example: 12200, type: "number" },
           },
-          required: ["collectionTotal", "companyDue", "fines", "id", "operationNumber", "orderId", "orderNumber", "paymentStatus", "paymentStatusLabel", "productCode", "productId", "shipmentId", "vendorDue", "warehouseCost"],
+          required: ["collectionTotal", "companyDue", "fines", "id", "operationNumber", "orderId", "orderNumber", "paymentStatus", "paymentStatusLabel", "productCode", "productId", "shipmentId", "vendorDue", "vendorShippingCost", "warehouseCost"],
         },
         OrderFinancialReportResponse: {
           type: "object",

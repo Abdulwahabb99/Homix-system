@@ -31,6 +31,7 @@ import {
   toText,
 } from "./order.helpers";
 import type { OrderDetailsResponse, OrderDetailsView, OrderFinancialReportQuery, OrderFinancialReportResponse, OrderFinancialReportSection, OrderFinancialReportSectionSummary, OrderFinancialReportVendorRow, OrderListItem, OrderListQuery, OrderListResponse, OrderMetaResponse, OrderStatusHistoryItem, OrderSummaryResponse, OrderTimelineItem } from "./order.types";
+import { calculateVendorDeliverySettlement } from "./order-financial-settlement";
 
 const { sequelize } = require("../../infrastructure/database");
 const orderModel = require("../../../app/modules/order/order.model");
@@ -1039,8 +1040,14 @@ export class OrderRepository {
       const vendor = toPlain(toPlain(firstLine.product).vendor);
       const vendorId = toNumber(vendor.id) || null;
       const vendorName = toText(vendor.name, "غير محدد");
+      const vendorShippingCost = Math.max(toNumber(vendor.shippingCost), 0);
       const vendorKey = vendorId ? String(vendorId) : `unknown:${vendorName}`;
       const collectionTotal = toNumber(plainOrder.totalPrice);
+      const vendorCollectionTotal = plainOrder.toBeCollected === null
+        || plainOrder.toBeCollected === undefined
+        || plainOrder.toBeCollected === ""
+        ? collectionTotal
+        : toNumber(plainOrder.toBeCollected);
       const fines = toNumber(plainOrder.fine);
       const companyCommission = toNumber(plainOrder.commission);
       const vendorDue = Math.max(
@@ -1059,9 +1066,19 @@ export class OrderRepository {
         toNumber(plainOrder.deliveryBy) === DELIVERY_BY.HOMIX
         && toNumber(plainOrder.shipmentStatus) === SHIPMENTS_STATUS.DELIVERED;
       const isVendorDelivery = toNumber(plainOrder.deliveryBy) !== DELIVERY_BY.HOMIX;
+      const vendorSettlement = isVendorDelivery
+        ? calculateVendorDeliverySettlement({
+            collectionTotal: vendorCollectionTotal,
+            fines,
+            productCost: warehouseCost,
+            vendorShippingCost,
+          })
+        : null;
+      const reportCompanyDue = vendorSettlement?.companyDue ?? companyDue;
+      const reportVendorDue = vendorSettlement?.vendorDue ?? vendorDue;
       const orderDetail = {
         collectionTotal,
-        companyDue,
+        companyDue: reportCompanyDue,
         fines,
         id: orderId,
         operationNumber: toText(plainOrder.code),
@@ -1072,7 +1089,8 @@ export class OrderRepository {
         productCode: toText(firstLine.sku),
         productId,
         shipmentId: isWarehouseDelivery ? orderId : null,
-        vendorDue,
+        vendorDue: reportVendorDue,
+        vendorShippingCost,
         warehouseCost,
       };
 
@@ -1080,26 +1098,31 @@ export class OrderRepository {
       fullInvoiceRows.set(vendorKey, fullRow);
       appendFinancialRow(fullInvoiceSummary, fullRow, {
         collectionTotal,
-        companyDue,
+        companyDue: reportCompanyDue,
         fines,
         ordersCount: 1,
-        vendorDue,
+        vendorDue: reportVendorDue,
         warehouseCost,
       });
       fullRow.orders.push(orderDetail);
 
       if (isVendorDelivery) {
+        const vendorOrderDetail = {
+          ...orderDetail,
+          collectionTotal: vendorCollectionTotal,
+          shipmentId: null,
+        };
         const vendorRow = vendorDeliveryRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
         vendorDeliveryRows.set(vendorKey, vendorRow);
         appendFinancialRow(vendorDeliveriesSummary, vendorRow, {
-          collectionTotal,
-          companyDue,
+          collectionTotal: vendorCollectionTotal,
+          companyDue: reportCompanyDue,
           fines,
           ordersCount: 1,
-          vendorDue,
+          vendorDue: reportVendorDue,
           warehouseCost,
         });
-        vendorRow.orders.push(orderDetail);
+        vendorRow.orders.push(vendorOrderDetail);
       }
 
       if (isWarehouseDelivery) {
