@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { Box } from "@mui/material";
+import { Link } from "react-router-dom";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { money } from "../utils/calc";
 import { PAY_LABELS } from "../utils/constants";
@@ -24,18 +25,31 @@ export function AmountFine({ value }: { value: number }) {
 }
 
 /** رقم العملية — OP-2401 */
-export function OpId({ children }: { children: React.ReactNode }) {
-  return <Box component="span" sx={opIdSx}>{children}</Box>;
+const linkSx = {
+  color: "inherit",
+  cursor: "pointer",
+  textDecoration: "none",
+  "&:hover": { color: HX.accent, textDecoration: "underline" },
+} as const;
+
+export function OpId({ children, to }: { children: React.ReactNode; to?: string }) {
+  return to ? (
+    <Box component={Link} to={to} sx={{ ...opIdSx, ...linkSx }}>{children}</Box>
+  ) : <Box component="span" sx={opIdSx}>{children}</Box>;
 }
 
 /** نص باهت (رقم الطلب مثلاً) */
-export function Muted({ children }: { children: React.ReactNode }) {
-  return <Box component="span" sx={{ color: HX.tx2 }}>{children}</Box>;
+export function Muted({ children, to }: { children: React.ReactNode; to?: string }) {
+  return to ? (
+    <Box component={Link} to={to} sx={{ color: HX.tx2, ...linkSx }}>{children}</Box>
+  ) : <Box component="span" sx={{ color: HX.tx2 }}>{children}</Box>;
 }
 
 /** كود المنتج داخل رقاقة monospace */
-export function ProdCode({ children }: { children: React.ReactNode }) {
-  return <Box component="span" sx={prodCodeSx}>{children}</Box>;
+export function ProdCode({ children, to }: { children: React.ReactNode; to?: string }) {
+  return to ? (
+    <Box component={Link} to={to} sx={{ ...prodCodeSx, ...linkSx }}>{children}</Box>
+  ) : <Box component="span" sx={prodCodeSx}>{children}</Box>;
 }
 
 /** مبلغ منسّق بلون/سماكة اختيارية */

@@ -32,9 +32,9 @@ export default function WarehouseTab({ sellers }: { sellers: SettlementSeller[] 
           { label: "الغرامات" },
         ]}
         rows={s.row.orders.map((order) => [
-          <OpId key="operation">{order.operationNumber || `OP-${order.id}`}</OpId>,
-          <Muted key="order">#{order.orderNumber || order.id}</Muted>,
-          <ProdCode key="product">{order.productCode || "—"}</ProdCode>,
+          <OpId key="operation" to={`/shipments/${order.shipmentId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
+          <Muted key="order" to={`/shipments/${order.shipmentId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
+          <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
           <Money key="cost" value={order.warehouseCost} bold />,
           <FineCell key="fine" value={order.fines} />,
         ])}

@@ -64,11 +64,15 @@ export interface FinancialOrderItem {
   fines: number;
   id: number;
   operationNumber: string;
+  orderId: number;
   orderNumber: string;
   paymentStatus: number | null;
   paymentStatusLabel: string;
   productCode: string;
+  productId: number | null;
+  shipmentId: number | null;
   vendorDue: number;
+  vendorShippingCost: number;
   warehouseCost: number;
 }
 
@@ -134,11 +138,15 @@ function normalizeOrderItem(raw: any): FinancialOrderItem {
     fines: num(raw?.fines),
     id: num(raw?.id),
     operationNumber: String(raw?.operationNumber ?? ""),
+    orderId: num(raw?.orderId ?? raw?.id),
     orderNumber: String(raw?.orderNumber ?? ""),
     paymentStatus: raw?.paymentStatus == null ? null : num(raw.paymentStatus),
     paymentStatusLabel: String(raw?.paymentStatusLabel ?? ""),
     productCode: String(raw?.productCode ?? ""),
+    productId: raw?.productId == null ? null : num(raw.productId),
+    shipmentId: raw?.shipmentId == null ? null : num(raw.shipmentId),
     vendorDue: num(raw?.vendorDue),
+    vendorShippingCost: num(raw?.vendorShippingCost),
     warehouseCost: num(raw?.warehouseCost),
   };
 }

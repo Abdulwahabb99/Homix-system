@@ -35,9 +35,9 @@ export default function ComprehensiveTab({ sellers }: { sellers: SettlementSelle
           { label: "الغرامات" },
         ]}
         rows={s.row.orders.map((order) => [
-          <OpId key="operation">{order.operationNumber || `OP-${order.id}`}</OpId>,
-          <Muted key="order">#{order.orderNumber || order.id}</Muted>,
-          <ProdCode key="product">{order.productCode || "—"}</ProdCode>,
+          <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
+          <Muted key="order" to={`/orders/${order.orderId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
+          <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
           <Money key="vendor" value={order.vendorDue} tone="green" bold />,
           <Money key="company" value={order.companyDue} tone="accent" bold />,
           <FineCell key="fine" value={order.fines} />,

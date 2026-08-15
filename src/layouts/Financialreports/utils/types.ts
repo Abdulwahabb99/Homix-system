@@ -34,11 +34,15 @@ export interface SettlementOrder {
   fines: number;
   id: number;
   operationNumber: string;
+  orderId: number;
   orderNumber: string;
   paymentStatus: number | null;
   paymentStatusLabel: string;
   productCode: string;
+  productId: number | null;
+  shipmentId: number | null;
   vendorDue: number;
+  vendorShippingCost: number;
   warehouseCost: number;
 }
 
@@ -64,10 +68,10 @@ export interface SellerTotals {
   fine: number;
   dueSeller: number;
   dueComp: number;
+  /** إجمالي قيمة الشحن المحفوظة على المورد لطلبات تسليم البائع */
+  vendorShippingCost: number;
   /** الصافي المطلوب (تسويات المخزن) = التكلفة − الغرامات */
   netRequired: number;
-  /** الصافي بعد الغرامات (تسويات البائع) = مستحق البائع − الغرامات */
-  netAfterFine: number;
   /** الإجمالي الكلي (الفاتورة الشاملة) = مستحق البائع + مستحق الشركة */
   totalCombined: number;
 }

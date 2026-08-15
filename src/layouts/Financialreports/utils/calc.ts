@@ -27,6 +27,10 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
   const fine = Number(r.fines) || 0;
   const dueSeller = Number(r.vendorDue) || 0;
   const dueComp = Number(r.companyDue) || 0;
+  const vendorShippingCost = r.orders.reduce(
+    (total, order) => total + (Number(order.vendorShippingCost) || 0),
+    0
+  );
   return {
     orders: Number(r.ordersCount) || 0,
     cost,
@@ -34,8 +38,8 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
     fine,
     dueSeller,
     dueComp,
+    vendorShippingCost,
     netRequired: cost - fine,
-    netAfterFine: dueSeller - fine,
     totalCombined: dueSeller + dueComp,
   };
 }
