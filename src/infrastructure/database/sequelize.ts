@@ -19,6 +19,15 @@ export const sequelize = new Sequelize(env.DB_NAME, env.DB_USER, env.DB_PASSWORD
   dialectOptions: sslDialectOptions,
   host: env.DB_HOST,
   logging: false,
+  /* Sequelize defaults to 5 connections and a 60s acquire timeout. Long backfills
+     issue several concurrent bulk writes against a remote database and were
+     failing with ConnectionAcquireTimeoutError before the pool was widened. */
+  pool: {
+    acquire: 120_000,
+    idle: 10_000,
+    max: 10,
+    min: 0,
+  },
 });
 
 export const connectToDb = async (): Promise<void> => {
