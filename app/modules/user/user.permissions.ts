@@ -166,6 +166,8 @@ export const USER_PERMISSION_TEMPLATES = {
     ship_view: true,
     ship_edit: true,
     orders_view: true,
+    /* logisticsRoutes على main كانت تشمل /products */
+    products_view: true,
     factory_view: true,
     notifications_view: true,
     notifications_manage: true,
@@ -181,6 +183,20 @@ export const USER_PERMISSION_TEMPLATES = {
     customers_view: true,
     customers_edit: true,
     ship_view: true,
+    tickets_view: true,
+    tickets_reply: true,
+    notifications_view: true,
+    notifications_manage: true,
+  },
+  vendor: {
+    /* يطابق vendorsRoutes في الفرونت إند القديم (main):
+       الرئيسية · المنتجات · الطلبات · تقارير مالية.
+       والتذاكر أُضيفت لاحقاً وهي مقيَّدة ببيانات البائع نفسه. */
+    dashboard_view: true,
+    products_view: true,
+    orders_view: true,
+    finance_view: true,
+    finance_export: true,
     tickets_view: true,
     tickets_reply: true,
     notifications_view: true,
@@ -218,11 +234,7 @@ export const getPermissionTemplateForUserType = (userType?: string, roleName?: s
   }
 
   if (userType === USER_TYPES.VENDOR) {
-    return {
-      dashboard_view: true,
-      notifications_manage: true,
-      notifications_view: true,
-    };
+    return { ...USER_PERMISSION_TEMPLATES.vendor };
   }
 
   return { ...USER_PERMISSION_TEMPLATES.none };
