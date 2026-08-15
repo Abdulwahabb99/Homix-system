@@ -254,10 +254,10 @@ export class ShipmentService {
     const report = await this.shipmentRepository.listExpenseAccounts({ ...filters, page: 1, size: 1_000_000 });
     await this.writeAccountsWorkbook(response, "expenses.xlsx", "expenses", [
       { header: "التاريخ", key: "accountingDate", width: 22 },
-      { header: "حالة المحاسبة", key: "accountingStatusLabel", width: 20 },
-      { header: "المبلغ", key: "amount", width: 16 },
-      { header: "السبب", key: "reason", width: 40 },
       { header: "النوع", key: "typeLabel", width: 22 },
+      { header: "السبب", key: "reason", width: 40 },
+      { header: "المبلغ", key: "amount", width: 16 },
+      { header: "حالة المحاسبة", key: "accountingStatusLabel", width: 20 },
     ], report.items);
   }
 

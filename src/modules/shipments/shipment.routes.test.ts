@@ -1263,6 +1263,16 @@ describe("shipmentRouter", () => {
     expect(response.headers["content-disposition"]).toContain("expenses.xlsx");
     expect(Buffer.isBuffer(response.body)).toBe(true);
     expect(response.body.subarray(0, 2).toString()).toBe("PK");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(response.body);
+    const worksheet = workbook.getWorksheet("expenses");
+    expect(["A1", "B1", "C1", "D1", "E1"].map((cell) => worksheet.getCell(cell).value)).toEqual([
+      "التاريخ",
+      "النوع",
+      "السبب",
+      "المبلغ",
+      "حالة المحاسبة",
+    ]);
     expect(shipmentExpenseModel.findAll).toHaveBeenCalled();
   });
 
