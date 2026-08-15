@@ -16,7 +16,7 @@ export type ManualOrderBackfillResult = {
  */
 export const backfillManualOrderData = async (): Promise<ManualOrderBackfillResult> =>
   sequelize.transaction({ isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED }, async (transaction) => {
-    const [skuRows] = await sequelize.query<{ id: number }>(
+    const skuRows = await sequelize.query<{ id: number }>(
       `
         with variant_matches as (
           select
@@ -47,10 +47,10 @@ export const backfillManualOrderData = async (): Promise<ManualOrderBackfillResu
         where line.id = matched."orderLineId"
         returning line.id
       `,
-      { transaction },
+      { transaction, type: QueryTypes.SELECT },
     );
 
-    const [addressRows] = await sequelize.query<{ id: number }>(
+    const addressRows = await sequelize.query<{ id: number }>(
       `
         with address_sources as (
           select
@@ -72,7 +72,7 @@ export const backfillManualOrderData = async (): Promise<ManualOrderBackfillResu
           and regexp_replace(coalesce(customer.address, ''), '[-,[:space:]]', '', 'g') = ''
         returning customer.id
       `,
-      { transaction },
+      { transaction, type: QueryTypes.SELECT },
     );
 
     return {
