@@ -397,6 +397,7 @@ describe("orderRouter", () => {
     expect(response.body.data.summary.companyDue).toBe(1200);
     expect(response.body.data.summary.fines).toBe(300);
     expect(response.body.data.summary.vendorDue).toBe(6500);
+    expect(response.body.data.fullInvoice.summary.warehouseCost).toBe(2400);
     expect(response.body.data.vendorDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.warehouseDeliveries.summary.ordersCount).toBe(1);
     expect(response.body.data.fullInvoice.items[0].vendorName).toBe("ركنة للأثاث");
@@ -411,7 +412,7 @@ describe("orderRouter", () => {
         paymentStatus: 1,
         productCode: "RKA-001",
         vendorDue: 2400,
-        warehouseCost: 2500,
+        warehouseCost: 1200,
       }),
       expect.objectContaining({
         collectionTotal: 5000,
@@ -423,7 +424,7 @@ describe("orderRouter", () => {
         paymentStatus: 1,
         productCode: "RKA-001",
         vendorDue: 4100,
-        warehouseCost: 4300,
+        warehouseCost: 1200,
       }),
     ]);
     expect(response.body.data.vendorDeliveries.items[0].orders).toHaveLength(1);

@@ -34,6 +34,9 @@ const {
   resolveDeliveryStatus,
   resolveOrderPriority,
 } = require("../../../src/modules/orders/order.helpers");
+const {
+  splitImportedOrderByUnit,
+} = require("../../../src/modules/orders/order-discounts");
 const moment = require("moment-timezone");
 const Attachment = require("../attachments/attachment.model");
 const ProductType = require("../product/productType.model");
@@ -161,65 +164,7 @@ class OrderService {
       };
     }
     ordersFromShopify.forEach((order) => {
-      if (order.line_items.length > 1) {
-        for (const line of order.line_items) {
-          if (line.quantity > 1) {
-            const discount_allocations = line.discount_allocations || [];
-            const lineDiscount = discount_allocations.reduce(
-              (acc, item) => acc + Number(item.amount),
-              0,
-            );
-            const discount = lineDiscount / line.quantity;
-            //split line into multiple lines with quantity 1
-            for (let i = 0; i < line.quantity; i++) {
-              const newLine = { ...line, quantity: 1 };
-              newLine.discount = discount;
-              orders.push({
-                ...order,
-                line_items: [newLine],
-              });
-            }
-          } else {
-            const discount_allocations = line.discount_allocations || [];
-            const lineDiscount = discount_allocations.reduce(
-              (acc, item) => acc + Number(item.amount),
-              0,
-            );
-            const discount = lineDiscount;
-            line.discount = discount;
-            orders.push({
-              ...order,
-              line_items: [line],
-            });
-          }
-        }
-      } else {
-        const line = order.line_items[0];
-        const discount_allocations = line.discount_allocations || [];
-        const lineDiscount = discount_allocations.reduce(
-          (acc, item) => acc + Number(item.amount),
-          0,
-        );
-        if (line.quantity > 1) {
-          const discount = lineDiscount / line.quantity;
-          //split line into multiple lines with quantity 1
-          for (let i = 0; i < line.quantity; i++) {
-            const newLine = { ...line, quantity: 1 };
-            newLine.discount = discount;
-            orders.push({
-              ...order,
-              line_items: [newLine],
-            });
-          }
-        } else {
-          const discount = lineDiscount;
-          line.discount = discount;
-          orders.push({
-            ...order,
-            line_items: [line],
-          });
-        }
-      }
+      orders.push(...splitImportedOrderByUnit(order));
     });
 
     const productsIds = new Set();

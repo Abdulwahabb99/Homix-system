@@ -327,6 +327,21 @@ const getOrderLineVariant = (lineValue: unknown): Record<string, unknown> => {
     || toText(variant.id) === toText(line.variant_id)) ?? {};
 };
 
+const getFinancialOrderCost = (order: Record<string, unknown>, orderLines: unknown[]): number => {
+  const storedTotalCost = toNumber(order.totalCost);
+  if (storedTotalCost > 0) return storedTotalCost;
+
+  return orderLines.reduce<number>((total, lineValue) => {
+    const line = toPlain(lineValue);
+    const quantity = Math.max(1, toNumber(line.quantity));
+    const storedLineCost = toNumber(line.cost);
+    if (storedLineCost > 0) return total + storedLineCost;
+
+    const unitCost = toNumber(line.unitCost) || toNumber(getOrderLineVariant(line).cost);
+    return total + (unitCost * quantity);
+  }, 0);
+};
+
 const resolveAggregateScope = (
   filters: OrderListQuery,
   vendorId?: number | null,
@@ -1036,7 +1051,7 @@ export class OrderRepository {
         toNumber(plainOrder.totalCompanyDue) || companyCommission,
         0,
       );
-      const warehouseCost = vendorDue + fines;
+      const warehouseCost = getFinancialOrderCost(plainOrder, orderLines);
       const paymentStatus = toNumber(plainOrder.paymentStatus) || null;
       const orderDetail = {
         collectionTotal,
