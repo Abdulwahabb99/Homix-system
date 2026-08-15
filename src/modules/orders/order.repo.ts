@@ -434,6 +434,7 @@ const createFinancialSummary = (): OrderFinancialReportSectionSummary => ({
   fines: 0,
   ordersCount: 0,
   vendorDue: 0,
+  vendorShippingCost: 0,
   warehouseCost: 0,
 });
 
@@ -446,6 +447,7 @@ const createFinancialRow = (vendorId: number | null, vendorName: string): OrderF
   vendorDue: 0,
   vendorId,
   vendorName,
+  vendorShippingCost: 0,
   warehouseCost: 0,
 });
 
@@ -458,6 +460,7 @@ const appendFinancialRow = (
     fines: number;
     ordersCount: number;
     vendorDue: number;
+    vendorShippingCost: number;
     warehouseCost: number;
   },
 ): void => {
@@ -466,6 +469,7 @@ const appendFinancialRow = (
   summary.fines += values.fines;
   summary.ordersCount += values.ordersCount;
   summary.vendorDue += values.vendorDue;
+  summary.vendorShippingCost += values.vendorShippingCost;
   summary.warehouseCost += values.warehouseCost;
 
   row.collectionTotal += values.collectionTotal;
@@ -473,6 +477,7 @@ const appendFinancialRow = (
   row.fines += values.fines;
   row.ordersCount += values.ordersCount;
   row.vendorDue += values.vendorDue;
+  row.vendorShippingCost += values.vendorShippingCost;
   row.warehouseCost += values.warehouseCost;
 };
 
@@ -1102,6 +1107,7 @@ export class OrderRepository {
         fines,
         ordersCount: 1,
         vendorDue: reportVendorDue,
+        vendorShippingCost: isVendorDelivery ? vendorShippingCost : 0,
         warehouseCost,
       });
       fullRow.orders.push(orderDetail);
@@ -1120,6 +1126,7 @@ export class OrderRepository {
           fines,
           ordersCount: 1,
           vendorDue: reportVendorDue,
+          vendorShippingCost,
           warehouseCost,
         });
         vendorRow.orders.push(vendorOrderDetail);
@@ -1134,6 +1141,8 @@ export class OrderRepository {
           fines,
           ordersCount: 1,
           vendorDue,
+          // شحن المورد لا ينطبق على التسليم من المخزن
+          vendorShippingCost: 0,
           warehouseCost,
         });
         warehouseRow.orders.push(orderDetail);

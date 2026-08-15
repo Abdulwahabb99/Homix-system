@@ -103,6 +103,8 @@ export type OrderFinancialReportVendorRow = {
   vendorDue: number;
   vendorId: number | null;
   vendorName: string;
+  /** مجموع «شحن المورد» لطلبات هذا البائع */
+  vendorShippingCost: number;
   warehouseCost: number;
 };
 
@@ -130,6 +132,8 @@ export type OrderFinancialReportSectionSummary = {
   fines: number;
   ordersCount: number;
   vendorDue: number;
+  /** مجموع «شحن المورد» — يخصّ تسليمات البائع فقط */
+  vendorShippingCost: number;
   warehouseCost: number;
 };
 
