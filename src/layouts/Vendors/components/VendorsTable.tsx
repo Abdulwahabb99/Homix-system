@@ -23,7 +23,7 @@ interface VendorsTableProps {
   onExport?: () => void;
 }
 
-const COLS = 7;
+const COLS = 8;
 
 export default function VendorsTable({
   rows, total, page, pageCount, onPageChange, isLoading, onToggleStatus, onView, onEdit, onDelete, onExport,
@@ -67,6 +67,7 @@ export default function VendorsTable({
               <th>اسم المورد</th>
               <th>البريد الإلكتروني</th>
               <th>مدة الشحن</th>
+              <th>قيمة الشحن</th>
               <th>الاكونت مانجر</th>
               <th style={{ textAlign: "center" }}>الحالة</th>
               <th aria-label="إجراءات" />

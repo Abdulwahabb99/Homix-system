@@ -8,11 +8,14 @@ export interface Vendor {
   active?: boolean;
   /** مدة الشحن بالأيام */
   daysToDeliver?: number | string;
+  /** قيمة الشحن الثابتة للمورد بالجنيه */
+  shippingCost?: number | string;
   /** قد لا يوفّره الـ API — يُعرض فقط إن وُجد */
   phone?: string;
   user?: { email?: string } | null;
   /** الاكونت مانجر — المعرّف (من قائمة المستخدمين) واسمه للعرض */
   accountManager?: number | string | null;
+  accountManagerUserId?: number | string | null;
   accountManagerLabel?: string | null;
   [key: string]: unknown;
 }

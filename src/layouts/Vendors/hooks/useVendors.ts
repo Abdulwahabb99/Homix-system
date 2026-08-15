@@ -103,11 +103,13 @@ export function useVendors() {
     mutationFn: (payload: {
       id: number | string;
       daysToDeliver?: string | number;
+      shippingCost?: string | number;
       password?: string;
       accountManager?: number | string | null;
     }) => {
       const body: Record<string, unknown> = {};
       if (payload.daysToDeliver !== undefined && payload.daysToDeliver !== "") body.daysToDeliver = payload.daysToDeliver;
+      if (payload.shippingCost !== undefined && payload.shippingCost !== "") body.shippingCost = payload.shippingCost;
       if (payload.password) body.password = payload.password;
       if (payload.accountManager !== undefined && payload.accountManager !== "") body.accountManager = payload.accountManager;
       return axiosRequest.put(`/vendors/${payload.id}`, body);
@@ -136,6 +138,7 @@ export function useVendors() {
     editVendor: (payload: {
       id: number | string;
       daysToDeliver?: string | number;
+      shippingCost?: string | number;
       password?: string;
       accountManager?: number | string | null;
     }) => editMutation.mutateAsync(payload),

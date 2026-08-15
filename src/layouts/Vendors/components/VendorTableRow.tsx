@@ -13,6 +13,12 @@ import { avatarGradient, initials, PLACEHOLDER } from "../utils/constants";
 import { Vendor } from "../utils/types";
 import ShipDurationBadge from "./ShipDurationBadge";
 
+const formatShippingCost = (value: Vendor["shippingCost"]): string => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return PLACEHOLDER;
+  return `${new Intl.NumberFormat("ar-EG", { maximumFractionDigits: 2 }).format(amount)} ج.م`;
+};
+
 interface VendorTableRowProps {
   vendor: Vendor;
   checked: boolean;
@@ -61,6 +67,13 @@ export default function VendorTableRow({ vendor, checked, onToggleSelect, onTogg
 
       {/* مدة الشحن */}
       <td><ShipDurationBadge days={vendor.daysToDeliver} /></td>
+
+      {/* قيمة الشحن */}
+      <td>
+        <Box component="span" sx={{ color: HX.tx, fontSize: "12px", fontWeight: 700, fontFamily: FONT }}>
+          {formatShippingCost(vendor.shippingCost)}
+        </Box>
+      </td>
 
       {/* الاكونت مانجر */}
       <td>

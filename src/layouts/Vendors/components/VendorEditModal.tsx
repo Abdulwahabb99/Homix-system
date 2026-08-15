@@ -42,6 +42,7 @@ const rowSx = { display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr"
 
 export interface VendorEditPayload {
   daysToDeliver: string;
+  shippingCost: string;
   password: string;
   accountManager: string;
 }
@@ -57,6 +58,7 @@ interface VendorEditModalProps {
 
 export default function VendorEditModal({ open, vendor, isSaving, onClose, onSave, onToggleStatus }: VendorEditModalProps) {
   const [daysToDeliver, setDaysToDeliver] = useState("");
+  const [shippingCost, setShippingCost] = useState("");
   const [password, setPassword] = useState("");
   const [accountManager, setAccountManager] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -81,13 +83,14 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
     if (!open || !vendor) return;
     setShowPassword(false);
     setDaysToDeliver(vendor.daysToDeliver != null ? String(vendor.daysToDeliver) : "");
+    setShippingCost(vendor.shippingCost != null ? String(vendor.shippingCost) : "0");
     setPassword("");
-    setAccountManager(vendor.accountManager != null ? String(vendor.accountManager) : "");
+    setAccountManager(vendor.accountManagerUserId != null ? String(vendor.accountManagerUserId) : "");
     setActive(Boolean(vendor.active));
   }, [open, vendor]);
 
   const handleSave = () => {
-    onSave({ daysToDeliver, password, accountManager })
+    onSave({ daysToDeliver, shippingCost, password, accountManager })
       .then(() => onClose())
       .catch(() => { /* الخطأ يُعرض من طبقة الحفظ */ });
   };
@@ -134,6 +137,22 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
         </Box>
 
         <Box sx={rowSx}>
+          <Field label="قيمة الشحن (ج.م)">
+            <Box component="input" type="number" inputMode="decimal" min="0" step="0.01"
+              value={shippingCost} placeholder="مثال: 150"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShippingCost(e.target.value)} sx={controlSx} />
+          </Field>
+          <Field label="الاكونت مانجر">
+            <Box component="select" value={accountManager}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAccountManager(e.target.value)}
+              sx={{ ...controlSx, cursor: "pointer", color: accountManager ? HX.tx : HX.tx3 }}>
+              <option value="">اختر الاكونت مانجر</option>
+              {amOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+            </Box>
+          </Field>
+        </Box>
+
+        <Box sx={{ ...rowSx, gridTemplateColumns: "1fr" }}>
           <Field label="كلمة المرور">
             <Box sx={{ position: "relative" }}>
               <Box component="input" type={showPassword ? "text" : "password"} value={password} placeholder="اتركها فارغة لعدم التغيير"
@@ -143,14 +162,6 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
                 sx={{ position: "absolute", insetInlineEnd: "8px", top: 0, height: "100%", display: "flex", alignItems: "center", border: "none", background: "transparent", cursor: "pointer", color: HX.tx3, p: 0, "&:hover": { color: HX.accent } }}>
                 {showPassword ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
               </Box>
-            </Box>
-          </Field>
-          <Field label="الاكونت مانجر">
-            <Box component="select" value={accountManager}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAccountManager(e.target.value)}
-              sx={{ ...controlSx, cursor: "pointer", color: accountManager ? HX.tx : HX.tx3 }}>
-              <option value="">اختر الاكونت مانجر</option>
-              {amOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
             </Box>
           </Field>
         </Box>
@@ -171,7 +182,8 @@ export default function VendorEditModal({ open, vendor, isSaving, onClose, onSav
           sx={{ px: "14px", height: 34, border: `0.5px solid ${HX.border}`, borderRadius: "8px", fontSize: "12px", fontWeight: 600, fontFamily: FONT, cursor: "pointer", bgcolor: "transparent", color: HX.tx2, "&:hover": { borderColor: HX.red, color: HX.red } }}>
           إلغاء
         </Box>
-        <Box component="button" type="button" onClick={handleSave} disabled={isSaving}
+        <Box component="button" type="button" onClick={handleSave}
+          disabled={isSaving || shippingCost === "" || Number(shippingCost) < 0 || !Number.isFinite(Number(shippingCost))}
           sx={{ display: "inline-flex", alignItems: "center", gap: "6px", px: "18px", height: 34, border: "none", borderRadius: "8px", fontSize: "12.5px", fontWeight: 700, fontFamily: FONT, cursor: isSaving ? "default" : "pointer", bgcolor: HX.accent, color: "#fff", opacity: isSaving ? 0.7 : 1, "&:hover": { bgcolor: "#5254e0" }, "& svg": { fontSize: 16 } }}>
           {isSaving ? <CircularProgress size={15} sx={{ color: "#fff" }} /> : <CheckIcon />} حفظ المورد
         </Box>

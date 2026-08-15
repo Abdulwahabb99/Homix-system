@@ -87,6 +87,7 @@ export default function Vendors() {
           editVendor({
             id: editVendorRow!.id,
             daysToDeliver: values.daysToDeliver,
+            shippingCost: values.shippingCost,
             password: values.password,
             accountManager: values.accountManager,
           })
