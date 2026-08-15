@@ -1053,23 +1053,28 @@ export class OrderRepository {
       );
       const warehouseCost = getFinancialOrderCost(plainOrder, orderLines);
       const paymentStatus = toNumber(plainOrder.paymentStatus) || null;
-      const orderDetail = {
-        collectionTotal,
-        companyDue,
-        fines,
-        id: toNumber(plainOrder.id),
-        operationNumber: toText(plainOrder.code),
-        orderNumber: toText(plainOrder.orderNumber, toText(plainOrder.number, toText(plainOrder.name))),
-        paymentStatus,
-        paymentStatusLabel: paymentStatus ? PAYMENT_STATUS_ARABIC[paymentStatus as keyof typeof PAYMENT_STATUS_ARABIC] ?? String(paymentStatus) : "",
-        productCode: toText(firstLine.sku),
-        vendorDue,
-        warehouseCost,
-      };
+      const orderId = toNumber(plainOrder.id);
+      const productId = toNumber(toPlain(firstLine.product).id) || null;
       const isWarehouseDelivery =
         toNumber(plainOrder.deliveryBy) === DELIVERY_BY.HOMIX
         && toNumber(plainOrder.shipmentStatus) === SHIPMENTS_STATUS.DELIVERED;
       const isVendorDelivery = toNumber(plainOrder.deliveryBy) !== DELIVERY_BY.HOMIX;
+      const orderDetail = {
+        collectionTotal,
+        companyDue,
+        fines,
+        id: orderId,
+        operationNumber: toText(plainOrder.code),
+        orderId,
+        orderNumber: toText(plainOrder.orderNumber, toText(plainOrder.number, toText(plainOrder.name))),
+        paymentStatus,
+        paymentStatusLabel: paymentStatus ? PAYMENT_STATUS_ARABIC[paymentStatus as keyof typeof PAYMENT_STATUS_ARABIC] ?? String(paymentStatus) : "",
+        productCode: toText(firstLine.sku),
+        productId,
+        shipmentId: isWarehouseDelivery ? orderId : null,
+        vendorDue,
+        warehouseCost,
+      };
 
       const fullRow = fullInvoiceRows.get(vendorKey) ?? createFinancialRow(vendorId, vendorName);
       fullInvoiceRows.set(vendorKey, fullRow);

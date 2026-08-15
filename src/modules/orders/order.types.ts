@@ -112,10 +112,13 @@ export type OrderFinancialReportOrderRow = {
   fines: number;
   id: number;
   operationNumber: string;
+  orderId: number;
   orderNumber: string;
   paymentStatus: number | null;
   paymentStatusLabel: string;
   productCode: string;
+  productId: number | null;
+  shipmentId: number | null;
   vendorDue: number;
   warehouseCost: number;
 };
