@@ -827,6 +827,56 @@ const backfillUserPermissions = async (): Promise<void> => {
   }
 };
 
+/**
+ * Grants each user the permissions their role is supposed to have.
+ *
+ * The vendor template did not exist before — vendors were handed a hardcoded
+ * three-key object (dashboard + notifications), so all 82 vendor rows carry an
+ * explicit `false` for products/orders/finance. `normalizePermissions` honours
+ * stored keys over the template, so fixing the template alone cannot reach
+ * them; the stored maps have to be repaired.
+ *
+ * This only ever turns permissions ON. A permission an administrator switched
+ * off deliberately for one user stays off unless the role template grants it,
+ * and nothing outside the template is touched.
+ */
+const repairRolePermissions = async (): Promise<void> => {
+  logStep("Repairing role permissions");
+
+  const users = await User.findAll();
+  let repairedUsers = 0;
+
+  for (const rawUser of users) {
+    const user = rawUser as Record<string, unknown> & { save: () => Promise<void> };
+    const plainUser = toPlainRecord(user);
+    const userType = toText(plainUser.userType);
+    const roleName = toText(plainUser.roleName);
+
+    const template = getPermissionTemplateForUserType(userType, roleName);
+    const currentPermissions = normalizePermissions(plainUser.permissions, userType, roleName);
+    const nextPermissions = { ...currentPermissions };
+
+    let changed = false;
+    for (const [permissionKey, isGranted] of Object.entries(template)) {
+      if (isGranted && nextPermissions[permissionKey] !== true) {
+        nextPermissions[permissionKey] = true;
+        changed = true;
+      }
+    }
+
+    if (!changed) {
+      continue;
+    }
+
+    user.permissions = nextPermissions;
+    await user.save();
+    repairedUsers += 1;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log(`  repaired ${repairedUsers} of ${users.length} users`);
+};
+
 const FINES_UPDATE_CHUNK_SIZE = 900;
 
 /** `--fines-limit=N` caps the recalculation to the newest N eligible orders. */
@@ -988,6 +1038,7 @@ const main = async (): Promise<void> => {
   await ensureConstraints();
   await ensureIndexes();
   await backfillUserPermissions();
+  await repairRolePermissions();
   await backfillHistoricalManualOrderData();
   await recalculateOrderFines();
   await backfillDashboardAggregates();
