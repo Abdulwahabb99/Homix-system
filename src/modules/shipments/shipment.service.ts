@@ -227,6 +227,10 @@ export class ShipmentService {
       { ...filters, page: 1, size: 1_000_000 },
       vendorId,
     );
+    const exportRows = report.items.map((item) => ({
+      ...item,
+      accountingDate: item.accountingDate?.slice(0, 10) ?? "",
+    }));
     await this.writeAccountsWorkbook(response, "delivery-accounts.xlsx", "deliveries", [
       { header: "رقم العملية", key: "operationNumber", width: 18 },
       { header: "رقم الطلب", key: "orderNumber", width: 18 },
@@ -240,7 +244,7 @@ export class ShipmentService {
       { header: "حالة المحاسبة", key: "accountingStatusLabel", width: 20 },
       { header: "تاريخ المحاسبة", key: "accountingDate", width: 22 },
       { header: "المرجع", key: "reference", width: 22 },
-    ], report.items);
+    ], exportRows);
   }
 
   public async exportExpenseAccounts(

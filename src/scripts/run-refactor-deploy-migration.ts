@@ -8,6 +8,7 @@ import { DashboardRepository } from "../modules/dashboard/dashboard.repo";
 import { calculateOrderFine } from "../modules/orders/order-fines";
 import { getPermissionTemplateForUserType } from "../../app/modules/user/user.permissions";
 import { normalizePermissions, toPlainRecord, toText } from "../../app/modules/user/user.helpers";
+import { backfillManualOrderData } from "./backfill-manual-order-data";
 
 const User = require("../../app/modules/user/user.model") as {
   findAll: () => Promise<Array<Record<string, unknown>>>;
@@ -959,6 +960,15 @@ const backfillDashboardAggregates = async (): Promise<void> => {
   await dashboardAggregateService.backfill();
 };
 
+const backfillHistoricalManualOrderData = async (): Promise<void> => {
+  logStep("Backfilling historical manual-order customer addresses and product codes");
+  const result = await backfillManualOrderData();
+  // eslint-disable-next-line no-console
+  console.log(`  updated ${result.orderLineSkusUpdated} order-line SKUs`);
+  // eslint-disable-next-line no-console
+  console.log(`  updated ${result.customerAddressesUpdated} customer addresses`);
+};
+
 const main = async (): Promise<void> => {
   printBranchDiffSummary();
   await connectToDb();
@@ -973,6 +983,7 @@ const main = async (): Promise<void> => {
   await ensureConstraints();
   await ensureIndexes();
   await backfillUserPermissions();
+  await backfillHistoricalManualOrderData();
   await recalculateOrderFines();
   await backfillDashboardAggregates();
 

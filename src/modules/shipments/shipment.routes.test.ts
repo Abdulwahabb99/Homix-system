@@ -2,6 +2,9 @@ import express from "express";
 import { Op } from "sequelize";
 import request from "supertest";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+const ExcelJS = require("exceljs");
+
 const binaryParser = (response: any, callback: (error: Error | null, body: any) => void): void => {
   const chunks: Buffer[] = [];
   response.on("data", (chunk: Uint8Array) => chunks.push(Buffer.from(chunk)));
@@ -813,6 +816,15 @@ describe("shipmentRouter", () => {
     }));
   });
 
+  it("sorts shipments by newest creation date by default", async () => {
+    const response = await request(app).get("/shipments").query({ page: 1, size: 20 });
+
+    expect(response.status).toBe(200);
+    expect(orderModel.findAndCountAll).toHaveBeenCalledWith(expect.objectContaining({
+      order: [["createdAt", "DESC"]],
+    }));
+  });
+
   it("sorts shipments by manual priority in the database query", async () => {
     orderModel.findAndCountAll.mockResolvedValue({ count: 2, rows: [
       makeShipment({ code: "3004", id: 9804, orderNumber: "31669", priority: 3 }),
@@ -1214,6 +1226,10 @@ describe("shipmentRouter", () => {
   });
 
   it("exports delivery accounts as an Excel workbook", async () => {
+    orderModel.findAndCountAll.mockResolvedValueOnce({
+      count: 1,
+      rows: [makeShipment({ accountingDate: "2026-05-18T13:45:22.000Z" })],
+    });
     const response = await request(app)
       .get("/shipments/accounts/deliveries/export")
       .buffer(true)
@@ -1226,6 +1242,9 @@ describe("shipmentRouter", () => {
     expect(response.headers["content-disposition"]).toContain("delivery-accounts.xlsx");
     expect(Buffer.isBuffer(response.body)).toBe(true);
     expect(response.body.subarray(0, 2).toString()).toBe("PK");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(response.body);
+    expect(workbook.getWorksheet("deliveries").getCell("K2").value).toBe("2026-05-18");
     expect(orderModel.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 1_000_000 }),
     );
