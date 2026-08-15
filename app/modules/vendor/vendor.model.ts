@@ -13,6 +13,14 @@ const Vendor = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    shippingCost: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+      defaultValue: 0,
+      validate: {
+        min: 0,
+      },
+    },
     accountManagerUserId: {
       type: DataTypes.INTEGER,
       allowNull: true,

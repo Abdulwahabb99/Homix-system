@@ -577,6 +577,7 @@ const swaggerOptions = {
             daysToDeliver: { example: 7, nullable: true, type: "integer" },
             email: { example: "vendor@homix.com", type: "string" },
             name: { example: "ركنة للأثاث", type: "string" },
+            shippingCost: { example: 150, minimum: 0, type: "number" },
             password: { example: "Secret123!", type: "string" },
           },
           required: ["name"],
@@ -592,6 +593,7 @@ const swaggerOptions = {
             id: { example: 4, type: "integer" },
             isActive: { example: true, type: "boolean" },
             name: { example: "ركنة للأثاث", type: "string" },
+            shippingCost: { example: 150, minimum: 0, type: "number" },
           },
         },
         VendorResponse: {

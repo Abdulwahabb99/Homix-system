@@ -31,7 +31,7 @@ class VendorsController {
 
   public static async createVendor(req: Request, res: Response): Promise<Response> {
     try {
-      const response = await VendorsService.create(req.body as { email?: string; name: string; password?: string });
+      const response = await VendorsService.create(req.body as { email?: string; name: string; password?: string; shippingCost?: number | string });
       return res.status(response.statusCode).json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create vendor";
@@ -51,7 +51,7 @@ class VendorsController {
 
   public static async updateVendor(req: Request, res: Response): Promise<Response> {
     try {
-      const response = await VendorsService.update(getId(req), req.body as { email?: string; name: string; password?: string });
+      const response = await VendorsService.update(getId(req), req.body as { email?: string; name: string; password?: string; shippingCost?: number | string });
       return res.status(response.statusCode).json(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update vendor";

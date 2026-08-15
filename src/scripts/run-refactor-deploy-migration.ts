@@ -156,6 +156,11 @@ const ensureCoreColumns = async (): Promise<void> => {
     allowNull: true,
     type: DataTypes.INTEGER,
   });
+  await ensureColumn("vendors", "shippingCost", {
+    allowNull: false,
+    defaultValue: 0,
+    type: DataTypes.DECIMAL(12, 2),
+  });
 
   await ensureColumn("users", "roleName", { allowNull: true, type: DataTypes.STRING });
   await ensureColumn("users", "accountStatus", { allowNull: false, defaultValue: "active", type: DataTypes.STRING });

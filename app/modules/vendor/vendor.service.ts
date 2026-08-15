@@ -17,6 +17,7 @@ type VendorRecord = {
   email?: string;
   id: number;
   name: string;
+  shippingCost?: number | string;
   toJSON: () => VendorRecord;
   update: (payload: Record<string, unknown>) => Promise<VendorRecord>;
 };
@@ -41,6 +42,7 @@ type VendorCreateInput = {
   email?: string;
   name: string;
   password?: string;
+  shippingCost?: number | string;
 };
 
 type VendorUserUpdateInput = {
@@ -93,6 +95,15 @@ const sanitizeVendorName = (name: string): string => {
   return name.replace(/[^a-zA-Z0-9]/g, "");
 };
 
+const parseShippingCost = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  const shippingCost = Number(value);
+  return Number.isFinite(shippingCost) && shippingCost >= 0 ? shippingCost : Number.NaN;
+};
+
 class VendorsService {
   private static async notifyAdminsForNewVendor(vendor: VendorRecord): Promise<void> {
     const admins = (await User.findAll({
@@ -130,8 +141,18 @@ class VendorsService {
   public static async create(data: VendorCreateInput): Promise<VendorResponse> {
     const transaction = await Vendor.sequelize.transaction();
     const accountManagerUserId = getAccountManagerUserId(data);
+    const shippingCost = parseShippingCost(data.shippingCost);
 
     try {
+      if (Number.isNaN(shippingCost)) {
+        await transaction.rollback();
+        return {
+          message: "Shipping cost must be a non-negative number",
+          status: false,
+          statusCode: 400,
+        };
+      }
+
       if (accountManagerUserId) {
         const accountManager = await User.findByPk(accountManagerUserId);
         if (!accountManager) {
@@ -147,6 +168,7 @@ class VendorsService {
       let vendor = (await Vendor.create({
         accountManagerUserId: accountManagerUserId ?? null,
         name: data.name,
+        shippingCost: shippingCost ?? 0,
       })) as VendorRecord;
 
       const plainVendor = vendor.toJSON();
@@ -244,6 +266,15 @@ class VendorsService {
     }
 
     const accountManagerUserId = getAccountManagerUserId(data);
+    const shippingCost = parseShippingCost(data.shippingCost);
+
+    if (Number.isNaN(shippingCost)) {
+      return {
+        message: "Shipping cost must be a non-negative number",
+        status: false,
+        statusCode: 400,
+      };
+    }
 
     if (accountManagerUserId) {
       const accountManager = await User.findByPk(accountManagerUserId);
@@ -269,6 +300,9 @@ class VendorsService {
 
     if (accountManagerUserId !== undefined) {
       vendorPayload.accountManagerUserId = accountManagerUserId ?? null;
+    }
+    if (shippingCost !== undefined) {
+      vendorPayload.shippingCost = shippingCost;
     }
 
     const vendor = await existingVendor.update(vendorPayload);

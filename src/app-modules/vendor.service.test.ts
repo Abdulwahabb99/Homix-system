@@ -29,13 +29,51 @@ describe("VendorsService", () => {
       },
     );
 
-    const response = await service.create({ accountManager: 12, name: "Vendor One" });
+    const response = await service.create({ accountManager: 12, name: "Vendor One", shippingCost: 175.5 });
 
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ accountManagerUserId: 12 }));
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ accountManagerUserId: 12, shippingCost: 175.5 }));
     expect(response.data).toEqual(expect.objectContaining({
       accountManagerLabel: "Ahmed Hesham",
       accountManagerUserId: 12,
     }));
+  });
+
+  it("updates a vendor shipping cost", async () => {
+    const update = jest.fn().mockResolvedValue({
+      toJSON: () => ({ id: 7, name: "Vendor Two", shippingCost: "225.00" }),
+    });
+    const service = loadModuleWithMocks<typeof import("../../app/modules/vendor/vendor.service")>(
+      VENDOR_SERVICE_PATH,
+      {
+        "../user/user.model": { findByPk: jest.fn() },
+        "../user/user.service": { updateVendorUser: jest.fn().mockResolvedValue({ id: 30 }) },
+        "./vendor.model": { findByPk: jest.fn().mockResolvedValue({ update }) },
+      },
+    );
+
+    const response = await service.update("7", { name: "Vendor Two", shippingCost: "225.00" });
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ shippingCost: 225 }));
+    expect(response.data).toEqual(expect.objectContaining({ shippingCost: "225.00" }));
+  });
+
+  it("rejects a negative vendor shipping cost", async () => {
+    const update = jest.fn();
+    const service = loadModuleWithMocks<typeof import("../../app/modules/vendor/vendor.service")>(
+      VENDOR_SERVICE_PATH,
+      {
+        "../user/user.model": {},
+        "../user/user.service": {},
+        "./vendor.model": { findByPk: jest.fn().mockResolvedValue({ update }) },
+      },
+    );
+
+    await expect(service.update("7", { name: "Vendor Two", shippingCost: -1 })).resolves.toEqual({
+      message: "Shipping cost must be a non-negative number",
+      status: false,
+      statusCode: 400,
+    });
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("returns accountManagerLabel on vendor update", async () => {
