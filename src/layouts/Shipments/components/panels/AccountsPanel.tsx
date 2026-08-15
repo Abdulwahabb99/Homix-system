@@ -330,10 +330,10 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
           <thead>
             <tr>
               <th style={TH}>التاريخ</th>
-              <th style={TH}>حالة المحاسبة</th>
-              <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
-              <th style={TH}>السبب</th>
               <th style={TH}>النوع</th>
+              <th style={TH}>السبب</th>
+              <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
+              <th style={TH}>حالة المحاسبة</th>
               <th style={{ ...TH, width: 48 }} />
             </tr>
           </thead>
@@ -346,14 +346,14 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
               >
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
-                <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
-                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amount} /></td>
+                <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.typeLabel || "—"}</Box></td>
                 <td style={{ ...TD, maxWidth: 200 }}>
                   <Box component="span" sx={{ fontSize: "12px", color: HX.tx2, display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.reason || "—"}
                   </Box>
                 </td>
-                <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.typeLabel || "—"}</Box></td>
+                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amount} /></td>
+                <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}>
                   <IconButton
                     size="small"

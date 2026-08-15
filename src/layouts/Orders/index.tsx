@@ -117,6 +117,13 @@ function Orders() {
     [searchParams, setSearchParams]
   );
 
+  // فلتر شركة الشحن يخص صفحة الشحنات فقط؛ امسح أي رابط قديم كان يحمله.
+  useEffect(() => {
+    if (searchParams.has("shippingCompany")) {
+      setParams({ page: "1", shippingCompany: "" });
+    }
+  }, [searchParams, setParams]);
+
   /* ── Local search state (client-side filters on current page) ── */
   const [searchOperationCode, setSearchOperationCode] = useState("");
   const [searchProductCode,   setSearchProductCode]   = useState("");
@@ -164,7 +171,6 @@ function Orders() {
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
   const orderSourceParam = searchParams.get("orderSource");
-  const shippingCompanyParam = searchParams.get("shippingCompany");
   const priorityParam = searchParams.get("priority");
   const sortKey = searchParams.get("sort") || "newest";
   const sortConfig = useMemo(
@@ -182,7 +188,6 @@ function Orders() {
         u: filterUserId || null,
         db: deliveryByParam || null,
         osrc: orderSourceParam || null,
-        sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         srt: sortKey,
         sd: rangeDateToIso(startDate), ed: rangeDateToIso(endDate),
@@ -192,7 +197,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam, shippingCompanyParam, priorityParam, sortKey, startDate, endDate,
+      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -211,7 +216,6 @@ function Orders() {
         u: filterUserId || null,
         db: deliveryByParam || null,
         osrc: orderSourceParam || null,
-        sc: shippingCompanyParam || null,
         pr: priorityParam || null,
         sd: rangeDateToIso(startDate),
         ed: rangeDateToIso(endDate),
@@ -228,7 +232,6 @@ function Orders() {
       filterUserId,
       deliveryByParam,
       orderSourceParam,
-      shippingCompanyParam,
       priorityParam,
       startDate,
       endDate,
@@ -247,7 +250,6 @@ function Orders() {
       deliveryStatus: deliveryStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
       orderSource: orderSourceParam || undefined,
-      shippingCompany: shippingCompanyParam || undefined,
       userId: filterUserId || undefined,
       priority: priorityParam || undefined,
       startDate: rangeDateToIso(startDate) ?? undefined,
@@ -265,7 +267,6 @@ function Orders() {
       filterUserId,
       deliveryByParam,
       orderSourceParam,
-      shippingCompanyParam,
       priorityParam,
       startDate,
       endDate,
@@ -282,7 +283,6 @@ function Orders() {
       userIdParam: filterUserId || undefined,
       deliveryByParam: deliveryByParam || undefined,
       orderSourceParam: orderSourceParam || undefined,
-      shippingCompanyParam: shippingCompanyParam || undefined,
       priorityParam: priorityParam || undefined,
       sortField: sortConfig.field,
       sortDir: sortConfig.dir,
@@ -294,7 +294,7 @@ function Orders() {
     [
       orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
       deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam,
-      shippingCompanyParam, priorityParam, sortConfig, startDate, endDate,
+      priorityParam, sortConfig, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -417,11 +417,6 @@ function Orders() {
   /* ── Priority: chips apply directly (→ refetch) ── */
   const handlePriorityChange = (next: string[]) => {
     setParams({ page: "1", priority: next });
-  };
-
-  /* ── Shipping company: applies directly on selection (→ refetch) ── */
-  const handleShippingCompanyChange = (id: string) => {
-    setParams({ page: "1", shippingCompany: id || "" });
   };
 
   /* ── Sort: يُرسَل للخادم عبر sort[field]=dir ── */
@@ -627,8 +622,6 @@ function Orders() {
                 onReset={handleFilterReset}
                 priorityValue={priorityList}
                 onPriorityChange={handlePriorityChange}
-                shippingCompanyValue={shippingCompanyParam || ""}
-                onShippingCompanyChange={handleShippingCompanyChange}
                 startDate={startDate ? startDate.format("YYYY-MM-DD") : ""}
                 endDate={endDate ? endDate.format("YYYY-MM-DD") : ""}
                 onStartDateChange={handleStartDateChange}
