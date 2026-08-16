@@ -1695,9 +1695,9 @@ class OrderService {
         delete orderData[key],
     );
     if (orderData.status) {
-      if (orderData.status == ORDER_STATUS.IN_PROGRESS) {
-        orderData.PoDate = new Date();
-      }
+      /* PoDate («تاريخ التصنيع») is stamped per order below, only for the ones
+         whose status actually changes to IN_PROGRESS. Setting it on the shared
+         payload reset the date on orders that were already in progress. */
       orders = await Order.findAll({
         where: {
           id: {
@@ -1811,6 +1811,17 @@ class OrderService {
 
     for (const order of orders) {
       const perOrderData = { ...orderData };
+
+      /* Same rule as the single-order update: the manufacturing date records the
+         moment an order entered «قيد التصنيع», so it is written only on the
+         transition — never re-stamped on an order already in that status. */
+      if (
+        perOrderData.status
+        && Number(perOrderData.status) === Number(ORDER_STATUS.IN_PROGRESS)
+        && Number(order.status) !== Number(ORDER_STATUS.IN_PROGRESS)
+      ) {
+        perOrderData.PoDate = new Date();
+      }
       const hasFinancialEdit = [
         "downPayment",
         "shippingFees",
