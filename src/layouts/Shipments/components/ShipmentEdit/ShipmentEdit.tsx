@@ -274,7 +274,7 @@ export default function ShipmentEdit() {
   }
 
   const goBack = () => navigate(`/shipments/${shipmentId}`);
-  /** بعد تأكيد التعديل نعود لقائمة الشحنات، لا لصفحة تفاصيل الشحنة. */
+  /** سهم الرجوع وحفظ التعديلات يعودان لقائمة الشحنات، لا لصفحة تفاصيل الشحنة. */
   const goToShipmentsList = () => navigate("/shipments");
 
   const handleSave = () => {
@@ -355,7 +355,7 @@ export default function ShipmentEdit() {
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: 920, mx: "auto", pb: "24px" }}>
         {/* Back + read-only identity */}
         <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <IconButton onClick={goBack} sx={{ color: HX.tx2, border: `1px solid ${HX.border}`, borderRadius: "9px", p: "6px" }}>
+          <IconButton onClick={goToShipmentsList} sx={{ color: HX.tx2, border: `1px solid ${HX.border}`, borderRadius: "9px", p: "6px" }}>
             <ArrowForwardIcon sx={{ fontSize: 18 }} />
           </IconButton>
           <Box>
