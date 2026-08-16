@@ -92,6 +92,11 @@ function Orders() {
     if (!raw) return [];
     return raw.split(",").map(Number).filter((n) => !isNaN(n));
   }, [searchParams]);
+  const manufactureStatusList = useMemo(() => {
+    const raw = searchParams.get("manufactureStatus");
+    if (!raw) return [];
+    return raw.split(",").map(Number).filter((n) => !isNaN(n));
+  }, [searchParams]);
   const priorityList = useMemo(() => {
     const raw = searchParams.get("priority");
     return raw ? raw.split(",") : [];
@@ -429,6 +434,7 @@ function Orders() {
     selectedVendor: string[];
     paymentStatus: string[];
     deliveryStatus: number[];
+    manufactureStatus: number[];
     userId: string[];
     deliveryBy: number[];
     orderSource: number[];
@@ -439,6 +445,7 @@ function Orders() {
       vendorId:       d.selectedVendor?.length ? d.selectedVendor            : "",
       paymentStatus:  d.paymentStatus?.length ? d.paymentStatus : "",
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
+      manufactureStatus: d.manufactureStatus?.length ? d.manufactureStatus.map(String) : "",
       userId:         d.userId?.length ? d.userId : "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
       orderSource:    d.orderSource?.length ? d.orderSource.map(String).join(",") : "",
@@ -452,6 +459,7 @@ function Orders() {
       vendorId: "",
       paymentStatus: "",
       deliveryStatus: "",
+      manufactureStatus: "",
       userId: "",
       deliveryBy: "",
       orderSource: "",
@@ -614,6 +622,7 @@ function Orders() {
                   selectedVendor: selectedVendor,
                   paymentStatus:  paymentList,
                   deliveryStatus: deliveryStatusList,
+                  manufactureStatus: manufactureStatusList,
                   userId:         userIdList,
                   deliveryBy:     deliveryByList,
                   orderSource:    orderSourceList,

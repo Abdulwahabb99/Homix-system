@@ -19,7 +19,10 @@ export interface FiltersPanelValue {
   orderStatus: number[];
   selectedVendor: string[];
   paymentStatus: string[];
+  /** «حالة التأخير» — في الموعد / قارب على التأخير / متأخر */
   deliveryStatus: number[];
+  /** «حالة التصنيع» — مقبول / قيد التصنيع / جاهز للشحن / ... */
+  manufactureStatus: number[];
   userId: string[];
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
@@ -28,6 +31,13 @@ export interface FiltersPanelValue {
 }
 
 interface User { id: string | number; firstName?: string; lastName?: string }
+
+/** «حالة التأخير» ثابتة (نفس قيم صفحة الشحنات) ولا تأتي من الـ meta */
+const DELAY_STATUS_OPTIONS = [
+  { value: 1, label: "في الموعد" },
+  { value: 2, label: "قارب على التأخير" },
+  { value: 3, label: "متأخر" },
+];
 
 interface OrdersHomixFiltersPanelProps {
   isVendor: boolean;
@@ -175,6 +185,7 @@ export default function OrdersHomixFiltersPanel({
   /* draft state — synced when external value changes */
   const [draftStatus,   setDraftStatus]   = useState<number[]>(value.orderStatus ?? []);
   const [draftDelivery, setDraftDelivery] = useState<number[]>(value.deliveryStatus ?? []);
+  const [draftManufacture, setDraftManufacture] = useState<number[]>(value.manufactureStatus ?? []);
   const [draftPayment,  setDraftPayment]  = useState<string[]>((value.paymentStatus ?? []).map(String));
   const [draftVendor,   setDraftVendor]   = useState<string[]>((value.selectedVendor ?? []).map(String));
   const [draftUserId,   setDraftUserId]   = useState<string[]>((value.userId ?? []).map(String));
@@ -192,6 +203,7 @@ export default function OrdersHomixFiltersPanel({
   useEffect(() => {
     setDraftStatus(value.orderStatus ?? []);
     setDraftDelivery(value.deliveryStatus ?? []);
+    setDraftManufacture(value.manufactureStatus ?? []);
     setDraftPayment((value.paymentStatus ?? []).map(String));
     setDraftVendor((value.selectedVendor ?? []).map(String));
     setDraftUserId((value.userId ?? []).map(String));
@@ -216,6 +228,7 @@ export default function OrdersHomixFiltersPanel({
       selectedVendor: draftVendor,
       paymentStatus:  draftPayment,
       deliveryStatus: draftDelivery,
+      manufactureStatus: draftManufacture,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
       orderSource:    draftOrderSource,
@@ -232,6 +245,7 @@ export default function OrdersHomixFiltersPanel({
     selectedVendor: (value.selectedVendor ?? []).map(String),
     paymentStatus:  (value.paymentStatus ?? []).map(String),
     deliveryStatus: value.deliveryStatus ?? [],
+    manufactureStatus: value.manufactureStatus ?? [],
     userId:         (value.userId ?? []).map(String),
     deliveryBy:     value.deliveryBy ?? [],
     orderSource:    value.orderSource ?? [],
@@ -243,6 +257,7 @@ export default function OrdersHomixFiltersPanel({
       selectedVendor: draftVendor,
       paymentStatus:  draftPayment,
       deliveryStatus: draftDelivery,
+      manufactureStatus: draftManufacture,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
       orderSource:    draftOrderSource,
@@ -383,6 +398,20 @@ export default function OrdersHomixFiltersPanel({
               </FieldBox>
             </Grid>
 
+            {/* حالة التصنيع — كانت معنونة «حالة التأخير» وتُرسل قيم التصنيع
+                تحت باراميتر deliveryStatus فلا تُطابق شيئاً */}
+            <Grid item xs={12} sm={6} md={2}>
+              <FieldBox label="حالة التصنيع">
+                <MultiSelect
+                  value={draftManufacture}
+                  onChange={setDraftManufacture}
+                  onClose={handleDropdownClose}
+                  options={manufactureOpts}
+                  placeholder="كل الحالات"
+                />
+              </FieldBox>
+            </Grid>
+
             {/* حالة التأخير */}
             <Grid item xs={12} sm={6} md={2}>
               <FieldBox label="حالة التأخير">
@@ -390,7 +419,7 @@ export default function OrdersHomixFiltersPanel({
                   value={draftDelivery}
                   onChange={setDraftDelivery}
                   onClose={handleDropdownClose}
-                  options={manufactureOpts}
+                  options={DELAY_STATUS_OPTIONS}
                   placeholder="كل الحالات"
                 />
               </FieldBox>
