@@ -3,6 +3,7 @@ import { Box, Button, IconButton, MenuItem, TextField } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
+import { usePermissions } from "shared/permissions";
 import EditDeliveryAccountModal from "./EditDeliveryAccountModal";
 import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
@@ -32,9 +33,9 @@ interface AccountsPanelProps {
 }
 
 const SUB_TABS = [
-  { id: "deliveries", label: "حسابات التسليم" },
-  { id: "expenses",   label: "المصروفات" },
-];
+  { id: "deliveries", label: "حسابات التسليم", permission: "ship_delivery_accounts_view" },
+  { id: "expenses",   label: "المصروفات",      permission: "ship_expenses_view" },
+] as const;
 
 const TH: React.CSSProperties = {
   fontFamily: FONT, fontSize: "11px", fontWeight: 700, color: HX.tx2,
@@ -381,7 +382,9 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
 }
 
 export default function AccountsPanel({ onExporterChange }: AccountsPanelProps) {
-  const [activeSubTab, setActiveSubTab] = useState("deliveries");
+  const { can } = usePermissions();
+  const visibleSubTabs = SUB_TABS.filter((tab) => can(tab.permission));
+  const [activeSubTab, setActiveSubTab] = useState(visibleSubTabs[0]?.id ?? "deliveries");
   const { data: meta } = useShipmentsMetaQuery();
   const subTabCounts: Record<string, number> = {
     deliveries: meta?.subTabCounts.accountDeliveries ?? 0,
@@ -391,7 +394,7 @@ export default function AccountsPanel({ onExporterChange }: AccountsPanelProps) 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
       <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-        {SUB_TABS.map((tab) => {
+        {visibleSubTabs.map((tab) => {
           const active = activeSubTab === tab.id;
           return (
             <Box

@@ -49,6 +49,8 @@ export type KnownPermissionKey =
   | "employees_view" | "employees_create" | "employees_edit" | "employees_delete"
   | "customers_view" | "customers_edit"
   | "ship_view" | "ship_edit"
+  | "ship_inventory_view" | "ship_returns_view" | "ship_accounts_view"
+  | "ship_delivery_accounts_view" | "ship_expenses_view" | "ship_performance_view"
   | "finance_view" | "finance_export" | "finance_settle"
   | "tickets_view" | "tickets_reply" | "tickets_close"
   | "notifications_view" | "notifications_manage"
