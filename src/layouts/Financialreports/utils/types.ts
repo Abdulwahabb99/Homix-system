@@ -72,7 +72,7 @@ export interface SellerTotals {
   vendorShippingCost: number;
   /** الصافي المطلوب (تسويات المخزن) = التكلفة − الغرامات */
   netRequired: number;
-  /** الإجمالي الكلي (الفاتورة الشاملة) = مستحق البائع + مستحق الشركة */
+  /** الإجمالي الكلي (الفاتورة الشاملة) = مستحق البائع − مستحق الشركة − الغرامات */
   totalCombined: number;
 }
 

@@ -40,6 +40,7 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
     dueComp,
     vendorShippingCost,
     netRequired: cost - fine,
-    totalCombined: dueSeller + dueComp,
+    // الإجمالي الكلي = المستحق للبائع − المستحق للشركة − الغرامات
+    totalCombined: dueSeller - dueComp - fine,
   };
 }
