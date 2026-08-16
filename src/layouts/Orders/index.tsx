@@ -174,6 +174,7 @@ function Orders() {
   const orderNumberParam   = searchParams.get("orderNumber");
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
+  const manufactureStatusParam = searchParams.get("manufactureStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
   const orderSourceParam = searchParams.get("orderSource");
   const priorityParam = searchParams.get("priority");
@@ -202,7 +203,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam, priorityParam, sortKey, startDate, endDate,
+      deliveryStatusParam, manufactureStatusParam, filterUserId, deliveryByParam, orderSourceParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -234,6 +235,7 @@ function Orders() {
       orderStatusParam,
       paymentStatusParam,
       deliveryStatusParam,
+      manufactureStatusParam,
       filterUserId,
       deliveryByParam,
       orderSourceParam,
@@ -253,6 +255,7 @@ function Orders() {
       status: orderStatusParam || undefined,
       paymentStatus: paymentStatusParam || undefined,
       deliveryStatus: deliveryStatusParam || undefined,
+      manufactureStatus: manufactureStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
       orderSource: orderSourceParam || undefined,
       userId: filterUserId || undefined,
@@ -269,6 +272,7 @@ function Orders() {
       orderStatusParam,
       paymentStatusParam,
       deliveryStatusParam,
+      manufactureStatusParam,
       filterUserId,
       deliveryByParam,
       orderSourceParam,
@@ -284,7 +288,7 @@ function Orders() {
   const ordersFilterParams = useMemo(
     () => ({
       orderNumberParam, vendorIdParam, orderStatusParam,
-      paymentStatusParam, deliveryStatusParam,
+      paymentStatusParam, deliveryStatusParam, manufactureStatusParam,
       userIdParam: filterUserId || undefined,
       deliveryByParam: deliveryByParam || undefined,
       orderSourceParam: orderSourceParam || undefined,
@@ -298,7 +302,7 @@ function Orders() {
     }),
     [
       orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, filterUserId, deliveryByParam, orderSourceParam,
+      deliveryStatusParam, manufactureStatusParam, filterUserId, deliveryByParam, orderSourceParam,
       priorityParam, sortConfig, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
