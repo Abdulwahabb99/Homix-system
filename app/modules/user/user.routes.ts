@@ -89,6 +89,23 @@ UserRouter.get("/", verifyToken, isNotVendor, requirePermission("users_view"), U
  *       404:
  *         description: User not found
  */
+/**
+ * @swagger
+ * /users/me:
+ *   get:
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     summary: The signed-in user's own record (used to refresh a stale session)
+ *     responses:
+ *       200:
+ *         description: Current user
+ *       401:
+ *         description: Unauthorized
+ */
+// Declared before "/:id" so express does not treat "me" as an id.
+UserRouter.get("/me", verifyToken, UserController.getCurrentUser);
+
 UserRouter.get("/:id", verifyToken, isNotVendor, requirePermission("users_view"), UserController.getUser);
 /**
  * @swagger

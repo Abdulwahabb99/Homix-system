@@ -924,6 +924,41 @@ const getFinesLimit = (): number | null => {
  * calculateExceededDays: the vendor's delivery window is used when it exists,
  * otherwise the expected delivery date.
  */
+/**
+ * Recomputes "toBeCollected" from the order's own financials.
+ *
+ * Orders imported before this deploy were stored with a collection amount of 0
+ * even for cash-on-delivery, so the order page showed «المبلغ المطلوب تحصيله 0»
+ * against a real sale value. The formula is the same one the API applies on every
+ * edit (normalizeOrderMutationPayload), so running this simply brings historical
+ * rows in line with what an edit would have produced.
+ *
+ * Pure SQL and idempotent: only rows that actually disagree are touched, and
+ * "updatedAt" is left alone because this is a correction, not an order event.
+ */
+const recalculateOrderCollectionAmounts = async (): Promise<void> => {
+  logStep("Recalculating order collection amounts");
+
+  const [rows] = await sequelize.query(`
+    UPDATE orders
+    SET "toBeCollected" = COALESCE("subTotalPrice", 0)
+                        + COALESCE("shippingFees", 0)
+                        - COALESCE("totalDiscounts", 0)
+                        - COALESCE("downPayment", 0)
+    WHERE "deletedAt" IS NULL
+      AND "toBeCollected" IS DISTINCT FROM (
+            COALESCE("subTotalPrice", 0)
+          + COALESCE("shippingFees", 0)
+          - COALESCE("totalDiscounts", 0)
+          - COALESCE("downPayment", 0)
+          )
+    RETURNING id
+  `);
+
+  // eslint-disable-next-line no-console
+  console.log(`  corrected ${(rows as unknown[]).length} order(s)`);
+};
+
 const recalculateOrderFines = async (): Promise<void> => {
   const finesLimit = getFinesLimit();
   logStep(
@@ -1066,6 +1101,7 @@ const main = async (): Promise<void> => {
   await backfillUserPermissions();
   await repairRolePermissions();
   await backfillHistoricalManualOrderData();
+  await recalculateOrderCollectionAmounts();
   await recalculateOrderFines();
   await backfillDashboardAggregates();
 
