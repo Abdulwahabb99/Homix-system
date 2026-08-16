@@ -35,9 +35,10 @@ const DELIVERY_STATUS = {
   ALMOST_LAST: 2,
   LATE: 3,
 };
+// نفس صياغة DELIVERY_STATUS في الفرونت إند (layouts/Orders/utils/constants)
 const DELIVERY_STATUS_ARABIC = {
-  1: "في الموعد",
-  2: "قارب على التأخير",
+  1: "في مده التصنيع",
+  2: "أوشك علي التأخير",
   3: "متأخر",
 };
 const DELIVERY_BY = {
