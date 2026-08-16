@@ -32,6 +32,7 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { useQueryClient } from "@tanstack/react-query";
 import { navigationCountKeys } from "query/navigationCounts";
 import {
+  AUTH_STORAGE_CHANGED,
   isJwtExpired,
   subscribeAuthStorage,
   getUserStorageSnapshot,
@@ -162,6 +163,35 @@ export default function App() {
     const scrollEl = document.scrollingElement;
     if (scrollEl) scrollEl.scrollTop = 0;
   }, [pathname]);
+
+  /* الجلسة محفوظة في المتصفح، فأي حقل جديد يُضاف بعد تسجيل الدخول (الصلاحيات
+     مثلاً) يظل ناقصاً حتى تنتهي صلاحية التوكن — وكانت النتيجة قائمة جانبية فارغة
+     بعد النشر. نحدّث بيانات المستخدم من /users/me مرة عند الإقلاع.
+     الفشل لا يمسّ الجلسة: نُبقي المحفوظ كما هو ولا نُخرِج المستخدم. */
+  const sessionToken = sessionOk ? (parsed?.token as string | undefined) : undefined;
+  useEffect(() => {
+    if (!sessionToken) return;
+
+    let cancelled = false;
+    axiosRequest
+      .get("/users/me")
+      .then(({ data }) => {
+        const freshUser = data?.data;
+        if (cancelled || !freshUser || typeof freshUser !== "object") return;
+
+        const merged = { ...freshUser, token: sessionToken };
+        localStorage.setItem("user", JSON.stringify(merged));
+        window.dispatchEvent(new Event(AUTH_STORAGE_CHANGED));
+        reduxDispatch(setUser({ user: merged, token: sessionToken }));
+      })
+      .catch(() => {
+        /* offline أو نقطة نهاية قديمة — الجلسة الحالية تكفي */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken, reduxDispatch]);
 
   useEffect(() => {
     if (user && sessionOk) {
