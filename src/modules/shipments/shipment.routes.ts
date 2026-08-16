@@ -497,14 +497,14 @@ shipmentRouter.get(
  */
 shipmentRouter.get(
   "/returns/vendor",
-  requirePermission("ship_view"),
+  requirePermission("ship_returns_view"),
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listVendorReturns),
 );
 
 shipmentRouter.get(
   "/returns/vendor/export",
-  requirePermission("ship_view"),
+  requirePermission("ship_returns_view"),
   validateRequest({ query: shipmentReturnsExportQuerySchema }),
   asyncHandler(shipmentController.exportVendorReturns),
 );
@@ -630,14 +630,14 @@ shipmentRouter.put(
  */
 shipmentRouter.get(
   "/returns/customer",
-  requirePermission("ship_view"),
+  requirePermission("ship_returns_view"),
   validateRequest({ query: shipmentReturnsQuerySchema }),
   asyncHandler(shipmentController.listCustomerReturns),
 );
 
 shipmentRouter.get(
   "/returns/customer/export",
-  requirePermission("ship_view"),
+  requirePermission("ship_returns_view"),
   validateRequest({ query: shipmentReturnsExportQuerySchema }),
   asyncHandler(shipmentController.exportCustomerReturns),
 );
@@ -767,14 +767,14 @@ shipmentRouter.put(
  */
 shipmentRouter.get(
   "/inventory",
-  requirePermission("ship_view"),
+  requirePermission("ship_inventory_view"),
   validateRequest({ query: shipmentInventoryQuerySchema }),
   asyncHandler(shipmentController.listInventory),
 );
 
 shipmentRouter.get(
   "/inventory/export",
-  requirePermission("ship_view"),
+  requirePermission("ship_inventory_view"),
   validateRequest({ query: shipmentInventoryExportQuerySchema }),
   asyncHandler(shipmentController.exportInventory),
 );
@@ -892,7 +892,7 @@ shipmentRouter.delete(
  */
 shipmentRouter.get(
   "/accounts/deliveries",
-  requirePermission("finance_view"),
+  requirePermission("ship_delivery_accounts_view"),
   validateRequest({ query: shipmentDeliveryAccountsQuerySchema }),
   asyncHandler(shipmentController.listDeliveryAccounts),
 );
@@ -1000,7 +1000,7 @@ shipmentRouter.put(
  */
 shipmentRouter.get(
   "/accounts/expenses",
-  requirePermission("finance_view"),
+  requirePermission("ship_expenses_view"),
   validateRequest({ query: shipmentExpenseAccountsQuerySchema }),
   asyncHandler(shipmentController.listExpenseAccounts),
 );
@@ -1115,14 +1115,14 @@ shipmentRouter.delete(
  */
 shipmentRouter.get(
   "/performance",
-  requirePermission("finance_view"),
+  requirePermission("ship_performance_view"),
   validateRequest({ query: shipmentPerformanceQuerySchema }),
   asyncHandler(shipmentController.getPerformance),
 );
 
 shipmentRouter.get(
   "/performance/export",
-  requirePermission("finance_view"),
+  requirePermission("ship_performance_view"),
   validateRequest({ query: shipmentPerformanceQuerySchema }),
   asyncHandler(shipmentController.exportPerformance),
 );
