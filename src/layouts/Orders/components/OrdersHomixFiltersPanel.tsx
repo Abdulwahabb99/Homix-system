@@ -147,15 +147,23 @@ export default function OrdersHomixFiltersPanel({
     [meta?.paymentStatuses]
   );
 
-  /* خيارات «المسؤول» من مستخدمي endpoint `/users` مباشرةً */
-  const assigneeOpts = useMemo(
-    () =>
-      users.map((u) => ({
-        id: Number(u.id),
-        label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
-      })),
-    [users]
-  );
+  /* خيارات «المسؤول» من الـ meta الخاص بالطلبات، لا من `/users`.
+     `/users` محمي بصلاحية users_view التي لا يملكها المشغّل أو اللوجستي، فكانت
+     القائمة تظهر فارغة لهم. الـ meta محمي بـ orders_view فقط — وهي متوفّرة لأي
+     مستخدم يرى الطلبات أصلاً. تبقى `users` احتياطياً قبل وصول الـ meta. */
+  const assigneeOpts = useMemo(() => {
+    if (meta?.assignees?.length) {
+      return meta.assignees.map((assignee) => ({
+        id: Number(assignee.id),
+        label: assignee.label || String(assignee.id),
+      }));
+    }
+
+    return users.map((u) => ({
+      id: Number(u.id),
+      label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || String(u.id),
+    }));
+  }, [meta?.assignees, users]);
 
   const deliveryByOpts = useMemo(
     () =>
