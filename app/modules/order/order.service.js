@@ -80,6 +80,39 @@ const resolveManualOrderDate = (value) => {
     .toDate();
 };
 
+/**
+ * Shipping on a Shopify order lives in `shipping_lines` / `total_shipping_price_set`,
+ * never in a `shippingFees` field — that name only exists on the manual-order
+ * payload the frontend sends. Reading only `order.shippingFees` meant every
+ * imported order stored 0 shipping.
+ */
+const getShopifyShippingTotal = (order) => {
+  if (order.shippingFees !== undefined && order.shippingFees !== null) {
+    return normalizeNumber(order.shippingFees);
+  }
+
+  if (Array.isArray(order.shipping_lines) && order.shipping_lines.length > 0) {
+    return order.shipping_lines.reduce(
+      (total, shippingLine) => total + normalizeNumber(shippingLine?.price),
+      0,
+    );
+  }
+
+  return normalizeNumber(order.total_shipping_price_set?.shop_money?.amount);
+};
+
+/** Value of every line on the Shopify order, used to split order-level totals. */
+const getOrderLineItemsTotal = (lineItems) => {
+  if (!Array.isArray(lineItems)) {
+    return 0;
+  }
+
+  return lineItems.reduce(
+    (total, line) => total + normalizeNumber(line.price) * normalizeNumber(line.quantity),
+    0,
+  );
+};
+
 const calculateAmountToCollect = ({
   subTotalPrice,
   shippingFees,
@@ -164,6 +197,12 @@ class OrderService {
       };
     }
     ordersFromShopify.forEach((order) => {
+      /* One Shopify order becomes one row per line item, but its shipping is
+         charged once. Remember the parent totals so each split can take a
+         proportional share instead of repeating the full amount. */
+      order.__shippingTotal = getShopifyShippingTotal(order);
+      order.__lineItemsTotal = getOrderLineItemsTotal(order.line_items);
+
       orders.push(...splitImportedOrderByUnit(order));
     });
 
@@ -297,7 +336,13 @@ class OrderService {
         }
         const codeNumber = nextNumber;
         nextNumber++;
-        const shippingFees = normalizeNumber(order.shippingFees);
+        /* Proportional share of the parent order's shipping, so the splits sum
+           back to what the customer actually pays. */
+        const parentShipping = normalizeNumber(order.__shippingTotal);
+        const parentLineTotal = normalizeNumber(order.__lineItemsTotal);
+        const shippingFees = parentLineTotal > 0
+          ? Math.round(parentShipping * (subTotalPrice / parentLineTotal) * 100) / 100
+          : parentShipping;
         const downPayment = normalizeNumber(order.downPayment);
         const toBeCollected = calculateAmountToCollect({
           downPayment,
