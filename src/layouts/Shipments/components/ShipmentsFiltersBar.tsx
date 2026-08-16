@@ -25,8 +25,15 @@ export interface FilterValues {
   shippingCompany: string;
   scheduleStatus: string;
   vendorName: string;
+  /** تاريخ الاستلام بالمخزون */
   startDate: any;
   endDate: any;
+  /** تاريخ التسليم الفعلي */
+  deliveryDateFrom: any;
+  deliveryDateTo: any;
+  /** تاريخ الجدولة */
+  scheduledDateFrom: any;
+  scheduledDateTo: any;
 }
 
 export interface ShipmentsFiltersBarProps {
@@ -157,13 +164,23 @@ export default function ShipmentsFiltersBar({
     const next = { ...vals, [field]: v };
     setVals(next);
   };
-  const handleDatesChange = (start: any, end: any) => {
-    const next = { ...vals, startDate: start, endDate: end };
-    setVals(next);
+  const handleReceivedDatesChange = (start: any, end: any) => {
+    setVals((prev) => ({ ...prev, startDate: start, endDate: end }));
   };
-  const handleDateReset = () => {
-    const next = { ...vals, startDate: null, endDate: null };
-    setVals(next);
+  const handleReceivedDateReset = () => {
+    setVals((prev) => ({ ...prev, startDate: null, endDate: null }));
+  };
+  const handleDeliveryDatesChange = (start: any, end: any) => {
+    setVals((prev) => ({ ...prev, deliveryDateFrom: start, deliveryDateTo: end }));
+  };
+  const handleDeliveryDateReset = () => {
+    setVals((prev) => ({ ...prev, deliveryDateFrom: null, deliveryDateTo: null }));
+  };
+  const handleScheduledDatesChange = (start: any, end: any) => {
+    setVals((prev) => ({ ...prev, scheduledDateFrom: start, scheduledDateTo: end }));
+  };
+  const handleScheduledDateReset = () => {
+    setVals((prev) => ({ ...prev, scheduledDateFrom: null, scheduledDateTo: null }));
   };
 
   const handleReset = () => {
@@ -172,6 +189,8 @@ export default function ShipmentsFiltersBar({
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
       deliveryBy: "", shippingCompany: "", scheduleStatus: "", vendorName: "",
       startDate: null, endDate: null,
+      deliveryDateFrom: null, deliveryDateTo: null,
+      scheduledDateFrom: null, scheduledDateTo: null,
     };
     setVals(empty);
     onReset();
@@ -199,7 +218,9 @@ export default function ShipmentsFiltersBar({
     + (isVendor ? 0 : selectedCount(vals.shipmentType))
     + selectedCount(vals.shippingCompany)
     + selectedCount(vals.scheduleStatus)
-    + (vals.startDate || vals.endDate ? 1 : 0);
+    + (vals.startDate || vals.endDate ? 1 : 0)
+    + (vals.deliveryDateFrom || vals.deliveryDateTo ? 1 : 0)
+    + (vals.scheduledDateFrom || vals.scheduledDateTo ? 1 : 0);
 
   return (
     <Box
@@ -323,18 +344,71 @@ export default function ShipmentsFiltersBar({
               options={scheduleStatuses}
               onChange={setSelect("scheduleStatus")}
             />
+          </Box>
 
-
-            {/* Date range — part of the same grid, spans 2 cols on large screens */}
-            <Box sx={{ gridColumn: { xs: "span 1", sm: "span 2", lg: "span 2" } }}>
+          {/* Date range filters — each on its own row so the three stay distinguishable */}
+          <Box
+            sx={{
+              display: "grid",
+              columnGap: "10px",
+              rowGap: "12px",
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr)",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(3, minmax(0, 1fr))",
+              },
+              alignItems: "start",
+            }}
+          >
+            <Box>
+              <Typography component="label" sx={{
+                display: "block", mb: "4px", color: HX.tx2,
+                fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+              }}>
+                تاريخ الاستلام
+              </Typography>
               <DateRangePickerWrapper
                 startDate={vals.startDate}
                 endDate={vals.endDate}
                 allowPastDays={true}
                 allowFutureDays={false}
                 useDefaultPresets={true}
-                handleDatesChange={handleDatesChange}
-                onReset={handleDateReset}
+                handleDatesChange={handleReceivedDatesChange}
+                onReset={handleReceivedDateReset}
+              />
+            </Box>
+            <Box>
+              <Typography component="label" sx={{
+                display: "block", mb: "4px", color: HX.tx2,
+                fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+              }}>
+                تاريخ التسليم الفعلي
+              </Typography>
+              <DateRangePickerWrapper
+                startDate={vals.deliveryDateFrom}
+                endDate={vals.deliveryDateTo}
+                allowPastDays={true}
+                allowFutureDays={false}
+                useDefaultPresets={true}
+                handleDatesChange={handleDeliveryDatesChange}
+                onReset={handleDeliveryDateReset}
+              />
+            </Box>
+            <Box>
+              <Typography component="label" sx={{
+                display: "block", mb: "4px", color: HX.tx2,
+                fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+              }}>
+                تاريخ الجدولة
+              </Typography>
+              <DateRangePickerWrapper
+                startDate={vals.scheduledDateFrom}
+                endDate={vals.scheduledDateTo}
+                allowPastDays={true}
+                allowFutureDays={true}
+                useDefaultPresets={true}
+                handleDatesChange={handleScheduledDatesChange}
+                onReset={handleScheduledDateReset}
               />
             </Box>
           </Box>

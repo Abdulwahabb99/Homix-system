@@ -236,6 +236,14 @@ export default function Shipments() {
   const endDateParam   = searchParams.get("endDate") || "";
   const startDate      = React.useMemo(() => dateFromUrl(startDateParam), [startDateParam]);
   const endDate        = React.useMemo(() => dateFromUrl(endDateParam), [endDateParam]);
+  const deliveryDateFromParam = searchParams.get("deliveryDateFrom") || "";
+  const deliveryDateToParam   = searchParams.get("deliveryDateTo") || "";
+  const deliveryDateFrom      = React.useMemo(() => dateFromUrl(deliveryDateFromParam), [deliveryDateFromParam]);
+  const deliveryDateTo        = React.useMemo(() => dateFromUrl(deliveryDateToParam), [deliveryDateToParam]);
+  const scheduledDateFromParam = searchParams.get("scheduledDateFrom") || "";
+  const scheduledDateToParam   = searchParams.get("scheduledDateTo") || "";
+  const scheduledDateFrom      = React.useMemo(() => dateFromUrl(scheduledDateFromParam), [scheduledDateFromParam]);
+  const scheduledDateTo        = React.useMemo(() => dateFromUrl(scheduledDateToParam), [scheduledDateToParam]);
 
   // Modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -251,10 +259,12 @@ export default function Shipments() {
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
+    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
+    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
   const isShipmentsTab = activeTab === "shipments";
@@ -303,6 +313,15 @@ export default function Shipments() {
         : moment(values.endDate, "DD-MM-YYYY");
       if (m.isValid()) urlParams.set("endDate", m.format("DD-MM-YYYY"));
     }
+    const setDateParam = (key: string, value: any) => {
+      if (!value) return;
+      const m = moment.isMoment(value) ? value : moment(value, "DD-MM-YYYY");
+      if (m.isValid()) urlParams.set(key, m.format("DD-MM-YYYY"));
+    };
+    setDateParam("deliveryDateFrom", values.deliveryDateFrom);
+    setDateParam("deliveryDateTo", values.deliveryDateTo);
+    setDateParam("scheduledDateFrom", values.scheduledDateFrom);
+    setDateParam("scheduledDateTo", values.scheduledDateTo);
     urlParams.set("page", "1");
     navigate(`?${urlParams.toString()}`);
   }, [navigate]);
@@ -394,10 +413,12 @@ export default function Shipments() {
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
+    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, vendorName, startDate, endDate,
+    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
   const handleEditShipment = React.useCallback(

@@ -62,6 +62,8 @@ export interface ShipmentsListParams {
   endDate?: any;
   deliveryDateFrom?: any;
   deliveryDateTo?: any;
+  scheduledDateFrom?: any;
+  scheduledDateTo?: any;
 }
 
 function toDateString(v: any): string | undefined {
@@ -90,10 +92,14 @@ function buildQuery(p: ShipmentsListParams): string {
   const ed = toDateString(p.endDate);
   const df = toDateString(p.deliveryDateFrom);
   const dt = toDateString(p.deliveryDateTo);
+  const sfd = toDateString(p.scheduledDateFrom);
+  const std = toDateString(p.scheduledDateTo);
   if (sd) q.set("startDate",       sd);
   if (ed) q.set("endDate",         ed);
   if (df) q.set("deliveryDateFrom", df);
   if (dt) q.set("deliveryDateTo",   dt);
+  if (sfd) q.set("scheduledDateFrom", sfd);
+  if (std) q.set("scheduledDateTo",   std);
   return q.toString();
 }
 
