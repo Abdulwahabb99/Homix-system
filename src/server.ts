@@ -14,7 +14,7 @@ require("../config/shopify");
 
 const userModel = require("../app/modules/user/user.model");
 const orderService = require("../app/modules/order/order.service");
-import { runDailyJobIfDue } from "./shared/jobs/daily-job-runner";
+import { runDailyJobIfDue, runIntervalJobIfDue } from "./shared/jobs/daily-job-runner";
 
 type LegacyUserRecord = {
   save: () => Promise<void>;
@@ -76,9 +76,7 @@ const registerCronJobs = (): void => {
   cron.schedule(
     "0 */2 * * *",
     async () => {
-      logger.info({ operationName: "saveMissingOrders" }, "Cron started");
-      await orderService.saveMissingOrders();
-      logger.info({ operationName: "saveMissingOrders" }, "Cron completed");
+      await runIntervalJobIfDue(IMPORT_ORDERS_JOB, IMPORT_ORDERS_INTERVAL_MINUTES, runSaveMissingOrders);
     },
     {
       timezone: "Africa/Cairo",
@@ -96,6 +94,18 @@ const registerCronJobs = (): void => {
     {
       timezone: "Africa/Cairo",
     },
+  );
+};
+
+const IMPORT_ORDERS_JOB = "saveMissingOrders";
+/** Matches the 2-hourly schedule, so a restart cannot re-import on every boot. */
+const IMPORT_ORDERS_INTERVAL_MINUTES = 120;
+
+const runSaveMissingOrders = async (): Promise<void> => {
+  const result = await orderService.saveMissingOrders();
+  logger.info(
+    { message: result?.message, operationName: IMPORT_ORDERS_JOB },
+    "Missing orders imported",
   );
 };
 
@@ -121,6 +131,13 @@ const runStartupCatchUp = (): void => {
   void runDailyJobIfDue(DAILY_FINES_JOB, runDailyFines).catch((error: unknown) => {
     logger.error({ err: error, operationName: DAILY_FINES_JOB }, "Startup catch-up failed");
   });
+
+  /* Only imports when the last run is older than the schedule interval, so a
+     redeploy loop does not repeat the Shopify import on every boot. */
+  void runIntervalJobIfDue(IMPORT_ORDERS_JOB, IMPORT_ORDERS_INTERVAL_MINUTES, runSaveMissingOrders)
+    .catch((error: unknown) => {
+      logger.error({ err: error, operationName: IMPORT_ORDERS_JOB }, "Startup catch-up failed");
+    });
 };
 
 const bootstrap = async (): Promise<void> => {

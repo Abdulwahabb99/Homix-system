@@ -74,3 +74,42 @@ export const runDailyJobIfDue = async (
     return false;
   }
 };
+
+/**
+ * Interval variant: runs `handler` only when the last successful run is older
+ * than `intervalMinutes`.
+ *
+ * Used to catch up a repeating job after downtime without re-running it on every
+ * restart — a redeploy loop would otherwise hammer the Shopify API each boot.
+ *
+ * A failing handler is logged and does NOT record a run, so it is retried.
+ */
+export const runIntervalJobIfDue = async (
+  jobName: string,
+  intervalMinutes: number,
+  handler: () => Promise<unknown>,
+): Promise<boolean> => {
+  try {
+    const lastRunAt = await readLastRunAt(jobName);
+    const minutesSinceLastRun = lastRunAt
+      ? moment().diff(moment(lastRunAt), "minutes")
+      : Number.POSITIVE_INFINITY;
+
+    if (minutesSinceLastRun < intervalMinutes) {
+      logger.info(
+        { jobName, lastRunAt, minutesSinceLastRun, operationName: LOG_OPERATION },
+        "Interval job ran recently, skipping",
+      );
+      return false;
+    }
+
+    logger.info({ jobName, lastRunAt, operationName: LOG_OPERATION }, "Interval job started");
+    await handler();
+    await recordRun(jobName, new Date());
+    logger.info({ jobName, operationName: LOG_OPERATION }, "Interval job completed");
+    return true;
+  } catch (error) {
+    logger.error({ err: error, jobName, operationName: LOG_OPERATION }, "Interval job failed");
+    return false;
+  }
+};
