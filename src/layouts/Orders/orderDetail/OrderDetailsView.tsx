@@ -148,6 +148,7 @@ export default function OrderDetailsView({
               changeDeliveryBy={changeDeliveryBy}
               changeManufactureStatus={changeManufactureStatus}
               changePriority={changePriority}
+              isVendor={isVendor}
             />
 
             <OrderNotesCard

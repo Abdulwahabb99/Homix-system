@@ -188,32 +188,6 @@ export const vendorsRoutes = [
       </ProtectedRoutes>
     ),
   },
-  {
-    type: "collapse",
-    name: "التذاكر",
-    key: "tickets",
-    icon: <Icon fontSize="small">confirmation_number</Icon>,
-    route: "/tickets",
-    component: (
-      <ProtectedRoutes>
-        <Suspense fallback={<div><Spinner /></div>}>
-          <Tickets />
-        </Suspense>
-      </ProtectedRoutes>
-    ),
-  },
-  {
-    type: "collapse",
-    name: "تقارير مالية",
-    key: "financialReports",
-    icon: <Icon fontSize="small">description</Icon>,
-    route: "/financialReports",
-    component: (
-      <ProtectedRoutes>
-        <Financialreports />
-      </ProtectedRoutes>
-    ),
-  },
 ];
 
 export const logisticsRoutes = [

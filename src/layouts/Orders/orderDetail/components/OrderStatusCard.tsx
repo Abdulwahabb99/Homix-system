@@ -1,5 +1,7 @@
 /**
- * بطاقة حالة الطلب: حالة الطلب + حالة التأخير + المسؤول + مكان التسليم + حالة التصنيع.
+ * بطاقة حالة الطلب: حالة الطلب + حالة التأخير + الأولوية + المسؤول + التوصيل بواسطة
+ * + حالة التصنيع. البائع يعدّل «حالة التصنيع» فقط؛ الباقي للقراءة عنده، والباك إند
+ * يُسقط أي حقل آخر يرسله (restrictVendorOrderPayload).
  * تجمع خياراتها من `useOrderStatusOptions` وتستدعي دوال التحديث المتفائل من الصفحة.
  */
 import React from "react";
@@ -22,6 +24,8 @@ interface OrderStatusCardProps {
   changeDeliveryBy: (deliveryBy: number | null) => void;
   changeManufactureStatus: (status: number | null) => void;
   changePriority: (priority: number | null) => void;
+  /** البائع يرى هذه الحقول للقراءة فقط — الباك إند يرفض تعديلها منه أصلاً */
+  isVendor?: boolean;
 }
 
 export default function OrderStatusCard({
@@ -34,6 +38,7 @@ export default function OrderStatusCard({
   changeDeliveryBy,
   changeManufactureStatus,
   changePriority,
+  isVendor = false,
 }: OrderStatusCardProps) {
   const {
     orderStatusOptions,
@@ -60,6 +65,7 @@ export default function OrderStatusCard({
           <Typography sx={statusFieldLabelSx}>حالة الطلب</Typography>
           <SelectComponent
             id="order-status"
+            disabled={isVendor}
             options={orderStatusOptions}
             value={orderDetails.status != null ? Number(orderDetails.status) : null}
             onChange={changeOrderStatus}
@@ -74,6 +80,7 @@ export default function OrderStatusCard({
           <Typography sx={statusFieldLabelSx}>حالة التأخير</Typography>
           <SelectComponent
             id="order-delivery-status"
+            disabled={isVendor}
             options={deliveryStatusOptions}
             value={orderDetails.deliveryStatus != null ? Number(orderDetails.deliveryStatus) : null}
             onChange={changeDeliveryStatus}
@@ -88,6 +95,7 @@ export default function OrderStatusCard({
           <Typography sx={statusFieldLabelSx}>الأولوية</Typography>
           <SelectComponent
             id="order-priority"
+            disabled={isVendor}
             options={PRIORITY_VALUES}
             value={orderDetails.priority != null ? Number(orderDetails.priority) : null}
             onChange={changePriority}
@@ -102,6 +110,7 @@ export default function OrderStatusCard({
           <Typography sx={statusFieldLabelSx}>المسؤول</Typography>
           <Autocomplete
             id="order-assignee"
+            disabled={isVendor}
             options={assigneeOptions}
             value={selectedAssignee}
             onChange={(_e, newValue: any) => changeAssignee(newValue ? newValue.value : null)}
@@ -119,6 +128,7 @@ export default function OrderStatusCard({
           <Typography sx={statusFieldLabelSx}>التوصيل بواسطة</Typography>
           <SelectComponent
             id="order-delivery-by"
+            disabled={isVendor}
             options={deliveryByOptions}
             value={orderDetails.deliveryBy != null ? Number(orderDetails.deliveryBy) : null}
             onChange={changeDeliveryBy}

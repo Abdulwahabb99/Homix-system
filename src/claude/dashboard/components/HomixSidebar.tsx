@@ -131,8 +131,6 @@ const vendorMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
   { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
   { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", perm: "products_view" },
-  { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
-  { to: "/financialReports", label: "تقارير مالية", icon: icons.reports, perm: "finance_view" },
 ];
 
 const operationsMain: NavItem[] = [
