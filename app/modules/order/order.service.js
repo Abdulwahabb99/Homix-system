@@ -101,6 +101,38 @@ const getShopifyShippingTotal = (order) => {
   return normalizeNumber(order.total_shipping_price_set?.shop_money?.amount);
 };
 
+/**
+ * An order-level amount (shipping, down payment) belongs to the whole order, but
+ * one order becomes one row per unit. Each row takes a share proportional to its
+ * value so the rows add back up to what the customer actually pays — assigning
+ * the full amount to every row multiplied it by the number of splits.
+ */
+const distributeAmountByWeight = (total, weights) => {
+  const totalCents = Math.round(normalizeNumber(total) * 100);
+  const weightCents = weights.map((weight) => Math.round(normalizeNumber(weight) * 100));
+  const weightTotal = weightCents.reduce((sum, weight) => sum + weight, 0);
+
+  if (weightTotal <= 0 || totalCents === 0) {
+    return weights.map(() => 0);
+  }
+
+  const shares = weightCents.map((weight) => Math.floor((totalCents * weight) / weightTotal));
+  let remainder = totalCents - shares.reduce((sum, share) => sum + share, 0);
+
+  // Leftover cents go to the largest rows, so the parts always sum to the whole.
+  const byWeightDesc = weightCents
+    .map((weight, index) => ({ index, weight }))
+    .sort((left, right) => right.weight - left.weight);
+
+  for (const { index } of byWeightDesc) {
+    if (remainder <= 0) break;
+    shares[index] += 1;
+    remainder -= 1;
+  }
+
+  return shares.map((share) => share / 100);
+};
+
 /** Value of every line on the Shopify order, used to split order-level totals. */
 const getOrderLineItemsTotal = (lineItems) => {
   if (!Array.isArray(lineItems)) {
@@ -200,10 +232,17 @@ class OrderService {
       /* One Shopify order becomes one row per line item, but its shipping is
          charged once. Remember the parent totals so each split can take a
          proportional share instead of repeating the full amount. */
-      order.__shippingTotal = getShopifyShippingTotal(order);
-      order.__lineItemsTotal = getOrderLineItemsTotal(order.line_items);
+      const splits = splitImportedOrderByUnit(order);
+      const weights = splits.map((split) => getOrderLineItemsTotal(split.line_items));
+      const shippingShares = distributeAmountByWeight(getShopifyShippingTotal(order), weights);
+      const downPaymentShares = distributeAmountByWeight(order.downPayment, weights);
 
-      orders.push(...splitImportedOrderByUnit(order));
+      splits.forEach((split, index) => {
+        split.__shippingShare = shippingShares[index];
+        split.__downPaymentShare = downPaymentShares[index];
+      });
+
+      orders.push(...splits);
     });
 
     const productsIds = new Set();
@@ -338,12 +377,11 @@ class OrderService {
         nextNumber++;
         /* Proportional share of the parent order's shipping, so the splits sum
            back to what the customer actually pays. */
-        const parentShipping = normalizeNumber(order.__shippingTotal);
-        const parentLineTotal = normalizeNumber(order.__lineItemsTotal);
-        const shippingFees = parentLineTotal > 0
-          ? Math.round(parentShipping * (subTotalPrice / parentLineTotal) * 100) / 100
-          : parentShipping;
-        const downPayment = normalizeNumber(order.downPayment);
+        /* Shipping and «جدية الشراء» are paid once for the whole order; each
+           split carries the share computed when the order was split. Before this,
+           every split carried the full amount and toBeCollected went negative. */
+        const shippingFees = normalizeNumber(order.__shippingShare);
+        const downPayment = normalizeNumber(order.__downPaymentShare);
         const toBeCollected = calculateAmountToCollect({
           downPayment,
           shippingFees,
