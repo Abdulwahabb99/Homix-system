@@ -19,7 +19,8 @@ const queryInterface = sequelize.getQueryInterface();
 const FINAL_FINE_STATUSES = [4, 5, 6, 7, 8] as const;
 const VENDOR_USER_TYPE = "2";
 const DEFAULT_ORDER_PRIORITY = 1;
-const DEFAULT_ORDER_SOURCE = 1;
+/** «اونلاين» — الغالبية تأتي من الاستيراد؛ الطلب اليدوي يُضبط على «شو رووم» صراحةً. */
+const DEFAULT_ORDER_SOURCE = 2;
 
 const hasFlag = (flag: string): boolean => process.argv.includes(flag);
 
@@ -552,20 +553,28 @@ const normalizeShipmentData = async (): Promise<void> => {
     $$;
   `);
 
-  await runSql(`ALTER TABLE orders ALTER COLUMN "orderSource" SET DEFAULT 1;`);
+  await runSql(`ALTER TABLE orders ALTER COLUMN "orderSource" SET DEFAULT 2;`);
   await runSql(`ALTER TABLE orders ALTER COLUMN "priority" SET DEFAULT 1;`);
   await runSql(`ALTER TABLE "shipmentInventoryItems" ALTER COLUMN "status" SET DEFAULT 1;`);
   await runSql(`ALTER TABLE "shipmentExpenses" ALTER COLUMN "type" SET DEFAULT 6;`);
   await runSql(`ALTER TABLE "shipmentExpenses" ALTER COLUMN "accountingStatus" SET DEFAULT 1;`);
 
+  /* The previous backfill only touched NULL/invalid values. Because the column
+     default already stamped every row as showroom (1), it matched nothing and
+     12,636 imported orders stayed mislabelled. The source is derived from the
+     order's origin instead: a real Shopify id means online, anything else
+     (custom / undefined / blank) is a manual showroom order. */
   await runSql(`
     UPDATE orders
     SET "orderSource" = CASE
-      WHEN COALESCE(NULLIF(TRIM("shopifyId"), ''), 'custom') <> 'custom' THEN 2
+      WHEN COALESCE(NULLIF(TRIM("shopifyId"), ''), 'custom') NOT IN ('custom', 'undefined') THEN 2
       ELSE 1
     END
     WHERE "deletedAt" IS NULL
-      AND ("orderSource" IS NULL OR "orderSource" NOT IN (1, 2));
+      AND "orderSource" IS DISTINCT FROM CASE
+        WHEN COALESCE(NULLIF(TRIM("shopifyId"), ''), 'custom') NOT IN ('custom', 'undefined') THEN 2
+        ELSE 1
+      END;
   `);
 
   await runSql(`

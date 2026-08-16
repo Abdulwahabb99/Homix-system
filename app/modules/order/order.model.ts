@@ -95,6 +95,9 @@ const Order = sequelize.define(
     orderSource: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      // الافتراضي «اونلاين»: الغالبية تأتي من الاستيراد، والطلب اليدوي
+      // يُضبط صراحةً على «شو رووم» عند الإنشاء.
+      defaultValue: ORDER_SOURCE.ONLINE,
       validate: {
         isIn: [Object.values(ORDER_SOURCE)],
       },
