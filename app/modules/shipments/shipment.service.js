@@ -617,6 +617,7 @@ class ShipmentService {
       { header: "حالة الجدولة", key: "scheduleStatus" },
       { header: "تاريخ التسليم الفعلي", key: "actualDeliveryDate" },
       { header: "عداد الأيام", key: "daysCounter" },
+      { header: "الملاحظات", key: "notes" },
     ].map((column) => ({
       ...column,
       style: { alignment: { horizontal: "right" } },
@@ -699,6 +700,7 @@ class ShipmentService {
             ) ?? "",
           deliveryBy: DELIVERY_BY_LABELS[order.deliveryBy] || "",
           governorate: resolveGovernorateLabel(order.governorate),
+          notes: order.notes || "",
           paymentStatus:
             PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus || "",
           receivedInWarehouseDate: formatExportDate(order.shippingReceiveDate),

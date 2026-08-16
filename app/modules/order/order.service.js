@@ -30,6 +30,7 @@ const {
   applyOrderLinesToInventory,
 } = require("../../../src/modules/shipments/inventory.movements");
 const {
+  getDaysSince,
   getDeliveryPriorityLabel,
   resolveDeliveryStatus,
   resolveOrderPriority,
@@ -157,6 +158,15 @@ const calculateAmountToCollect = ({
     - normalizeNumber(totalDiscounts)
     - normalizeNumber(downPayment)
   );
+};
+
+const formatExportDate = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = moment(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
 };
 
 const EXPORT_SORT_FIELDS = new Set([
@@ -888,11 +898,78 @@ class OrderService {
       vendorUser,
       paymentStatus,
       sort,
+      operationCode,
+      customerName,
+      productCode,
+      manufactureStatus,
+      priority,
+      deliveryBy,
+      orderSource,
+      userId,
     },
   ) {
     let whereClause = {
       [Op.and]: [],
     };
+
+    // Mirrors order.repo.ts::buildFilters so a filter narrowing the on-screen
+    // table also narrows the export — otherwise rows visible in the table
+    // silently drop out of (or back into) the exported file.
+    if (operationCode) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.fn("lower", sequelize.col("Order.code")), {
+          [Op.like]: `%${operationCode.toLowerCase()}%`,
+        }),
+      );
+    }
+    if (customerName) {
+      whereClause[Op.and].push(
+        sequelize.where(
+          sequelize.fn("concat", sequelize.col("customer.firstName"), " ", sequelize.col("customer.lastName")),
+          { [Op.like]: `%${customerName}%` },
+        ),
+      );
+    }
+    if (productCode) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.fn("lower", sequelize.col("orderLines.sku")), {
+          [Op.like]: `%${productCode.toLowerCase()}%`,
+        }),
+      );
+    }
+    if (manufactureStatus) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.col("Order.manufactureStatus"), {
+          [Op.in]: manufactureStatus.split(",").map(Number),
+        }),
+      );
+    }
+    if (priority) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.col("Order.priority"), {
+          [Op.in]: priority.split(",").map(Number),
+        }),
+      );
+    }
+    if (deliveryBy) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.col("Order.deliveryBy"), {
+          [Op.in]: deliveryBy.split(",").map(Number),
+        }),
+      );
+    }
+    if (orderSource) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.col("Order.orderSource"), {
+          [Op.in]: orderSource.split(",").map(Number),
+        }),
+      );
+    }
+    if (userId) {
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.col("Order.userId"), { [Op.eq]: userId }),
+      );
+    }
 
     if (orderNumber) {
       whereClause[Op.and].push({
@@ -1062,6 +1139,11 @@ class OrderService {
       { header: "التوصيل بواسطة", key: "deliveryBy" },
       { header: "حالة التأخير", key: "lateStatus" },
       { header: "الأولوية", key: "priority" },
+      { header: "تاريخ الطلب", key: "orderDate" },
+      { header: "تاريخ التصنيع", key: "poDate" },
+      { header: "عداد الأيام", key: "daysCounter" },
+      { header: "المسؤول", key: "assignee" },
+      { header: "النوع", key: "itemType" },
     ].map((column) => ({
       ...column,
       style: { alignment: { horizontal: "right" } },
@@ -1071,8 +1153,10 @@ class OrderService {
     let offset = 0;
     let hasMore = true;
 
-    // Optimize includes - load orderLines separately when no vendor filters
-    const useOptimizedQuery = !vendorName && !vendorId;
+    // Optimize includes - load orderLines separately when no vendor/product filters
+    // that need to filter through the join (a `separate` load can't be filtered
+    // by a where clause referencing the joined table's columns).
+    const useOptimizedQuery = !vendorName && !vendorId && !productCode;
 
     while (hasMore) {
       const chunk = await Order.findAll({
@@ -1145,6 +1229,10 @@ class OrderService {
           order.deliveryStatus,
           order.expectedDeliveryDate,
         );
+        const assignee = order.user
+          ? `${order.user.firstName || ""} ${order.user.lastName || ""}`.trim()
+          : "";
+        const daysCounter = getDaysSince(order.orderDate);
 
         for (const line of order.orderLines) {
           const variant = line.product.variants.find(
@@ -1152,14 +1240,19 @@ class OrderService {
           );
           worksheet.addRow({
             amountToCollect,
+            assignee,
             code: order.code,
             cost: line.cost,
+            daysCounter: daysCounter ?? "",
             deliveryBy: DELIVERY_BY_ARABIC[order.deliveryBy] || "",
+            itemType: line.product.type?.name || "",
             lateStatus: DELIVERY_STATUS_ARABIC[lateStatus] || "",
+            orderDate: formatExportDate(order.orderDate),
             orderNumber: order.orderNumber,
             orderSource: ORDER_SOURCE_ARABIC[order.orderSource] || "",
             paymentStatus:
               PAYMENT_STATUS_ARABIC[order.paymentStatus] || order.paymentStatus,
+            poDate: formatExportDate(order.PoDate),
             price: line.price * line.quantity,
             priority: getDeliveryPriorityLabel(priority),
             productCode: variant ? variant.sku : "",
