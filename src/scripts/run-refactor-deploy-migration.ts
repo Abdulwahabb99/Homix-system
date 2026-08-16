@@ -344,6 +344,27 @@ const ensureTicketTable = async (): Promise<void> => {
   });
 };
 
+/**
+ * Marker table for scheduled jobs.
+ *
+ * node-cron timers live in memory, so a daily job only fires if the process
+ * happens to be awake at that exact minute. A restart or an idle sleep before
+ * Cairo midnight meant the fines recompute simply never ran. Recording the last
+ * successful run lets the server catch up on boot instead.
+ */
+const ensureCronRunTable = async (): Promise<void> => {
+  logStep("Ensuring scheduled job run table");
+
+  await ensureTable("cronRuns", {
+    id: { allowNull: false, autoIncrement: true, primaryKey: true, type: DataTypes.INTEGER },
+    jobName: { allowNull: false, type: DataTypes.STRING },
+    lastRunAt: { allowNull: false, type: DataTypes.DATE },
+    createdAt: { allowNull: false, type: DataTypes.DATE },
+    updatedAt: { allowNull: false, type: DataTypes.DATE },
+  });
+  await ensureIndex("cronRuns", "cron_runs_job_name_idx", ["jobName"], { unique: true });
+};
+
 const ensureManagedOptions = async (): Promise<void> => {
   logStep("Ensuring dynamic expense and ticket options");
   await ensureTable("managedOptions", {
@@ -1102,6 +1123,7 @@ const main = async (): Promise<void> => {
   await ensureDashboardTables();
   await ensureTicketTable();
   await ensureManagedOptions();
+  await ensureCronRunTable();
   await normalizeShipmentData();
   await ensureConstraints();
   await ensureIndexes();
