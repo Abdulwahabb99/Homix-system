@@ -32,12 +32,6 @@ export interface FiltersPanelValue {
 
 interface User { id: string | number; firstName?: string; lastName?: string }
 
-/** «حالة التأخير» ثابتة (نفس قيم صفحة الشحنات) ولا تأتي من الـ meta */
-const DELAY_STATUS_OPTIONS = [
-  { value: 1, label: "في الموعد" },
-  { value: 2, label: "قارب على التأخير" },
-  { value: 3, label: "متأخر" },
-];
 
 interface OrdersHomixFiltersPanelProps {
   isVendor: boolean;
@@ -419,7 +413,7 @@ export default function OrdersHomixFiltersPanel({
                   value={draftDelivery}
                   onChange={setDraftDelivery}
                   onClose={handleDropdownClose}
-                  options={DELAY_STATUS_OPTIONS}
+                  options={DELIVERY_STATUS}
                   placeholder="كل الحالات"
                 />
               </FieldBox>
