@@ -24,6 +24,27 @@ const ensureLegacySuccess = <TData>(response: LegacyOrderResponse<TData>): Legac
   throw new ConflictError(message);
 };
 
+/**
+ * A vendor may only report progress on their own manufacturing. Order status,
+ * delay status, priority, assignee, delivery-by and every financial field are
+ * decided by Homix, so they are dropped from a vendor's payload rather than
+ * merely hidden in the UI — otherwise the request could be replayed by hand.
+ */
+const VENDOR_EDITABLE_ORDER_FIELDS = new Set(["manufactureStatus", "notes"]);
+
+export const restrictVendorOrderPayload = (
+  payload: OrderMutationPayload,
+  user: OrderRequestUser,
+): OrderMutationPayload => {
+  if (String(user?.userType) !== String(USER_TYPES.VENDOR)) {
+    return payload;
+  }
+
+  return Object.fromEntries(
+    Object.entries(payload).filter(([field]) => VENDOR_EDITABLE_ORDER_FIELDS.has(field)),
+  ) as OrderMutationPayload;
+};
+
 export class OrderService {
   private readonly dashboardAggregateService = new DashboardAggregateService({
     getDeliveredOrdersCountFromOrders: async () => 0,

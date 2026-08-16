@@ -17,6 +17,7 @@ const User = require("../../app/modules/user/user.model") as {
 const queryInterface = sequelize.getQueryInterface();
 
 const FINAL_FINE_STATUSES = [4, 5, 6, 7, 8] as const;
+const VENDOR_USER_TYPE = "2";
 const DEFAULT_ORDER_PRIORITY = 1;
 const DEFAULT_ORDER_SOURCE = 1;
 
@@ -856,11 +857,27 @@ const repairRolePermissions = async (): Promise<void> => {
     const currentPermissions = normalizePermissions(plainUser.permissions, userType, roleName);
     const nextPermissions = { ...currentPermissions };
 
+    /* Vendors are external users whose capability set is fixed by the business,
+       so their map is forced to match the template exactly — anything outside it
+       (finance reports, tickets) is revoked, not merely left alone.
+       Internal roles are grant-only: a permission an administrator switched off
+       deliberately stays off. */
+    const isVendor = userType === VENDOR_USER_TYPE;
+
     let changed = false;
     for (const [permissionKey, isGranted] of Object.entries(template)) {
       if (isGranted && nextPermissions[permissionKey] !== true) {
         nextPermissions[permissionKey] = true;
         changed = true;
+      }
+    }
+
+    if (isVendor) {
+      for (const permissionKey of Object.keys(nextPermissions)) {
+        if (template[permissionKey] !== true && nextPermissions[permissionKey] !== false) {
+          nextPermissions[permissionKey] = false;
+          changed = true;
+        }
       }
     }
 

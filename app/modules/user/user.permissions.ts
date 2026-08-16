@@ -189,16 +189,15 @@ export const USER_PERMISSION_TEMPLATES = {
     notifications_manage: true,
   },
   vendor: {
-    /* يطابق vendorsRoutes في الفرونت إند القديم (main):
-       الرئيسية · المنتجات · الطلبات · تقارير مالية.
-       والتذاكر أُضيفت لاحقاً وهي مقيَّدة ببيانات البائع نفسه. */
+    /* البائع يرى: الرئيسية · المنتجات · الطلبات فقط.
+       التقارير المالية والتذاكر مُقفلة عليه بقرار العمل (كانت متاحة على main). */
     dashboard_view: true,
     products_view: true,
     orders_view: true,
-    finance_view: true,
-    finance_export: true,
-    tickets_view: true,
-    tickets_reply: true,
+    /* لازمة لتحديث «حالة التصنيع» فقط — الباك إند يحصر ما يقبله من البائع
+       في restrictVendorOrderPayload، فلا يستطيع تعديل الحالة أو الأولوية أو
+       المسؤول أو التوصيل بواسطة أو أي حقل مالي. */
+    orders_edit: true,
     notifications_view: true,
     notifications_manage: true,
   },
