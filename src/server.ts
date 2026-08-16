@@ -14,6 +14,7 @@ require("../config/shopify");
 
 const userModel = require("../app/modules/user/user.model");
 const orderService = require("../app/modules/order/order.service");
+import { runDailyJobIfDue } from "./shared/jobs/daily-job-runner";
 
 type LegacyUserRecord = {
   save: () => Promise<void>;
@@ -84,23 +85,42 @@ const registerCronJobs = (): void => {
     },
   );
 
+  /* Wrapped in the daily-run marker: the midnight tick only fires if the process
+     happens to be awake then, and the same job is also attempted on boot. The
+     marker keeps it to one run per Cairo day whichever path gets there first. */
   cron.schedule(
     "0 0 * * *",
     async () => {
-      logger.info({ operationName: "recalculateDailyFines" }, "Cron started");
-      const result = await orderService.recalculateDailyFines();
-      logger.info(
-        {
-          operationName: "recalculateDailyFines",
-          updatedCount: result?.updatedCount ?? 0,
-        },
-        "Cron completed",
-      );
+      await runDailyJobIfDue(DAILY_FINES_JOB, runDailyFines);
     },
     {
       timezone: "Africa/Cairo",
     },
   );
+};
+
+const DAILY_FINES_JOB = "recalculateDailyFines";
+
+const runDailyFines = async (): Promise<void> => {
+  const result = await orderService.recalculateDailyFines();
+  logger.info(
+    {
+      operationName: DAILY_FINES_JOB,
+      updatedCount: result?.updatedCount ?? 0,
+    },
+    "Daily fines recalculated",
+  );
+};
+
+/**
+ * Catches up a daily job that was missed while the process was down. Runs after
+ * the server is listening so a slow recompute never delays startup, and never
+ * throws — a failed catch-up must not take the server with it.
+ */
+const runStartupCatchUp = (): void => {
+  void runDailyJobIfDue(DAILY_FINES_JOB, runDailyFines).catch((error: unknown) => {
+    logger.error({ err: error, operationName: DAILY_FINES_JOB }, "Startup catch-up failed");
+  });
 };
 
 const bootstrap = async (): Promise<void> => {
@@ -111,6 +131,7 @@ const bootstrap = async (): Promise<void> => {
 
   server.listen(env.NODE_PORT, () => {
     logger.info({ port: env.NODE_PORT }, "Server running");
+    runStartupCatchUp();
   });
 };
 
