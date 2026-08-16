@@ -455,6 +455,44 @@ export class DashboardRepository {
     };
   }
 
+  /* Newest order ids that carry at least one line from this vendor. Grouping keeps
+     one row per order so the limit counts orders rather than matching lines. */
+  private async getVendorOrderIds(
+    vendorId: number,
+    range: RangeBounds,
+    limit: number,
+  ): Promise<number[]> {
+    const rows = await orderLineModel.findAll<Plainable>({
+      attributes: ["orderId"],
+      group: ["OrderLine.orderId", "Order.orderDate"],
+      include: [
+        {
+          as: "product",
+          attributes: [],
+          model: productModel,
+          required: true,
+          where: {
+            vendorId,
+          },
+        },
+        {
+          attributes: [],
+          model: orderModel,
+          required: true,
+          where: {
+            orderDate: buildDateRange(range),
+          },
+        },
+      ],
+      limit,
+      order: [[orderModel, "orderDate", "DESC"]],
+    });
+
+    return rows
+      .map((row) => Number(toPlain(row).orderId ?? 0))
+      .filter((orderId) => orderId > 0);
+  }
+
   private async getScopedOrders(
     input: DashboardMetricsInput,
     limit?: number,
@@ -493,12 +531,27 @@ export class DashboardRepository {
       },
     ];
 
+    /* A limited vendor query cannot go through Sequelize's subquery path: it hoists
+       the required nested `product` include into the LIMIT subquery while leaving
+       `orderLines` out of that subquery's FROM clause, which Postgres rejects. Pick
+       the page of order ids up front so the hydrating query carries no limit, and
+       so builds no subquery. */
+    const vendorId = input.role === "vendor" ? input.vendorId : undefined;
+    const scopedIds = limit !== undefined && vendorId
+      ? await this.getVendorOrderIds(vendorId, range, limit)
+      : undefined;
+
+    if (scopedIds && scopedIds.length === 0) {
+      return [];
+    }
+
     const orders = await orderModel.findAll<Plainable>({
       include,
-      limit,
+      limit: scopedIds ? undefined : limit,
       order: [["orderDate", "DESC"]],
       where: {
         orderDate: buildDateRange(range),
+        ...(scopedIds ? { id: { [Op.in]: scopedIds } } : {}),
       },
     });
 
