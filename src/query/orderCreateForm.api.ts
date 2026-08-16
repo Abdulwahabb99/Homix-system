@@ -34,6 +34,8 @@ export interface NewOrderPayload {
   expectedDeliveryDate?: string;
   downPayment: number;
   shippingFees: number;
+  /** الخصم — نفس المفتاح المستخدم في تعديل الطلب (OrderEdit) */
+  totalDiscounts: number;
   toBeCollected: number;
 }
 

@@ -54,6 +54,7 @@ export function useOrderCreateForm() {
   const [deliveryBy, setDeliveryBy] = useState<number>(DEFAULT_DELIVERY_BY);
   const [downPayment, setDownPayment] = useState<string>("");
   const [shippingFees, setShippingFees] = useState<string>("");
+  const [totalDiscounts, setTotalDiscounts] = useState<string>("");
   const [toBeCollectedTouched, setToBeCollectedTouched] = useState(false);
   const [toBeCollectedInput, setToBeCollectedInput] = useState<string>("");
 
@@ -74,7 +75,12 @@ export function useOrderCreateForm() {
       prev.map((li) => (li.key === key ? { ...li, quantity: Math.max(1, quantity) } : li))
     ), []);
 
-  const autoToBeCollected = suggestedToBeCollected(lineItems, shippingFees, downPayment);
+  const autoToBeCollected = suggestedToBeCollected(
+    lineItems,
+    shippingFees,
+    downPayment,
+    totalDiscounts
+  );
   const toBeCollected = toBeCollectedTouched ? toBeCollectedInput : String(autoToBeCollected);
 
   const setToBeCollected = useCallback((value: string) => {
@@ -87,9 +93,10 @@ export function useOrderCreateForm() {
       itemsTotal: itemsTotal(lineItems),
       shippingFees: toNumber(shippingFees),
       downPayment: toNumber(downPayment),
+      totalDiscounts: toNumber(totalDiscounts),
       toBeCollected: toNumber(toBeCollected),
     }),
-    [lineItems, shippingFees, downPayment, toBeCollected]
+    [lineItems, shippingFees, downPayment, totalDiscounts, toBeCollected]
   );
 
   const isValid =
@@ -99,11 +106,11 @@ export function useOrderCreateForm() {
   // summary. The ref always points at the latest form snapshot.
   const submitSnapshotRef = useRef({
     customer, lineItems, orderDate, expectedDeliveryDate, paymentStatus,
-    deliveryBy, downPayment, shippingFees, toBeCollected, isValid,
+    deliveryBy, downPayment, shippingFees, totalDiscounts, toBeCollected, isValid,
   });
   submitSnapshotRef.current = {
     customer, lineItems, orderDate, expectedDeliveryDate, paymentStatus,
-    deliveryBy, downPayment, shippingFees, toBeCollected, isValid,
+    deliveryBy, downPayment, shippingFees, totalDiscounts, toBeCollected, isValid,
   };
   const isSubmittingRef = useRef(mutation.isPending);
   isSubmittingRef.current = mutation.isPending;
@@ -120,6 +127,7 @@ export function useOrderCreateForm() {
       deliveryBy: current.deliveryBy,
       downPayment: current.downPayment,
       shippingFees: current.shippingFees,
+      totalDiscounts: current.totalDiscounts,
       toBeCollected: current.toBeCollected,
     });
     mutation.mutate(payload, { onSuccess: () => navigate("/orders") });
@@ -144,6 +152,8 @@ export function useOrderCreateForm() {
     setDownPayment,
     shippingFees,
     setShippingFees,
+    totalDiscounts,
+    setTotalDiscounts,
     toBeCollected,
     setToBeCollected,
     totals,

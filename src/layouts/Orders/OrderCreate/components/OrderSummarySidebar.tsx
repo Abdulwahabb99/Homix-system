@@ -31,6 +31,9 @@ export default function OrderSummarySidebar({ totals, itemsCount, canSubmit, isS
       <SectionCard title="ملخص الطلب" subtitle="يتحدّث تلقائياً" icon={<ReceiptLongOutlinedIcon />} iconBg={HX.accentLight} iconColor={HX.accent}>
         <Row label={`إجمالي المنتجات (${itemsCount})`} value={`${formatMoney(totals.itemsTotal)} ج.م`} />
         <Row label="تكلفة الشحن" value={`${formatMoney(totals.shippingFees)} ج.م`} />
+        {totals.totalDiscounts > 0 && (
+          <Row label="الخصم" value={`− ${formatMoney(totals.totalDiscounts)} ج.م`} />
+        )}
         <Row label="جدية الشراء" value={`${formatMoney(totals.downPayment)} ج.م`} />
 
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: "12px", p: "12px 14px", borderRadius: "10px", background: `linear-gradient(135deg, ${HX.accentLight}, rgba(99,102,241,0.03))`, border: `0.5px solid ${HX.accentBorder}` }}>

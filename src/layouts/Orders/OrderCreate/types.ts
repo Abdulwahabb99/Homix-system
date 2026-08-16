@@ -33,6 +33,7 @@ export interface OrderCreateFormState {
   deliveryBy: number;
   downPayment: string;
   shippingFees: string;
+  totalDiscounts: string;
   toBeCollected: string;
 }
 
@@ -40,5 +41,6 @@ export interface OrderTotals {
   itemsTotal: number;
   shippingFees: number;
   downPayment: number;
+  totalDiscounts: number;
   toBeCollected: number;
 }

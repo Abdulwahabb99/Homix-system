@@ -48,7 +48,7 @@ export function buildDraftInvoiceModel(
 
   const subTotalPrice = orderLines.reduce((sum, line) => sum + line.price * line.quantity, 0);
 
-  /* الشحن وجدية الشراء يخصّان الطلب ككل. عند إصدار فاتورة لجزء من الأصناف نوزّعهما
+  /* الشحن والخصم وجدية الشراء تخصّ الطلب ككل. عند إصدار فاتورة لجزء من الأصناف نوزّعها
      بنسبة قيمة الأصناف المختارة، وإلا ظهرت الفاتورة الجزئية بشحن الطلب كاملاً. */
   const fullTotal = form.lineItems.reduce(
     (sum, item) => sum + toNumber(item.price) * (toNumber(item.quantity) || 1),
@@ -59,6 +59,7 @@ export function buildDraftInvoiceModel(
 
   const shippingFees = round2(toNumber(form.shippingFees) * share);
   const downPayment = round2(toNumber(form.downPayment) * share);
+  const totalDiscounts = round2(toNumber(form.totalDiscounts) * share);
   const customerAddress = [
     form.customer.address1,
     form.customer.address2,
@@ -82,8 +83,10 @@ export function buildDraftInvoiceModel(
     paymentStatus: form.paymentStatus,
     shippingFees,
     subTotalPrice,
-    toBeCollected: Math.max(0, subTotalPrice + shippingFees - downPayment),
-    totalDiscounts: 0,
-    totalPrice: subTotalPrice,
+    toBeCollected: Math.max(0, subTotalPrice + shippingFees - totalDiscounts - downPayment),
+    totalDiscounts,
+    /* «الإجمالي» في الفاتورة يقع بعد صفوف المجموع الجزئي والشحن والخصم، فيجب أن يجمعها
+       — وإلا بدا الخصم بلا أثر على الرقم النهائي. */
+    totalPrice: Math.max(0, subTotalPrice + shippingFees - totalDiscounts),
   };
 }

@@ -9,8 +9,9 @@ import { SelectInput, TextInput } from "./FormField";
 const GRID_2 = {
   display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: "14px",
 } as const;
+/** أربعة حقول مالية في شبكة 2×2 — أوضح من صفّ ثلاثي يترك حقلاً وحيداً في سطر جديد. */
 const MONEY_GRID = {
-  display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+  display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
 } as const;
 const NON_NEGATIVE_INPUT_PROPS = { min: 0 } as const;
 
@@ -27,6 +28,8 @@ export interface ShippingPaymentSectionProps {
   setDownPayment: (v: string) => void;
   shippingFees: string;
   setShippingFees: (v: string) => void;
+  totalDiscounts: string;
+  setTotalDiscounts: (v: string) => void;
   toBeCollected: string;
   setToBeCollected: (v: string) => void;
 }
@@ -47,6 +50,7 @@ export default function ShippingPaymentSection(props: ShippingPaymentSectionProp
 
       <Box sx={MONEY_GRID}>
         <TextInput label="تكلفة الشحن" value={props.shippingFees} onChange={props.setShippingFees} type="number" inputProps={NON_NEGATIVE_INPUT_PROPS} />
+        <TextInput label="الخصم" value={props.totalDiscounts} onChange={props.setTotalDiscounts} type="number" inputProps={NON_NEGATIVE_INPUT_PROPS} />
         <TextInput label="جدية الشراء (المقدم)" value={props.downPayment} onChange={props.setDownPayment} type="number" inputProps={NON_NEGATIVE_INPUT_PROPS} />
         <TextInput label="المبلغ المطلوب تحصيله" value={props.toBeCollected} onChange={props.setToBeCollected} type="number" inputProps={NON_NEGATIVE_INPUT_PROPS} />
       </Box>

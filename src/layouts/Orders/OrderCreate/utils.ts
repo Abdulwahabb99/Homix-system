@@ -40,13 +40,18 @@ export function itemsTotal(lineItems: OrderLineItem[]): number {
   return lineItems.reduce((sum, li) => sum + toNumber(li.price) * toNumber(li.quantity), 0);
 }
 
-/** Suggested amount to collect = items + shipping − down payment (never below zero). */
+/** Suggested amount to collect = items + shipping − discount − down payment (never below zero). */
 export function suggestedToBeCollected(
   lineItems: OrderLineItem[],
   shippingFees: string | number,
-  downPayment: string | number
+  downPayment: string | number,
+  totalDiscounts: string | number = 0
 ): number {
-  const total = itemsTotal(lineItems) + toNumber(shippingFees) - toNumber(downPayment);
+  const total =
+    itemsTotal(lineItems) +
+    toNumber(shippingFees) -
+    toNumber(totalDiscounts) -
+    toNumber(downPayment);
   return Math.max(total, 0);
 }
 
@@ -77,6 +82,7 @@ export function buildOrderPayload(form: OrderCreateFormState): NewOrderPayload {
     expectedDeliveryDate: dateInputToIso(form.expectedDeliveryDate),
     downPayment: toNumber(form.downPayment),
     shippingFees: toNumber(form.shippingFees),
+    totalDiscounts: toNumber(form.totalDiscounts),
     toBeCollected: toNumber(form.toBeCollected),
   };
 }

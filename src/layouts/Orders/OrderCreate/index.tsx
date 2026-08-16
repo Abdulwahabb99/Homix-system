@@ -36,6 +36,7 @@ export default function OrderCreate() {
       deliveryBy: form.deliveryBy,
       downPayment: form.downPayment,
       shippingFees: form.shippingFees,
+      totalDiscounts: form.totalDiscounts,
       toBeCollected: form.toBeCollected,
     }),
     [
@@ -47,6 +48,7 @@ export default function OrderCreate() {
       form.deliveryBy,
       form.downPayment,
       form.shippingFees,
+      form.totalDiscounts,
       form.toBeCollected,
     ]
   );
@@ -126,6 +128,8 @@ export default function OrderCreate() {
               setDownPayment={form.setDownPayment}
               shippingFees={form.shippingFees}
               setShippingFees={form.setShippingFees}
+              totalDiscounts={form.totalDiscounts}
+              setTotalDiscounts={form.setTotalDiscounts}
               toBeCollected={form.toBeCollected}
               setToBeCollected={form.setToBeCollected}
             />
