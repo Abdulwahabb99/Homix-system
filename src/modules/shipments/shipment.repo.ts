@@ -315,6 +315,20 @@ const buildShipmentWhereClause = (
     }
   }
 
+  if (filters.scheduledDateFrom) {
+    const scheduledDateFrom = toDateRangeBoundary(filters.scheduledDateFrom, "start");
+    if (scheduledDateFrom) {
+      andConditions.push(where(col("Order.expectedDeliveryDate"), { [Op.gte]: scheduledDateFrom }));
+    }
+  }
+
+  if (filters.scheduledDateTo) {
+    const scheduledDateTo = toDateRangeBoundary(filters.scheduledDateTo, "end");
+    if (scheduledDateTo) {
+      andConditions.push(where(col("Order.expectedDeliveryDate"), { [Op.lte]: scheduledDateTo }));
+    }
+  }
+
   return andConditions.length > 0 ? { [Op.and]: andConditions } : {};
 };
 

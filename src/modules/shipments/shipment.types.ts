@@ -19,6 +19,8 @@ export type ShipmentListQuery = {
   paymentStatus?: string;
   priority?: string;
   scheduleStatus?: string;
+  scheduledDateFrom?: string;
+  scheduledDateTo?: string;
   shippingCompany?: string;
   shipmentNumber?: string;
   shipmentStatus?: string;

@@ -160,6 +160,16 @@ shipmentRouter.get("/meta", requirePermission("ship_view"), asyncHandler(shipmen
  *         schema:
  *           type: string
  *           format: date
+ *       - in: query
+ *         name: scheduledDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: scheduledDateTo
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Shipment summary cards
@@ -1247,6 +1257,16 @@ shipmentRouter.get(
  *           format: date
  *       - in: query
  *         name: deliveryDateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: scheduledDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: scheduledDateTo
  *         schema:
  *           type: string
  *           format: date
