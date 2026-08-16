@@ -82,7 +82,7 @@ export function buildOrderPayload(form: OrderCreateFormState): NewOrderPayload {
     expectedDeliveryDate: dateInputToIso(form.expectedDeliveryDate),
     downPayment: toNumber(form.downPayment),
     shippingFees: toNumber(form.shippingFees),
-    totalDiscounts: toNumber(form.totalDiscounts),
+    discount: toNumber(form.totalDiscounts),
     toBeCollected: toNumber(form.toBeCollected),
   };
 }
