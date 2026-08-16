@@ -98,7 +98,8 @@ export class OrderService {
 
   public async updateOrder(orderId: number, payload: OrderMutationPayload, user: OrderRequestUser): Promise<Result<unknown>> {
     const existingOrder = await this.orderRepository.findOrderEntity(orderId);
-    const normalizedPayload = normalizeOrderMutationPayload(payload, toPlain(existingOrder));
+    const scopedPayload = restrictVendorOrderPayload(payload, user);
+    const normalizedPayload = normalizeOrderMutationPayload(scopedPayload, toPlain(existingOrder));
     const response = ensureLegacySuccess(await this.legacyGateway.updateOrder(orderId, normalizedPayload, user));
     await this.refreshAggregateForDates([existingOrder ? this.getOrderDate(existingOrder) : null, normalizedPayload.orderDate, this.getOrderDate(response.data)]);
     return success(response.data ?? {});

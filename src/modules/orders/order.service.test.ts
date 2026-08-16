@@ -1,5 +1,5 @@
 import { NotFoundError, UnauthorizedError } from "../../shared/errors";
-import { OrderService } from "./order.service";
+import { OrderService, restrictVendorOrderPayload } from "./order.service";
 
 jest.mock("../dashboard/dashboard-aggregate.service", () => ({
   DashboardAggregateService: jest.fn().mockImplementation(() => ({
@@ -339,5 +339,42 @@ describe("OrderService", () => {
       },
       { id: 1 },
     );
+  });
+});
+
+describe("restrictVendorOrderPayload", () => {
+  const vendorUser = { id: 7, userType: "2" } as never;
+  const adminUser = { id: 1, userType: "1" } as never;
+
+  const fullPayload = {
+    commission: 50,
+    deliveryBy: 2,
+    deliveryStatus: 3,
+    manufactureStatus: 3,
+    notes: "جاهز",
+    priority: 3,
+    shippingFees: 100,
+    status: 5,
+    totalPrice: 999,
+    userId: 42,
+  };
+
+  it("keeps only manufacturing progress fields for a vendor", () => {
+    expect(restrictVendorOrderPayload(fullPayload, vendorUser)).toEqual({
+      manufactureStatus: 3,
+      notes: "جاهز",
+    });
+  });
+
+  it("drops the fields Homix owns even when a vendor sends them directly", () => {
+    const scoped = restrictVendorOrderPayload(fullPayload, vendorUser);
+
+    for (const ownedField of ["status", "deliveryStatus", "priority", "userId", "deliveryBy", "shippingFees", "commission", "totalPrice"]) {
+      expect(scoped).not.toHaveProperty(ownedField);
+    }
+  });
+
+  it("leaves non-vendor payloads untouched", () => {
+    expect(restrictVendorOrderPayload(fullPayload, adminUser)).toEqual(fullPayload);
   });
 });
