@@ -25,6 +25,7 @@ const fileUploadMiddleware = require("../../../config/fileUploadMiddleware");
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);
 const orderController = new OrderController(orderService);
+import { handleShopifyOrderWebhook } from "./order.webhook";
 
 export const orderRouter = express.Router();
 
@@ -274,6 +275,28 @@ orderRouter.get(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+/**
+ * @swagger
+ * /orders/webhook:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Shopify orders webhook (HMAC-authenticated, no bearer token)
+ *     description: >
+ *       Authenticated by the X-Shopify-Hmac-Sha256 header over the raw body.
+ *       Shopify cannot send a bearer token, so this route sits outside verifyToken.
+ *     responses:
+ *       200:
+ *         description: Order stored
+ *       401:
+ *         description: Missing or invalid signature
+ *       422:
+ *         description: Payload is not a storable order
+ *       500:
+ *         description: Storing failed — Shopify should retry
+ */
+// Deliberately no verifyToken: Shopify authenticates with an HMAC signature.
+orderRouter.post("/webhook", asyncHandler(handleShopifyOrderWebhook));
+
 orderRouter.post("/", verifyToken, requirePermission("orders_create"), validateRequest({ body: orderMutationSchema }), asyncHandler(orderController.createOrder));
 
 /**

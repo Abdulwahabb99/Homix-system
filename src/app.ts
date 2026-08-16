@@ -45,7 +45,15 @@ export const createApp = (): Express => {
   app.set("query parser", "extended");
   app.use(requestContextMiddleware);
   app.use(httpLogger);
-  app.use(bodyParser.json({ limit: JSON_LIMIT }));
+  /* Shopify signs the raw request body, so keep a copy before it is parsed —
+     re-serialising the parsed object does not reproduce the original bytes and
+     the HMAC would never match. Only the webhook route reads this. */
+  app.use(bodyParser.json({
+    limit: JSON_LIMIT,
+    verify: (request, _response, buffer) => {
+      (request as express.Request & { rawBody?: Buffer }).rawBody = buffer;
+    },
+  }));
   app.use(bodyParser.urlencoded({ extended: true, limit: URL_ENCODED_LIMIT }));
   app.use(cors());
   app.use(UPLOADS_ROUTE, express.static(path.resolve(env.UPLOADS_DIR)));

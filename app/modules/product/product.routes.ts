@@ -5,6 +5,7 @@ const verifyToken = require("../../middlewares/protectApi") as typeof import("..
 const requirePermission = require("../../middlewares/requirePermission") as (permissionKey: string) => express.RequestHandler;
 
 const ProductsRouter = express.Router();
+const { handleShopifyProductWebhook } = require("./product.webhook") as typeof import("./product.webhook");
 
 /**
  * @swagger
@@ -36,6 +37,9 @@ const ProductsRouter = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/GenericMessageResponse'
  */
+// Deliberately no verifyToken: Shopify authenticates with an HMAC signature.
+ProductsRouter.post("/webhook", handleShopifyProductWebhook);
+
 ProductsRouter.post("/", verifyToken, requirePermission("products_edit"), productsController.createProduct);
 
 /**

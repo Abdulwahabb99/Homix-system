@@ -46,6 +46,11 @@ const envSchema = z.object({
   NODE_PORT: z.coerce.number().int().positive().default(3000),
   SHOPIFY_APP_KEY: z.string().min(1),
   SHOPIFY_APP_SECRET: z.string().min(1),
+  /* Store-level webhooks created in the Shopify admin are signed with the key
+     shown on Settings > Notifications, which is NOT the app's API secret.
+     Optional so existing environments keep booting; verification falls back to
+     SHOPIFY_APP_SECRET when it is unset. */
+  SHOPIFY_WEBHOOK_SECRET: z.string().min(1).optional(),
   SHOPIFY_STORE: z.string().min(1),
   SHOPIFY_TOKEN: z.string().min(1),
   UPLOADS_DIR: z.string().min(1).default("uploads"),

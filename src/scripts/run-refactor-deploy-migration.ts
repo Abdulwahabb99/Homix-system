@@ -933,11 +933,17 @@ const getFinesLimit = (): number | null => {
  * edit (normalizeOrderMutationPayload), so running this simply brings historical
  * rows in line with what an edit would have produced.
  *
+ * Restricted to orders still in flight — قيد التصنيع (2) and في المخزن (8).
+ * A delivered, cancelled or refunded order's collection amount is a historical
+ * record of what was actually collected and must not be rewritten.
+ *
  * Pure SQL and idempotent: only rows that actually disagree are touched, and
  * "updatedAt" is left alone because this is a correction, not an order event.
  */
+const COLLECTION_RECALC_STATUSES = [2, 8] as const;
+
 const recalculateOrderCollectionAmounts = async (): Promise<void> => {
-  logStep("Recalculating order collection amounts");
+  logStep("Recalculating order collection amounts (in progress / in inventory)");
 
   const [rows] = await sequelize.query(`
     UPDATE orders
@@ -946,6 +952,7 @@ const recalculateOrderCollectionAmounts = async (): Promise<void> => {
                         - COALESCE("totalDiscounts", 0)
                         - COALESCE("downPayment", 0)
     WHERE "deletedAt" IS NULL
+      AND status IN (${COLLECTION_RECALC_STATUSES.join(", ")})
       AND "toBeCollected" IS DISTINCT FROM (
             COALESCE("subTotalPrice", 0)
           + COALESCE("shippingFees", 0)
@@ -1101,7 +1108,7 @@ const main = async (): Promise<void> => {
   await backfillUserPermissions();
   await repairRolePermissions();
   await backfillHistoricalManualOrderData();
-  await recalculateOrderCollectionAmounts();
+  // await recalculateOrderCollectionAmounts();
   await recalculateOrderFines();
   await backfillDashboardAggregates();
 

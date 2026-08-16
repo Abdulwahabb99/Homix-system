@@ -9,12 +9,17 @@
  * so it is split by line value and the rounding remainder goes to the largest row —
  * the shares always add back up to what the customer actually paid.
  *
+ * Scoped by default to orders still in flight — قيد التصنيع (2) and في المخزن (8) —
+ * the same set the deploy script recomputes collection amounts for. A delivered or
+ * cancelled order's figures are historical and are left alone.
+ *
  * Read-only by default. Pass --apply to write.
  *
- *   npm run db:backfill-shopify-shipping                      # today, preview
- *   npm run db:backfill-shopify-shipping -- --apply           # today, write
- *   npm run db:backfill-shopify-shipping -- --from=2026-08-13 --apply
- *   npm run db:backfill-shopify-shipping -- --from=2026-08-13 --to=2026-08-15
+ *   npm run db:backfill-shopify-shipping                       # preview (status 2,8)
+ *   npm run db:backfill-shopify-shipping -- --apply            # write
+ *   npm run db:backfill-shopify-shipping -- --from=2026-08-13  # narrow by date
+ *   npm run db:backfill-shopify-shipping -- --statuses=2,8,5   # override statuses
+ *   npm run db:backfill-shopify-shipping -- --all-statuses     # every status
  */
 import { QueryTypes } from "sequelize";
 
@@ -24,6 +29,9 @@ const shopifyClient = require("../../config/shopify");
 
 /** Shopify REST allows ~2 calls/second on standard plans. */
 const SHOPIFY_REQUEST_DELAY_MS = 600;
+
+/** قيد التصنيع + في المخزن — orders whose money is still to be collected. */
+const DEFAULT_STATUSES = [2, 8];
 
 type OrderRow = {
   id: number;
@@ -92,11 +100,17 @@ const splitProportionally = (totalCents: number, weights: number[]): number[] =>
 
 const main = async (): Promise<void> => {
   const apply = hasFlag("--apply");
-  const from = getFlagValue("from") ?? new Date().toISOString().slice(0, 10);
+  const from = getFlagValue("from");
   const to = getFlagValue("to");
+  const statuses = hasFlag("--all-statuses")
+    ? null
+    : (getFlagValue("statuses")?.split(",").map((value) => Number(value.trim())).filter(Number.isFinite)
+        ?? DEFAULT_STATUSES);
 
   console.log(
-    `\n==> Backfilling Shopify shipping for orders from ${from}${to ? ` to ${to}` : " onwards (today)"}` +
+    `\n==> Backfilling Shopify shipping` +
+      `${statuses ? ` for orders with status ${statuses.join(", ")}` : " for every status"}` +
+      `${from ? ` from ${from}` : ""}${to ? ` to ${to}` : ""}` +
       `${apply ? "" : "  [DRY RUN — pass --apply to write]"}`,
   );
 
@@ -109,15 +123,16 @@ const main = async (): Promise<void> => {
       where "deletedAt" is null
         and "shopifyId" is not null
         and trim("shopifyId") not in ('', 'custom', 'undefined')
-        and "orderDate" >= :from::date
+        ${statuses ? `and status in (${statuses.join(", ")})` : ""}
+        ${from ? `and "orderDate" >= :from::date` : ""}
         ${to ? `and "orderDate" < (:to::date + interval '1 day')` : ""}
       order by "shopifyId", id
     `,
-    { replacements: { from, ...(to ? { to } : {}) }, type: QueryTypes.SELECT },
+    { replacements: { ...(from ? { from } : {}), ...(to ? { to } : {}) }, type: QueryTypes.SELECT },
   );
 
   if (rows.length === 0) {
-    console.log("  no imported orders in that range");
+    console.log("  no imported orders match that scope");
     return;
   }
 
