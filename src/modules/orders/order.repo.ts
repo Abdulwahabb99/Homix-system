@@ -13,6 +13,7 @@ import {
   PAYMENT_STATUS,
   PAYMENT_STATUS_ARABIC,
   SHIPMENTS_STATUS,
+  USER_TYPES,
 } from "../../../config/constants";
 import { ACTIVE_VENDOR_ORDER_STATUSES, FINAL_ORDER_STATUSES, ORDER_PRIORITY, ORDER_STATUS_LABELS, ORDER_SUMMARY_STATUS_GROUPS } from "./order.constants";
 import {
@@ -962,7 +963,13 @@ export class OrderRepository {
   public async getMeta(): Promise<OrderMetaResponse> {
     const [vendors, assignees] = await Promise.all([
       vendorModel.findAll({ attributes: ["id", "name"], order: [["name", "ASC"]] }),
-      userModel.findAll({ attributes: ["firstName", "id", "lastName"], order: [["firstName", "ASC"]] }),
+      /* «المسؤول» يعني موظفي هوميكس فقط — استبعاد حسابات البائعين (المصانع)
+         حتى لا تظهر في فلتر المسؤول، مطابقةً لما يفعله UserService.getAdminUsers. */
+      userModel.findAll({
+        attributes: ["firstName", "id", "lastName"],
+        order: [["firstName", "ASC"]],
+        where: { userType: { [Op.not]: USER_TYPES.VENDOR } },
+      }),
     ]);
     return {
       assignees: assignees.map((user: unknown) => ({ id: toNumber(toPlain(user).id), label: `${toText(toPlain(user).firstName)} ${toText(toPlain(user).lastName)}`.trim() })),
