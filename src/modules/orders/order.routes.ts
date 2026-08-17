@@ -453,7 +453,11 @@ orderRouter.get(
 orderRouter.get(
   "/export",
   verifyToken,
-  requirePermission("finance_export"),
+  /* Exporting is just a different shape of the same data orders_view already
+     grants in the UI (list/detail) — gating it behind finance_export left every
+     non-admin, non-finance role (logistics, ops, vendor) with a silently
+     corrupted download instead of a working export. */
+  requirePermission("orders_view"),
   validateRequest({ query: orderExportQuerySchema }),
   asyncHandler(orderController.exportOrders),
 );
