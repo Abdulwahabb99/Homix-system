@@ -24,6 +24,7 @@ export interface FilterValues {
   deliveryBy: string;
   shippingCompany: string;
   scheduleStatus: string;
+  governorate: string;
   vendorName: string;
   /** تاريخ الاستلام بالمخزون */
   startDate: any;
@@ -187,7 +188,7 @@ export default function ShipmentsFiltersBar({
     const empty: FilterValues = {
       operationCode: "", orderNumber: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
-      deliveryBy: "", shippingCompany: "", scheduleStatus: "", vendorName: "",
+      deliveryBy: "", shippingCompany: "", scheduleStatus: "", governorate: "", vendorName: "",
       startDate: null, endDate: null,
       deliveryDateFrom: null, deliveryDateTo: null,
       scheduledDateFrom: null, scheduledDateTo: null,
@@ -205,6 +206,7 @@ export default function ShipmentsFiltersBar({
     { value: 2, label: "مدفوع" },
   ];
   const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
+  const governorates      = meta?.governorates      ?? [];
 
   const selectedCount = (value: string) => value
     .split(",")
@@ -217,6 +219,7 @@ export default function ShipmentsFiltersBar({
     + selectedCount(vals.paymentStatus)
     + (isVendor ? 0 : selectedCount(vals.shipmentType))
     + selectedCount(vals.shippingCompany)
+    + selectedCount(vals.governorate)
     + selectedCount(vals.scheduleStatus)
     + (vals.startDate || vals.endDate ? 1 : 0)
     + (vals.deliveryDateFrom || vals.deliveryDateTo ? 1 : 0)
@@ -343,6 +346,13 @@ export default function ShipmentsFiltersBar({
               value={vals.scheduleStatus}
               options={scheduleStatuses}
               onChange={setSelect("scheduleStatus")}
+            />
+
+            <FilterSelect
+              label="المحافظة"
+              value={vals.governorate}
+              options={governorates}
+              onChange={setSelect("governorate")}
             />
           </Box>
 

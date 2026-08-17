@@ -233,6 +233,7 @@ export default function Shipments() {
   const deliveryBy     = searchParams.get("deliveryBy")     || "";
   const shippingCompany = searchParams.get("shippingCompany") || "";
   const scheduleStatus = searchParams.get("scheduleStatus") || "";
+  const governorate    = searchParams.get("governorate")    || "";
   const vendorName     = searchParams.get("vendorName")     || "";
   const startDateParam = searchParams.get("startDate") || "";
   const endDateParam   = searchParams.get("endDate") || "";
@@ -260,12 +261,12 @@ export default function Shipments() {
   const queryParams = React.useMemo(() => ({
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorName, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorName, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
@@ -302,6 +303,7 @@ export default function Shipments() {
     if (values.deliveryBy)     urlParams.set("deliveryBy",     values.deliveryBy);
     if (values.shippingCompany) urlParams.set("shippingCompany", values.shippingCompany);
     if (values.scheduleStatus) urlParams.set("scheduleStatus", values.scheduleStatus);
+    if (values.governorate)    urlParams.set("governorate",    values.governorate);
     if (values.vendorName)     urlParams.set("vendorName",     values.vendorName);
     if (values.startDate) {
       const m = moment.isMoment(values.startDate)
@@ -414,12 +416,12 @@ export default function Shipments() {
   const filterDefaults: FilterValues = React.useMemo(() => ({
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorName, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorName, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
