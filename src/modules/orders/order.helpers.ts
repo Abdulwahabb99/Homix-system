@@ -368,12 +368,14 @@ const getLineItemsFinancials = (lineItems: unknown): { subTotalPrice: number; to
   );
 };
 
+const isPresent = (value: unknown): boolean => value !== undefined && value !== null && value !== "";
+
 const resolveFinancialValue = (
   payload: Record<string, unknown>,
   existing: Record<string, unknown>,
   key: "downPayment" | "shippingFees" | "subTotalPrice" | "totalDiscounts" | "totalPrice",
 ): number => {
-  if (payload[key] !== undefined && payload[key] !== null && payload[key] !== "") {
+  if (isPresent(payload[key])) {
     return toNumber(payload[key]);
   }
 
@@ -411,9 +413,21 @@ export const normalizeOrderMutationPayload = (
 
   const hasLineItems = Array.isArray(payload.line_items);
   const lineItemsFinancials = getLineItemsFinancials(payload.line_items);
-  const totalDiscounts = hasLineItems
-    ? lineItemsFinancials.totalDiscounts
-    : resolveFinancialValue(payload, existing, "totalDiscounts");
+  /* Order creation sends a single order-level `discount`; editing sends
+     `totalDiscounts`. Neither breaks the discount down per line item, so when
+     one is present it must win over the (otherwise-zero) per-line sum below —
+     that per-line derivation exists for Shopify imports, where each line
+     carries its own discount_allocations. */
+  const explicitDiscount = isPresent(payload.discount)
+    ? toNumber(payload.discount)
+    : isPresent(payload.totalDiscounts)
+      ? toNumber(payload.totalDiscounts)
+      : undefined;
+  const totalDiscounts = explicitDiscount !== undefined
+    ? explicitDiscount
+    : hasLineItems
+      ? lineItemsFinancials.totalDiscounts
+      : resolveFinancialValue(payload, existing, "totalDiscounts");
   const explicitTotalPrice = resolveFinancialValue(payload, existing, "totalPrice");
   const subTotalPrice = hasLineItems
     ? lineItemsFinancials.subTotalPrice
