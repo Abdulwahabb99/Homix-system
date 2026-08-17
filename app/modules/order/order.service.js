@@ -245,7 +245,37 @@ class OrderService {
         message: "No new orders to import",
       };
     }
+    // Ordered by number (not code) and including soft-deleted rows, otherwise a
+    // deleted manual order lets the next one reuse its number.
+    const lastCustomOrder = await Order.findOne({
+      where: {
+        number: {
+          [Op.not]: null,
+        },
+        custom: true,
+      },
+      order: [[literal('CAST("number" AS INTEGER)'), "DESC"]],
+      attributes: ["number"],
+      paranoid: false,
+    });
+    // Get last custom code number or default to 0
+    let lastCustomNumber = lastCustomOrder ? lastCustomOrder.number : 0;
+
     ordersFromShopify.forEach((order) => {
+      /* A manual order has no natural shared id the way a Shopify order does,
+         so one number/orderNumber/name is assigned here — once per order, not
+         per line — and carried into every split below via its spread. That
+         matches how Shopify-imported splits already share the parent order's
+         number; only `code` (assigned per split, further down) stays unique
+         per line item. */
+      if (!order.id) {
+        const newNumber = parseInt(lastCustomNumber, 10) + 1;
+        order.number = `${newNumber}`;
+        order.order_number = `${newNumber + 1000}`;
+        order.name = `#${CUSTOM_PREFIX}${newNumber}`;
+        lastCustomNumber = newNumber;
+      }
+
       /* One Shopify order becomes one row per line item, but its shipping is
          charged once. Remember the parent totals so each split can take a
          proportional share instead of repeating the full amount. */
@@ -273,26 +303,10 @@ class OrderService {
       order: [[literal('CAST("code" AS INTEGER)'), "DESC"]],
       attributes: ["code"],
     });
-    // Ordered by number (not code) and including soft-deleted rows, otherwise a
-    // deleted manual order lets the next one reuse its number.
-    const lastCustomOrder = await Order.findOne({
-      where: {
-        number: {
-          [Op.not]: null,
-        },
-        custom: true,
-      },
-      order: [[literal('CAST("number" AS INTEGER)'), "DESC"]],
-      attributes: ["number"],
-      paranoid: false,
-    });
 
     // Get last code number or default to 0
     const lastCode = lastOrder?.code || `0`;
     const codeNumber = parseInt(lastCode.replace(PREFIX, ""), 10);
-
-    // Get last custom code number or default to 0
-    let lastCustomNumber = lastCustomOrder ? lastCustomOrder.number : 0;
 
     if (isNaN(codeNumber)) {
       throw new Error("Invalid order code format");
@@ -373,23 +387,12 @@ class OrderService {
               ""
             }`;
 
-        let number,
-          orderNumber,
-          name,
-          custom = false;
-        if (order.id) {
-          number = order.number;
-          orderNumber = order.order_number;
-          name = order.name;
-        } else {
-          const newNumber = parseInt(lastCustomNumber, 10) + 1;
-          number = `${newNumber}`;
-          orderNumber = `${newNumber + 1000}`;
-          name = `#${CUSTOM_PREFIX}${newNumber}`;
-          custom = true;
-          // Advance so a batch of manual orders does not reuse the same number.
-          lastCustomNumber = newNumber;
-        }
+        // number/orderNumber/name are assigned once per order (Shopify or
+        // manual) before splitting, above, so every line item shares them.
+        const number = order.number;
+        const orderNumber = order.order_number;
+        const name = order.name;
+        const custom = !order.id;
         const codeNumber = nextNumber;
         nextNumber++;
         /* Proportional share of the parent order's shipping, so the splits sum
