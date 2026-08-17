@@ -21,6 +21,9 @@ interface CustomerInfoCardProps {
 export default function CustomerInfoCard({ orderDetails, isVendor, onEdit }: CustomerInfoCardProps) {
   const customer = orderDetails?.customer;
   const displayName = getCustomerDisplayName(customer);
+  /* شحن من مخازن هوميكس: لا داعي لبيانات تواصل العميل — العنوان مُخفى بالفعل،
+     ويُخفى الهاتف بنفس المنطق. */
+  const shippedFromWarehouse = Number(orderDetails.deliveryBy) === 1;
 
   return (
     <SectionCard
@@ -96,7 +99,7 @@ export default function CustomerInfoCard({ orderDetails, isVendor, onEdit }: Cus
               </Box>
               <Typography sx={{ fontSize: "0.69rem", color: OD.tx3, fontWeight: 500, minWidth: 56 }}>الهاتف</Typography>
               <Typography sx={{ fontSize: "0.81rem", fontWeight: 600, color: OD.tx, flex: 1, dir: "ltr", textAlign: "right" }}>
-                {customer.phoneNumber || "—"}
+                {shippedFromWarehouse ? "—" : customer.phoneNumber || "—"}
               </Typography>
             </Stack>
             <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ py: 1.125 }}>
@@ -105,7 +108,7 @@ export default function CustomerInfoCard({ orderDetails, isVendor, onEdit }: Cus
               </Box>
               <Typography sx={{ fontSize: "0.69rem", color: OD.tx3, fontWeight: 500, minWidth: 56, pt: 0.5 }}>العنوان</Typography>
               <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: OD.tx, flex: 1 }}>
-                {Number(orderDetails.deliveryBy) === 1
+                {shippedFromWarehouse
                   ? "الشحن من مخازن هوميكس"
                   : customer.address || customer.address2 || "—"}
               </Typography>
