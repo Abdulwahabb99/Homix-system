@@ -150,6 +150,33 @@ export function useUpdateDeliveryAccountMutation() {
   });
 }
 
+/** PUT /shipments/accounts/deliveries/bulk-update — نفس تعديل حالة المحاسبة على عدة تسليمات دفعة واحدة. */
+export async function putDeliveryAccountsBulk(
+  orderIds: number[],
+  body: UpdateDeliveryAccountPayload
+): Promise<void> {
+  await axiosRequest.put(`/shipments/accounts/deliveries/bulk-update`, { data: body, orderIds });
+}
+
+export function useBulkUpdateDeliveryAccountsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { orderIds: number[]; body: UpdateDeliveryAccountPayload }) =>
+      putDeliveryAccountsBulk(vars.orderIds, vars.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تحديث حالة المحاسبة للسجلات المحددة");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء التحديث الجماعي");
+    },
+  });
+}
+
 /** POST/PUT/DELETE /shipments/accounts/expenses — المصروفات تُدخَل يدوياً. */
 export interface ExpenseMutationPayload {
   accountingDate?: string | null;

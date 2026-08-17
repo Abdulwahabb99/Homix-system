@@ -1,5 +1,5 @@
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, Checkbox } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import moment from "moment";
@@ -95,6 +95,9 @@ interface ShipmentsTableProps {
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
+  selectionModel?: number[];
+  onToggleSelect?: (id: number) => void;
+  onToggleAll?: () => void;
 }
 
 export default function ShipmentsTable({
@@ -108,8 +111,14 @@ export default function ShipmentsTable({
   onPageChange,
   onEdit,
   onDelete,
+  selectionModel = [],
+  onToggleSelect,
+  onToggleAll,
 }: ShipmentsTableProps) {
   const navigate = useNavigate();
+  const canSelect = !isVendor && Boolean(onToggleSelect) && Boolean(onToggleAll);
+  const isAllSelected = canSelect && shipments.length > 0 && shipments.every((s) => selectionModel.includes(s.id));
+  const isIndeterminate = canSelect && !isAllSelected && shipments.some((s) => selectionModel.includes(s.id));
 
   // هيكل تحميل عند أي جلب (تحميل أول أو إعادة جلب بعد تغيير فلتر/صفحة)
   if (isLoading || isFetching) {
@@ -154,6 +163,16 @@ export default function ShipmentsTable({
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
           <thead>
             <tr>
+              {canSelect && (
+                <th style={{ ...TH, textAlign: "center", width: 36 }}>
+                  <Checkbox
+                    size="small"
+                    checked={isAllSelected}
+                    indeterminate={isIndeterminate}
+                    onChange={() => onToggleAll?.()}
+                  />
+                </th>
+              )}
               <th style={TH}>رقم العملية</th>
               <th style={TH}>رقم الشحنة</th>
               <th style={TH}>اسم العميل</th>
@@ -181,6 +200,16 @@ export default function ShipmentsTable({
                 onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = HX.accentLight; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
               >
+                {canSelect && (
+                  <td style={{ ...TD, textAlign: "center" }}>
+                    <Checkbox
+                      size="small"
+                      checked={selectionModel.includes(s.id)}
+                      onChange={() => onToggleSelect?.(s.id)}
+                    />
+                  </td>
+                )}
+
                 {/* رقم العملية */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>

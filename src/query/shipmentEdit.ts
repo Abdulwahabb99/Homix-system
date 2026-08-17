@@ -33,6 +33,42 @@ export async function putShipment(shipmentId: string, body: UpdateShipmentPayloa
   await axiosRequest.put(`/shipments/${shipmentId}`, body);
 }
 
+/** PUT /shipments/bulk-update — تعديل حالة الشحنة/نوعها/المحافظة/التوصيل بواسطة/المسؤول لعدة شحنات دفعة واحدة. */
+export interface BulkUpdateShipmentPayload {
+  shipmentStatus?: number;
+  shipmentType?: string;
+  governorate?: string;
+  deliveryBy?: number;
+  userId?: number;
+}
+
+export async function putShipmentsBulk(shipmentIds: number[], data: BulkUpdateShipmentPayload) {
+  await axiosRequest.put(`/shipments/bulk-update`, { data, shipmentIds });
+}
+
+export function useBulkUpdateShipmentsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { shipmentIds: number[]; data: BulkUpdateShipmentPayload }) =>
+      putShipmentsBulk(vars.shipmentIds, vars.data),
+    onSuccess: async () => {
+      /* نفس ما يمسّه تعديل شحنة واحدة — القائمة والملخّص والمرتجعات (قد ينقل
+         شحنة من/إلى المرتجعات عند تغيير الحالة) والـ meta. */
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تعديل الشحنات المحددة");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء التعديل الجماعي");
+    },
+  });
+}
+
 export function useUpdateShipmentMutation(shipmentId: string | undefined) {
   const queryClient = useQueryClient();
 

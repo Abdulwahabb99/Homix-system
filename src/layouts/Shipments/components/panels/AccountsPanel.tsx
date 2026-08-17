@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, IconButton, MenuItem, TextField } from "@mui/material";
+import { Box, Button, Checkbox, IconButton, MenuItem, TextField } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 import { usePermissions } from "shared/permissions";
 import EditDeliveryAccountModal from "./EditDeliveryAccountModal";
+import BulkEditDeliveryAccountModal from "./BulkEditDeliveryAccountModal";
 import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
@@ -125,11 +126,31 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const [editItem, setEditItem] = useState<DeliveryAccountItem | null>(null);
   const [filters, setFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
+  const [selectionModel, setSelectionModel] = useState<number[]>([]);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
+  const isAllSelected = items.length > 0 && items.every((item) => selectionModel.includes(item.id));
+  const isIndeterminate = !isAllSelected && items.some((item) => selectionModel.includes(item.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectionModel((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectionModel((current) => {
+      if (isAllSelected) {
+        return current.filter((id) => !items.some((item) => item.id === id));
+      }
+      const toAdd = items.map((item) => item.id).filter((id) => !current.includes(id));
+      return [...current, ...toAdd];
+    });
+  };
 
   const setFilter = (field: keyof DeliveryFilterState) => (value: string) =>
     setFilters((current) => ({ ...current, [field]: value }));
@@ -209,7 +230,23 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         >
           إعادة ضبط
         </Button>
+        {selectionModel.length > 0 && (
+          <Button
+            variant="contained"
+            onClick={() => setIsBulkEditOpen(true)}
+            sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
+          >
+            تعديل المحدد ({selectionModel.length})
+          </Button>
+        )}
       </Box>
+
+      <BulkEditDeliveryAccountModal
+        open={isBulkEditOpen}
+        onClose={() => { setIsBulkEditOpen(false); setSelectionModel([]); }}
+        orderIds={selectionModel}
+        statusOptions={meta?.accountingStatuses ?? []}
+      />
 
       <EditDeliveryAccountModal
         open={editItem !== null}
@@ -232,6 +269,9 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
           <thead>
             <tr>
+              <th style={{ ...TH, textAlign: "center", width: 36 }}>
+                <Checkbox size="small" checked={isAllSelected} indeterminate={isIndeterminate} onChange={toggleSelectAll} />
+              </th>
               <th style={TH}>رقم العملية</th>
               <th style={TH}>رقم الطلب</th>
               <th style={TH}>البائع</th>
@@ -255,6 +295,9 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = HX.accentLight; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
               >
+                <td style={{ ...TD, textAlign: "center" }}>
+                  <Checkbox size="small" checked={selectionModel.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                </td>
                 <td style={TD}>
                   <Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>
                     {item.operationNumber || "—"}

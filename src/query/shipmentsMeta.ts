@@ -15,6 +15,7 @@ export interface ShipmentsTabCount {
 }
 
 export interface ShipmentsMeta {
+  assignees: ShipmentsMetaOption[];
   shipmentStatuses: ShipmentsMetaOption[];
   shipmentTypes: ShipmentsMetaOption[];
   paymentStatuses: ShipmentsMetaOption[];
@@ -51,6 +52,7 @@ function normalizeMeta(raw: any): ShipmentsMeta {
   };
 
   return {
+    assignees:              pick("assignees",              []),
     shipmentStatuses:       pick("shipmentStatuses",       SHIPMENT_STATUS_VALUES),
     shipmentTypes:          pick("shipmentTypes",          SHIPMENT_TYPE_VALUES),
     paymentStatuses:        pick("paymentStatuses",        FALLBACK.paymentStatuses),
@@ -74,6 +76,7 @@ function normalizeMeta(raw: any): ShipmentsMeta {
 }
 
 const FALLBACK: ShipmentsMeta = {
+  assignees: [],
   shipmentStatuses: SHIPMENT_STATUS_VALUES,
   shipmentTypes: SHIPMENT_TYPE_VALUES,
   paymentStatuses: [

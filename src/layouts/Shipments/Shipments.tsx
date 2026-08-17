@@ -15,6 +15,8 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 import ShipmentsKpiRow from "./components/ShipmentsKpiRow";
 import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFiltersBar";
 import ShipmentsTable from "./components/ShipmentsTable";
+import ShipmentsBulkEditModal from "./components/ShipmentsBulkEditModal";
+import { useBulkUpdateShipmentsMutation, type BulkUpdateShipmentPayload } from "query/shipmentEdit";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
 import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
@@ -129,6 +131,9 @@ interface ShipmentsTabContentProps {
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
+  selectionModel: number[];
+  onToggleSelect: (id: number) => void;
+  onToggleAll: () => void;
 }
 
 const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
@@ -148,6 +153,9 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
   onPageChange,
   onEdit,
   onDelete,
+  selectionModel,
+  onToggleSelect,
+  onToggleAll,
 }: ShipmentsTabContentProps) {
   return (
     <>
@@ -170,6 +178,9 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         onPageChange={onPageChange}
         onEdit={onEdit}
         onDelete={onDelete}
+        selectionModel={selectionModel}
+        onToggleSelect={onToggleSelect}
+        onToggleAll={onToggleAll}
       />
     </>
   );
@@ -219,6 +230,7 @@ export default function Shipments() {
     clearTabQueries(activeTab);
     clearTabQueries(tabId);
     setActiveTab(tabId);
+    setShipmentSelectionModel([]);
     void queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() });
   };
 
@@ -278,6 +290,40 @@ export default function Shipments() {
   const shipments  = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / SHIPMENTS_LIST_PAGE_SIZE);
+
+  // Bulk edit — shipment status / type / governorate / delivery-by / assignee
+  const [shipmentSelectionModel, setShipmentSelectionModel] = useState<number[]>([]);
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const bulkUpdateShipmentsMutation = useBulkUpdateShipmentsMutation();
+
+  const toggleShipmentSelect = React.useCallback((id: number) => {
+    setShipmentSelectionModel((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  }, []);
+
+  const toggleShipmentSelectAll = React.useCallback(() => {
+    setShipmentSelectionModel((current) => {
+      const allSelected = shipments.length > 0 && shipments.every((s) => current.includes(s.id));
+      if (allSelected) {
+        return current.filter((id) => !shipments.some((s) => s.id === id));
+      }
+      const toAdd = shipments.map((s) => s.id).filter((id) => !current.includes(id));
+      return [...current, ...toAdd];
+    });
+  }, [shipments]);
+
+  const handleBulkEditShipments = (bulkData: BulkUpdateShipmentPayload) => {
+    bulkUpdateShipmentsMutation.mutate(
+      { data: bulkData, shipmentIds: shipmentSelectionModel },
+      {
+        onSuccess: () => {
+          setIsBulkEditModalOpen(false);
+          setShipmentSelectionModel([]);
+        },
+      }
+    );
+  };
 
   const tabCountMap = Object.fromEntries(
     (metaData?.tabs ?? []).map((t) => [t.id, t.count ?? 0])
@@ -440,6 +486,23 @@ export default function Shipments() {
       pageSubtitle="إدارة الشحنات، المرتجعات، المخزون، الحسابات، وتقارير الأداء"
       pageActions={
         <>
+          {!isVendor && activeTab === "shipments" && shipmentSelectionModel.length > 0 && (
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsBulkEditModalOpen(true)}
+              sx={{
+                display: "flex", alignItems: "center", gap: "6px",
+                px: "13px", height: 36, borderRadius: "9px",
+                border: `1px solid ${HX.accent}`, bgcolor: HX.accentLight,
+                color: HX.accent, cursor: "pointer",
+                fontSize: "13px", fontFamily: FONT, fontWeight: 700, flexShrink: 0,
+                transition: ".15s", "&:hover": { bgcolor: HX.accent, color: "#fff" },
+              }}
+            >
+              تعديل المحدد ({shipmentSelectionModel.length})
+            </Box>
+          )}
           {canExportActiveTab && <Box
             component="button"
             type="button"
@@ -490,6 +553,16 @@ export default function Shipments() {
           open={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           handleConfirmDelete={deleteShipment}
+        />
+      )}
+
+      {isBulkEditModalOpen && (
+        <ShipmentsBulkEditModal
+          open={isBulkEditModalOpen}
+          selectedCount={shipmentSelectionModel.length}
+          onEdit={handleBulkEditShipments}
+          onClose={() => setIsBulkEditModalOpen(false)}
+          isSaving={bulkUpdateShipmentsMutation.isPending}
         />
       )}
 
@@ -592,6 +665,9 @@ export default function Shipments() {
               onReset={handleReset}
               onEdit={handleEditShipment}
               onDelete={handleDeleteShipment}
+              selectionModel={shipmentSelectionModel}
+              onToggleSelect={toggleShipmentSelect}
+              onToggleAll={toggleShipmentSelectAll}
             />}
         </Box>
 
