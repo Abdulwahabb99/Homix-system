@@ -10,7 +10,7 @@ import {
   replaceManagedOptions,
   type ManagedOptionValue,
 } from "../settings/managed-options";
-import { DELIVERY_BY, ORDER_SOURCE_ARABIC, ORDER_SOURCE, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
+import { DELIVERY_BY, ORDER_SOURCE_ARABIC, ORDER_SOURCE, ORDER_STATUS, PAYMENT_STATUS, SHIPMENT_SCHEDULE_STATUS_ARABIC } from "../../../config/constants";
 import {
   ACCOUNTING_STATUS,
   ACCOUNT_STATUS_LABELS,
@@ -106,11 +106,24 @@ const ORDER_SOURCE_LABELS = ORDER_SOURCE_ARABIC as Record<number, string>;
 const SHIPMENT_SCHEDULE_LABELS = SHIPMENT_SCHEDULE_STATUS_ARABIC as Record<number, string>;
 const SHIPMENT_SORTABLE_FIELDS = ["orderDate", "priority", "subTotalPrice", "totalPrice"] as const;
 
+/**
+ * A shipment record is just the order's own row, so its shipmentStatus and the
+ * order's lifecycle status are two different fields that can drift apart. These
+ * three shipment statuses are meant to be authoritative over the order's status —
+ * moving a shipment to one of them carries the order's status along with it.
+ */
+const ORDER_STATUS_BY_SHIPMENT_STATUS: Partial<Record<number, number>> = {
+  [SHIPMENT_STATUS.DELIVERED]: ORDER_STATUS.DELIVERED,
+  [SHIPMENT_STATUS.IN_WAREHOUSE]: ORDER_STATUS.IN_INVENTORY,
+  [SHIPMENT_STATUS.CANCELED]: ORDER_STATUS.CANCELED,
+};
+
 const logShipmentStatusTransition = async (
   orderId: number,
   fromStatus: unknown,
   toStatus: unknown,
   userId?: number,
+  field: string = "shipmentStatus",
 ): Promise<void> => {
   const from = toNullableNumber(fromStatus);
   const to = toNullableNumber(toStatus);
@@ -122,7 +135,7 @@ const logShipmentStatusTransition = async (
     action: "update",
     entityId: orderId,
     entityType: "order",
-    field: "shipmentStatus",
+    field,
     from: from === null ? null : String(from),
     to: to === null ? null : String(to),
     userId: userId ?? null,
@@ -2087,6 +2100,14 @@ export class ShipmentRepository {
       }
     }
 
+    let cascadedOrderStatus: number | undefined;
+    if (Object.prototype.hasOwnProperty.call(nextPayload, "shipmentStatus")) {
+      cascadedOrderStatus = ORDER_STATUS_BY_SHIPMENT_STATUS[toNumber(nextPayload.shipmentStatus)];
+      if (cascadedOrderStatus !== undefined) {
+        nextPayload.status = cascadedOrderStatus;
+      }
+    }
+
     await shipment.update(nextPayload);
     if (Object.prototype.hasOwnProperty.call(nextPayload, "shipmentStatus")) {
       await logShipmentStatusTransition(
@@ -2094,6 +2115,15 @@ export class ShipmentRepository {
         plainShipmentBeforeUpdate.shipmentStatus,
         nextPayload.shipmentStatus,
         userId,
+      );
+    }
+    if (cascadedOrderStatus !== undefined) {
+      await logShipmentStatusTransition(
+        shipmentId,
+        plainShipmentBeforeUpdate.status,
+        cascadedOrderStatus,
+        userId,
+        "status",
       );
     }
     return shipment;
