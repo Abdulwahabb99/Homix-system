@@ -43,6 +43,7 @@ export type OrderDetailsViewProps = {
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
   changeDeliveryBy: (deliveryBy: number | null) => void;
+  changeShipmentType: (shipmentType: string | null) => void;
   changeDownPayment: (downPayment: number) => void;
   changeShippingFees: (shippingFees: number) => void;
   changeDiscount: (totalDiscounts: number) => void;
@@ -84,6 +85,7 @@ export default function OrderDetailsView({
   changeDeliveryStatus,
   changeAssignee,
   changeDeliveryBy,
+  changeShipmentType,
   changeDownPayment,
   changeShippingFees,
   changeDiscount,
@@ -146,6 +148,7 @@ export default function OrderDetailsView({
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
               changeDeliveryBy={changeDeliveryBy}
+              changeShipmentType={changeShipmentType}
               changeManufactureStatus={changeManufactureStatus}
               changePriority={changePriority}
               isVendor={isVendor}

@@ -117,6 +117,14 @@ export function useOrderDetailsPage() {
     [updateOrderField]
   );
 
+  const changeShipmentType = useCallback(
+    (shipmentType: string | null) => {
+      if (shipmentType == null) return;
+      updateOrderField({ shipmentType });
+    },
+    [updateOrderField]
+  );
+
   /* تعديل «جدية الشراء» inline من بطاقة التفاصيل المالية.
      «المبلغ المطلوب تحصيله» يحسبه الـ BE ويعود في `financial.amountToCollect`،
      فلا نرسله من هنا حتى لا نكتب فوق قيمة الخادم. */
@@ -487,6 +495,7 @@ export function useOrderDetailsPage() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryBy,
+    changeShipmentType,
     changeDownPayment,
     changeShippingFees,
     changeDiscount,

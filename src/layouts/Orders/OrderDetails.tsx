@@ -53,6 +53,7 @@ function OrderDetails() {
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryBy,
+    changeShipmentType,
     changeDownPayment,
     changeShippingFees,
     changeDiscount,
@@ -178,6 +179,7 @@ function OrderDetails() {
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
               changeDeliveryBy={changeDeliveryBy}
+              changeShipmentType={changeShipmentType}
               changeDownPayment={changeDownPayment}
               changeShippingFees={changeShippingFees}
               changeDiscount={changeDiscount}

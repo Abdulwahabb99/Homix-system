@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useOrdersMeta } from "query/ordersMeta.api";
 import { manufactureStatusOptions } from "shared/utils/constants";
 import { DELIVERY_STATUS, statusoptions } from "layouts/Orders/utils/constants";
-import { DELIVERY_BY_OPTIONS } from "../constants";
+import { DELIVERY_BY_OPTIONS, SHIPMENT_TYPE_OPTIONS } from "../constants";
 
 export interface SelectOption {
   value: number | string;
@@ -19,6 +19,7 @@ export interface OrderStatusOptions {
   assigneeOptions: SelectOption[];
   deliveryStatusOptions: SelectOption[];
   deliveryByOptions: SelectOption[];
+  shipmentTypeOptions: SelectOption[];
 }
 
 export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
@@ -63,5 +64,6 @@ export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
     assigneeOptions,
     deliveryStatusOptions: DELIVERY_STATUS,
     deliveryByOptions,
+    shipmentTypeOptions: SHIPMENT_TYPE_OPTIONS,
   };
 }

@@ -24,6 +24,7 @@ interface OrderStatusCardProps {
   changeDeliveryBy: (deliveryBy: number | null) => void;
   changeManufactureStatus: (status: number | null) => void;
   changePriority: (priority: number | null) => void;
+  changeShipmentType: (shipmentType: string | null) => void;
   /** البائع يرى هذه الحقول للقراءة فقط — الباك إند يرفض تعديلها منه أصلاً */
   isVendor?: boolean;
 }
@@ -38,6 +39,7 @@ export default function OrderStatusCard({
   changeDeliveryBy,
   changeManufactureStatus,
   changePriority,
+  changeShipmentType,
   isVendor = false,
 }: OrderStatusCardProps) {
   const {
@@ -46,6 +48,7 @@ export default function OrderStatusCard({
     assigneeOptions,
     deliveryStatusOptions,
     deliveryByOptions,
+    shipmentTypeOptions,
   } = useOrderStatusOptions(users);
 
   const selectedAssignee =
@@ -132,6 +135,21 @@ export default function OrderStatusCard({
             options={deliveryByOptions}
             value={orderDetails.deliveryBy != null ? Number(orderDetails.deliveryBy) : null}
             onChange={changeDeliveryBy}
+            withSectionBorder={false}
+            boxSx={{ p: 0 }}
+            formControlSx={statusSelectSx}
+          />
+        </Box>
+
+        {/* نوع الشحنة */}
+        <Box>
+          <Typography sx={statusFieldLabelSx}>نوع الشحنة</Typography>
+          <SelectComponent
+            id="order-shipment-type"
+            disabled={isVendor}
+            options={shipmentTypeOptions}
+            value={orderDetails.shipmentType ?? null}
+            onChange={changeShipmentType}
             withSectionBorder={false}
             boxSx={{ p: 0 }}
             formControlSx={statusSelectSx}

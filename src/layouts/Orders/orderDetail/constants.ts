@@ -9,6 +9,12 @@ export const DELIVERY_BY_OPTIONS: { value: number; label: string }[] = [
   { value: 2, label: "بائع" },
 ];
 
+/** خيارا «نوع الشحنة» — تطابق قيم عمود shipmentType في الباك إند. */
+export const SHIPMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "separate", label: "شحن منفصل" },
+  { value: "grouped", label: "شحن مجمع" },
+];
+
 /** أنواع الصور المسموح بها في مرفقات الملاحظات */
 export const COMMENT_IMAGE_ACCEPT = "image/png, image/jpeg, image/jpg";
 
