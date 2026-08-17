@@ -141,6 +141,11 @@ shipmentRouter.get("/meta", requirePermission("ship_view"), asyncHandler(shipmen
  *         schema:
  *           type: string
  *       - in: query
+ *         name: governorate
+ *         description: CSV of governorate ids.
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: startDate
  *         schema:
  *           type: string

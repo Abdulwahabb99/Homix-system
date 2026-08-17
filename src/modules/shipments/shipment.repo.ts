@@ -267,6 +267,17 @@ const buildShipmentWhereClause = (
     andConditions.push(where(col("Order.deliveryBy"), { [Op.in]: filters.deliveryBy.split(",").map(Number) }));
   }
 
+  if (filters.governorate) {
+    /* governorate is stored as free text on newer rows but as the numeric id
+       on older ones (see resolveGovernorateLabel), so a selected id has to
+       match either representation. */
+    const ids = filters.governorate.split(",").map(Number).filter(Number.isFinite);
+    const values = ids.flatMap((id) => [String(id), GOVERNORATE_LABELS[id]]).filter(Boolean) as string[];
+    if (values.length > 0) {
+      andConditions.push(where(col("Order.governorate"), { [Op.in]: values }));
+    }
+  }
+
   if (filters.shippingCompany) {
     andConditions.push(where(col("shippingCompanyRecord.id"), {
       [Op.in]: filters.shippingCompany.split(",").map(Number).filter(Number.isFinite),

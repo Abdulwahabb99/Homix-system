@@ -12,6 +12,7 @@ export type ShipmentListQuery = {
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
   endDate?: string;
+  governorate?: string;
   operationCode?: string;
   orderSource?: string;
   orderNumber?: string;
