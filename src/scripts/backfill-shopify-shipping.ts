@@ -58,13 +58,21 @@ const toCents = (value: number): number => Math.round(value * 100);
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Shipping lives in shipping_lines, with total_shipping_price_set as the fallback. */
+/**
+ * Shipping lives in shipping_lines, with total_shipping_price_set as the fallback.
+ * A removed/superseded line (address changed after the order was placed) stays in
+ * the array with is_removed: true — Shopify's total_shipping_price_set can still
+ * include it, so summing shipping_lines blindly double-charges the stale rate.
+ */
 const readShopifyShipping = (order: Record<string, any>): number => {
   if (Array.isArray(order.shipping_lines) && order.shipping_lines.length > 0) {
-    return order.shipping_lines.reduce(
-      (total: number, line: Record<string, unknown>) => total + toNumber(line?.price),
-      0,
-    );
+    const activeLines = order.shipping_lines.filter((line: Record<string, unknown>) => !line?.is_removed);
+    if (activeLines.length > 0) {
+      return activeLines.reduce(
+        (total: number, line: Record<string, unknown>) => total + toNumber(line?.price),
+        0,
+      );
+    }
   }
 
   return toNumber(order.total_shipping_price_set?.shop_money?.amount);

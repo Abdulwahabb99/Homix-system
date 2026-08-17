@@ -93,10 +93,17 @@ const getShopifyShippingTotal = (order) => {
   }
 
   if (Array.isArray(order.shipping_lines) && order.shipping_lines.length > 0) {
-    return order.shipping_lines.reduce(
-      (total, shippingLine) => total + normalizeNumber(shippingLine?.price),
-      0,
-    );
+    /* A removed/superseded shipping line (e.g. the address changed after the
+       order was placed) stays in the array with is_removed: true — Shopify's
+       total_shipping_price_set can still include it, so summing shipping_lines
+       blindly double-charges the stale rate on top of the current one. */
+    const activeLines = order.shipping_lines.filter((shippingLine) => !shippingLine?.is_removed);
+    if (activeLines.length > 0) {
+      return activeLines.reduce(
+        (total, shippingLine) => total + normalizeNumber(shippingLine?.price),
+        0,
+      );
+    }
   }
 
   return normalizeNumber(order.total_shipping_price_set?.shop_money?.amount);
