@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 import {
+  Autocomplete,
   Button,
   Dialog,
   DialogActions,
@@ -11,6 +12,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
@@ -49,6 +51,8 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
   const [orderStatus, setOrderStatus] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [deliveryBy, setDeliveryBy] = useState("");
+  const [assignee, setAssignee] = useState(null);
+  const [orderSource, setOrderSource] = useState("");
   const { data: ordersMeta } = useOrdersMeta();
 
   return (
@@ -130,6 +134,33 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
               ))}
             </Select>
           </FormControl>
+
+          <FormControl fullWidth variant="outlined" sx={formControlSx}>
+            <InputLabel id="bulk-order-source-label">مصدر الطلب</InputLabel>
+            <Select
+              labelId="bulk-order-source-label"
+              id="bulk-order-source-select"
+              value={orderSource}
+              label="مصدر الطلب"
+              onChange={(e) => setOrderSource(e.target.value)}
+              color="primary"
+              MenuProps={menuProps}
+            >
+              {(ordersMeta?.orderSources ?? []).map((option) => (
+                <MenuItem key={option.id} value={option.id}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Autocomplete
+            options={ordersMeta?.assignees ?? []}
+            value={assignee}
+            onChange={(_e, newValue) => setAssignee(newValue)}
+            getOptionLabel={(o) => o.label ?? ""}
+            isOptionEqualToValue={(o, v) => o.id === v.id}
+            noOptionsText="لا يوجد"
+            renderInput={(params) => <TextField {...params} label="المسؤول" placeholder="ابحث عن مسؤول..." sx={formControlSx} />}
+          />
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 2.5, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
@@ -152,7 +183,7 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
           إلغاء
         </Button>
         <Button
-          onClick={() => onEdit(orderStatus, paymentStatus, deliveryBy)}
+          onClick={() => onEdit(orderStatus, paymentStatus, deliveryBy, assignee?.id ?? null, orderSource)}
           variant="contained"
           color="primary"
         >

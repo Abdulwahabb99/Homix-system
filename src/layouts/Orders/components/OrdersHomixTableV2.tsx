@@ -255,6 +255,8 @@ interface OrdersHomixTableV2Props {
   onView: (orderId: string | number) => void;
   onBulkEdit?: () => void;
   onBulkDelete?: () => void;
+  onBulkPrintInvoice?: () => void;
+  isPrintingInvoice?: boolean;
   page: number;
   totalPages: number;
   pageSize: number;
@@ -277,7 +279,7 @@ interface OrdersHomixTableV2Props {
 export default function OrdersHomixTableV2({
   orders, isVendor, users, vendors,
   selectionModel, onSelectionModelChange,
-  onEdit, onDelete, onView, onBulkEdit, onBulkDelete,
+  onEdit, onDelete, onView, onBulkEdit, onBulkDelete, onBulkPrintInvoice, isPrintingInvoice,
   page, totalPages, pageSize, onPageChange,
   calculateDaysFromPoDate, isFetching,
   totalCount: totalCountFromApi,
@@ -424,6 +426,31 @@ export default function OrdersHomixTableV2({
               })}
             >
               حذف المحدد
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={onBulkPrintInvoice}
+              disabled={isPrintingInvoice}
+              sx={(t) => ({
+                fontFamily: FONT,
+                fontWeight: 700,
+                fontSize: "11.5px",
+                textTransform: "none",
+                minHeight: 30,
+                px: 1.25,
+                py: 0.35,
+                borderWidth: 1.5,
+                borderStyle: "solid",
+                borderColor: t.palette.text.secondary,
+                color: t.palette.text.primary,
+                bgcolor: alpha(t.palette.text.primary, 0.05),
+                boxShadow: "0 1px 0 rgba(15,23,42,0.08), 0 2px 8px rgba(15,23,42,0.06)",
+                "&:hover": {
+                  bgcolor: alpha(t.palette.text.primary, 0.1),
+                },
+              })}
+            >
+              {isPrintingInvoice ? "جارٍ التجهيز..." : `طباعة كفاتورة واحدة (${selectionModel.length})`}
             </Button>
             </>
           )}

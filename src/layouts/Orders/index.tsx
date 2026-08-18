@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -14,6 +14,9 @@ import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
+import OrderInvoiceDocument from "layouts/Orders/orderInvoice/OrderInvoiceDocument";
+import { downloadOrderInvoicePdf } from "layouts/Orders/utils/invoicePdf";
+import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "query/ordersList";
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
@@ -487,7 +490,7 @@ function Orders() {
     [orders, selectionModel]
   );
 
-  const bulkEdit = (orderSt: any, pay: any, deliveryBy: any) => {
+  const bulkEdit = (orderSt: any, pay: any, deliveryBy: any, assigneeId: any, orderSource: any) => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
     axiosRequest
       .put(`${baseURI}/orders/bulk-update`, {
@@ -496,6 +499,8 @@ function Orders() {
           ...(orderSt && { status: orderSt }),
           ...(pay && { paymentStatus: pay }),
           ...(deliveryBy && { deliveryBy }),
+          ...(assigneeId && { userId: assigneeId }),
+          ...(orderSource && { orderSource }),
         },
       })
       .then(() => {
@@ -505,6 +510,72 @@ function Orders() {
       .catch(() => NotificationMeassage("error", "حدث خطأ"));
     setIsBulkEditModalOpen(false);
   };
+
+  // طباعة عدة طلبات محددة كفاتورة واحدة (صفحة PDF منفصلة لكل طلب داخل نفس الملف)
+  const [printOrders, setPrintOrders] = useState<any[] | null>(null);
+  const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
+  const printContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleBulkPrintInvoice = async () => {
+    const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
+    if (!orderIds.length) return;
+    setIsPrintingInvoice(true);
+    try {
+      const results = await Promise.all(
+        orderIds.map((id: any) =>
+          axiosRequest
+            .get(`${baseURI}/orders/${id}`)
+            .then((res) => normalizeOrderDetailPayload(res.data))
+            .catch(() => null)
+        )
+      );
+      const validOrders = results.filter(Boolean);
+      if (validOrders.length === 0) {
+        NotificationMeassage("error", "تعذر تجهيز الفواتير");
+        setIsPrintingInvoice(false);
+        return;
+      }
+      if (validOrders.length < orderIds.length) {
+        NotificationMeassage("error", `تعذر تحميل ${orderIds.length - validOrders.length} من الطلبات المحددة`);
+      }
+      // useEffect أدناه يلتقط الحاوية بعد رسمها ويصدّرها PDF
+      setPrintOrders(validOrders);
+    } catch {
+      NotificationMeassage("error", "حدث خطأ أثناء تجهيز الفواتير");
+      setIsPrintingInvoice(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!printOrders || printOrders.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      // مهلة قصيرة حتى يكتمل رسم الحاوية المخفية بكل الفواتير قبل التقاطها
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      if (cancelled) return;
+      if (!printContainerRef.current) {
+        NotificationMeassage("error", "تعذر تجهيز الفواتير");
+        setIsPrintingInvoice(false);
+        setPrintOrders(null);
+        return;
+      }
+      try {
+        await downloadOrderInvoicePdf(
+          printContainerRef.current,
+          `فاتورة-مجمعة-${printOrders.length}-طلبات-${moment().format("YYYY-MM-DD")}`
+        );
+        NotificationMeassage("success", "تم تحميل الفاتورة المجمّعة");
+      } catch {
+        NotificationMeassage("error", "تعذر تصدير الفاتورة");
+      } finally {
+        if (!cancelled) {
+          setIsPrintingInvoice(false);
+          setPrintOrders(null);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [printOrders]);
 
   const bulkDelete = () => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
@@ -548,6 +619,33 @@ function Orders() {
       }
     >
       <ToastContainer />
+
+      {printOrders && printOrders.length > 0 && (
+        <div
+          aria-hidden
+          ref={printContainerRef}
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            width: 800,
+            maxWidth: "100vw",
+            zIndex: -1,
+            pointerEvents: "none",
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
+          {printOrders.map((order, idx) => (
+            <div
+              key={order?.id ?? idx}
+              style={idx < printOrders.length - 1 ? { pageBreakAfter: "always", breakAfter: "page" } : undefined}
+            >
+              <OrderInvoiceDocument orderDetails={order} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Modals (unchanged) ── */}
       {isEditModalOpen && selectedEditOrder && vendors.length > 0 && (
@@ -661,6 +759,8 @@ function Orders() {
               onView={(orderId) => window.open(`/orders/${orderId}`, "_blank", "noopener,noreferrer")}
               onBulkEdit={() => setIsBulkEditModalOpen(true)}
               onBulkDelete={() => setIsBulkDeleteModalOpen(true)}
+              onBulkPrintInvoice={() => void handleBulkPrintInvoice()}
+              isPrintingInvoice={isPrintingInvoice}
               page={gridPage0}
               totalPages={totalPages}
               pageSize={ITEMS_PER_PAGE}
