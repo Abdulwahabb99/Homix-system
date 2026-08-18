@@ -6,6 +6,8 @@ import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 import { usePermissions } from "shared/permissions";
 import EditDeliveryAccountModal from "./EditDeliveryAccountModal";
 import BulkEditDeliveryAccountModal from "./BulkEditDeliveryAccountModal";
+import EditExpenseModal from "./EditExpenseModal";
+import BulkEditExpenseModal from "./BulkEditExpenseModal";
 import AddExpenseForm from "./AddExpenseForm";
 import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
@@ -341,11 +343,33 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
 
 function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
   const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState<ExpenseItem | null>(null);
+  const [selectionModel, setSelectionModel] = useState<number[]>([]);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page });
   const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
+  const isAllSelected = items.length > 0 && items.every((item) => selectionModel.includes(item.id));
+  const isIndeterminate = !isAllSelected && items.some((item) => selectionModel.includes(item.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectionModel((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectionModel((current) => {
+      if (isAllSelected) {
+        return current.filter((id) => !items.some((item) => item.id === id));
+      }
+      const toAdd = items.map((item) => item.id).filter((id) => !current.includes(id));
+      return [...current, ...toAdd];
+    });
+  };
 
   const exportCurrentView = useCallback(() => exportExpenseAccounts(), []);
 
@@ -359,6 +383,34 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
       <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <AddExpenseForm />
       </Box>
+
+      {selectionModel.length > 0 && (
+        <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+          <Button
+            variant="contained"
+            onClick={() => setIsBulkEditOpen(true)}
+            sx={{ color: "#fff", height: 36, fontFamily: FONT, fontSize: "12px" }}
+          >
+            تعديل حالة المحدد ({selectionModel.length})
+          </Button>
+        </Box>
+      )}
+
+      <BulkEditExpenseModal
+        open={isBulkEditOpen}
+        onClose={() => { setIsBulkEditOpen(false); setSelectionModel([]); }}
+        expenseIds={selectionModel}
+        statusOptions={meta?.accountingStatuses ?? []}
+      />
+
+      <EditExpenseModal
+        open={editItem !== null}
+        onClose={() => setEditItem(null)}
+        item={editItem}
+        typeOptions={meta?.expenseTypes ?? []}
+        statusOptions={meta?.accountingStatuses ?? []}
+      />
+
       {isLoading ? (
         <SkeletonRows />
       ) : isError ? (
@@ -373,12 +425,15 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
           <thead>
             <tr>
+              <th style={{ ...TH, textAlign: "center", width: 36 }}>
+                <Checkbox size="small" checked={isAllSelected} indeterminate={isIndeterminate} onChange={toggleSelectAll} />
+              </th>
               <th style={TH}>التاريخ</th>
               <th style={TH}>النوع</th>
               <th style={TH}>السبب</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
               <th style={TH}>حالة المحاسبة</th>
-              <th style={{ ...TH, width: 48 }} />
+              <th style={{ ...TH, width: 80 }} />
             </tr>
           </thead>
           <tbody>
@@ -389,6 +444,9 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = HX.accentLight; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? HX.surface : HX.surface2; }}
               >
+                <td style={{ ...TD, textAlign: "center" }}>
+                  <Checkbox size="small" checked={selectionModel.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                </td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.typeLabel || "—"}</Box></td>
                 <td style={{ ...TD, maxWidth: 200 }}>
@@ -399,15 +457,25 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amount} /></td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}>
-                  <IconButton
-                    size="small"
-                    aria-label="حذف المصروف"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(item.id)}
-                    sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
-                  >
-                    <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                    <IconButton
+                      size="small"
+                      aria-label="تعديل المصروف"
+                      onClick={() => setEditItem(item)}
+                      sx={{ color: HX.tx3, "&:hover": { color: HX.accent } }}
+                    >
+                      <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label="حذف المصروف"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate(item.id)}
+                      sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
                 </td>
               </tr>
             ))}

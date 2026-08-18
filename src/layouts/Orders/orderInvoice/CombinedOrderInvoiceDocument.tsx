@@ -69,7 +69,8 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
       (order?.orderLines ?? []).map((item: any) => ({ ...item, __orderRef: orderRef(order) }))
     );
 
-    const orderRefsLabel = orders.map(orderRef).join("، ");
+    // نفس الطلب قد يتكرر (عدة أصناف من نفس رقم الطلب) — لا نعرضه أكثر من مرة
+    const orderRefsLabel = Array.from(new Set(orders.map(orderRef))).join("، ");
     const issueDate = formatDateArabic(firstOrder?.createdAt ?? firstOrder?.orderDate);
 
     // نفس مصادر «التفاصيل المالية» بالضبط، مجموعة عبر كل الطلبات المحددة.
@@ -93,7 +94,7 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
             <div className={styles.headLeft}>
               <span className={styles.invType}>Invoice · فاتورة مجمّعة</span>
               <div className={styles.invNumBig}>
-                {orders.length} <span>طلبات</span>
+                <span>{orders.length}</span> طلبات
               </div>
               <span className={styles.invStatus}>{paymentLabel}</span>
             </div>
@@ -158,7 +159,6 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
             <thead>
               <tr>
                 <th>الصنف</th>
-                <th className={styles.c}>رقم الطلب</th>
                 <th className={styles.c}>الكمية</th>
                 <th className={styles.c}>سعر الوحدة</th>
                 <th>الإجمالي</th>
@@ -190,7 +190,6 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
                         </div>
                       </div>
                     </td>
-                    <td className={styles.c}>{item.__orderRef}</td>
                     <td className={styles.c}>{item.quantity}</td>
                     <td className={styles.c}>{money(item.price)} ج.م</td>
                     <td>{money(lineTotal)} ج.م</td>

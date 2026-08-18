@@ -17,6 +17,14 @@ import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFi
 import ShipmentsTable from "./components/ShipmentsTable";
 import ShipmentsBulkEditModal from "./components/ShipmentsBulkEditModal";
 import { useBulkUpdateShipmentsMutation, type BulkUpdateShipmentPayload } from "query/shipmentEdit";
+import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
+import {
+  downloadOrderInvoicePdf,
+  isInvoicePrintSupportedViewport,
+  printElementNatively,
+} from "layouts/Orders/utils/invoicePdf";
+import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
 import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
@@ -325,6 +333,79 @@ export default function Shipments() {
     );
   };
 
+  // طباعة الشحنات المحددة كفاتورة واحدة — شحنة = صف طلب، فتُجلب بنفس نقطة
+  // /orders/:id ويُبنى منها نفس مستند الفاتورة المجمّعة المستخدم في صفحة الطلبات.
+  const [printOrders, setPrintOrders] = useState<any[] | null>(null);
+  const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
+  const printContainerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const handleBulkPrintInvoice = async () => {
+    if (!shipmentSelectionModel.length) return;
+    setIsPrintingInvoice(true);
+    try {
+      const results = await Promise.all(
+        shipmentSelectionModel.map((id) =>
+          axiosRequest
+            .get(`/orders/${id}`)
+            .then((res) => normalizeOrderDetailPayload(res.data))
+            .catch(() => null)
+        )
+      );
+      const validOrders = results.filter(Boolean);
+      if (validOrders.length === 0) {
+        NotificationMeassage("error", "تعذر تجهيز الفاتورة المجمّعة");
+        setIsPrintingInvoice(false);
+        return;
+      }
+      if (validOrders.length < shipmentSelectionModel.length) {
+        NotificationMeassage(
+          "error",
+          `تعذر تحميل ${shipmentSelectionModel.length - validOrders.length} من الشحنات المحددة`
+        );
+      }
+      setPrintOrders(validOrders);
+    } catch {
+      NotificationMeassage("error", "حدث خطأ أثناء تجهيز الفاتورة");
+      setIsPrintingInvoice(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!printOrders || printOrders.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      if (cancelled) return;
+      if (!printContainerRef.current) {
+        NotificationMeassage("error", "تعذر تجهيز الفاتورة المجمّعة");
+        setIsPrintingInvoice(false);
+        setPrintOrders(null);
+        return;
+      }
+      if (!isInvoicePrintSupportedViewport()) {
+        printElementNatively(printContainerRef.current);
+        setIsPrintingInvoice(false);
+        setPrintOrders(null);
+        return;
+      }
+      try {
+        await downloadOrderInvoicePdf(
+          printContainerRef.current,
+          `فاتورة-مجمعة-${printOrders.length}-شحنات-${moment().format("YYYY-MM-DD")}`
+        );
+        NotificationMeassage("success", "تم تحميل الفاتورة المجمّعة");
+      } catch {
+        NotificationMeassage("error", "تعذر تصدير الفاتورة");
+      } finally {
+        if (!cancelled) {
+          setIsPrintingInvoice(false);
+          setPrintOrders(null);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [printOrders]);
+
   const tabCountMap = Object.fromEntries(
     (metaData?.tabs ?? []).map((t) => [t.id, t.count ?? 0])
   );
@@ -503,6 +584,25 @@ export default function Shipments() {
               تعديل المحدد ({shipmentSelectionModel.length})
             </Box>
           )}
+          {!isVendor && activeTab === "shipments" && shipmentSelectionModel.length > 0 && (
+            <Box
+              component="button"
+              type="button"
+              onClick={() => void handleBulkPrintInvoice()}
+              disabled={isPrintingInvoice}
+              sx={{
+                display: "flex", alignItems: "center", gap: "6px",
+                px: "13px", height: 36, borderRadius: "9px",
+                border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
+                color: HX.tx2, cursor: isPrintingInvoice ? "default" : "pointer",
+                fontSize: "13px", fontFamily: FONT, fontWeight: 700, flexShrink: 0,
+                opacity: isPrintingInvoice ? 0.6 : 1,
+                transition: ".15s", "&:hover": { bgcolor: HX.surface3, color: HX.tx },
+              }}
+            >
+              {isPrintingInvoice ? "جارٍ التجهيز..." : `طباعة كفاتورة واحدة (${shipmentSelectionModel.length})`}
+            </Box>
+          )}
           {canExportActiveTab && <Box
             component="button"
             type="button"
@@ -547,6 +647,25 @@ export default function Shipments() {
       }
     >
       <ToastContainer />
+
+      {printOrders && printOrders.length > 0 && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: "-10000px",
+            top: 0,
+            width: 800,
+            maxWidth: "100vw",
+            zIndex: -1,
+            pointerEvents: "none",
+            overflow: "hidden",
+            background: "#fff",
+          }}
+        >
+          <CombinedOrderInvoiceDocument ref={printContainerRef} orders={printOrders} />
+        </div>
+      )}
 
       {isDeleteModalOpen && selectedShipment && (
         <ConfirmDeleteModal

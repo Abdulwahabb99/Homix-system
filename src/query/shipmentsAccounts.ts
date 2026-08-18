@@ -25,9 +25,11 @@ export interface DeliveryAccountItem {
 export interface ExpenseItem {
   id: number;
   accountingDate: string | null;
+  accountingStatus: number;
   accountingStatusLabel: string;
   amount: number;
   reason: string;
+  type: number;
   typeLabel: string;
 }
 
@@ -186,8 +188,18 @@ export interface ExpenseMutationPayload {
   type: number;
 }
 
+export type ExpenseUpdatePayload = Partial<ExpenseMutationPayload>;
+
 export async function postExpense(body: ExpenseMutationPayload): Promise<void> {
   await axiosRequest.post(`/shipments/accounts/expenses`, body);
+}
+
+export async function putExpense(expenseId: number, body: ExpenseUpdatePayload): Promise<void> {
+  await axiosRequest.put(`/shipments/accounts/expenses/${expenseId}`, body);
+}
+
+export async function putExpensesBulk(expenseIds: number[], body: ExpenseUpdatePayload): Promise<void> {
+  await axiosRequest.put(`/shipments/accounts/expenses/bulk-update`, { data: body, expenseIds });
 }
 
 export async function deleteExpense(expenseId: number): Promise<void> {
@@ -206,6 +218,38 @@ export function useCreateExpenseMutation() {
       NotificationMeassage("success", "تم حفظ المصروف");
     },
     onError: () => NotificationMeassage("error", "تعذّر حفظ المصروف"),
+  });
+}
+
+export function useUpdateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { expenseId: number; body: ExpenseUpdatePayload }) =>
+      putExpense(vars.expenseId, vars.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تعديل المصروف");
+    },
+    onError: () => NotificationMeassage("error", "تعذّر تعديل المصروف"),
+  });
+}
+
+export function useBulkUpdateExpensesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { expenseIds: number[]; body: ExpenseUpdatePayload }) =>
+      putExpensesBulk(vars.expenseIds, vars.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تعديل المصروفات المحددة");
+    },
+    onError: () => NotificationMeassage("error", "حدث خطأ أثناء التعديل الجماعي"),
   });
 }
 
