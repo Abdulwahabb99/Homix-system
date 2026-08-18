@@ -6,7 +6,7 @@ import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
 import OrderInvoiceDocument from "./orderInvoice/OrderInvoiceDocument";
-import { downloadOrderInvoicePdf } from "./utils/invoicePdf";
+import { downloadOrderInvoicePdf, isInvoicePrintSupportedViewport, printElementNatively } from "./utils/invoicePdf";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import OrderDetailsView from "./orderDetail/OrderDetailsView";
@@ -71,6 +71,12 @@ function OrderDetails() {
   const handleDownloadInvoice = async () => {
     if (!componentRef.current) {
       NotificationMeassage("error", "تعذر تجهيز الفاتورة");
+      return;
+    }
+    // الموبايل: طباعة المتصفح الأصلية (لا تستخدم canvas فتعمل بثبات) بدل html2canvas
+    // الذي يصطدم بحدود حجم canvas الصغيرة على الموبايل ويُخرج صفحة فارغة.
+    if (!isInvoicePrintSupportedViewport()) {
+      printElementNatively(componentRef.current);
       return;
     }
     setInvoicePdfLoading(true);

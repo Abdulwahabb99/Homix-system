@@ -15,7 +15,7 @@ import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import OrderInvoiceDocument from "layouts/Orders/orderInvoice/OrderInvoiceDocument";
-import { downloadOrderInvoicePdf } from "layouts/Orders/utils/invoicePdf";
+import { downloadCombinedOrderInvoicesPdf, isInvoicePrintSupportedViewport, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "query/ordersList";
@@ -515,6 +515,7 @@ function Orders() {
   const [printOrders, setPrintOrders] = useState<any[] | null>(null);
   const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
   const printContainerRef = useRef<HTMLDivElement | null>(null);
+  const printItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleBulkPrintInvoice = async () => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
@@ -538,7 +539,8 @@ function Orders() {
       if (validOrders.length < orderIds.length) {
         NotificationMeassage("error", `تعذر تحميل ${orderIds.length - validOrders.length} من الطلبات المحددة`);
       }
-      // useEffect أدناه يلتقط الحاوية بعد رسمها ويصدّرها PDF
+      printItemRefs.current = [];
+      // useEffect أدناه يلتقط كل فاتورة على حدة بعد رسمها ويصدّرها PDF واحد
       setPrintOrders(validOrders);
     } catch {
       NotificationMeassage("error", "حدث خطأ أثناء تجهيز الفواتير");
@@ -550,18 +552,33 @@ function Orders() {
     if (!printOrders || printOrders.length === 0) return;
     let cancelled = false;
     (async () => {
-      // مهلة قصيرة حتى يكتمل رسم الحاوية المخفية بكل الفواتير قبل التقاطها
+      // مهلة قصيرة حتى تُركَّب كل عناصر الفواتير المخفية في الـ DOM قبل التقاطها
       await new Promise((resolve) => setTimeout(resolve, 80));
       if (cancelled) return;
-      if (!printContainerRef.current) {
+
+      // الموبايل: طباعة المتصفح الأصلية على الحاوية كاملة (فاصل صفحة CSS بين كل
+      // فاتورة) بدل html2canvas الذي يصطدم بحدود حجم canvas على الموبايل.
+      if (!isInvoicePrintSupportedViewport()) {
+        if (!printContainerRef.current) {
+          NotificationMeassage("error", "تعذر تجهيز الفواتير");
+        } else {
+          printElementNatively(printContainerRef.current);
+        }
+        setIsPrintingInvoice(false);
+        setPrintOrders(null);
+        return;
+      }
+
+      const elements = printItemRefs.current.filter(Boolean) as HTMLDivElement[];
+      if (elements.length === 0) {
         NotificationMeassage("error", "تعذر تجهيز الفواتير");
         setIsPrintingInvoice(false);
         setPrintOrders(null);
         return;
       }
       try {
-        await downloadOrderInvoicePdf(
-          printContainerRef.current,
+        await downloadCombinedOrderInvoicesPdf(
+          elements,
           `فاتورة-مجمعة-${printOrders.length}-طلبات-${moment().format("YYYY-MM-DD")}`
         );
         NotificationMeassage("success", "تم تحميل الفاتورة المجمّعة");
@@ -636,9 +653,13 @@ function Orders() {
             background: "#fff",
           }}
         >
+          {/* كل فاتورة تُلتقط على حدة إلى canvas مستقل (desktop) — وليس عنصراً واحداً
+              طويلاً يضم الكل، حتى لا يتجاوز ناتج html2canvas حد حجم الـ canvas.
+              فاصل الصفحة بين الفواتير مطلوب فقط لمسار الطباعة الأصلية (موبايل). */}
           {printOrders.map((order, idx) => (
             <div
               key={order?.id ?? idx}
+              ref={(el) => { printItemRefs.current[idx] = el; }}
               style={idx < printOrders.length - 1 ? { pageBreakAfter: "always", breakAfter: "page" } : undefined}
             >
               <OrderInvoiceDocument orderDetails={order} />
