@@ -26,9 +26,9 @@
 
 /* ── HEADER ── */
 .invHead { display: grid; grid-template-columns: 1fr auto; align-items: start; padding: 28px 32px 22px; border-bottom: 0.5px solid #f0f2f5; }
-.headLeft { display: flex; flex-direction: column; gap: 4px; }
-.invType { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #9ca3af; margin-bottom: 2px; }
-.invNumBig { font-size: 22px; font-weight: 900; color: #111827; letter-spacing: -0.5px; }
+.headLeft { display: flex; flex-direction: column; gap: 7px; }
+.invType { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #9ca3af; line-height: 1.4; }
+.invNumBig { font-size: 22px; font-weight: 900; color: #111827; letter-spacing: -0.5px; line-height: 1.3; }
 .invNumBig span { color: #6366f1; }
 .invStatus { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(245,158,11,0.1); color: #92400e; border: 0.5px solid rgba(245,158,11,0.25); width: fit-content; }
 .invStatus::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }

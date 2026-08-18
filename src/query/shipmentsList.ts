@@ -30,6 +30,8 @@ export interface ShipmentItem {
   scheduleStatus: number | null;
   scheduleStatusLabel: string;
   deliveryBy: string;
+  deliveryByLabel: string;
+  shippingCompanyName: string;
   amountToCollect: number;
   shippingCost: number;
   receivedInWarehouseDate: string | null;

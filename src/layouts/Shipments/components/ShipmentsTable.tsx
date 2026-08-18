@@ -276,10 +276,10 @@ export default function ShipmentsTable({
                   }
                 </td>
 
-                {/* التوصيل بواسطة */}
+                {/* التوصيل بواسطة — شركة الشحن الفعلية، وليس هوميكس/البائع */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>
-                    {s.deliveryBy || "—"}
+                    {s.shippingCompanyName || "—"}
                   </Box>
                 </td>
 
