@@ -100,6 +100,35 @@ export function useUpdateTicket(ticketId: string) {
   });
 }
 
+/** DELETE /tickets/{ticketId} */
+export async function deleteTicket(
+  navigate: NavigateFunction,
+  ticketId: string
+): Promise<void> {
+  const { data } = await axiosRequest.delete<Record<string, unknown>>(ticketDetailPath(ticketId));
+  const root = data as unknown as ApiEnvelope;
+  if (root.force_logout) {
+    forceLogoutAndNavigate(navigate);
+  }
+}
+
+/** لزر الحذف في صفحة القائمة: معرف تذكرة ديناميكي */
+export function useDeleteTicketFromList() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (ticketId) => deleteTicket(navigate, ticketId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
+      NotificationMeassage("success", "تم حذف التذكرة");
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر حذف التذكرة");
+    },
+  });
+}
+
 /** للقائمة: معرف تذكرة ديناميكي + أي حقول مسموحة في الـ PATCH */
 export function usePatchTicketFromList() {
   const navigate = useNavigate();

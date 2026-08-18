@@ -46,7 +46,11 @@ import {
   resolveOrderForNewTicket,
   type CreateTicketPayload,
 } from "query/ticketCreate.api";
-import { usePatchTicketFromList, type TicketPatchPayload } from "query/ticketUpdate.api";
+import {
+  usePatchTicketFromList,
+  useDeleteTicketFromList,
+  type TicketPatchPayload,
+} from "query/ticketUpdate.api";
 
 const BRAND = "#6366f1";
 
@@ -269,6 +273,7 @@ export default function Tickets() {
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
 
   const patchTicketListMutation = usePatchTicketFromList();
+  const deleteTicketMutation = useDeleteTicketFromList();
 
   // filters — مسودة في الشريط؛ تُطبَّق على الـ API فقط بعد «تطبيق»
   const [filterOp, setFilterOp] = useState("");
@@ -513,8 +518,9 @@ export default function Tickets() {
 
   function handleDeleteConfirm() {
     if (!deleteTicketId) return;
-    void queryClient.invalidateQueries({ queryKey: ticketKeys.all() });
+    const ticketId = deleteTicketId;
     setDeleteTicketId(null);
+    deleteTicketMutation.mutate(ticketId);
   }
 
   const handleSaveEditTicket = useCallback(
