@@ -103,6 +103,7 @@ export async function downloadOrderInvoicePdf(
   fileBaseName: string
 ): Promise<void> {
   await waitForInvoiceFonts();
+  await waitForImages(element);
 
   const safe = sanitizeFileBaseName(fileBaseName) || "invoice";
   const filename = `${safe}.pdf`;
@@ -126,51 +127,4 @@ export async function downloadOrderInvoicePdf(
   };
 
   await html2pdf().set(opt).from(element).save();
-}
-
-/**
- * عدة فواتير في ملف PDF واحد — صفحة لكل عنصر.
- *
- * لا نضع كل الفواتير في عنصر واحد طويل ونعتمد على تقطيع html2pdf التلقائي:
- * html2pdf يرسم العنصر المصدر بالكامل في canvas واحد قبل تقطيعه لصفحات، وعند
- * تكديس عدة فواتير كاملة بمعامل تكبير 3x+ يتجاوز ارتفاع الـ canvas الناتج الحد
- * الأقصى المسموح به في المتصفح (خصوصاً Safari) فيخرج فارغاً بصمت بلا أي خطأ.
- * بدلاً من ذلك نلتقط كل فاتورة في canvas مستقل بحجم معقول، ثم نجمعها في نفس
- * ملف الـ PDF صفحة صفحة — النمط الموثّق في html2pdf.js لدمج عناصر متعددة.
- */
-export async function downloadCombinedOrderInvoicesPdf(
-  elements: HTMLElement[],
-  fileBaseName: string
-): Promise<void> {
-  if (elements.length === 0) return;
-
-  await waitForInvoiceFonts();
-  await Promise.all(elements.map((el) => waitForImages(el)));
-
-  const safe = sanitizeFileBaseName(fileBaseName) || "invoice";
-  const filename = `${safe}.pdf`;
-
-  const opt = {
-    margin: [5, 5, 5, 5] as [number, number, number, number],
-    filename,
-    image: { type: "png", quality: 1 },
-    html2canvas: {
-      scale: Math.max(3, typeof window === "undefined" ? 3 : window.devicePixelRatio * 2),
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-    },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] as const },
-  };
-
-  let worker = html2pdf().set(opt).from(elements[0]).toPdf();
-
-  for (let i = 1; i < elements.length; i += 1) {
-    // eslint-disable-next-line no-await-in-loop -- each page must render after the previous one is added
-    await worker.get("pdf").then((pdf: any) => pdf.addPage());
-    worker = worker.from(elements[i]).toContainer().toCanvas().toPdf();
-  }
-
-  await worker.save();
 }
