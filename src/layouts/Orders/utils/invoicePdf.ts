@@ -1,25 +1,12 @@
 import html2pdf from "html2pdf.js";
 
-/**
- * توليد الفاتورة عبر html2pdf يعتمد على html2canvas برسم DOM كامل في canvas
- * بدقة عالية — عملية ثقيلة وتصطدم بحدود حجم الـ canvas الصغيرة في متصفحات
- * الموبايل (خصوصاً Safari iOS) فتُنتج صفحة فارغة بصمت. على الشاشات الصغيرة
- * نستخدم بديلاً أخف: طباعة المتصفح الأصلية (printElementNatively) بدل الحجب.
- * نفس حد "ديسكتوب" المستخدم في DateRangePickerWrapper.
- */
-export function isInvoicePrintSupportedViewport(): boolean {
-  if (typeof window === "undefined") return true;
-  return window.innerWidth >= 769;
-}
-
 const NATIVE_PRINT_CLASS = "invoice-native-print-target";
 const NATIVE_PRINT_STYLE_ID = "invoice-native-print-style";
 
 /**
- * بديل للموبايل: طباعة المتصفح الأصلية (Ctrl/Cmd+P) بدل html2canvas — لا تصطدم
- * بحدود حجم canvas لأنها لا تستخدم canvas أصلاً، فتعمل بثبات على أي جهاز. تُخفي
- * كل شيء في الصفحة أثناء الطباعة إلا العنصر الممرَّر (الفاتورة أو حاوية الفواتير
- * المجمّعة)، وتُعيده كما كان بعد إغلاق مربع حوار الطباعة.
+ * احتياطي عند فشل توليد الـ PDF: طباعة المتصفح الأصلية (Ctrl/Cmd+P) — لا تستخدم
+ * canvas فلا تصطدم بحدوده. تُخفي كل شيء في الصفحة أثناء الطباعة إلا العنصر
+ * الممرَّر (الفاتورة أو حاوية الفواتير المجمّعة)، وتُعيده كما كان بعد الإغلاق.
  */
 export function printElementNatively(element: HTMLElement): void {
   document
@@ -98,6 +85,62 @@ async function waitForImages(root: HTMLElement): Promise<void> {
   );
 }
 
+/* ───────────────────────── دقّة الرسم وحدود الـ canvas ─────────────────────────
+   سبب «الفاتورة الفارغة على الموبايل»: الدقّة كانت 2×devicePixelRatio، وعلى
+   الهاتف dpr = 3 فتصبح 6× — أي canvas بعرض 700×6 = 4200 وارتفاع بالآلاف. متصفحات
+   iOS تحدّ الـ canvas بنحو 16.7 مليون بكسل، فيتجاوزها الرسم ويعود canvas فارغاً
+   بصمت. الحل: نحسب أعلى دقّة تفي بحدود الجهاز بدل رقم ثابت.                    */
+
+/** ميزانية آمنة (أقل من حد iOS ≈16.7M) تترك هامشاً لذاكرة الأجهزة الأقدم. */
+const MOBILE_MAX_CANVAS_PIXELS = 12_000_000;
+/** أقصى طول ضلع يقبله canvas على iOS. */
+const MOBILE_MAX_CANVAS_SIDE = 8_192;
+
+/** iPadOS يتنكّر كـ macOS، فنكشفه بوجود لمس متعدّد. */
+function isCanvasLimitedDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
+  return isIOS || /Android|Mobile/i.test(ua);
+}
+
+/**
+ * على الديسكتوب نُبقي الدقّة كما هي اليوم (3× أو 2×dpr) حتى يبقى الملف مطابقاً
+ * تماماً لما يُنتجه الآن. على الموبايل نُنزلها لأعلى قيمة يقبلها الـ canvas —
+ * نفس التصميم ونفس المقاسات (‏.paper بعرض 700px ثابت)، فرقٌ في دقّة الرسم فقط.
+ */
+function resolveCanvasScale(element: HTMLElement): number {
+  const dpr = typeof window === "undefined" ? 1.5 : window.devicePixelRatio || 1;
+  const desired = Math.max(3, dpr * 2);
+  if (!isCanvasLimitedDevice()) return desired;
+
+  const width = element.scrollWidth || element.offsetWidth || 700;
+  const height = element.scrollHeight || element.offsetHeight || 1000;
+  const byArea = Math.sqrt(MOBILE_MAX_CANVAS_PIXELS / (width * height));
+  const bySide = Math.min(MOBILE_MAX_CANVAS_SIDE / width, MOBILE_MAX_CANVAS_SIDE / height);
+  return Math.max(0.5, Math.min(desired, byArea, bySide));
+}
+
+/** canvas تجاوز حدود الجهاز يعود شفافاً بالكامل — نكشفه لنُظهر خطأ بدل ملف فارغ. */
+function isBlankCanvas(canvas: HTMLCanvasElement): boolean {
+  if (!canvas.width || !canvas.height) return true;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+  // عيّنة من منتصف الصفحة الأولى — الفاتورة مطبوعة على خلفية بيضاء غير شفافة
+  const w = Math.min(canvas.width, 64);
+  const h = Math.min(canvas.height, 64);
+  const x = Math.max(0, Math.floor(canvas.width / 2 - w / 2));
+  try {
+    const { data } = ctx.getImageData(x, 0, w, h);
+    for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return false;
+    return true;
+  } catch {
+    return false; // tainted canvas — لا نستطيع الحكم، نمرّره
+  }
+}
+
 export async function downloadOrderInvoicePdf(
   element: HTMLElement,
   fileBaseName: string
@@ -115,8 +158,7 @@ export async function downloadOrderInvoicePdf(
     // 0.92 was visibly smearing them.
     image: { type: "png", quality: 1 },
     html2canvas: {
-      // Render at >=3x device pixels and let jsPDF downscale into the A4 page.
-      scale: Math.max(3, typeof window === "undefined" ? 3 : window.devicePixelRatio * 2),
+      scale: resolveCanvasScale(element),
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
@@ -126,5 +168,19 @@ export async function downloadOrderInvoicePdf(
     pagebreak: { mode: ["avoid-all", "css", "legacy"] as const },
   };
 
-  await html2pdf().set(opt).from(element).save();
+  // نمرّ على toCanvas أولاً لنتحقّق أن الرسم نجح فعلاً — الفشل على الموبايل صامت
+  // (canvas شفاف) فبدون هذا الفحص يُحمَّل ملف PDF فارغ دون أي رسالة. رفع الخطأ
+  // داخل السلسلة يمنع save() فلا يُنزَّل ملف فارغ أصلاً.
+  await html2pdf()
+    .set(opt)
+    .from(element)
+    .toCanvas()
+    .get("canvas")
+    .then((canvas: HTMLCanvasElement) => {
+      if (canvas && isBlankCanvas(canvas)) {
+        throw new Error("invoice canvas rendered blank — device canvas limit exceeded");
+      }
+    })
+    .toPdf()
+    .save();
 }

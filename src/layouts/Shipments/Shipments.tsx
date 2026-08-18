@@ -20,7 +20,6 @@ import { useBulkUpdateShipmentsMutation, type BulkUpdateShipmentPayload } from "
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
 import {
   downloadOrderInvoicePdf,
-  isInvoicePrintSupportedViewport,
   printElementNatively,
 } from "layouts/Orders/utils/invoicePdf";
 import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
@@ -382,12 +381,6 @@ export default function Shipments() {
         setPrintOrders(null);
         return;
       }
-      if (!isInvoicePrintSupportedViewport()) {
-        printElementNatively(printContainerRef.current);
-        setIsPrintingInvoice(false);
-        setPrintOrders(null);
-        return;
-      }
       try {
         await downloadOrderInvoicePdf(
           printContainerRef.current,
@@ -395,7 +388,9 @@ export default function Shipments() {
         );
         NotificationMeassage("success", "تم تحميل الفاتورة المجمّعة");
       } catch {
-        NotificationMeassage("error", "تعذر تصدير الفاتورة");
+        // الموبايل قد يعجز عن رسم canvas بهذا الحجم — نرجع لطباعة المتصفح الأصلية.
+        NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
+        if (printContainerRef.current) printElementNatively(printContainerRef.current);
       } finally {
         if (!cancelled) {
           setIsPrintingInvoice(false);
@@ -656,7 +651,6 @@ export default function Shipments() {
             left: "-10000px",
             top: 0,
             width: 800,
-            maxWidth: "100vw",
             zIndex: -1,
             pointerEvents: "none",
             overflow: "hidden",
