@@ -33,7 +33,8 @@ declare module "html2pdf.js" {
     output(type?: string, options?: object): Promise<unknown>;
     outputPdf(type?: string, options?: object): Promise<unknown>;
     save(filename?: string): Promise<void>;
-    get(key: string): Promise<any>;
+    /** يُعيد worker قابلاً للتسلسل (لا Promise) — مطابق لتوقيع worker.js الفعلي. */
+    get(key: string, cbk?: (value: any) => any): Html2PdfWorker;
     then(onFulfilled?: (value: any) => any, onRejected?: (reason: any) => any): Html2PdfWorker;
     catch(onRejected?: (reason: any) => any): Html2PdfWorker;
   }

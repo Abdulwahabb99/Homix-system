@@ -15,7 +15,7 @@ import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
-import { downloadOrderInvoicePdf, isInvoicePrintSupportedViewport, printElementNatively } from "layouts/Orders/utils/invoicePdf";
+import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
 import { orderKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "query/ordersList";
@@ -561,15 +561,6 @@ function Orders() {
         return;
       }
 
-      // الموبايل: طباعة المتصفح الأصلية بدل html2canvas الذي يصطدم بحدود حجم
-      // canvas على الموبايل.
-      if (!isInvoicePrintSupportedViewport()) {
-        printElementNatively(printContainerRef.current);
-        setIsPrintingInvoice(false);
-        setPrintOrders(null);
-        return;
-      }
-
       try {
         await downloadOrderInvoicePdf(
           printContainerRef.current,
@@ -577,7 +568,9 @@ function Orders() {
         );
         NotificationMeassage("success", "تم تحميل الفاتورة المجمّعة");
       } catch {
-        NotificationMeassage("error", "تعذر تصدير الفاتورة");
+        // الموبايل قد يعجز عن رسم canvas بهذا الحجم — نرجع لطباعة المتصفح الأصلية.
+        NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
+        if (printContainerRef.current) printElementNatively(printContainerRef.current);
       } finally {
         if (!cancelled) {
           setIsPrintingInvoice(false);
@@ -639,7 +632,6 @@ function Orders() {
             left: "-10000px",
             top: 0,
             width: 800,
-            maxWidth: "100vw",
             zIndex: -1,
             pointerEvents: "none",
             overflow: "hidden",

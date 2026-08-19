@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import PictureAsPdf from "@mui/icons-material/PictureAsPdf";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
@@ -83,7 +83,13 @@ export default function OrderDetailsLayoutHeader({
               "&:hover": { bgcolor: OD.amber, color: "#fff", borderColor: OD.amber },
             }}
           >
-            <PictureAsPdf sx={{ fontSize: 15 }} />
+            {/* على الموبايل النص مخفي، فبدون مؤشّر داخل الأيقونة يبدو الزر كأنه
+                لم يفعل شيئاً خلال ثواني توليد الـ PDF. */}
+            {invoicePdfLoading ? (
+              <CircularProgress size={15} sx={{ color: "#92400e" }} />
+            ) : (
+              <PictureAsPdf sx={{ fontSize: 15 }} />
+            )}
             <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
               {invoicePdfLoading ? "جارٍ التحميل…" : "الفاتورة"}
             </Box>

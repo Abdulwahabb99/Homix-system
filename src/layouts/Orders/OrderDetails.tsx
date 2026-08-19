@@ -6,7 +6,7 @@ import { ToastContainer } from "react-toastify";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import EditOrderProductsModal from "./components/EditOrderProductsModal/EditOrderProductsModal";
 import OrderInvoiceDocument from "./orderInvoice/OrderInvoiceDocument";
-import { downloadOrderInvoicePdf, isInvoicePrintSupportedViewport, printElementNatively } from "./utils/invoicePdf";
+import { downloadOrderInvoicePdf, printElementNatively } from "./utils/invoicePdf";
 import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import OrderDetailsView from "./orderDetail/OrderDetailsView";
@@ -73,12 +73,6 @@ function OrderDetails() {
       NotificationMeassage("error", "تعذر تجهيز الفاتورة");
       return;
     }
-    // الموبايل: طباعة المتصفح الأصلية (لا تستخدم canvas فتعمل بثبات) بدل html2canvas
-    // الذي يصطدم بحدود حجم canvas الصغيرة على الموبايل ويُخرج صفحة فارغة.
-    if (!isInvoicePrintSupportedViewport()) {
-      printElementNatively(componentRef.current);
-      return;
-    }
     setInvoicePdfLoading(true);
     try {
       const namePart =
@@ -88,7 +82,10 @@ function OrderDetails() {
       NotificationMeassage("success", "تم تحميل الفاتورة");
     } catch (e) {
       console.error(e);
-      NotificationMeassage("error", "تعذر تصدير الفاتورة");
+      // الموبايل قد يعجز عن رسم canvas بحجم الفاتورة — نرجع لطباعة المتصفح
+      // الأصلية (لا تستخدم canvas) بدل أن يخرج المستخدم بلا فاتورة.
+      NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
+      printElementNatively(componentRef.current);
     } finally {
       setInvoicePdfLoading(false);
     }
@@ -104,7 +101,6 @@ function OrderDetails() {
             left: "-10000px",
             top: 0,
             width: 800,
-            maxWidth: "100vw",
             zIndex: -1,
             pointerEvents: "none",
             overflow: "hidden",

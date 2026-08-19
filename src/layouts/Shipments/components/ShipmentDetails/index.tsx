@@ -101,7 +101,6 @@ function LoadedShipmentDetails({
           left: "-10000px",
           top: 0,
           width: 800,
-          maxWidth: "100vw",
           zIndex: -1,
           pointerEvents: "none",
           overflow: "hidden",
