@@ -104,13 +104,18 @@ const MOBILE_MAX_CANVAS_PIXELS = 6_000_000;
 const MOBILE_MAX_CANVAS_SIDE = 8_192;
 
 /** iPadOS يتنكّر كـ macOS، فنكشفه بوجود لمس متعدّد. */
-function isCanvasLimitedDevice(): boolean {
+function isIosDevice(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  const isIOS =
+  return (
     /iPad|iPhone|iPod/.test(ua) ||
-    (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
-  return isIOS || /Android|Mobile/i.test(ua);
+    (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1)
+  );
+}
+
+function isCanvasLimitedDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return isIosDevice() || /Android|Mobile/i.test(navigator.userAgent);
 }
 
 /**
@@ -199,13 +204,27 @@ async function renderInvoiceBlob(
   return blob;
 }
 
-/** تنزيل Blob باسم ملف — يعمل على iOS Safari 13+ وأندرويد بنفس المسار. */
+/**
+ * سفاري على iOS يتجاهل خاصية download ويفتح الـ blob في عارض داخلي عندما يكون
+ * نوعه من الأنواع التي يعرف كيف يعرضها (‏application/pdf) — فتظهر الفاتورة
+ * كـ «بريفيو» ولا تُحفَظ على الجهاز. إعادة تغليف نفس البايتات كـ
+ * application/octet-stream تجعله نوعاً مجهولاً للعارض فيُجبر المتصفح على
+ * التنزيل، والاسم الممرَّر في download يحفظ الامتداد ‎.pdf كما هو.
+ *
+ * الكروم يحترم download أصلاً، فنُبقي له application/pdf — النوع الصحيح دلالياً.
+ */
+function toDeliverableBlob(blob: Blob): Blob {
+  if (!isIosDevice()) return blob;
+  return new Blob([blob], { type: "application/octet-stream" });
+}
+
+/** تنزيل Blob باسم ملف — مسار واحد لكل المتصفحات بعد توحيد النوع أعلاه. */
 function saveBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(toDeliverableBlob(blob));
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
-  link.rel = "noopener";
+  // بدون target: أي فتح في تبويب جديد يعيدنا لسلوك العارض على iOS.
   link.style.display = "none";
   document.body.appendChild(link);
   link.click();
