@@ -2,10 +2,12 @@
  * تبويب «الفاتورة الشاملة» — المستحق للبائع والشركة معاً + ملخّص متدرّج لكل مورّد.
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
-import React from "react";
+import React, { useState } from "react";
 import { money } from "../../utils/calc";
 import { COMPREHENSIVE_NOTE } from "../../utils/constants";
-import { SellerTotals, SettlementSeller } from "../../utils/types";
+import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
+import { exportFinancialReport } from "query/financialReport";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
 import ComprehensiveSummary from "../ComprehensiveSummary";
@@ -14,7 +16,17 @@ import { Amount, AmountFine, FineCell, Money, Muted, OpId, ProdCode } from "../S
 
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
 
-export default function ComprehensiveTab({ sellers }: { sellers: SettlementSeller[] }) {
+export default function ComprehensiveTab({ sellers, billingDay }: { sellers: SettlementSeller[]; billingDay: BillingDay }) {
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const handleExport = (vendorId: string) => {
+    if (exportingId) return;
+    setExportingId(vendorId);
+    exportFinancialReport(billingDay, vendorId)
+      .catch(() => NotificationMeassage("error", "حدث خطأ أثناء تصدير فاتورة المورّد"))
+      .finally(() => setExportingId(null));
+  };
+
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
     <Amount key="orders">{t.orders} طلبات</Amount>,
     <Amount key="seller" tone="green">{money(t.dueSeller)}</Amount>,
@@ -24,7 +36,11 @@ export default function ComprehensiveTab({ sellers }: { sellers: SettlementSelle
 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
-      <DetailHeaderBar title={`الفاتورة الشاملة — ${s.name}`} onExport={() => {}} />
+      <DetailHeaderBar
+        title={`الفاتورة الشاملة — ${s.name}`}
+        onExport={() => handleExport(s.id)}
+        exporting={exportingId === s.id}
+      />
       <DetailTable
         columns={[
           { label: "رقم العملية" },
