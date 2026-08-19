@@ -141,7 +141,7 @@ export default function ShipmentEdit() {
   const [shippingFees, setShippingFees] = useState("");
 
   const [shippingReceiveDate, setShippingReceiveDate] = useState("");
-  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
+  const [scheduledDeliveryDate, setScheduledDeliveryDate] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
 
   const [firstName, setFirstName] = useState("");
@@ -205,7 +205,7 @@ export default function ShipmentEdit() {
     setShippingFees(shipment.shippingCost != null ? String(shipment.shippingCost) : "");
 
     setShippingReceiveDate(toYmd(shipment.receivedInWarehouseDate));
-    setExpectedDeliveryDate(toYmd(shipment.scheduledDeliveryDate));
+    setScheduledDeliveryDate(toYmd(shipment.scheduledDeliveryDate));
     setDeliveryDate(toYmd(shipment.deliveryDate));
 
     const parts = (customer?.name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -243,10 +243,10 @@ export default function ShipmentEdit() {
     }
 
     const recv = toIso(shippingReceiveDate);
-    const exp = toIso(expectedDeliveryDate);
+    const sched = toIso(scheduledDeliveryDate);
     const del = toIso(deliveryDate);
     if (recv) body.shippingReceiveDate = recv;
-    if (exp) body.expectedDeliveryDate = exp;
+    if (sched) body.scheduledDeliveryDate = sched;
     if (del) body.deliveryDate = del;
 
     if (firstName.trim() || lastName.trim() || phone.trim()) {
@@ -454,7 +454,7 @@ export default function ShipmentEdit() {
               <TextField {...fieldBaseProps} type="date" label="تاريخ استلام الشحنة" value={shippingReceiveDate} onChange={(e) => setShippingReceiveDate(e.target.value)} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField {...fieldBaseProps} type="date" label="موعد التسليم المتوقع" value={expectedDeliveryDate} onChange={(e) => setExpectedDeliveryDate(e.target.value)} />
+              <TextField {...fieldBaseProps} type="date" label="موعد الجدولة" value={scheduledDeliveryDate} onChange={(e) => setScheduledDeliveryDate(e.target.value)} />
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField {...fieldBaseProps} type="date" label="تاريخ التسليم الفعلي" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />

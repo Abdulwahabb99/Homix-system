@@ -14,7 +14,7 @@ export const PAYMENT_OPTIONS: SelectOption[] = [
 /** التوصيل بواسطة — تطابق قيم الـ API */
 export const DELIVERY_BY_OPTIONS: SelectOption[] = [
   { value: 1, label: "هوميكس" },
-  { value: 2, label: "البائع" },
+  { value: 2, label: "بائع" },
 ];
 
 export const DEFAULT_PAYMENT_STATUS = 1;

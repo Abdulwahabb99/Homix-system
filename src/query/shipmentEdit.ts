@@ -19,7 +19,7 @@ export interface UpdateShipmentPayload {
   shippingCompany?: number | string;
   shippingFees?: number;
   shippingReceiveDate?: string;
-  expectedDeliveryDate?: string;
+  scheduledDeliveryDate?: string;
   deliveryDate?: string;
   paymentStatus?: number;
   downPayment?: number;
