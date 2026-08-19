@@ -2,9 +2,11 @@
  * تبويب «تسويات البائع» — التحصيل والمستحق للبائع والغرامات لكل مورّد.
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
-import React from "react";
+import React, { useState } from "react";
 import { money } from "../../utils/calc";
-import { SellerTotals, SettlementSeller } from "../../utils/types";
+import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
+import { exportFinancialReport } from "query/financialReport";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
@@ -13,7 +15,17 @@ import { Amount, AmountFine, FineCell, Money, Muted, OpId, PayBadge, ProdCode } 
 
 const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 40px";
 
-export default function SellerTab({ sellers }: { sellers: SettlementSeller[] }) {
+export default function SellerTab({ sellers, billingDay }: { sellers: SettlementSeller[]; billingDay: BillingDay }) {
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const handleExport = (vendorId: string) => {
+    if (exportingId) return;
+    setExportingId(vendorId);
+    exportFinancialReport(billingDay, vendorId)
+      .catch(() => NotificationMeassage("error", "حدث خطأ أثناء تصدير فاتورة المورّد"))
+      .finally(() => setExportingId(null));
+  };
+
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
     <Amount key="orders">{t.orders} طلبات</Amount>,
     <Amount key="collect">{money(t.collect)}</Amount>,
@@ -25,7 +37,11 @@ export default function SellerTab({ sellers }: { sellers: SettlementSeller[] }) 
 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
-      <DetailHeaderBar title={`تفاصيل تسويات البائع — ${s.name}`} onExport={() => {}} />
+      <DetailHeaderBar
+        title={`تفاصيل تسويات البائع — ${s.name}`}
+        onExport={() => handleExport(s.id)}
+        exporting={exportingId === s.id}
+      />
       <DetailTable
         columns={[
           { label: "رقم العملية" },

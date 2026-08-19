@@ -12,9 +12,10 @@ interface DetailHeaderBarProps {
   title: string;
   onPrint?: () => void;
   onExport?: () => void;
+  exporting?: boolean;
 }
 
-export default function DetailHeaderBar({ title, onPrint, onExport }: DetailHeaderBarProps) {
+export default function DetailHeaderBar({ title, onPrint, onExport, exporting }: DetailHeaderBarProps) {
   return (
     <Box sx={detailHeaderBarSx}>
       <Box sx={detailTitleSx}>{title}</Box>
@@ -25,8 +26,14 @@ export default function DetailHeaderBar({ title, onPrint, onExport }: DetailHead
           </Box>
         )}
         {onExport && (
-          <Box component="button" type="button" onClick={onExport} sx={dactBtnSx}>
-            <FileDownloadOutlinedIcon /> تصدير
+          <Box
+            component="button"
+            type="button"
+            onClick={onExport}
+            disabled={exporting}
+            sx={{ ...dactBtnSx, opacity: exporting ? 0.6 : 1, cursor: exporting ? "default" : "pointer" }}
+          >
+            <FileDownloadOutlinedIcon /> {exporting ? "جارٍ التصدير..." : "تصدير"}
           </Box>
         )}
       </Box>

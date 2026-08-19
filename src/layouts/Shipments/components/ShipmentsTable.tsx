@@ -258,7 +258,7 @@ export default function ShipmentsTable({
 
                 {/* حالة الشحنة */}
                 <td style={TD}>
-                  <ShipmentStatusBadge status={s.shipmentStatus} />
+                  <ShipmentStatusBadge status={s.shipmentStatus} label={s.shipmentStatusLabel} />
                 </td>
 
                 {/* نوع الشحنة */}

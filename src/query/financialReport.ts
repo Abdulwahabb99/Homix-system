@@ -228,13 +228,22 @@ export async function fetchFinancialReport(
 /**
  * `GET /orders/financialReport/export` — بنفس معاملات الجلب.
  * طلب واحد موثّق بالتوكن ثم يُحفظ الملف من نفس الاستجابة (بلا تنقّل).
+ * تمرير `vendorId` (مثلاً من صف مورّد واحد في تبويب البائع/المخزن/الشاملة)
+ * يقصر التصدير على فاتورة هذا المورّد وحده — الـ BE يدعم الفلترة بالفعل.
  */
-export async function exportFinancialReport(billingDay: BillingDay): Promise<void> {
+export async function exportFinancialReport(billingDay: BillingDay, vendorId?: string | number): Promise<void> {
+  const params = new URLSearchParams({ billingDay: String(billingDay) });
+  if (vendorId !== undefined && vendorId !== null && String(vendorId).trim() !== "") {
+    params.set("vendorId", String(vendorId));
+  }
   const res = await axiosRequest.get(
-    `${FINANCIAL_REPORT_EXPORT_PATH}?${buildFinancialReportQuery(billingDay)}`,
+    `${FINANCIAL_REPORT_EXPORT_PATH}?${params.toString()}`,
     { responseType: "blob" }
   );
-  downloadBlobResponse(res, `financial-report-day-${billingDay}.xlsx`);
+  const fileName = vendorId
+    ? `vendor-invoice-${vendorId}-day-${billingDay}.xlsx`
+    : `financial-report-day-${billingDay}.xlsx`;
+  downloadBlobResponse(res, fileName);
 }
 
 export function useFinancialReport(billingDay: BillingDay) {

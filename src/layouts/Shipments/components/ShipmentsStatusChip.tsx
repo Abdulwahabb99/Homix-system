@@ -4,11 +4,20 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 
 const FONT = "'Cairo', sans-serif";
 
+/** يطابق كل الحالات الاثنتي عشرة في SHIPMENT_STATUS بالباك-إند (وألوان ShipmentDetails/constants.ts). */
 const STATUS_CFG: Record<number, { label: string; bg: string; color: string }> = {
-  1: { label: "معلقة",       bg: HX.amberLight, color: "#92400e" },
-  2: { label: "في المخزن",  bg: HX.blueLight,  color: "#1e40af" },
-  3: { label: "جاهز للشحن", bg: HX.tealLight,  color: "#0f766e" },
-  4: { label: "تم التسليم", bg: HX.greenLight, color: "#065f46" },
+  1:  { label: "معلقة",             bg: HX.amberLight,  color: "#92400e" },
+  2:  { label: "في المخزن",        bg: HX.blueLight,   color: "#1e40af" },
+  3:  { label: "جاهزة للشحن",      bg: HX.tealLight,   color: "#0f766e" },
+  4:  { label: "تم التسليم",       bg: HX.greenLight,  color: "#065f46" },
+  5:  { label: "ملغية",             bg: HX.surface3,    color: HX.tx2 },
+  6:  { label: "مرفوضة",           bg: HX.redLight,    color: "#991b1b" },
+  7:  { label: "مسترجع من العميل", bg: HX.roseLight,   color: "#9f1239" },
+  8:  { label: "مرتجع للمورد",     bg: HX.purpleLight, color: "#5b21b6" },
+  9:  { label: "مستبدل",           bg: HX.accentLight, color: "#3730a3" },
+  10: { label: "فشل في التوصيل",   bg: HX.redLight,    color: "#7f1d1d" },
+  11: { label: "شحنة مجدولة",      bg: HX.blueLight,   color: "#1e40af" },
+  12: { label: "خرجت للتوصيل",     bg: HX.tealLight,   color: "#0f766e" },
 };
 
 const TYPE_CFG: Record<number, { label: string; bg: string; color: string }> = {
@@ -45,10 +54,10 @@ function PillBadge({ label, bg, color }: { label: string; bg: string; color: str
   );
 }
 
-export function ShipmentStatusBadge({ status }: { status: number }) {
+export function ShipmentStatusBadge({ status, label }: { status: number; label?: string }) {
   const cfg = STATUS_CFG[status];
-  if (!cfg) return <span style={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>—</span>;
-  return <PillBadge {...cfg} />;
+  if (!cfg && !label) return <span style={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>—</span>;
+  return <PillBadge label={label ?? cfg.label} bg={cfg?.bg ?? HX.surface3} color={cfg?.color ?? HX.tx2} />;
 }
 
 export function ShipmentTypeBadge({ type }: { type: number }) {
