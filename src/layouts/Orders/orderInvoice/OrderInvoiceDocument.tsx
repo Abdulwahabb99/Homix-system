@@ -71,7 +71,10 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
     const subtotal = Number(orderDetails?.subTotalPrice ?? 0);
     const shipping = Number(orderDetails?.shippingFees ?? 0);
     const discount = Number(orderDetails?.totalDiscounts ?? 0);
-    const total = Number(orderDetails?.totalPrice ?? 0);
+    // «الإجمالي» لازم يشمل الشحن — orderDetails.totalPrice من الـ API بيستثنيه، وكان
+    // بيظهر رقم أقل من «المتبقّي» (اللي بيشمل الشحن) رغم إن المدفوع صفر، وده مضلِّل
+    // على فاتورة بيوقّع عليها العميل.
+    const total = subtotal + shipping - discount;
     const paid = Number(orderDetails?.downPayment ?? 0);
     // «المتبقّي» = المبلغ المطلوب تحصيله من الـ API (financial.amountToCollect) —
     // نفس قيمة «المبلغ المطلوب تحصيله» في بطاقة التفاصيل المالية، لا حساب total − paid.

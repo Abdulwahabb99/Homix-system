@@ -77,7 +77,9 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
     const subtotal = orders.reduce((sum, o) => sum + Number(o?.subTotalPrice ?? 0), 0);
     const shipping = orders.reduce((sum, o) => sum + Number(o?.shippingFees ?? 0), 0);
     const discount = orders.reduce((sum, o) => sum + Number(o?.totalDiscounts ?? 0), 0);
-    const total = orders.reduce((sum, o) => sum + Number(o?.totalPrice ?? 0), 0);
+    // «الإجمالي» لازم يشمل الشحن — نفس تصحيح OrderInvoiceDocument (totalPrice
+    // من الـ API بيستثني الشحن، فيظهر أقل من «المتبقّي» رغم إن المدفوع صفر).
+    const total = subtotal + shipping - discount;
     const paid = orders.reduce((sum, o) => sum + Number(o?.downPayment ?? 0), 0);
     const remaining = orders.reduce((sum, o) => sum + Number(o?.toBeCollected ?? 0), 0);
 
