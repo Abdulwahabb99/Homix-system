@@ -217,7 +217,7 @@ export function DeliveryByBadge({
     : fromInventory
       ? deliveryByConfig.inventory
       : deliveryByConfig.vendor;
-  return <Bdg {...cfg} label={text || (fromInventory ? "المخزن" : "البائع")} />;
+  return <Bdg {...cfg} label={text || (fromInventory ? "المخزن" : "بائع")} />;
 }
 
 /* ─── FINE BADGE ─── */
