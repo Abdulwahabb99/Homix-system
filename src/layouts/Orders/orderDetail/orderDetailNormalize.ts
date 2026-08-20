@@ -116,7 +116,10 @@ export function normalizeOrderDetailPayload(apiResponse: any): any | null {
     orderLines,
     notesList,
     financial,
-    subTotalPrice: Number(financial.totalPrice ?? order.totalPrice ?? orderPrice),
+    // سعر البيع الأصلي (قبل الخصم) — financial.totalPrice بعد الخصم فمينفعش
+    // نستخدمه هنا، غير كده «سعر البيع» في بطاقة التفاصيل المالية والفاتورة
+    // كانا بيظهروا صافي الخصم بدل السعر الطبيعي.
+    subTotalPrice: Number(financial.subTotalPrice ?? order.subTotalPrice ?? orderPrice),
     shippingFees: Number(financial.shippingFees ?? 0),
     totalDiscounts: Number(financial.discount ?? 0),
     totalPrice: Number(financial.totalPrice ?? order.totalPrice ?? orderPrice),
