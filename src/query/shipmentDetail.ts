@@ -10,6 +10,9 @@ export interface ShipmentDetailCustomer {
 
 export interface ShipmentDetailFinancial {
   amountToCollect: number;
+  discount: number;
+  downPayment: number;
+  receivedAmount: number;
   shippingCost: number;
   totalPrice: number;
 }

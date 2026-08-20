@@ -217,8 +217,8 @@ export default function ShipmentEdit() {
     setToBeCollected(
       financial?.amountToCollect != null ? String(financial.amountToCollect) : ""
     );
-    setDownPayment("0");
-    setReceivedAmount("0");
+    setDownPayment(financial?.downPayment != null ? String(financial.downPayment) : "0");
+    setReceivedAmount(financial?.receivedAmount != null ? String(financial.receivedAmount) : "0");
   }, [data?.shipment?.id]);
 
   const shipNumber = useMemo(() => {
