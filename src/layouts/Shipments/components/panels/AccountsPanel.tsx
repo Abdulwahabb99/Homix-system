@@ -278,11 +278,11 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
               <th style={TH}>رقم الطلب</th>
               <th style={TH}>البائع</th>
               <th style={TH}>كود المنتج</th>
-              <th style={TH}>التوصيل بواسطة</th>
-              <th style={TH}>تاريخ التسليم</th>
+              <th style={TH}>شركة الشحن</th>
+              <th style={TH}>تاريخ التسليم الفعلي</th>
               <th style={TH}>طريقة الدفع</th>
-              <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
-              <th style={{ ...TH, textAlign: "center" }}>تكلفة الشحن</th>
+              <th style={{ ...TH, textAlign: "center" }}>المبلغ المطلوب تحصيله</th>
+              <th style={{ ...TH, textAlign: "center" }}>المبلغ المستلم</th>
               <th style={TH}>حالة المحاسبة</th>
               <th style={TH}>تاريخ المحاسبة</th>
               <th style={TH}>المرجع</th>
@@ -308,11 +308,11 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                 <td style={TD}><Box component="span" sx={{ fontSize: "12px", fontWeight: 600, color: HX.accent }}>{item.orderNumber || "—"}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.sellerName || "—"}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3, px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2 }}>{item.productCode || "—"}</Box></td>
-                <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.deliveryBy || "—"}</Box></td>
+                <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.shippingCompanyName || "—"}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.deliveryDate)}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.paymentMethodLabel || "—"}</Box></td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amountToCollect} /></td>
-                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.shippingCost} /></td>
+                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.receivedAmount} /></td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{item.reference || "—"}</Box></td>

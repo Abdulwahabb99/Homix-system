@@ -2,7 +2,7 @@
  * تعديل حالة المحاسبة لتسليم واحد.
  * التعديل داخل نافذة وليس داخل الجدول حتى لا يتغيّر شيء بضغطة واحدة بالخطأ.
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -14,12 +14,28 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import {
   useUpdateDeliveryAccountMutation,
+  useUploadDeliveryAccountReferenceMutation,
   type DeliveryAccountItem,
 } from "query/shipmentsAccounts";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
+
+/** يحوّل مسار مرفوع نسبيًا ("uploads/...") إلى رابط قابل للفتح؛ يترك الروابط المطلقة كما هي. */
+function attachmentOpenHref(value: string | undefined | null): string | undefined {
+  if (!value?.trim()) return undefined;
+  const v = value.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  const base = String(process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+  return base ? `${base}/${v.replace(/^\//, "")}` : v;
+}
+
+/** المراجع القديمة كانت نصًا حرًا؛ المرفقات المرفوعة حديثًا مساراتها تبدأ بـ uploads/. */
+function isUploadedAttachment(value: string | undefined | null): boolean {
+  return Boolean(value?.trim().startsWith("uploads/"));
+}
 
 const FONT = "'Cairo', sans-serif";
 
@@ -46,15 +62,17 @@ interface Props {
 export default function EditDeliveryAccountModal({ open, onClose, item, statusOptions }: Props) {
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
   const [accountingDate, setAccountingDate] = useState("");
-  const [accountingReference, setAccountingReference] = useState("");
+  const [reference, setReference] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const updateMutation = useUpdateDeliveryAccountMutation();
+  const uploadReferenceMutation = useUploadDeliveryAccountReferenceMutation();
 
   useEffect(() => {
     if (!open || !item) return;
     setAccountingStatus(item.accountingStatus ?? "");
     setAccountingDate(toYmd(item.accountingDate));
-    setAccountingReference(item.reference ?? "");
+    setReference(item.reference ?? "");
   }, [open, item]);
 
   const handleSave = () => {
@@ -69,11 +87,20 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
         orderId: item.id,
         body: {
           accountingDate: accountingDate ? new Date(accountingDate).toISOString() : null,
-          accountingReference: accountingReference.trim(),
           accountingStatus: Number(accountingStatus),
         },
       },
       { onSuccess: onClose }
+    );
+  };
+
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!item || !file) return;
+    uploadReferenceMutation.mutate(
+      { orderId: item.id, file },
+      { onSuccess: (path) => setReference(path) }
     );
   };
 
@@ -120,13 +147,49 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
           sx={{ ...fieldSx, mb: 2 }}
         />
 
-        <TextField
-          label="المرجع"
-          size="small"
-          fullWidth
-          value={accountingReference}
-          onChange={(e) => setAccountingReference(e.target.value)}
-          sx={fieldSx}
+        <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary", mb: "6px" }}>
+          المرجع
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "8px", mb: 1 }}>
+          {reference ? (
+            isUploadedAttachment(reference) ? (
+              <Button
+                size="small"
+                variant="outlined"
+                href={attachmentOpenHref(reference)}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontFamily: FONT, fontSize: "11.5px", textTransform: "none" }}
+              >
+                فتح المرفق الحالي
+              </Button>
+            ) : (
+              <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary" }}>
+                {reference}
+              </Typography>
+            )
+          ) : (
+            <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.disabled" }}>
+              لا يوجد مرفق
+            </Typography>
+          )}
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<AttachFileOutlinedIcon sx={{ fontSize: 16 }} />}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadReferenceMutation.isPending}
+            sx={{ fontFamily: FONT, fontSize: "11.5px", textTransform: "none", mr: "auto" }}
+          >
+            {uploadReferenceMutation.isPending ? "جارٍ الرفع..." : reference ? "استبدال المرفق" : "رفع مرفق"}
+          </Button>
+        </Box>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          hidden
+          onChange={handleFileSelected}
         />
       </DialogContent>
       <DialogActions>

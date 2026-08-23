@@ -86,7 +86,7 @@ function mapListItemRow(row) {
       },
     ],
     paymentStatus: row.paymentStatus,
-    PoDate: row.expectedDeliveryDate ?? undefined,
+    PoDate: row.poDate ?? undefined,
     createdAt: row.orderDate,
     /** المعرّف — يُستخدم لتعبئة نموذج التعديل */
     deliveryBy: row.deliveryBy,

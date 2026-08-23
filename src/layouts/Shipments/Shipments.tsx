@@ -498,10 +498,19 @@ export default function Shipments() {
     if (shippingCompany) q.set("shippingCompany", shippingCompany);
     if (scheduleStatus) q.set("scheduleStatus", scheduleStatus);
     if (vendorName)     q.set("vendorName",     vendorName);
+    if (governorate)    q.set("governorate",    governorate);
     const sIso = toIso(startDate);
     const eIso = toIso(endDate);
     if (sIso) q.set("startDate", sIso);
     if (eIso) q.set("endDate",   eIso);
+    const dIso  = toIso(deliveryDateFrom);
+    const dtIso = toIso(deliveryDateTo);
+    if (dIso)  q.set("deliveryDateFrom", dIso);
+    if (dtIso) q.set("deliveryDateTo",   dtIso);
+    const schIso  = toIso(scheduledDateFrom);
+    const schtIso = toIso(scheduledDateTo);
+    if (schIso)  q.set("scheduledDateFrom", schIso);
+    if (schtIso) q.set("scheduledDateTo",   schtIso);
 
     setIsExportLoading(true);
     // طلب GET واحد موثّق بالتوكن، ثم يُحفظ الملف من نفس الاستجابة — بلا تنقّل

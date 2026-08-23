@@ -12,11 +12,11 @@ export interface DeliveryAccountItem {
   orderNumber: string;
   sellerName: string;
   productCode: string;
-  deliveryBy: string;
+  shippingCompanyName: string;
   deliveryDate: string | null;
   paymentMethodLabel: string;
   amountToCollect: number;
-  shippingCost: number;
+  receivedAmount: number;
   accountingStatusLabel: string;
   accountingDate: string | null;
   reference: string | null;
@@ -148,6 +148,33 @@ export function useUpdateDeliveryAccountMutation() {
     },
     onError: () => {
       NotificationMeassage("error", "حدث خطأ أثناء تحديث حالة المحاسبة");
+    },
+  });
+}
+
+/** POST /shipments/accounts/deliveries/{orderId}/reference — «المرجع» ملف مرفوع لا نص حر. */
+export async function uploadDeliveryAccountReference(orderId: number, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("files", file);
+  const { data } = await axiosRequest.post(`/shipments/accounts/deliveries/${orderId}/reference`, formData);
+  return data?.data?.reference ?? "";
+}
+
+export function useUploadDeliveryAccountReferenceMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { orderId: number; file: File }) =>
+      uploadDeliveryAccountReference(vars.orderId, vars.file),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم رفع المرجع");
+    },
+    onError: () => {
+      NotificationMeassage("error", "تعذّر رفع المرجع");
     },
   });
 }
