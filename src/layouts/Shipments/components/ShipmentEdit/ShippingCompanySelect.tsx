@@ -33,6 +33,13 @@ type Props = {
   onChange: (id: string) => void;
   /** يُستخدم في الفلاتر فقط؛ نموذج تعديل الشحنة يظل باختيار واحد. */
   multiple?: boolean;
+  /**
+   * التسمية العائمة داخل الإطار. `null` تُلغيها — يستخدمها شريط الفلاتر لأنه
+   * يرسم تسمياته فوق الحقول، فتسمية داخلية تكسر محاذاة الصف.
+   */
+  label?: string | null;
+  /** نص بديل يظهر حين لا يوجد اختيار (مثل «الكل» في الفلاتر). */
+  placeholder?: string;
   /** أنماط إضافية تُدمج فوق المظهر الافتراضي (مثلاً لتصغير الارتفاع داخل الفلاتر) */
   sx?: SxProps<Theme>;
 };
@@ -60,7 +67,14 @@ const acSx = {
   },
 } as const;
 
-export default function ShippingCompanySelect({ value, onChange, multiple = false, sx }: Props) {
+export default function ShippingCompanySelect({
+  value,
+  onChange,
+  multiple = false,
+  label = "شركة الشحن",
+  placeholder,
+  sx,
+}: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
   const createMutation = useCreateShippingCompanyMutation();
   const deleteMutation = useDeleteShippingCompanyMutation();
@@ -274,7 +288,11 @@ export default function ShippingCompanySelect({ value, onChange, multiple = fals
           </Paper>
         )}
         renderInput={(params) => (
-          <TextField {...params} label="شركة الشحن" InputLabelProps={{ shrink: true }} />
+          <TextField
+            {...params}
+            placeholder={placeholder}
+            {...(label == null ? {} : { label, InputLabelProps: { shrink: true } })}
+          />
         )}
       />
 

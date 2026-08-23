@@ -57,6 +57,25 @@ export interface ShipmentsFiltersBarProps {
   onReset: () => void;
 }
 
+/**
+ * غلاف موحّد «تسمية فوق الحقل». كل فلتر في الشريط يمرّ من هنا، فلا يمكن أن يبدأ
+ * حقل من مكان مختلف عن جيرانه — وهو ما حدث مع «شركة الشحن» حين رُسم عرياناً
+ * بتسمية MUI عائمة داخل الإطار.
+ */
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Typography component="label" sx={{
+        display: "block", mb: "4px", color: HX.tx2,
+        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+      }}>
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
 function FilterInput({
   label,
   placeholder,
@@ -69,13 +88,7 @@ function FilterInput({
   onChange: (v: string) => void;
 }) {
   return (
-    <Box sx={{ width: "100%", minWidth: 0 }}>
-      <Typography component="label" sx={{
-        display: "block", mb: "4px", color: HX.tx2,
-        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
-      }}>
-        {label}
-      </Typography>
+    <FilterField label={label}>
       <Box sx={{
         display: "flex",
         alignItems: "center",
@@ -114,7 +127,7 @@ function FilterInput({
           }}
         />
       </Box>
-    </Box>
+    </FilterField>
   );
 }
 
@@ -136,20 +149,14 @@ function FilterSelect({
   const selectedValues = value ? value.split(",").map((item) => item.trim()).filter(Boolean) : [];
 
   return (
-    <Box sx={{ width: "100%", minWidth: 0 }}>
-      <Typography component="label" sx={{
-        display: "block", mb: "4px", color: HX.tx2,
-        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
-      }}>
-        {label}
-      </Typography>
+    <FilterField label={label}>
       <MultiSelect<string>
         value={selectedValues}
         onChange={(next) => onChange(next.join(","))}
         options={normalizedOptions}
         placeholder="الكل"
       />
-    </Box>
+    </FilterField>
   );
 }
 
@@ -383,15 +390,35 @@ export default function ShipmentsFiltersBar({
               />
             )}
 
-            <ShippingCompanySelect
-              value={vals.shippingCompany}
-              onChange={setSelect("shippingCompany")}
-              multiple
-              sx={{
-                "& .MuiOutlinedInput-root": { minHeight: "38px", height: 38, overflow: "hidden", flexWrap: "nowrap" },
-                "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
-              }}
-            />
+            <FilterField label="شركة الشحن">
+              <ShippingCompanySelect
+                value={vals.shippingCompany}
+                onChange={setSelect("shippingCompany")}
+                multiple
+                label={null}
+                placeholder="الكل"
+                /* نفس مقاسات وحدود MultiSelect المجاور (34px / 8px / border2 / ظل
+                   التركيز) — الحقل مبني على Autocomplete فلا يرث أنماطه تلقائياً. */
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    minHeight: "34px",
+                    height: 34,
+                    py: 0,
+                    overflow: "hidden",
+                    flexWrap: "nowrap",
+                    borderRadius: "8px",
+                    fontSize: "12.5px",
+                  },
+                  "& .MuiOutlinedInput-root .MuiAutocomplete-input": { py: 0 },
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
+                  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: HX.accent,
+                    borderWidth: 1,
+                    boxShadow: `0 0 0 3px ${HX.accentLight}`,
+                  },
+                }}
+              />
+            </FilterField>
 
             <FilterSelect
               label="حالة الجدولة"
