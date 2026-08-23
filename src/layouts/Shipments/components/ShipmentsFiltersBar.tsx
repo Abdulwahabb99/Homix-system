@@ -300,12 +300,13 @@ export default function ShipmentsFiltersBar({
       scheduledDateFrom: null, scheduledDateTo: null,
     };
     window.clearTimeout(textTimerRef.current);
+    valsRef.current = empty;
     setVals(empty);
     onReset();
   };
 
   /** الفلاتر تُطبَّق تلقائياً؛ هذا الزر يفرّغ أي كتابة مؤجَّلة فوراً. */
-  const handleApply = () => commit(vals);
+  const handleApply = () => commit(valsRef.current);
 
   const shipmentStatuses = meta?.shipmentStatuses ?? SHIPMENT_STATUS_VALUES;
   const shipmentTypes    = meta?.shipmentTypes    ?? SHIPMENT_TYPE_VALUES;
