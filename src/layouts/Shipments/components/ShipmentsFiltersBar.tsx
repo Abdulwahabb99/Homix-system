@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, Collapse, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -12,6 +12,18 @@ import ShippingCompanySelect from "./ShipmentEdit/ShippingCompanySelect";
 import MultiSelect from "components/MultiSelect/MultiSelect";
 
 const FONT = "'Cairo', sans-serif";
+
+/** نفس منطق صفحة الطلبات: القوائم تُطبَّق فوراً، والكتابة تُطبَّق بعد 500ms من التوقّف. */
+const SEARCH_DEBOUNCE_MS = 500;
+
+/** حقول البحث النصية — تُؤجَّل، ولا تُستبدل من الرابط أثناء الكتابة فيها. */
+const TEXT_FIELDS = [
+  "operationCode",
+  "orderNumber",
+  "customerName",
+  "customerPhone",
+  "vendorName",
+] as const;
 
 export interface FilterValues {
   operationCode: string;
@@ -151,38 +163,75 @@ export default function ShipmentsFiltersBar({
   const [open, setOpen] = useState(false);
   const [vals, setVals] = useState<FilterValues>({ ...defaultValues, deliveryBy: "" });
 
+  /** حاوية الشريط — نستخدمها لمعرفة إن كان المستخدم يكتب داخله الآن. */
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const textTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(textTimerRef.current), []);
+
+  /**
+   * الشريط لا يملك حقلاً لـ deliveryBy، فإرسال "" مع كل تطبيق يمحو فلتراً لم
+   * يلمسه المستخدم — نُعيده كما وصل من الرابط.
+   */
+  const commit = useCallback(
+    (next: FilterValues) => {
+      window.clearTimeout(textTimerRef.current);
+      onApply({ ...next, deliveryBy: defaultValues.deliveryBy || "" });
+    },
+    [onApply, defaultValues.deliveryBy]
+  );
+
   // أعِد المزامنة عند تغيّر القيم الخارجية (إعادة ضبط / تنقّل بالرابط)
   const defKey = JSON.stringify(defaultValues);
   useEffect(() => {
-    setVals({ ...defaultValues, deliveryBy: "" });
+    setVals((prev) => {
+      const next: FilterValues = { ...defaultValues, deliveryBy: "" };
+      /* الرابط يتحدّث بعد 500ms من آخر حرف، فلو أعدنا ضبط حقول البحث والمستخدم
+         ما زال يكتب داخل الشريط لقطعنا ما يكتبه. نُبقي قيمه المحلية في هذه
+         الحالة فقط؛ أي تنقّل خارجي (زر الرجوع / إعادة الضبط) يفوز كما كان. */
+      if (barRef.current && barRef.current.contains(document.activeElement)) {
+        TEXT_FIELDS.forEach((field) => {
+          next[field] = prev[field];
+        });
+      }
+      return next;
+    });
   }, [defKey]);
 
+  /** القوائم والتواريخ: تطبيق فوري — تغيير واحد مقصود من المستخدم. */
   const setSelect = (field: keyof FilterValues) => (v: any) => {
     const next = { ...vals, [field]: v };
     setVals(next);
+    commit(next);
   };
+
+  /** الكتابة: تطبيق مؤجَّل حتى يتوقّف المستخدم، فلا نطلق طلباً لكل حرف. */
   const setText = (field: keyof FilterValues) => (v: any) => {
     const next = { ...vals, [field]: v };
     setVals(next);
+    window.clearTimeout(textTimerRef.current);
+    textTimerRef.current = window.setTimeout(
+      () => onApply({ ...next, deliveryBy: defaultValues.deliveryBy || "" }),
+      SEARCH_DEBOUNCE_MS
+    );
   };
-  const handleReceivedDatesChange = (start: any, end: any) => {
-    setVals((prev) => ({ ...prev, startDate: start, endDate: end }));
+
+  const applyDates = (patch: Partial<FilterValues>) => {
+    const next = { ...vals, ...patch };
+    setVals(next);
+    commit(next);
   };
-  const handleReceivedDateReset = () => {
-    setVals((prev) => ({ ...prev, startDate: null, endDate: null }));
-  };
-  const handleDeliveryDatesChange = (start: any, end: any) => {
-    setVals((prev) => ({ ...prev, deliveryDateFrom: start, deliveryDateTo: end }));
-  };
-  const handleDeliveryDateReset = () => {
-    setVals((prev) => ({ ...prev, deliveryDateFrom: null, deliveryDateTo: null }));
-  };
-  const handleScheduledDatesChange = (start: any, end: any) => {
-    setVals((prev) => ({ ...prev, scheduledDateFrom: start, scheduledDateTo: end }));
-  };
-  const handleScheduledDateReset = () => {
-    setVals((prev) => ({ ...prev, scheduledDateFrom: null, scheduledDateTo: null }));
-  };
+  const handleReceivedDatesChange = (start: any, end: any) =>
+    applyDates({ startDate: start, endDate: end });
+  const handleReceivedDateReset = () => applyDates({ startDate: null, endDate: null });
+  const handleDeliveryDatesChange = (start: any, end: any) =>
+    applyDates({ deliveryDateFrom: start, deliveryDateTo: end });
+  const handleDeliveryDateReset = () =>
+    applyDates({ deliveryDateFrom: null, deliveryDateTo: null });
+  const handleScheduledDatesChange = (start: any, end: any) =>
+    applyDates({ scheduledDateFrom: start, scheduledDateTo: end });
+  const handleScheduledDateReset = () =>
+    applyDates({ scheduledDateFrom: null, scheduledDateTo: null });
 
   const handleReset = () => {
     const empty: FilterValues = {
@@ -193,11 +242,13 @@ export default function ShipmentsFiltersBar({
       deliveryDateFrom: null, deliveryDateTo: null,
       scheduledDateFrom: null, scheduledDateTo: null,
     };
+    window.clearTimeout(textTimerRef.current);
     setVals(empty);
     onReset();
   };
 
-  const handleApply = () => onApply(vals);
+  /** الفلاتر تُطبَّق تلقائياً؛ هذا الزر يفرّغ أي كتابة مؤجَّلة فوراً. */
+  const handleApply = () => commit(vals);
 
   const shipmentStatuses = meta?.shipmentStatuses ?? SHIPMENT_STATUS_VALUES;
   const shipmentTypes    = meta?.shipmentTypes    ?? SHIPMENT_TYPE_VALUES;
@@ -227,6 +278,7 @@ export default function ShipmentsFiltersBar({
 
   return (
     <Box
+      ref={barRef}
       sx={{
         bgcolor: HX.surface,
         borderRadius: HX.r,
@@ -423,7 +475,7 @@ export default function ShipmentsFiltersBar({
             </Box>
           </Box>
 
-          {/* Row 2: all draft filters are committed only from the apply button. */}
+          {/* Row 2: الفلاتر تُطبَّق تلقائياً — الزر لتفريغ الكتابة المؤجَّلة، وإعادة الضبط تمحو الكل. */}
           <Box sx={{ display: "flex", gap: "8px", justifyContent: "flex-start", direction: "rtl" }}>
             <Button
               size="small"

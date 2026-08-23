@@ -449,10 +449,13 @@ export default function Shipments() {
     setDateParam("scheduledDateFrom", values.scheduledDateFrom);
     setDateParam("scheduledDateTo", values.scheduledDateTo);
     urlParams.set("page", "1");
-    navigate(`?${urlParams.toString()}`);
+    /* الفلاتر تُطبَّق تلقائياً الآن، فلو دفعنا مدخلاً في سجل التنقّل مع كل تغيير
+       لتحوّل زر الرجوع إلى تنقّل بين حالات الفلترة. replace يُبقي السجل نظيفاً
+       ويترك الرابط قابلاً للمشاركة كما هو. */
+    navigate(`?${urlParams.toString()}`, { replace: true });
   }, [navigate]);
 
-  const handleReset = React.useCallback(() => navigate("?"), [navigate]);
+  const handleReset = React.useCallback(() => navigate("?", { replace: true }), [navigate]);
 
   const updatePageParam = React.useCallback((value: number) => {
     const urlParams = new URLSearchParams(window.location.search);

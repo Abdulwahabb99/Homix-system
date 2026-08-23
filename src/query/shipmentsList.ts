@@ -1,5 +1,5 @@
 import moment from "moment";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { shipmentKeys } from "./keys";
 
@@ -124,6 +124,10 @@ export function useShipmentsListQuery(params: ShipmentsListParams, enabled = tru
     queryKey: shipmentKeys.list(JSON.stringify(params)),
     queryFn: () => fetchShipmentsList(params),
     enabled,
+    /* الفلاتر تُطبَّق تلقائياً أثناء الكتابة، فمفتاح الاستعلام يتغيّر كثيراً.
+       بدون هذا يفرغ الجدول ويظهر التحميل مع كل بحث — نُبقي نتيجة الفلترة
+       السابقة معروضة حتى تصل الجديدة (نفس سلوك قائمة الطلبات). */
+    placeholderData: keepPreviousData,
     gcTime: 0,
     refetchOnMount: "always",
     staleTime: 0,
@@ -146,6 +150,8 @@ export function useShipmentsSummaryQuery(params: ShipmentsListParams, enabled = 
     queryKey: shipmentKeys.summary(JSON.stringify(params)),
     queryFn: () => fetchShipmentsSummary(params),
     enabled,
+    // نفس السبب أعلاه — بطاقات الـ KPI لا تختفي أثناء إعادة الجلب.
+    placeholderData: keepPreviousData,
     gcTime: 0,
     refetchOnMount: "always",
     staleTime: 0,
