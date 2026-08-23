@@ -559,9 +559,17 @@ export default function Shipments() {
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
+  /**
+   * نحمل فلاتر القائمة في رابط صفحة التعديل، فتعود صفحة التعديل بها إلى القائمة
+   * بعد الحفظ ويجد المستخدم فلترته وصفحته كما كانت. الرابط هو الناقل (لا حالة
+   * الراوتر) حتى ينجو التمرير من إعادة تحميل الصفحة أو فتحها في تاب جديد.
+   */
   const handleEditShipment = React.useCallback(
-    (shipment: ShipmentItem) => navigate(`/shipments/edit/${shipment.id}`),
-    [navigate]
+    (shipment: ShipmentItem) => {
+      const query = searchParams.toString();
+      navigate(`/shipments/edit/${shipment.id}${query ? `?${query}` : ""}`);
+    },
+    [navigate, searchParams]
   );
   const handleDeleteShipment = React.useCallback((shipment: ShipmentItem) => {
     setSelectedShipment(shipment);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import moment from "moment";
 import {
   Box,
@@ -126,6 +126,8 @@ export default function ShipmentEdit() {
   const { id } = useParams();
   const shipmentId = id ?? "";
   const navigate = useNavigate();
+  /** فلاتر القائمة تُمرَّر في رابط هذه الصفحة، ومنه نبنيه رابط العودة. */
+  const location = useLocation();
 
   const { data, isLoading, isError } = useShipmentDetailQuery(shipmentId);
   const { data: meta } = useShipmentsMetaQuery();
@@ -274,8 +276,12 @@ export default function ShipmentEdit() {
   }
 
   const goBack = () => navigate(`/shipments/${shipmentId}`);
-  /** سهم الرجوع وحفظ التعديلات يعودان لقائمة الشحنات، لا لصفحة تفاصيل الشحنة. */
-  const goToShipmentsList = () => navigate("/shipments");
+  /**
+   * سهم الرجوع وحفظ التعديلات يعودان لقائمة الشحنات، لا لصفحة تفاصيل الشحنة.
+   * نُعيد معها نفس فلاتر الرابط التي وصلت من القائمة، فلا يفقد المستخدم فلترته.
+   */
+  const shipmentsListUrl = `/shipments${location.search}`;
+  const goToShipmentsList = () => navigate(shipmentsListUrl);
 
   const handleSave = () => {
     if (updateMutation.isPending || !shipmentId) return;
@@ -289,7 +295,7 @@ export default function ShipmentEdit() {
   // --- header (breadcrumb + cancel/save actions) ---
   const breadcrumb = (
     <Box sx={{ display: "flex", alignItems: "center", gap: "6px", fontFamily: FONT, fontSize: "12.5px", color: HX.tx3, flexWrap: "wrap" }}>
-      <Box component="span" onClick={() => navigate("/shipments")} sx={{ cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>الشحنات</Box>
+      <Box component="span" onClick={goToShipmentsList} sx={{ cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>الشحنات</Box>
       <Box component="span" sx={{ color: HX.tx3 }}>/</Box>
       <Box component="span" onClick={goBack} sx={{ cursor: "pointer", color: HX.tx2, "&:hover": { color: HX.accent } }}>{shipNumber || "تفاصيل الشحنة"}</Box>
       <Box component="span" sx={{ color: HX.tx3 }}>/</Box>
