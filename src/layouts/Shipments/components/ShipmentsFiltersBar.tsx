@@ -25,6 +25,32 @@ const TEXT_FIELDS = [
   "vendorName",
 ] as const;
 
+/** حقول القوائم المتعددة — تُجمَّع كمسوّدة وتُطبَّق عند إغلاق القائمة فقط. */
+const SELECT_FIELDS = [
+  "shipmentStatus",
+  "paymentStatus",
+  "shipmentType",
+  "shippingCompany",
+  "scheduleStatus",
+  "governorate",
+] as const;
+
+/**
+ * بصمة اختيارات القوائم للمقارنة. نرتّب المعرّفات لأن ترتيب الاختيار قد يختلف
+ * ("2,1" مقابل "1,2") فلا نُطلق طلباً لاختيار لم يتغيّر فعلياً.
+ */
+function selectFingerprint(values: FilterValues): string {
+  return JSON.stringify(
+    SELECT_FIELDS.map((field) =>
+      String(values[field] ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .sort()
+    )
+  );
+}
+
 export interface FilterValues {
   operationCode: string;
   orderNumber: string;
@@ -136,11 +162,14 @@ function FilterSelect({
   value,
   options,
   onChange,
+  onClose,
 }: {
   label: string;
   value: string;
   options: { label: string; value: string | number }[];
   onChange: (v: string) => void;
+  /** يُطلق عند إغلاق القائمة — لحظة تطبيق الاختيار على الخادم. */
+  onClose?: () => void;
 }) {
   const normalizedOptions = options.map((option) => ({
     label: option.label,
@@ -153,6 +182,7 @@ function FilterSelect({
       <MultiSelect<string>
         value={selectedValues}
         onChange={(next) => onChange(next.join(","))}
+        onClose={onClose}
         options={normalizedOptions}
         placeholder="الكل"
       />
@@ -173,6 +203,13 @@ export default function ShipmentsFiltersBar({
   /** حاوية الشريط — نستخدمها لمعرفة إن كان المستخدم يكتب داخله الآن. */
   const barRef = useRef<HTMLDivElement | null>(null);
   const textTimerRef = useRef<number | undefined>(undefined);
+  /**
+   * مرآة فورية لأحدث مسوّدة. لا نقرأ `vals` مباشرة في onClose لأن الاختيار
+   * الأخير وإغلاق القائمة قد يقعا في نفس دفعة React، فتكون قيمة الإغلاق متأخّرة
+   * باختيار واحد. الـ ref يُحدَّث لحظة الاختيار فيقرأ الإغلاق الصورة الصحيحة.
+   */
+  const valsRef = useRef<FilterValues>(vals);
+  valsRef.current = vals;
 
   useEffect(() => () => window.clearTimeout(textTimerRef.current), []);
 
@@ -205,16 +242,28 @@ export default function ShipmentsFiltersBar({
     });
   }, [defKey]);
 
-  /** القوائم والتواريخ: تطبيق فوري — تغيير واحد مقصود من المستخدم. */
+  /**
+   * القوائم المتعددة: الاختيار يُخزَّن كمسوّدة فقط. المستخدم قد يختار عدّة قيم من
+   * نفس القائمة، فإطلاق طلب مع كل كليك يعني طلبات مهدورة ونتائج وسيطة. نطبّق مرّة
+   * واحدة عند إغلاق القائمة (handleDropdownClose) — نفس سلوك صفحة الطلبات.
+   */
   const setSelect = (field: keyof FilterValues) => (v: any) => {
-    const next = { ...vals, [field]: v };
+    const next = { ...valsRef.current, [field]: v };
+    valsRef.current = next;
     setVals(next);
-    commit(next);
+  };
+
+  /** عند إغلاق أي قائمة: طبّق لو الاختيار اتغيّر فعلاً، وتجاهل الفتح/الإغلاق العابر. */
+  const handleDropdownClose = () => {
+    const current = valsRef.current;
+    if (selectFingerprint(current) === selectFingerprint(defaultValues)) return;
+    commit(current);
   };
 
   /** الكتابة: تطبيق مؤجَّل حتى يتوقّف المستخدم، فلا نطلق طلباً لكل حرف. */
   const setText = (field: keyof FilterValues) => (v: any) => {
-    const next = { ...vals, [field]: v };
+    const next = { ...valsRef.current, [field]: v };
+    valsRef.current = next;
     setVals(next);
     window.clearTimeout(textTimerRef.current);
     textTimerRef.current = window.setTimeout(
@@ -224,7 +273,8 @@ export default function ShipmentsFiltersBar({
   };
 
   const applyDates = (patch: Partial<FilterValues>) => {
-    const next = { ...vals, ...patch };
+    const next = { ...valsRef.current, ...patch };
+    valsRef.current = next;
     setVals(next);
     commit(next);
   };
@@ -372,6 +422,7 @@ export default function ShipmentsFiltersBar({
               value={vals.shipmentStatus}
               options={shipmentStatuses}
               onChange={setSelect("shipmentStatus")}
+              onClose={handleDropdownClose}
             />
 
             <FilterSelect
@@ -379,6 +430,7 @@ export default function ShipmentsFiltersBar({
               value={vals.paymentStatus}
               options={paymentStatuses}
               onChange={setSelect("paymentStatus")}
+              onClose={handleDropdownClose}
             />
 
             {!isVendor && (
@@ -387,6 +439,7 @@ export default function ShipmentsFiltersBar({
                 value={vals.shipmentType}
                 options={shipmentTypes}
                 onChange={setSelect("shipmentType")}
+                onClose={handleDropdownClose}
               />
             )}
 
@@ -394,6 +447,7 @@ export default function ShipmentsFiltersBar({
               <ShippingCompanySelect
                 value={vals.shippingCompany}
                 onChange={setSelect("shippingCompany")}
+                onClose={handleDropdownClose}
                 multiple
                 label={null}
                 placeholder="الكل"
@@ -425,6 +479,7 @@ export default function ShipmentsFiltersBar({
               value={vals.scheduleStatus}
               options={scheduleStatuses}
               onChange={setSelect("scheduleStatus")}
+              onClose={handleDropdownClose}
             />
 
             <FilterSelect
@@ -432,6 +487,7 @@ export default function ShipmentsFiltersBar({
               value={vals.governorate}
               options={governorates}
               onChange={setSelect("governorate")}
+              onClose={handleDropdownClose}
             />
           </Box>
 

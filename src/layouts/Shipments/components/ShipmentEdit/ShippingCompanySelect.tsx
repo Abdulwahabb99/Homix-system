@@ -40,6 +40,11 @@ type Props = {
   label?: string | null;
   /** نص بديل يظهر حين لا يوجد اختيار (مثل «الكل» في الفلاتر). */
   placeholder?: string;
+  /**
+   * يُطلق عند إغلاق القائمة. مع multiple تبقى القائمة مفتوحة أثناء الاختيار
+   * (disableCloseOnSelect)، فهذه هي اللحظة التي انتهى فيها المستخدم من الاختيار.
+   */
+  onClose?: () => void;
   /** أنماط إضافية تُدمج فوق المظهر الافتراضي (مثلاً لتصغير الارتفاع داخل الفلاتر) */
   sx?: SxProps<Theme>;
 };
@@ -73,6 +78,7 @@ export default function ShippingCompanySelect({
   multiple = false,
   label = "شركة الشحن",
   placeholder,
+  onClose,
   sx,
 }: Props) {
   const { data: companies = [], isLoading } = useShippingCompaniesQuery();
@@ -169,6 +175,7 @@ export default function ShippingCompanySelect({
         loading={isLoading}
         multiple={multiple}
         disableCloseOnSelect={multiple}
+        onClose={onClose}
         options={companies}
         value={multiple ? selectedOptions : selected}
         getOptionLabel={(o) => o?.name ?? ""}
