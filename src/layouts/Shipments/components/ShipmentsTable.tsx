@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Checkbox } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import moment from "moment";
 import EditIcon from "@mui/icons-material/Edit";
@@ -115,7 +114,6 @@ export default function ShipmentsTable({
   onToggleSelect,
   onToggleAll,
 }: ShipmentsTableProps) {
-  const navigate = useNavigate();
   const canSelect = !isVendor && Boolean(onToggleSelect) && Boolean(onToggleAll);
   const isAllSelected = canSelect && shipments.length > 0 && shipments.every((s) => selectionModel.includes(s.id));
   const isIndeterminate = canSelect && !isAllSelected && shipments.some((s) => selectionModel.includes(s.id));
@@ -219,14 +217,19 @@ export default function ShipmentsTable({
 
                 {/* رقم الشحنة */}
                 <td style={TD}>
+                  {/* رابط حقيقي بـ target="_blank" لا زر بـ navigate: تفاصيل الشحنة
+                      تُفتح في تاب جديد فلا يفقد المستخدم فلاتره وموضعه في القائمة،
+                      ويعمل معه الضغط بالزر الأوسط و«فتح في نافذة جديدة» طبيعياً. */}
                   <Box
-                    component="button"
-                    type="button"
-                    onClick={() => navigate(`/shipments/${s.id}`)}
+                    component="a"
+                    href={`/shipments/${s.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     sx={{
                       border: "none", background: "none", p: 0, cursor: "pointer",
                       fontFamily: FONT, fontSize: "12px", fontWeight: 700, color: HX.accent,
                       display: "inline-flex", alignItems: "center", gap: "3px",
+                      textDecoration: "none",
                       "&:hover": { textDecoration: "underline" },
                     }}
                   >
