@@ -38,6 +38,9 @@
 .invMeta { text-align: left; }
 .invType { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 5px; }
 .invNumber { font-size: 22px; font-weight: 900; color: #1e4d7b; letter-spacing: -.5px; margin-bottom: 9px; }
+/* السلسلة تبدأ بـ "#" وتحتوي حروفًا/أرقامًا لاتينية — بلا هذا العزل يقلب bidi موضع الـ "#"
+   داخل حاوية RTL (شوهد فعليًا: "V212829-08-C2#" بدل "#V212829-08-C2"). */
+.ltr { direction: ltr; unicode-bidi: embed; }
 .invBadge { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: 10.5px; font-weight: 600; background: #f0f7ff; color: #0b3954; border: 0.5px solid #cce0ef; margin-bottom: 9px; }
 .invDates { font-size: 11px; color: #9ca3af; line-height: 1.8; text-align: left; }
 
