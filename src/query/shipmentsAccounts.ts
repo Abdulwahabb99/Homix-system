@@ -227,6 +227,25 @@ export function useBulkUpdateDeliveryAccountsMutation() {
   });
 }
 
+/** يخفي عدة تسليمات عن تبويب الحسابات فقط — لا يمسّ الطلبات أو الشحنات نفسها في أي مكان آخر. */
+export function useBulkHideDeliveryAccountsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderIds: number[]) => putDeliveryAccountsBulk(orderIds, { hidden: true }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم إخفاء السجلات المحددة من تبويب الحسابات");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء إخفاء السجلات المحددة");
+    },
+  });
+}
+
 /** POST/PUT/DELETE /shipments/accounts/expenses — المصروفات تُدخَل يدوياً. */
 export interface ExpenseMutationPayload {
   accountingDate?: string | null;

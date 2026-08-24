@@ -18,6 +18,7 @@ import {
   useDeliveryAccountsQuery,
   useUpdateDeliveryAccountMutation,
   useHideDeliveryAccountMutation,
+  useBulkHideDeliveryAccountsMutation,
   useDeleteExpenseMutation,
   useExpenseAccountsQuery,
   ACCOUNTS_PAGE_SIZE,
@@ -134,6 +135,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const hideMutation = useHideDeliveryAccountMutation();
+  const bulkHideMutation = useBulkHideDeliveryAccountsMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
@@ -241,6 +243,21 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
             sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
           >
             تعديل المحدد ({selectionModel.length})
+          </Button>
+        )}
+        {selectionModel.length > 0 && (
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={bulkHideMutation.isPending}
+            onClick={() => {
+              if (window.confirm(`إخفاء ${selectionModel.length} سجل من تبويب الحسابات فقط؟ الطلبات والشحنات تظل كما هي في كل مكان آخر.`)) {
+                bulkHideMutation.mutate(selectionModel, { onSuccess: () => setSelectionModel([]) });
+              }
+            }}
+            sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
+          >
+            إخفاء المحدد ({selectionModel.length})
           </Button>
         )}
       </Box>
