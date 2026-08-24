@@ -239,7 +239,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         >
           إعادة ضبط
         </Button>
-        {isAdmin && selectionModel.length > 0 && (
+        {selectionModel.length > 0 && (
           <Button
             variant="contained"
             onClick={() => setIsBulkEditOpen(true)}
@@ -248,7 +248,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
             تعديل المحدد ({selectionModel.length})
           </Button>
         )}
-        {selectionModel.length > 0 && (
+        {isAdmin && selectionModel.length > 0 && (
           <Button
             variant="outlined"
             disabled={bulkHideMutation.isPending}
