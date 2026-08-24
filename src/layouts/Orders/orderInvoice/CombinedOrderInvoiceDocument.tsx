@@ -5,6 +5,7 @@
  * نفس تصميم OrderInvoiceDocument؛ يُلتقط إلى PDF عبر html2pdf بنفس الطريقة.
  */
 import React from "react";
+import { useSelector } from "react-redux";
 import logo from "../../../assets/images/homix.png";
 import { getOrderDetailPaymentLabel } from "../orderDetail/orderDetailPayment";
 import {
@@ -14,6 +15,7 @@ import {
   INVOICE_FOOTER_NOTE,
 } from "./invoiceConstants";
 import styles from "./OrderInvoice.module.css";
+import { shouldHideInvoiceCustomerContact } from "./invoicePrivacy";
 
 function formatDateArabic(value: string | null | undefined): string {
   if (value == null || value === "") return "—";
@@ -61,8 +63,12 @@ function orderRef(order: any): string {
 
 const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: any[] }>(
   ({ orders }, ref) => {
+    const { user } = useSelector((state: any) => state.auth);
     const firstOrder = orders[0] ?? {};
     const customer = firstOrder?.customer;
+    const hideCustomerContact = orders.some((order) =>
+      shouldHideInvoiceCustomerContact(user?.userType, order?.deliveryBy ?? order?.deliveryByLabel)
+    );
 
     // كل بند من كل طلب في جدول واحد، مع الإشارة لرقم الطلب المصدر لكل بند
     const lines = orders.flatMap((order) =>
@@ -132,13 +138,13 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
                 العميل
               </div>
               <div className={styles.addrName}>{getCustomerDisplayName(customer)}</div>
-              {customer?.phoneNumber ? (
+              {!hideCustomerContact && customer?.phoneNumber ? (
                 <div className={styles.addrLine}>
                   <span className={styles.ltr}>{customer.phoneNumber}</span>
                 </div>
               ) : null}
-              {customer?.address ? <div className={styles.addrLine}>{customer.address}</div> : null}
-              {customer?.address2 ? <div className={styles.addrLine}>{customer.address2}</div> : null}
+              {!hideCustomerContact && customer?.address ? <div className={styles.addrLine}>{customer.address}</div> : null}
+              {!hideCustomerContact && customer?.address2 ? <div className={styles.addrLine}>{customer.address2}</div> : null}
             </div>
             <div className={styles.addrCell}>
               <div className={styles.addrCellLabel}>

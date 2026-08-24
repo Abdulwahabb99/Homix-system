@@ -11,6 +11,7 @@ export interface ShipmentInvoiceModel {
   code: string;
   createdAt: string | null;
   customer: { address: string; name: string; phoneNumber: string };
+  deliveryBy: string;
   downPayment: number;
   name: string;
   orderLines: {
@@ -59,6 +60,7 @@ export function buildShipmentInvoiceModel(data: ShipmentDetailData): ShipmentInv
       name: customer.name || shipment.customerName,
       phoneNumber: customer.phoneNumber || shipment.customerPhone,
     },
+    deliveryBy: shipment.deliveryBy,
     downPayment,
     name: shipment.orderNumber,
     orderLines,
