@@ -57,7 +57,6 @@ export default function ComprehensiveTab({
       }
     }, 80);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [printSeller]);
 
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
