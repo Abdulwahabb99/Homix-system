@@ -2,21 +2,28 @@
  * تبويب «تسويات البائع» — التحصيل والمستحق للبائع والغرامات لكل مورّد.
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { money } from "../../utils/calc";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
-import { exportFinancialReport } from "query/financialReport";
+import { exportFinancialReport, type FinancialCycle } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
 import DetailTable from "../DetailTable";
 import { Amount, AmountFine, FineCell, Money, Muted, OpId, PayBadge, ProdCode } from "../SettlementCells";
+import SellerSettlementInvoiceDocument from "../../vendorInvoice/SellerSettlementInvoiceDocument";
 
 const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 40px";
 
-export default function SellerTab({ sellers, billingDay }: { sellers: SettlementSeller[]; billingDay: BillingDay }) {
+export default function SellerTab({
+  sellers, billingDay, cycle,
+}: { sellers: SettlementSeller[]; billingDay: BillingDay; cycle: FinancialCycle | null }) {
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const [printSeller, setPrintSeller] = useState<{ seller: SettlementSeller; totals: SellerTotals } | null>(null);
+  const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
+  const printContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleExport = (vendorId: string) => {
     if (exportingId) return;
@@ -25,6 +32,31 @@ export default function SellerTab({ sellers, billingDay }: { sellers: Settlement
       .catch(() => NotificationMeassage("error", "حدث خطأ أثناء تصدير فاتورة المورّد"))
       .finally(() => setExportingId(null));
   };
+
+  const handlePrintInvoice = (seller: SettlementSeller, totals: SellerTotals) => {
+    if (isPrintingInvoice) return;
+    setIsPrintingInvoice(true);
+    setPrintSeller({ seller, totals });
+  };
+
+  useEffect(() => {
+    if (!printSeller) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        if (!printContainerRef.current) throw new Error("missing invoice element");
+        await downloadOrderInvoicePdf(printContainerRef.current, `فاتورة-تسوية-بائع-${printSeller.seller.name}`);
+        NotificationMeassage("success", "تم تحميل الفاتورة");
+      } catch (e) {
+        console.error(e);
+        NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
+        if (printContainerRef.current) printElementNatively(printContainerRef.current);
+      } finally {
+        setIsPrintingInvoice(false);
+        setPrintSeller(null);
+      }
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [printSeller]);
 
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
     <Amount key="orders">{t.orders} طلبات</Amount>,
@@ -39,6 +71,7 @@ export default function SellerTab({ sellers, billingDay }: { sellers: Settlement
     <>
       <DetailHeaderBar
         title={`تفاصيل تسويات البائع — ${s.name}`}
+        onPrint={() => handlePrintInvoice(s, t)}
         onExport={() => handleExport(s.id)}
         exporting={exportingId === s.id}
       />
@@ -82,18 +115,30 @@ export default function SellerTab({ sellers, billingDay }: { sellers: Settlement
   );
 
   return (
-    <SettlementSection
-      sellers={sellers}
-      gridTemplate={GRID}
-      header={[
-        { label: "" }, { label: "الصانع" },
-        { label: "عدد الطلبات", align: "end" }, { label: "إجمالي التحصيل", align: "end" },
-        { label: "إجمالي شحن البائع", align: "end" },
-        { label: "المستحق للبائع", align: "end" }, { label: "المستحق للشركة", align: "end" },
-        { label: "الغرامات", align: "end" }, { label: "" },
-      ]}
-      renderCells={renderCells}
-      renderDetail={renderDetail}
-    />
+    <>
+      <SettlementSection
+        sellers={sellers}
+        gridTemplate={GRID}
+        header={[
+          { label: "" }, { label: "الصانع" },
+          { label: "عدد الطلبات", align: "end" }, { label: "إجمالي التحصيل", align: "end" },
+          { label: "إجمالي شحن البائع", align: "end" },
+          { label: "المستحق للبائع", align: "end" }, { label: "المستحق للشركة", align: "end" },
+          { label: "الغرامات", align: "end" }, { label: "" },
+        ]}
+        renderCells={renderCells}
+        renderDetail={renderDetail}
+      />
+      {printSeller && (
+        <div style={{ position: "fixed", left: "-10000px", top: 0 }}>
+          <SellerSettlementInvoiceDocument
+            ref={printContainerRef}
+            seller={printSeller.seller}
+            totals={printSeller.totals}
+            cycle={cycle}
+          />
+        </div>
+      )}
+    </>
   );
 }

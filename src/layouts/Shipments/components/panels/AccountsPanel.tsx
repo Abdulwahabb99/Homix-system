@@ -248,14 +248,17 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         {selectionModel.length > 0 && (
           <Button
             variant="outlined"
-            color="error"
             disabled={bulkHideMutation.isPending}
             onClick={() => {
               if (window.confirm(`إخفاء ${selectionModel.length} سجل من تبويب الحسابات فقط؟ الطلبات والشحنات تظل كما هي في كل مكان آخر.`)) {
                 bulkHideMutation.mutate(selectionModel, { onSuccess: () => setSelectionModel([]) });
               }
             }}
-            sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
+            sx={{
+              height: 38, fontFamily: FONT, fontSize: "12px",
+              color: HX.red, borderColor: HX.red,
+              "&:hover": { borderColor: HX.red, bgcolor: HX.redLight },
+            }}
           >
             إخفاء المحدد ({selectionModel.length})
           </Button>

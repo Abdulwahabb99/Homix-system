@@ -108,9 +108,9 @@ export default function Financialreports() {
   } else if (activeSellers.length === 0) {
     tabContent = <Box sx={stateBoxSx}>لا توجد بيانات لهذه الدورة.</Box>;
   } else if (tab === "warehouse") {
-    tabContent = <WarehouseTab sellers={activeSellers} billingDay={billingDay} />;
+    tabContent = <WarehouseTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
   } else if (tab === "seller") {
-    tabContent = <SellerTab sellers={activeSellers} billingDay={billingDay} />;
+    tabContent = <SellerTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
   } else {
     tabContent = <ComprehensiveTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
   }
