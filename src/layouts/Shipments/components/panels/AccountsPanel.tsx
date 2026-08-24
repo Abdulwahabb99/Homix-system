@@ -4,6 +4,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 import { usePermissions } from "shared/permissions";
+import { useSelector } from "react-redux";
 import EditDeliveryAccountModal from "./EditDeliveryAccountModal";
 import BulkEditDeliveryAccountModal from "./BulkEditDeliveryAccountModal";
 import EditExpenseModal from "./EditExpenseModal";
@@ -126,6 +127,8 @@ function ErrorBox({ message }: { message: string }) {
 }
 
 function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
+  const { user } = useSelector((state: any) => state.auth);
+  const isAdmin = user?.userType === "1";
   const [page, setPage] = useState(1);
   const [editItem, setEditItem] = useState<DeliveryAccountItem | null>(null);
   const [filters, setFilters] = useState<DeliveryFilterState>(EMPTY_DELIVERY_FILTERS);
@@ -236,7 +239,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         >
           إعادة ضبط
         </Button>
-        {selectionModel.length > 0 && (
+        {isAdmin && selectionModel.length > 0 && (
           <Button
             variant="contained"
             onClick={() => setIsBulkEditOpen(true)}
@@ -309,7 +312,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
               <th style={TH}>تاريخ المحاسبة</th>
               <th style={TH}>المرجع</th>
               <th style={{ ...TH, width: 48 }}>تعديل</th>
-              <th style={{ ...TH, width: 48 }}>إخفاء</th>
+              {isAdmin && <th style={{ ...TH, width: 48 }}>إخفاء</th>}
             </tr>
           </thead>
           <tbody>
@@ -349,22 +352,24 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                     <EditOutlinedIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                 </td>
-                <td style={TD}>
-                  <IconButton
-                    size="small"
-                    aria-label="إخفاء من تبويب الحسابات"
-                    title="إخفاء من تبويب الحسابات فقط — لا يمسح الطلب أو الشحنة"
-                    disabled={hideMutation.isPending}
-                    onClick={() => {
-                      if (window.confirm("إخفاء هذا السجل من تبويب الحسابات فقط؟ الطلب والشحنة يظلان كما هما في كل مكان آخر.")) {
-                        hideMutation.mutate(item.id);
-                      }
-                    }}
-                    sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
-                  >
-                    <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </td>
+                {isAdmin && (
+                  <td style={TD}>
+                    <IconButton
+                      size="small"
+                      aria-label="إخفاء من تبويب الحسابات"
+                      title="إخفاء من تبويب الحسابات فقط — لا يمسح الطلب أو الشحنة"
+                      disabled={hideMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm("إخفاء هذا السجل من تبويب الحسابات فقط؟ الطلب والشحنة يظلان كما هما في كل مكان آخر.")) {
+                          hideMutation.mutate(item.id);
+                        }
+                      }}
+                      sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
