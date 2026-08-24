@@ -124,6 +124,8 @@ export interface UpdateDeliveryAccountPayload {
   accountingDate?: string | null;
   accountingReference?: string;
   accountingStatus?: number;
+  /** يخفي السجل عن تبويب الحسابات فقط — الطلب/الشحنة نفسها تبقى كما هي في كل مكان آخر. */
+  hidden?: boolean;
 }
 
 export async function putDeliveryAccount(
@@ -148,6 +150,25 @@ export function useUpdateDeliveryAccountMutation() {
     },
     onError: () => {
       NotificationMeassage("error", "حدث خطأ أثناء تحديث حالة المحاسبة");
+    },
+  });
+}
+
+/** يخفي تسليمًا عن تبويب الحسابات فقط — لا يمسّ الطلب أو الشحنة نفسها في أي مكان آخر. */
+export function useHideDeliveryAccountMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: number) => putDeliveryAccount(orderId, { hidden: true }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم إخفاء السجل من تبويب الحسابات");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء إخفاء السجل");
     },
   });
 }

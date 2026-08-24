@@ -17,6 +17,7 @@ import {
   exportExpenseAccounts,
   useDeliveryAccountsQuery,
   useUpdateDeliveryAccountMutation,
+  useHideDeliveryAccountMutation,
   useDeleteExpenseMutation,
   useExpenseAccountsQuery,
   ACCOUNTS_PAGE_SIZE,
@@ -132,6 +133,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
+  const hideMutation = useHideDeliveryAccountMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / ACCOUNTS_PAGE_SIZE);
@@ -287,6 +289,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
               <th style={TH}>تاريخ المحاسبة</th>
               <th style={TH}>المرجع</th>
               <th style={{ ...TH, width: 48 }}>تعديل</th>
+              <th style={{ ...TH, width: 48 }}>إخفاء</th>
             </tr>
           </thead>
           <tbody>
@@ -324,6 +327,22 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                     sx={{ color: HX.tx3, "&:hover": { color: HX.accent } }}
                   >
                     <EditOutlinedIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </td>
+                <td style={TD}>
+                  <IconButton
+                    size="small"
+                    aria-label="إخفاء من تبويب الحسابات"
+                    title="إخفاء من تبويب الحسابات فقط — لا يمسح الطلب أو الشحنة"
+                    disabled={hideMutation.isPending}
+                    onClick={() => {
+                      if (window.confirm("إخفاء هذا السجل من تبويب الحسابات فقط؟ الطلب والشحنة يظلان كما هما في كل مكان آخر.")) {
+                        hideMutation.mutate(item.id);
+                      }
+                    }}
+                    sx={{ color: HX.tx3, "&:hover": { color: HX.red } }}
+                  >
+                    <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                 </td>
               </tr>
