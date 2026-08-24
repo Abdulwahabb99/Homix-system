@@ -1,0 +1,95 @@
+/* فاتورة تسوية المورّد (الفاتورة الشاملة) — تُلتقط إلى PDF عبر html2pdf، لذا لا
+   توجد أنماط طباعة/أدوات هنا (الأزرار تعيش خارج هذا العنصر في ComprehensiveTab). */
+
+.invoiceRoot {
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  direction: rtl;
+  color: #1f2937;
+  font-size: 13px;
+  background: #ffffff;
+}
+.invoiceRoot * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.paper {
+  width: 760px;
+  max-width: 760px;
+  margin: 0 auto;
+  background: #fff;
+  border: 0.5px solid #e9eaec;
+  border-radius: 12px;
+  overflow: hidden;
+  direction: rtl;
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+/* ── HEADER ── */
+.invHeader { padding: 28px 36px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.5px solid #e9eaec; }
+.logoImg { height: 38px; width: auto; display: block; border-radius: 6px; }
+.bankBlock { margin-top: 14px; }
+.bankTitle { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+.bankTable { display: grid; grid-template-columns: auto 1fr; gap: 3px 16px; align-items: center; }
+.bkLbl { font-size: 10.5px; color: #9ca3af; font-weight: 500; }
+.bkVal { font-size: 11.5px; font-weight: 700; color: #374151; font-family: monospace; letter-spacing: .3px; }
+.bkValName { font-family: 'Cairo', 'Noto Sans Arabic', sans-serif; }
+.bkSep { grid-column: 1 / -1; height: 0.5px; background: #f3f4f6; margin: 5px 0; }
+
+.invMeta { text-align: left; }
+.invType { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 5px; }
+.invNumber { font-size: 22px; font-weight: 900; color: #1e4d7b; letter-spacing: -.5px; margin-bottom: 9px; }
+.invBadge { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: 10.5px; font-weight: 600; background: #f0f7ff; color: #0b3954; border: 0.5px solid #cce0ef; margin-bottom: 9px; }
+.invDates { font-size: 11px; color: #9ca3af; line-height: 1.8; text-align: left; }
+
+/* ── PARTIES ── */
+.parties { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 0.5px solid #f0f1f3; }
+.party { padding: 16px 36px; }
+.partyFirst { border-left: 0.5px solid #f0f1f3; }
+.pTag { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+.pName { font-size: 14px; font-weight: 800; color: #1f2937; margin-bottom: 4px; }
+.pLine { font-size: 11.5px; color: #9ca3af; margin-bottom: 2px; line-height: 1.5; }
+.pLineHighlight { color: #0b3954; font-weight: 600; }
+
+/* ── TABLE ── */
+.secTitle { padding: 11px 36px 8px; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c0c4cc; border-bottom: 0.5px solid #f0f1f3; }
+.table { width: 100%; border-collapse: collapse; }
+.theadRow { background: #f9fafb; }
+.th { padding: 9px 14px; font-size: 10px; font-weight: 700; color: #9ca3af; text-align: right; border-bottom: 0.5px solid #f0f1f3; white-space: nowrap; letter-spacing: .3px; }
+.thFirst { padding-right: 36px; }
+.thLast { padding-left: 36px; text-align: left; }
+.c { text-align: center; }
+.td { padding: 11px 14px; border-bottom: 0.5px solid #f7f8f9; font-size: 12.5px; vertical-align: middle; white-space: nowrap; }
+.tdFirst { padding-right: 36px; }
+.tdLast { padding-left: 36px; text-align: left; }
+.rowLast .td { border-bottom: none; }
+.op { color: #0b3954; font-weight: 700; font-size: 12px; font-family: monospace; }
+.onum { color: #c0c4cc; font-size: 12px; }
+.pcode { background: #f4f5f7; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-family: monospace; color: #6b7280; }
+.delChip { display: inline-flex; padding: 2px 9px; border-radius: 4px; font-size: 10.5px; font-weight: 600; }
+.delWh { background: #f0f7ff; color: #0b3954; }
+.delVn { background: #f0fdf4; color: #047857; }
+.dueV { color: #047857; font-weight: 800; }
+.dueH { color: #0b3954; font-weight: 800; }
+.fine { color: #b91c1c; font-weight: 700; }
+.dash { color: #e5e7eb; }
+
+/* ── TOTALS ── */
+.totalsArea { padding: 0 36px 20px; display: flex; justify-content: flex-end; }
+.totalsBox { min-width: 250px; }
+.tRow { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #f3f4f6; }
+.tRowLast { border-bottom: none; }
+.tLbl { font-size: 12px; color: #9ca3af; }
+.tVal { font-size: 12.5px; font-weight: 700; }
+.tValBlue { color: #0b3954; }
+.tValGreen { color: #047857; }
+.tValRed { color: #b91c1c; }
+.tFinal { background: #f0f7ff; border: 0.5px solid #cce0ef; border-radius: 9px; padding: 13px 15px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }
+.tfLabel { font-size: 12.5px; font-weight: 700; color: #1f2937; }
+.tfSub { font-size: 10.5px; color: #9ca3af; margin-top: 2px; }
+.tfVal { font-size: 20px; font-weight: 900; color: #0b3954; }
+
+/* ── FOOTER ── */
+.invFooter { padding: 13px 36px; display: flex; align-items: center; justify-content: space-between; border-top: 0.5px solid #f0f1f3; }
+.footL { font-size: 11.5px; color: #9ca3af; }
+.footLStrong { color: #0b3954; }
+.footR { font-size: 10.5px; color: #c0c4cc; }

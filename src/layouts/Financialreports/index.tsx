@@ -112,7 +112,7 @@ export default function Financialreports() {
   } else if (tab === "seller") {
     tabContent = <SellerTab sellers={activeSellers} billingDay={billingDay} />;
   } else {
-    tabContent = <ComprehensiveTab sellers={activeSellers} billingDay={billingDay} />;
+    tabContent = <ComprehensiveTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
   }
 
   return (
