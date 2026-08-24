@@ -15,6 +15,7 @@ const FONT = "'Cairo', sans-serif";
 
 /** نفس منطق صفحة الطلبات: القوائم تُطبَّق فوراً، والكتابة تُطبَّق بعد 500ms من التوقّف. */
 const SEARCH_DEBOUNCE_MS = 500;
+const BLANK_FILTER_OPTION = { value: "__blank__", label: "فارغ / غير محدد" } as const;
 
 /** حقول البحث النصية — تُؤجَّل، ولا تُستبدل من الرابط أثناء الكتابة فيها. */
 const TEXT_FIELDS = [
@@ -314,8 +315,8 @@ export default function ShipmentsFiltersBar({
     { value: 1, label: "الدفع عند الاستلام" },
     { value: 2, label: "مدفوع" },
   ];
-  const scheduleStatuses  = meta?.scheduleStatuses  ?? [];
-  const governorates      = meta?.governorates      ?? [];
+  const scheduleStatuses  = [BLANK_FILTER_OPTION, ...(meta?.scheduleStatuses ?? [])];
+  const governorates      = [BLANK_FILTER_OPTION, ...(meta?.governorates ?? [])];
 
   const selectedCount = (value: string) => value
     .split(",")
