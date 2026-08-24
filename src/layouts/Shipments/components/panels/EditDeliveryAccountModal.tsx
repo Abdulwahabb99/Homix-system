@@ -22,20 +22,10 @@ import {
   type DeliveryAccountItem,
 } from "query/shipmentsAccounts";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
-
-/** يحوّل مسار مرفوع نسبيًا ("uploads/...") إلى رابط قابل للفتح؛ يترك الروابط المطلقة كما هي. */
-function attachmentOpenHref(value: string | undefined | null): string | undefined {
-  if (!value?.trim()) return undefined;
-  const v = value.trim();
-  if (/^https?:\/\//i.test(v)) return v;
-  const base = String(process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
-  return base ? `${base}/${v.replace(/^\//, "")}` : v;
-}
-
-/** المراجع القديمة كانت نصًا حرًا؛ المرفقات المرفوعة حديثًا مساراتها تبدأ بـ uploads/. */
-function isUploadedAttachment(value: string | undefined | null): boolean {
-  return Boolean(value?.trim().startsWith("uploads/"));
-}
+import {
+  deliveryAccountReferenceHref,
+  isDeliveryAccountAttachment,
+} from "./deliveryAccountReference";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -152,11 +142,11 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: "8px", mb: 1 }}>
           {reference ? (
-            isUploadedAttachment(reference) ? (
+            isDeliveryAccountAttachment(reference) ? (
               <Button
                 size="small"
                 variant="outlined"
-                href={attachmentOpenHref(reference)}
+                href={deliveryAccountReferenceHref(reference)}
                 target="_blank"
                 rel="noopener noreferrer"
                 sx={{ fontFamily: FONT, fontSize: "11.5px", textTransform: "none" }}

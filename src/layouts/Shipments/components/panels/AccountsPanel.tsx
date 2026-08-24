@@ -14,6 +14,10 @@ import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import {
+  deliveryAccountReferenceHref,
+  isDeliveryAccountAttachment,
+} from "./deliveryAccountReference";
+import {
   exportDeliveryAccounts,
   exportExpenseAccounts,
   useDeliveryAccountsQuery,
@@ -78,6 +82,39 @@ function StatusBadge({ label }: { label: string }) {
       bgcolor: HX.blueLight, color: HX.blue,
     }}>
       {label || "—"}
+    </Box>
+  );
+}
+
+function ReferenceCell({ reference }: { reference: string | null }) {
+  if (!reference) return <Box component="span" sx={{ color: HX.tx3 }}>—</Box>;
+
+  if (!isDeliveryAccountAttachment(reference)) {
+    return <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{reference}</Box>;
+  }
+
+  return (
+    <Box
+      component="a"
+      href={deliveryAccountReferenceHref(reference)}
+      download
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="تحميل مرفق المرجع"
+      title="تحميل مرفق المرجع"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        fontFamily: FONT,
+        fontSize: "11.5px",
+        fontWeight: 800,
+        color: HX.accent,
+        textDecoration: "underline",
+        textUnderlineOffset: "3px",
+        "&:hover": { color: HX.blue },
+      }}
+    >
+      REF
     </Box>
   );
 }
@@ -341,7 +378,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.receivedAmount} /></td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
-                <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{item.reference || "—"}</Box></td>
+                <td style={TD}><ReferenceCell reference={item.reference} /></td>
                 <td style={TD}>
                   <IconButton
                     size="small"
