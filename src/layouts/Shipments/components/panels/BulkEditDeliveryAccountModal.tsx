@@ -53,13 +53,15 @@ export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, 
   const handleSave = () => {
     if (accountingStatus === "") return;
 
+    const body = {
+      accountingReference: accountingReference.trim(),
+      accountingStatus: Number(accountingStatus),
+      ...(accountingDate ? { accountingDate: new Date(accountingDate).toISOString() } : {}),
+    };
+
     bulkUpdateMutation.mutate(
       {
-        body: {
-          accountingDate: accountingDate ? new Date(accountingDate).toISOString() : null,
-          accountingReference: accountingReference.trim(),
-          accountingStatus: Number(accountingStatus),
-        },
+        body,
         orderIds,
       },
       { onSuccess: handleClose }
@@ -99,12 +101,13 @@ export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, 
         </TextField>
 
         <TextField
-          label="تاريخ المحاسبة"
+          label="تاريخ المحاسبة (اختياري)"
           type="date"
           size="small"
           fullWidth
           value={accountingDate}
           onChange={(e) => setAccountingDate(e.target.value)}
+          helperText="اتركه فارغًا لاستخدام تاريخ التحويل تلقائيًا"
           InputLabelProps={{ shrink: true }}
           sx={{ ...fieldSx, mb: 2 }}
         />

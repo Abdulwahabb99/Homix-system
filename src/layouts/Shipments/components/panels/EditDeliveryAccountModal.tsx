@@ -72,13 +72,19 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
       return;
     }
 
+    const body = { accountingStatus: Number(accountingStatus) } as {
+      accountingDate?: string | null;
+      accountingStatus: number;
+    };
+    const initialAccountingDate = toYmd(item.accountingDate);
+    if (accountingDate !== initialAccountingDate) {
+      body.accountingDate = accountingDate ? new Date(accountingDate).toISOString() : null;
+    }
+
     updateMutation.mutate(
       {
         orderId: item.id,
-        body: {
-          accountingDate: accountingDate ? new Date(accountingDate).toISOString() : null,
-          accountingStatus: Number(accountingStatus),
-        },
+        body,
       },
       { onSuccess: onClose }
     );
@@ -133,6 +139,7 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
           fullWidth
           value={accountingDate}
           onChange={(e) => setAccountingDate(e.target.value)}
+          helperText="يُسجَّل تلقائيًا عند التحويل إلى تمت التصفية، ويمكن تعديله يدويًا"
           InputLabelProps={{ shrink: true }}
           sx={{ ...fieldSx, mb: 2 }}
         />

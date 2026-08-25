@@ -5,6 +5,7 @@ import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { shipmentKeys } from "./keys";
 
 export interface ReturnItem {
+  /** المرتجع هو طلب بحالة شحن مرتجع، لذلك هذا هو order.id دائمًا. */
   id: number;
   daysCounter: number;
   operationNumber: string;
@@ -29,6 +30,15 @@ export interface ReturnsListResponse {
 }
 
 export const RETURNS_PAGE_SIZE = 20;
+
+function getReturnUpdateErrorMessage(error: unknown): string {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (data && typeof data === "object" && "message" in data) {
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return "حدث خطأ أثناء تحديث المرتجع";
+}
 
 export interface ReturnsParams {
   page: number;
@@ -100,7 +110,7 @@ export function useCustomerReturnsQuery(params: ReturnsParams, enabled = true) {
   });
 }
 
-/** PUT /shipments/returns/customer/{returnId} — تحديث مرتجع العميل. */
+/** PUT /shipments/returns/customer/{orderId} — تحديث الطلب المرتجع من العميل. */
 export interface UpdateCustomerReturnPayload {
   orderId?: number;
   reason?: string;
@@ -131,13 +141,13 @@ export function useUpdateCustomerReturnMutation() {
       ]);
       NotificationMeassage("success", "تم تحديث حالة المرتجع");
     },
-    onError: () => {
-      NotificationMeassage("error", "حدث خطأ أثناء تحديث المرتجع");
+    onError: (error) => {
+      NotificationMeassage("error", getReturnUpdateErrorMessage(error));
     },
   });
 }
 
-/** PUT /shipments/returns/vendor/{returnId} — تحديث مرتجع المورد (نفس شكل جسم مرتجع العميل). */
+/** PUT /shipments/returns/vendor/{orderId} — تحديث الطلب المرتجع للمورد. */
 export type UpdateVendorReturnPayload = UpdateCustomerReturnPayload;
 
 export async function putVendorReturn(
@@ -160,8 +170,8 @@ export function useUpdateVendorReturnMutation() {
       ]);
       NotificationMeassage("success", "تم تحديث حالة المرتجع");
     },
-    onError: () => {
-      NotificationMeassage("error", "حدث خطأ أثناء تحديث المرتجع");
+    onError: (error) => {
+      NotificationMeassage("error", getReturnUpdateErrorMessage(error));
     },
   });
 }
