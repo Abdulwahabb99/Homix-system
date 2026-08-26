@@ -153,6 +153,7 @@ export default function ShipmentEdit() {
   const [paymentStatus, setPaymentStatus] = useState<number | "">("");
   const [downPayment, setDownPayment] = useState("");
   const [receivedAmount, setReceivedAmount] = useState("");
+  const [receivedAmountTouched, setReceivedAmountTouched] = useState(false);
   const [toBeCollected, setToBeCollected] = useState("");
 
   const [notes, setNotes] = useState("");
@@ -221,6 +222,7 @@ export default function ShipmentEdit() {
     );
     setDownPayment(financial?.downPayment != null ? String(financial.downPayment) : "0");
     setReceivedAmount(financial?.receivedAmount != null ? String(financial.receivedAmount) : "0");
+    setReceivedAmountTouched(false);
   }, [data?.shipment?.id]);
 
   const shipNumber = useMemo(() => {
@@ -263,7 +265,10 @@ export default function ShipmentEdit() {
     if (downPayment.trim() !== "" && Number.isFinite(Number(downPayment))) {
       body.downPayment = Number(downPayment);
     }
-    if (receivedAmount.trim() !== "" && Number.isFinite(Number(receivedAmount))) {
+    /* Only send this field after the user interacts with it. Its initial zero
+       means "not set yet"; an explicitly re-entered zero means "received 0"
+       and the backend records that distinction with receivedAmountManuallySet. */
+    if (receivedAmountTouched && receivedAmount.trim() !== "" && Number.isFinite(Number(receivedAmount))) {
       body.receivedAmount = Number(receivedAmount);
     }
     if (toBeCollected.trim() !== "" && Number.isFinite(Number(toBeCollected))) {
@@ -506,7 +511,17 @@ export default function ShipmentEdit() {
               <TextField {...fieldBaseProps} type="number" label="الدفعة المقدمة" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} inputProps={{ min: 0 }} />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField {...fieldBaseProps} type="number" label="المبلغ المستلم" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} inputProps={{ min: 0 }} />
+              <TextField
+                {...fieldBaseProps}
+                type="number"
+                label="المبلغ المستلم"
+                value={receivedAmount}
+                onChange={(e) => {
+                  setReceivedAmount(e.target.value);
+                  setReceivedAmountTouched(true);
+                }}
+                inputProps={{ min: 0 }}
+              />
             </Grid>
           </Grid>
         </DetailCard>
