@@ -57,10 +57,10 @@
 .pLineHighlight { color: #0b3954; font-weight: 600; }
 
 /* ── TABLE ── */
-.secTitle { padding: 11px 36px 8px; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c0c4cc; border-bottom: 0.5px solid #f0f1f3; }
+.secTitle { padding: 11px 36px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #c0c4cc; border-bottom: 0.5px solid #f0f1f3; }
 .table { width: 100%; border-collapse: collapse; }
 .theadRow { background: #f9fafb; }
-.th { padding: 9px 14px; font-size: 10px; font-weight: 700; color: #9ca3af; text-align: right; border-bottom: 0.5px solid #f0f1f3; white-space: nowrap; letter-spacing: .3px; }
+.th { padding: 9px 14px; font-size: 10px; font-weight: 700; color: #9ca3af; text-align: right; border-bottom: 0.5px solid #f0f1f3; white-space: nowrap; }
 .thFirst { padding-right: 36px; }
 .thLast { padding-left: 36px; text-align: left; }
 .c { text-align: center; }
