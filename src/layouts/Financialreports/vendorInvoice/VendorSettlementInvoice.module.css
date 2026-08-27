@@ -24,20 +24,23 @@
   font-size: 13px;
 }
 
-/* ── HEADER ── */
+/* ── HEADER ──
+   بدون letter-spacing في كل هذا الملف: html2canvas يرسم الحروف العربية منفصلة
+   ومقلوبة الترتيب عند وجود أي letter-spacing (شوهد فعليًا: "رقم"→"قم"،
+   "البائع"→"لبائع") — نفس السبب اللي اتصلّح بيه OrderInvoice.module.css. */
 .invHeader { padding: 28px 36px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.5px solid #e9eaec; }
 .logoImg { height: 38px; width: auto; display: block; border-radius: 6px; }
 .bankBlock { margin-top: 14px; }
-.bankTitle { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+.bankTitle { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
 .bankTable { display: grid; grid-template-columns: auto 1fr; gap: 3px 16px; align-items: center; }
 .bkLbl { font-size: 10.5px; color: #9ca3af; font-weight: 500; }
-.bkVal { font-size: 11.5px; font-weight: 700; color: #374151; font-family: monospace; letter-spacing: .3px; }
+.bkVal { font-size: 11.5px; font-weight: 700; color: #374151; font-family: monospace; }
 .bkValName { font-family: 'Cairo', 'Noto Sans Arabic', sans-serif; }
 .bkSep { grid-column: 1 / -1; height: 0.5px; background: #f3f4f6; margin: 5px 0; }
 
 .invMeta { text-align: left; }
-.invType { font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; margin-bottom: 5px; }
-.invNumber { font-size: 22px; font-weight: 900; color: #1e4d7b; letter-spacing: -.5px; margin-bottom: 9px; }
+.invType { font-size: 9px; font-weight: 600; text-transform: uppercase; color: #9ca3af; margin-bottom: 5px; }
+.invNumber { font-size: 22px; font-weight: 900; color: #1e4d7b; margin-bottom: 9px; }
 /* السلسلة تبدأ بـ "#" وتحتوي حروفًا/أرقامًا لاتينية — بلا هذا العزل يقلب bidi موضع الـ "#"
    داخل حاوية RTL (شوهد فعليًا: "V212829-08-C2#" بدل "#V212829-08-C2"). */
 .ltr { direction: ltr; unicode-bidi: embed; }
@@ -48,7 +51,7 @@
 .parties { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 0.5px solid #f0f1f3; }
 .party { padding: 16px 36px; }
 .partyFirst { border-left: 0.5px solid #f0f1f3; }
-.pTag { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+.pTag { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
 .pName { font-size: 14px; font-weight: 800; color: #1f2937; margin-bottom: 4px; }
 .pLine { font-size: 11.5px; color: #9ca3af; margin-bottom: 2px; line-height: 1.5; }
 .pLineHighlight { color: #0b3954; font-weight: 600; }
