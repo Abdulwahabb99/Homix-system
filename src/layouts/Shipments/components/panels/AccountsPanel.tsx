@@ -276,7 +276,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         >
           إعادة ضبط
         </Button>
-        {selectionModel.length > 0 && (
+        {isAdmin && selectionModel.length > 0 && (
           <Button
             variant="contained"
             onClick={() => setIsBulkEditOpen(true)}
@@ -317,6 +317,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
         onClose={() => setEditItem(null)}
         item={editItem}
         statusOptions={meta?.accountingStatuses ?? []}
+        isAdmin={isAdmin}
       />
 
       {isLoading ? (

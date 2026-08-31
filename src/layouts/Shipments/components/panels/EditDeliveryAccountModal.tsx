@@ -35,23 +35,17 @@ const fieldSx = {
   "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "12px" },
 } as const;
 
-/** "2026-04-14T..." -> "2026-04-14" لحقل التاريخ */
-function toYmd(value: string | null | undefined): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
-}
-
 interface Props {
   open: boolean;
   onClose: () => void;
   item: DeliveryAccountItem | null;
   statusOptions: ShipmentsMetaOption[];
+  /** تغيير حالة المحاسبة مقصور على الأدمن — الباقي (المرجع) متاح للجميع. */
+  isAdmin: boolean;
 }
 
-export default function EditDeliveryAccountModal({ open, onClose, item, statusOptions }: Props) {
+export default function EditDeliveryAccountModal({ open, onClose, item, statusOptions, isAdmin }: Props) {
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
-  const [accountingDate, setAccountingDate] = useState("");
   const [reference, setReference] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -61,9 +55,12 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
   useEffect(() => {
     if (!open || !item) return;
     setAccountingStatus(item.accountingStatus ?? "");
-    setAccountingDate(toYmd(item.accountingDate));
     setReference(item.reference ?? "");
   }, [open, item]);
+
+  const currentStatusLabel = statusOptions.find((o) => Number(o.value) === Number(accountingStatus))?.label
+    ?? item?.accountingStatusLabel
+    ?? "—";
 
   const handleSave = () => {
     if (!item) return;
@@ -72,20 +69,9 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
       return;
     }
 
-    const body = { accountingStatus: Number(accountingStatus) } as {
-      accountingDate?: string | null;
-      accountingStatus: number;
-    };
-    const initialAccountingDate = toYmd(item.accountingDate);
-    if (accountingDate !== initialAccountingDate) {
-      body.accountingDate = accountingDate ? new Date(accountingDate).toISOString() : null;
-    }
-
+    // تاريخ المحاسبة بيتحدد أوتوماتيك مع تغيير الحالة في الباك إند — مفيش إدخال يدوي له.
     updateMutation.mutate(
-      {
-        orderId: item.id,
-        body,
-      },
+      { orderId: item.id, body: { accountingStatus: Number(accountingStatus) } },
       { onSuccess: onClose }
     );
   };
@@ -116,33 +102,36 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
           طلب #{item?.orderNumber} · عملية {item?.operationNumber}
         </Typography>
 
-        <TextField
-          select
-          label="حالة المحاسبة"
-          size="small"
-          fullWidth
-          value={accountingStatus}
-          onChange={(e) => setAccountingStatus(Number(e.target.value))}
-          sx={{ ...fieldSx, mb: 2 }}
-        >
-          {statusOptions.map((option) => (
-            <MenuItem key={option.value} value={Number(option.value)} sx={{ fontSize: "12px" }}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          label="تاريخ المحاسبة"
-          type="date"
-          size="small"
-          fullWidth
-          value={accountingDate}
-          onChange={(e) => setAccountingDate(e.target.value)}
-          helperText="يُسجَّل تلقائيًا عند التحويل إلى تمت التصفية، ويمكن تعديله يدويًا"
-          InputLabelProps={{ shrink: true }}
-          sx={{ ...fieldSx, mb: 2 }}
-        />
+        {isAdmin ? (
+          <TextField
+            select
+            label="حالة المحاسبة"
+            size="small"
+            fullWidth
+            value={accountingStatus}
+            onChange={(e) => setAccountingStatus(Number(e.target.value))}
+            helperText="تاريخ المحاسبة يُسجَّل أوتوماتيك مع تغيير الحالة"
+            sx={{ ...fieldSx, mb: 2 }}
+          >
+            {statusOptions.map((option) => (
+              <MenuItem key={option.value} value={Number(option.value)} sx={{ fontSize: "12px" }}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary", mb: "4px" }}>
+              حالة المحاسبة
+            </Typography>
+            <Typography sx={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700 }}>
+              {currentStatusLabel}
+            </Typography>
+            <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: "text.disabled", mt: "2px" }}>
+              تغيير الحالة متاح للأدمن فقط
+            </Typography>
+          </Box>
+        )}
 
         <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary", mb: "6px" }}>
           المرجع
@@ -191,16 +180,18 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={updateMutation.isPending}>
-          إلغاء
+          {isAdmin ? "إلغاء" : "إغلاق"}
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={updateMutation.isPending}
-          sx={{ color: "#fff" }}
-        >
-          {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+            sx={{ color: "#fff" }}
+          >
+            {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

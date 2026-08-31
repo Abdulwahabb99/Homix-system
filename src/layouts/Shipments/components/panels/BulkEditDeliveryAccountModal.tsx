@@ -34,14 +34,12 @@ interface Props {
 
 export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, statusOptions }: Props) {
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
-  const [accountingDate, setAccountingDate] = useState("");
   const [accountingReference, setAccountingReference] = useState("");
 
   const bulkUpdateMutation = useBulkUpdateDeliveryAccountsMutation();
 
   const reset = () => {
     setAccountingStatus("");
-    setAccountingDate("");
     setAccountingReference("");
   };
 
@@ -53,10 +51,10 @@ export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, 
   const handleSave = () => {
     if (accountingStatus === "") return;
 
+    // تاريخ المحاسبة بيتحدد أوتوماتيك مع تغيير الحالة في الباك إند — مفيش إدخال يدوي له.
     const body = {
       accountingReference: accountingReference.trim(),
       accountingStatus: Number(accountingStatus),
-      ...(accountingDate ? { accountingDate: new Date(accountingDate).toISOString() } : {}),
     };
 
     bulkUpdateMutation.mutate(
@@ -91,6 +89,7 @@ export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, 
           fullWidth
           value={accountingStatus}
           onChange={(e) => setAccountingStatus(Number(e.target.value))}
+          helperText="تاريخ المحاسبة يُسجَّل أوتوماتيك مع تغيير الحالة"
           sx={{ ...fieldSx, mb: 2 }}
         >
           {statusOptions.map((option) => (
@@ -99,18 +98,6 @@ export default function BulkEditDeliveryAccountModal({ open, onClose, orderIds, 
             </MenuItem>
           ))}
         </TextField>
-
-        <TextField
-          label="تاريخ المحاسبة (اختياري)"
-          type="date"
-          size="small"
-          fullWidth
-          value={accountingDate}
-          onChange={(e) => setAccountingDate(e.target.value)}
-          helperText="اتركه فارغًا لاستخدام تاريخ التحويل تلقائيًا"
-          InputLabelProps={{ shrink: true }}
-          sx={{ ...fieldSx, mb: 2 }}
-        />
 
         <TextField
           label="المرجع"
