@@ -43,7 +43,7 @@
 @media(max-width:750px){.page{margin:0 -16px -16px;padding:12px 12px 24px}.chartGrid,.chartGridTwo{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.printButton{padding:0 9px}}
 @media(max-width:560px){.controls{width:100%}.monthControl{flex:1}.month{width:100%}.kpis,.metrics,.rateGrid{grid-template-columns:1fr}.kpi{min-height:120px}}
 @media print {
-  @page { size:landscape; margin:9mm; }
+  @page { size:A4 landscape; margin:8mm; }
   :global(body *) { visibility:hidden !important; }
   .page,.page * { visibility:visible !important; }
   .page { position:absolute; inset:0; width:100%; min-height:0; margin:0; padding:0; background:#fff; color:#111827; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -53,14 +53,17 @@
   .kpis { grid-template-columns:repeat(5,1fr); gap:7px; margin-bottom:8px; }.kpi { min-height:105px; padding:9px; box-shadow:none; }
   .kpiIcon { width:27px; height:27px; }.kpiValue { font-size:15px; }.kpiSub { margin-top:3px; }
   .metrics { grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:8px; }.metric { min-height:55px; padding:7px; }.metricRing { flex-basis:34px; height:34px; }.metric strong { font-size:12px; }
-  .layout { grid-template-columns:360px 1fr; gap:8px; align-items:start; }.statementPanel,.layout > .chartCard { height:auto; min-height:510px; }
-  .statementBody { height:auto; max-height:none; overflow:visible; padding:8px 10px; }.panel,.kpi,.metric { box-shadow:none; break-inside:avoid; }
+  .layout { display:flex; flex-direction:column; gap:8px; }.layout > .chartCard { order:1; height:350px; min-height:350px; }.statementPanel { order:2; height:auto; min-height:0; break-before:page; page-break-before:always; }
+  .statementBody { height:auto; max-height:none; padding:8px 10px; overflow:visible; columns:2; column-gap:14px; }.statementBody .section { display:inline-block; width:100%; break-inside:avoid; page-break-inside:avoid; }.panel,.kpi,.metric { box-shadow:none; break-inside:avoid; }
   .panelTitle { min-height:38px; padding:6px 10px; }.panelTitle span { width:23px; height:23px; }.section { margin-bottom:6px; }.sectionTitle { padding:5px 7px; }
   .row,.total { padding:4px 0; }.value { padding:5px 7px; }.rateGrid { margin-top:4px; }.rate { padding:4px; }
   .input,.labelInput { padding:5px 6px; color:#111827; background:#fff; }
-  .chartBody,.layout > .chartCard .chartBody { height:auto; padding:10px 8px 5px; }
-  .chartGrid,.chartGridTwo { gap:8px; margin-top:8px; }.chartGrid { grid-template-columns:repeat(3,1fr); }.chartGridTwo { grid-template-columns:1.1fr .9fr; }
+  .chartBody { padding:10px 8px 5px; }.layout > .chartCard .chartBody { height:calc(100% - 38px); padding:8px; }
+  .chartGrid,.chartGridTwo { gap:8px; margin-top:0; }.chartGrid { grid-template-columns:repeat(3,1fr); break-before:page; page-break-before:always; }.chartGridTwo { grid-template-columns:1.1fr .9fr; break-before:page; page-break-before:always; }
   .chartGrid .chartCard { min-height:280px; }.chartGridTwo .chartCard { min-height:320px; }
   .tablePanel { margin-top:8px; break-inside:auto; }.tableWrap { overflow:visible; }.tableWrap table { font-size:8px; }.tableWrap th,.tableWrap td { padding:6px 5px; }
+  .page :global(.recharts-tooltip-wrapper) { display:none !important; }
+  .page :global(.recharts-legend-item-text) { font-size:8px !important; }
+  .page :global(.recharts-wrapper),.page :global(.recharts-surface) { overflow:visible !important; }
   .error { display:none; }
 }
