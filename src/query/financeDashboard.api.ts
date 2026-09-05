@@ -52,6 +52,7 @@ export interface FinanceDashboardData {
 }
 
 const financeDashboardKey = (month: string) => ["dashboard", "finance", month] as const;
+const financeHistoryKey = (endMonth: string, months: number) => ["dashboard", "finance-history", endMonth, months] as const;
 
 export function useFinanceDashboard(month: string) {
   return useQuery({
@@ -63,6 +64,21 @@ export function useFinanceDashboard(month: string) {
       return response.data.data;
     },
     enabled: Boolean(month),
+    staleTime: 30_000,
+  });
+}
+
+export function useFinanceHistory(endMonth: string, months = 12) {
+  return useQuery({
+    queryKey: financeHistoryKey(endMonth, months),
+    queryFn: async () => {
+      const response = await axiosRequest.get<{ data: { endMonth: string; items: FinanceDashboardData[]; months: number } }>(
+        "/dashboard/finance/history",
+        { params: { endMonth, months } },
+      );
+      return response.data.data;
+    },
+    enabled: Boolean(endMonth),
     staleTime: 30_000,
   });
 }
