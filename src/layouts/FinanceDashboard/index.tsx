@@ -26,6 +26,7 @@ const COPY = {
     cogs: "تكلفة البضاعة", cogsGmv: "COGS — GMV (كل الطلبات)", cogsNmv: "COGS — NMV (بدون الإلغاء)", cogsG2n: "COGS — G2N (المسلّم)",
     opex: "مصروفات التشغيل (OPEX)", totalOpex: "إجمالي OPEX", addExpense: "إضافة مصروف", newExpense: "مصروف جديد",
     save: "حفظ الشهر", saving: "جارٍ الحفظ…", saved: "تم حفظ بيانات الشهر", saveError: "تعذر حفظ بيانات الشهر",
+    print: "طباعة التقرير", printedFor: "تقرير شهر",
     loadError: "تعذر تحميل الشهر", retry: "إعادة المحاولة", loading: "جارٍ تحميل البيانات المالية…",
     allOrders: "كل الطلبات + القيم الموجبة", nonCancelled: "الطلبات غير الملغاة", margin: "هامش",
     waterfall: "مسار الأرباح", channelChart: "GMV حسب القناة", deliveryChart: "التوصيلات", cogsChart: "مقارنة COGS",
@@ -42,6 +43,7 @@ const COPY = {
     cogs: "Cost of Goods", cogsGmv: "COGS — GMV (all orders)", cogsNmv: "COGS — NMV (without cancellations)", cogsG2n: "COGS — G2N (delivered)",
     opex: "Operating Expenses (OPEX)", totalOpex: "Total OPEX", addExpense: "Add expense", newExpense: "New expense",
     save: "Save this month", saving: "Saving…", saved: "Monthly finance values saved", saveError: "Could not save monthly finance values",
+    print: "Print report", printedFor: "Report for",
     loadError: "Could not load this month", retry: "Try again", loading: "Loading finance totals…",
     allOrders: "All orders + positive adjustments", nonCancelled: "Non-cancelled orders", margin: "margin",
     waterfall: "Profit Waterfall", channelChart: "GMV by Channel", deliveryChart: "Deliveries", cogsChart: "COGS Comparison",
@@ -116,8 +118,9 @@ export default function FinanceDashboard() {
   return (
     <DashboardLayout pageTitle={c.title} pageSubtitle={c.subtitle}>
       <div className={styles.page} dir={language === "ar" ? "rtl" : "ltr"}>
+        <div className={styles.printHeader}><strong>{c.title}</strong><span>{c.printedFor} {monthLabel(month)}</span></div>
         <div className={styles.top}>
-          <div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
+          <div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.printButton} disabled={!data || !history} onClick={() => window.print()}>🖨️ {c.print}</button><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
         </div>
         {isError && <div className={styles.error}>{c.loadError}. <button onClick={() => refetch()}>{c.retry}</button></div>}
         {isLoading && <div className={styles.panel}>{c.loading}</div>}
