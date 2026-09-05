@@ -19,7 +19,7 @@ const COPY = {
   ar: {
     title: "لوحة الأرباح والخسائر", subtitle: "الأرقام التلقائية للطلبات والمصروفات الشهرية المحفوظة",
     statement: "قائمة الأرباح والخسائر", revenue: "الإيرادات", online: "GMV أونلاين", showroom: "GMV شو روم",
-    cancellations: "الإلغاءات", discounts: "الخصومات", nmv: "صافي المبيعات (NMV)", positive: "قيمة موجبة",
+    cancellations: "الإلغاءات", discounts: "الخصومات", totalGmv: "إجمالي GMV", nmv: "صافي المبيعات (NMV)", positive: "قيمة موجبة",
     negative: "قيمة سالبة", newPositive: "قيمة موجبة جديدة", newNegative: "قيمة سالبة جديدة",
     deliveries: "التوصيلات / التنفيذ", warehouse: "توصيل المخزن", seller: "توصيل البائع", totalDeliveries: "إجمالي التوصيلات (G2N)",
     cogs: "تكلفة البضاعة", cogsGmv: "COGS — GMV (كل الطلبات)", cogsNmv: "COGS — NMV (بدون الإلغاء)", cogsG2n: "COGS — G2N (المسلّم)",
@@ -35,7 +35,7 @@ const COPY = {
   en: {
     title: "Marketplace P&L", subtitle: "Automatic order metrics and saved monthly operating expenses",
     statement: "P&L Statement", revenue: "Revenue", online: "GMV Online", showroom: "GMV Showroom",
-    cancellations: "Cancellations", discounts: "Discounts", nmv: "Net Sales (NMV)", positive: "Positive",
+    cancellations: "Cancellations", discounts: "Discounts", totalGmv: "Total GMV", nmv: "Net Sales (NMV)", positive: "Positive",
     negative: "Negative", newPositive: "New positive value", newNegative: "New negative value",
     deliveries: "Deliveries / Fulfillment", warehouse: "Warehouse Delivery", seller: "Seller Delivery", totalDeliveries: "Total Deliveries (G2N)",
     cogs: "Cost of Goods", cogsGmv: "COGS — GMV (all orders)", cogsNmv: "COGS — NMV (without cancellations)", cogsG2n: "COGS — G2N (delivered)",
@@ -103,31 +103,32 @@ export default function FinanceDashboard() {
     <DashboardLayout pageTitle={c.title} pageSubtitle={c.subtitle}>
       <div className={styles.page} dir={language === "ar" ? "rtl" : "ltr"}>
         <div className={styles.top}>
-          <div><strong>{c.title}</strong><div>{c.subtitle}</div></div>
-          <div className={styles.controls}><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
+          <div className={styles.brand}><span className={styles.brandIcon}>🛒</span><div><strong>{c.title}</strong><small>{c.subtitle}</small></div></div>
+          <div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
         </div>
         {isError && <div className={styles.error}>{c.loadError}. <button onClick={() => refetch()}>{c.retry}</button></div>}
         {isLoading && <div className={styles.panel}>{c.loading}</div>}
         {data && <>
           <div className={styles.kpis}>{[
-            ["GMV", gmv, c.allOrders, "#2563eb"], ["NMV", nmv, `${pct(nmv, gmv)} GMV`, "#0d9488"],
-            ["COGS — NMV", data.cogsNmv, c.nonCancelled, "#d97706"], [language === "ar" ? "مجمل الربح" : "Gross Profit", grossProfit, `${pct(grossProfit, nmv)} ${c.margin}`, "#059669"],
-            ["EBITDA", ebitda, `${c.opex}: ${money.format(draftOpex)}`, "#7c3aed"],
-          ].map(([label, value, sub, accent]) => <div className={styles.kpi} style={{ "--accent": accent } as React.CSSProperties} key={String(label)}><div className={styles.kpiLabel}>{label}</div><div className={styles.kpiValue}>{money.format(Number(value))}</div><div className={styles.kpiSub}>{sub}</div></div>)}</div>
+            ["GMV", gmv, c.allOrders, "#2563eb", "📦"], ["NMV", nmv, `${pct(nmv, gmv)} GMV`, "#0d9488", "💵"],
+            ["COGS", data.cogsNmv, c.nonCancelled, "#d97706", "🏷️"], [language === "ar" ? "مجمل الربح" : "Gross Profit", grossProfit, `${pct(grossProfit, nmv)} ${c.margin}`, "#059669", "📈"],
+            ["EBITDA", ebitda, `${c.opex}: ${money.format(draftOpex)}`, "#7c3aed", "📊"],
+          ].map(([label, value, sub, accent, icon]) => <div className={styles.kpi} style={{ "--accent": accent } as React.CSSProperties} key={String(label)}><div className={styles.kpiHead}><span className={styles.kpiIcon}>{icon}</span><span className={styles.kpiTag}>{label}</span></div><div className={styles.kpiValue}>{money.format(Number(value))}</div><div className={styles.kpiLabel}>{label}</div><div className={styles.kpiSub}>{sub}</div></div>)}</div>
 
           <div className={styles.metrics}>{[
-            [language === "ar" ? "نسبة الإلغاء" : "Cancellation Rate", pct(data.cancellations, gmv)], ["NMV / GMV", pct(nmv, gmv)],
-            ["G2N / NMV", pct(data.g2n, nmv)], [language === "ar" ? "هامش الربح" : "Gross Margin", pct(grossProfit, nmv)],
-            [language === "ar" ? "هامش EBITDA" : "EBITDA Margin", pct(ebitda, nmv)],
-          ].map(([label, value]) => <div className={styles.metric} key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
+            [language === "ar" ? "نسبة الإلغاء من GMV" : "Cancellation Rate from GMV", pct(data.cancellations, gmv), "#2563eb"],
+            [language === "ar" ? "هامش مجمل الربح" : "Gross Margin", pct(grossProfit, nmv), "#059669"],
+            [language === "ar" ? "نسبة OPEX من NMV" : "OPEX from NMV", pct(draftOpex, nmv), "#d97706"],
+            [language === "ar" ? "هامش EBITDA" : "EBITDA Margin", pct(ebitda, nmv), "#7c3aed"],
+          ].map(([label, value, accent]) => <div className={styles.metric} style={{ "--metric": accent } as React.CSSProperties} key={label}><div className={styles.metricRing}><small>{value}</small></div><div><strong>{value}</strong><span>{label}</span></div></div>)}</div>
 
           <div className={styles.layout}>
-            <div className={styles.panel}>
-              <div className={styles.panelTitle}>{c.statement}</div>
+            <div className={`${styles.panel} ${styles.statementPanel}`}>
+              <div className={styles.panelTitle}><span>📋</span>{c.statement}</div><div className={styles.statementBody}>
               <Section title={`💰 ${c.revenue}`} tone="blue">
                 <FinanceRow label={c.online} value={data.gmvOnline} money={money}/><FinanceRow label={c.showroom} value={data.gmvShowroom} money={money}/><FinanceRow label={c.cancellations} value={data.cancellations} money={money} negative/><FinanceRow label={c.discounts} value={data.discounts} money={money} negative/>
                 {adjustments.map((item, index) => <EditableRow key={index} item={item} sign={item.type === "positive" ? "+" : "−"} onChange={(patch) => setAdjustments((rows) => rows.map((row, i) => i === index ? { ...row, ...patch } : row))} onDelete={() => setAdjustments((rows) => rows.filter((_, i) => i !== index))}/>) }
-                <Total label={c.nmv} value={nmv} money={money}/><Rates items={[["Cancellation / GMV", pct(data.cancellations, gmv)], ["Discount / GMV", pct(data.discounts, gmv)], ["NMV / GMV", pct(nmv, gmv)]]}/>
+                <Total label={c.totalGmv} value={gmv} money={money}/><Total label={c.nmv} value={nmv} money={money}/><Rates items={[["Cancellation / GMV", pct(data.cancellations, gmv)], ["Discount / GMV", pct(data.discounts, gmv)], ["NMV / GMV", pct(nmv, gmv)]]}/>
                 <div className={styles.adjustmentButtons}><button className={styles.positiveButton} onClick={() => setAdjustments((rows) => [...rows, { label: c.newPositive, amount: 0, type: "positive" }])}>＋ {c.positive}</button><button className={styles.negativeButton} onClick={() => setAdjustments((rows) => [...rows, { label: c.newNegative, amount: 0, type: "negative" }])}>− {c.negative}</button></div>
               </Section>
               <Section title={`🚚 ${c.deliveries}`} tone="green"><FinanceRow label={c.warehouse} value={data.deliveredHomix} money={money}/><FinanceRow label={c.seller} value={data.deliveredVendor} money={money}/><Total label={c.totalDeliveries} value={data.g2n} money={money}/><Rates items={[["G2N / NMV", pct(data.g2n, nmv)], [language === "ar" ? "نسبة المخزن" : "Warehouse Mix", pct(data.deliveredHomix, data.g2n)], [language === "ar" ? "نسبة البائع" : "Seller Mix", pct(data.deliveredVendor, data.g2n)]]}/></Section>
@@ -137,7 +138,7 @@ export default function FinanceDashboard() {
                 <Total label={c.totalOpex} value={draftOpex} money={money}/><Rates items={[[language === "ar" ? "هامش الربح" : "Gross Margin", pct(grossProfit, nmv)], ["OPEX / NMV", pct(draftOpex, nmv)], [language === "ar" ? "هامش EBITDA" : "EBITDA Margin", pct(ebitda, nmv)]]}/>
                 <button className={styles.add} onClick={() => setOpex((rows) => [...rows, { label: c.newExpense, amount: 0 }])}>＋ {c.addExpense}</button>
               </Section>
-              <button className={styles.save} disabled={saveOpex.isPending || saveAdjustments.isPending} onClick={persist}>{saveOpex.isPending || saveAdjustments.isPending ? c.saving : c.save}</button>
+              <button className={styles.save} disabled={saveOpex.isPending || saveAdjustments.isPending} onClick={persist}>{saveOpex.isPending || saveAdjustments.isPending ? c.saving : c.save}</button></div>
             </div>
             <ChartCard title={c.waterfall}><ResponsiveContainer width="100%" height={310}><BarChart data={[{ name: "NMV", value: nmv }, { name: "COGS", value: data.cogsNmv }, { name: "GP", value: grossProfit }, { name: "OPEX", value: draftOpex }, { name: "EBITDA", value: ebitda }]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Bar dataKey="value" radius={[6,6,0,0]}>{COLORS.slice(0,5).map((color) => <Cell key={color} fill={color}/>)}</Bar></BarChart></ResponsiveContainer></ChartCard>
           </div>
@@ -165,5 +166,5 @@ function FinanceRow({ label, value, negative, money }: { label:string; value:num
 function Total({ label, value, money }: { label:string; value:number; money:Intl.NumberFormat }) { return <div className={styles.total}><span>{label}</span><span>{money.format(value)}</span></div>; }
 function Rates({ items }: { items: string[][] }) { return <div className={styles.rateGrid}>{items.map(([label,value]) => <div className={styles.rate} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>; }
 function EditableRow({ item, sign, onChange, onDelete }: { item:EditableOpex; sign?:string; onChange:(patch:Partial<EditableOpex>)=>void; onDelete:()=>void }) { return <div className={styles.row}><input className={styles.labelInput} value={item.label} onChange={(e)=>onChange({label:e.target.value})}/><input className={styles.input} min="0" type="number" value={item.amount} onChange={(e)=>onChange({amount:+e.target.value})}/>{sign && <strong className={sign === "+" ? styles.positive : styles.negative}>{sign}</strong>}<button aria-label="Delete" className={styles.delete} onClick={onDelete}>×</button></div>; }
-function ChartCard({ title, children }: { title:string; children:React.ReactNode }) { return <div className={`${styles.panel} ${styles.chartCard}`}><div className={styles.panelTitle}>{title}</div>{children}</div>; }
+function ChartCard({ title, children }: { title:string; children:React.ReactNode }) { return <div className={`${styles.panel} ${styles.chartCard}`}><div className={styles.panelTitle}><span>📊</span>{title}</div><div className={styles.chartBody}>{children}</div></div>; }
 function Donut({ data, money }: { data:Array<{name:string;value:number}>; money:Intl.NumberFormat }) { const rows=data.filter((x)=>x.value>0); return rows.length ? <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={rows} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>{rows.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip formatter={(value:number)=>money.format(value)}/><Legend/></PieChart></ResponsiveContainer> : <div className={styles.empty}>—</div>; }
