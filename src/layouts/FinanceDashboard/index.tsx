@@ -116,12 +116,13 @@ export default function FinanceDashboard() {
   } : item);
 
   return (
-    <DashboardLayout pageTitle={c.title} pageSubtitle={c.subtitle}>
+    <DashboardLayout
+      pageTitle={c.title}
+      pageSubtitle={c.subtitle}
+      pageActions={<div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.printButton} disabled={!data || !history} onClick={() => window.print()}>🖨️ {c.print}</button><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>}
+    >
       <div className={styles.page} dir={language === "ar" ? "rtl" : "ltr"}>
         <div className={styles.printHeader}><strong>{c.title}</strong><span>{c.printedFor} {monthLabel(month)}</span></div>
-        <div className={styles.top}>
-          <div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.printButton} disabled={!data || !history} onClick={() => window.print()}>🖨️ {c.print}</button><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
-        </div>
         {isError && <div className={styles.error}>{c.loadError}. <button onClick={() => refetch()}>{c.retry}</button></div>}
         {isLoading && <div className={styles.panel}>{c.loading}</div>}
         {data && <>
