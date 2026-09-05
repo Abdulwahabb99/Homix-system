@@ -3,6 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line,
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { toast } from "react-toastify";
 import {
@@ -65,6 +66,7 @@ export default function FinanceDashboard() {
   const { data: history } = useFinanceHistory(month, 12);
   const saveOpex = useSaveFinanceOpex(month);
   const saveAdjustments = useSaveFinanceAdjustments(month);
+  const queryClient = useQueryClient();
   const [opex, setOpex] = useState<EditableOpex[]>([]);
   const [adjustments, setAdjustments] = useState<EditableAdjustment[]>([]);
   const c = COPY[language];
@@ -93,17 +95,28 @@ export default function FinanceDashboard() {
     try {
       await saveOpex.mutateAsync(opex.map(({ label, amount }) => ({ label: label.trim(), amount: +amount || 0 })).filter((item) => item.label));
       await saveAdjustments.mutateAsync(adjustments.map(({ label, amount, type }) => ({ label: label.trim(), amount: +amount || 0, type })).filter((item) => item.label));
+      await queryClient.invalidateQueries({ queryKey: ["dashboard", "finance-history"] });
       toast.success(c.saved);
     } catch { toast.error(c.saveError); }
   };
   const monthLabel = (value: string) => new Intl.DateTimeFormat(language === "ar" ? "ar-EG" : "en", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}-01T00:00:00Z`));
   const historyRows = history?.items ?? [];
+  const displayHistoryRows = historyRows.map((item) => item.month === month && data ? {
+    ...item,
+    cancellationRate: gmv ? Number(((data.cancellations / gmv) * 100).toFixed(1)) : 0,
+    ebitda,
+    ebitdaRate: nmv ? Number(((ebitda / nmv) * 100).toFixed(1)) : 0,
+    gmv,
+    grossMargin: grossProfit,
+    grossMarginRate: nmv ? Number(((grossProfit / nmv) * 100).toFixed(1)) : 0,
+    nmv,
+    totalOpex: draftOpex,
+  } : item);
 
   return (
     <DashboardLayout pageTitle={c.title} pageSubtitle={c.subtitle}>
       <div className={styles.page} dir={language === "ar" ? "rtl" : "ltr"}>
         <div className={styles.top}>
-          <div className={styles.brand}><span className={styles.brandIcon}>🛒</span><div><strong>{c.title}</strong><small>{c.subtitle}</small></div></div>
           <div className={styles.controls}><label className={styles.monthControl}><span>{c.month}</span><input aria-label={c.month} className={styles.month} type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className={styles.language} onClick={toggleLanguage}>{language === "en" ? "العربية" : "English"}</button></div>
         </div>
         {isError && <div className={styles.error}>{c.loadError}. <button onClick={() => refetch()}>{c.retry}</button></div>}
@@ -150,11 +163,11 @@ export default function FinanceDashboard() {
           </div>
 
           <div className={styles.chartGridTwo}>
-            <ChartCard title={c.monthlyChart}><ResponsiveContainer width="100%" height={280}><ComposedChart data={historyRows.map((item) => ({ ...item, label: monthLabel(item.month) }))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Legend/><Bar dataKey="gmv" name="GMV" fill="#2563eb"/><Bar dataKey="nmv" name="NMV" fill="#0d9488"/><Bar dataKey="grossMargin" name="GP" fill="#059669"/><Line dataKey="ebitda" name="EBITDA" stroke="#7c3aed" strokeWidth={3}/></ComposedChart></ResponsiveContainer></ChartCard>
+            <ChartCard title={c.monthlyChart}><ResponsiveContainer width="100%" height={280}><ComposedChart data={displayHistoryRows.map((item) => ({ ...item, label: monthLabel(item.month) }))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Legend/><Bar dataKey="gmv" name="GMV" fill="#2563eb"/><Bar dataKey="nmv" name="NMV" fill="#0d9488"/><Bar dataKey="grossMargin" name="GP" fill="#059669"/><Line dataKey="ebitda" name="EBITDA" stroke="#7c3aed" strokeWidth={3}/></ComposedChart></ResponsiveContainer></ChartCard>
             <ChartCard title={c.opexChart}><ResponsiveContainer width="100%" height={280}><BarChart data={opex.map((item) => ({ name: item.label, value: item.amount }))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Bar dataKey="value" fill="#7c3aed" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></ChartCard>
           </div>
 
-          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","GM%","OPEX","EBITDA","EBITDA%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{historyRows.map((item) => <tr key={item.month}><td>{monthLabel(item.month)}</td><td>{money.format(item.gmv)}</td><td>{money.format(item.nmv)}</td><td>{money.format(item.g2n)}</td><td>{item.cancellationRate}%</td><td>{money.format(item.cogsNmv)}</td><td>{money.format(item.grossMargin)}</td><td>{item.grossMarginRate}%</td><td>{money.format(item.totalOpex)}</td><td className={item.ebitda < 0 ? styles.negative : styles.positive}>{money.format(item.ebitda)}</td><td>{item.ebitdaRate}%</td></tr>)}</tbody></table></div></div>
+          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","GM%","OPEX","EBITDA","EBITDA%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{displayHistoryRows.map((item) => <tr key={item.month}><td>{monthLabel(item.month)}</td><td>{money.format(item.gmv)}</td><td>{money.format(item.nmv)}</td><td>{money.format(item.g2n)}</td><td>{item.cancellationRate}%</td><td>{money.format(item.cogsNmv)}</td><td>{money.format(item.grossMargin)}</td><td>{item.grossMarginRate}%</td><td>{money.format(item.totalOpex)}</td><td className={item.ebitda < 0 ? styles.negative : styles.positive}>{money.format(item.ebitda)}</td><td>{item.ebitdaRate}%</td></tr>)}</tbody></table></div></div>
         </>}
       </div>
     </DashboardLayout>

@@ -1,13 +1,10 @@
 .page { min-height:calc(100vh - 76px); margin:-24px; padding:0 24px 32px; color:#17233c; background:#f1f5fa; }
-.top { display:flex; align-items:center; justify-content:space-between; gap:18px; min-height:80px; margin:0 -24px 20px; padding:12px 24px; color:#fff; background:linear-gradient(110deg,#0c1b38 0%,#132b59 70%,#203f82 100%); box-shadow:0 8px 20px rgba(15,35,75,.18); }
-.brand { display:flex; align-items:center; gap:12px; }
-.brandIcon { display:grid; place-items:center; width:42px; height:42px; border-radius:11px; background:linear-gradient(145deg,#2868f0,#5147e7); box-shadow:0 6px 14px rgba(49,93,239,.35); font-size:19px; }
-.brand strong { display:block; font-size:15px; font-weight:900; }.brand small { display:block; margin-top:4px; color:#98a9cb; font-size:10px; }
+.top { display:flex; align-items:center; justify-content:flex-end; min-height:58px; margin:0 0 16px; padding:10px 0; border-bottom:1px solid #dce4ef; }
 .controls { display:flex; align-items:center; gap:8px; }
-.monthControl { display:flex; align-items:center; gap:8px; height:38px; padding:0 9px 0 12px; border:1px solid rgba(255,255,255,.18); border-radius:9px; background:rgba(255,255,255,.07); }
-.monthControl span { color:#9fb0d0; font-size:10px; }
-.month { width:145px; border:0; outline:0; background:transparent; color:#fff; font:inherit; font-size:12px; font-weight:800; color-scheme:dark; }
-.language { height:38px; border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:0 13px; background:rgba(255,255,255,.09); color:#fff; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }.language:hover { background:rgba(255,255,255,.16); }
+.monthControl { display:flex; align-items:center; gap:8px; height:38px; padding:0 9px 0 12px; border:1px solid #d4deeb; border-radius:9px; background:#fff; }
+.monthControl span { color:#75849c; font-size:10px; }
+.month { width:145px; border:0; outline:0; background:transparent; color:#17233c; font:inherit; font-size:12px; font-weight:800; }
+.language { height:38px; border:1px solid #cad6e5; border-radius:8px; padding:0 13px; background:#142f63; color:#fff; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }.language:hover { background:#1e4389; }
 .kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
 .kpi,.panel { background:#fff; border:1px solid #dce4ef; border-radius:12px; box-shadow:0 2px 9px rgba(15,35,65,.035); }
 .kpi { position:relative; min-height:135px; padding:14px 15px; border-top:3px solid var(--accent,#2563eb); overflow:hidden; }
@@ -41,5 +38,5 @@
 .tablePanel { margin-top:15px; }.tableWrap { overflow:auto; }.tableWrap table { width:100%; border-collapse:collapse; font-size:10px; }.tableWrap th { padding:12px 10px; color:#fff; background:#0d1d3b; white-space:nowrap; text-align:center; }.tableWrap td { padding:12px 10px; border-bottom:1px solid #e2e8f0; white-space:nowrap; text-align:center; font-weight:700; }.tableWrap tbody tr:nth-child(odd) { background:#f5faff; }.tableWrap tbody tr:hover { background:#edf6ff; }
 .empty { height:220px; display:flex; align-items:center; justify-content:center; color:#94a3b8; }.error { margin:18px 0; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:12px; }
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.statementPanel{height:auto}.statementBody{max-height:620px}.layout>.chartCard{height:480px}.chartGrid{grid-template-columns:1fr 1fr}}
-@media(max-width:750px){.page{margin:-16px;padding:0 12px 24px}.top{margin:0 -12px 15px;padding:12px}.chartGrid,.chartGridTwo{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.brand small{display:none}}
+@media(max-width:750px){.page{margin:-16px;padding:0 12px 24px}.top{margin:0 0 15px;padding:8px 0}.chartGrid,.chartGridTwo{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.top{align-items:flex-start;flex-direction:column}.controls{width:100%}.monthControl{flex:1}.month{width:100%}.kpis,.metrics,.rateGrid{grid-template-columns:1fr}.kpi{min-height:120px}}
