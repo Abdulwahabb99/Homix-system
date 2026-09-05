@@ -125,6 +125,7 @@ const adminManage: NavItem[] = [
   { to: "/vendors", label: "الموردين", icon: icons.suppliers, perm: "vendors_view" },
   { to: "/users", label: "المستخدمين", icon: icons.users, perm: "users_view" },
   { to: "/financialReports", label: "التقارير", icon: icons.reports, perm: "finance_view" },
+  { to: "/finance-dashboard", label: "الأرباح والخسائر", icon: icons.reports, perm: "finance_view" },
 ];
 
 const vendorMain: NavItem[] = [
