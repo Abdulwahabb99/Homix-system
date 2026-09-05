@@ -40,10 +40,14 @@ export default function FinanceDashboard() {
   const updateOpex = (index: number, patch: Partial<EditableOpex>) => setOpex((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
   const persistOpex = async () => {
     try {
-      await Promise.all([
-        saveOpex.mutateAsync(opex.map(({ label, amount }) => ({ label: label.trim(), amount: Number(amount) || 0 })).filter((item) => item.label)),
-        saveAdjustments.mutateAsync(adjustments.map(({ label, amount, type }) => ({ label: label.trim(), amount: Number(amount) || 0, type })).filter((item) => item.label)),
-      ]);
+      await saveOpex.mutateAsync(
+        opex.map(({ label, amount }) => ({ label: label.trim(), amount: Number(amount) || 0 })).filter((item) => item.label),
+      );
+      /* Save sequentially so the final response/cache snapshot contains both
+         sets even on a slow connection. */
+      await saveAdjustments.mutateAsync(
+        adjustments.map(({ label, amount, type }) => ({ label: label.trim(), amount: Number(amount) || 0, type })).filter((item) => item.label),
+      );
       toast.success("Monthly finance values saved");
     } catch { toast.error("Could not save monthly finance values"); }
   };
