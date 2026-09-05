@@ -1,0 +1,45 @@
+.page { min-height:calc(100vh - 76px); margin:-24px; padding:0 24px 32px; color:#17233c; background:#f1f5fa; }
+.top { display:flex; align-items:center; justify-content:space-between; gap:18px; min-height:80px; margin:0 -24px 20px; padding:12px 24px; color:#fff; background:linear-gradient(110deg,#0c1b38 0%,#132b59 70%,#203f82 100%); box-shadow:0 8px 20px rgba(15,35,75,.18); }
+.brand { display:flex; align-items:center; gap:12px; }
+.brandIcon { display:grid; place-items:center; width:42px; height:42px; border-radius:11px; background:linear-gradient(145deg,#2868f0,#5147e7); box-shadow:0 6px 14px rgba(49,93,239,.35); font-size:19px; }
+.brand strong { display:block; font-size:15px; font-weight:900; }.brand small { display:block; margin-top:4px; color:#98a9cb; font-size:10px; }
+.controls { display:flex; align-items:center; gap:8px; }
+.monthControl { display:flex; align-items:center; gap:8px; height:38px; padding:0 9px 0 12px; border:1px solid rgba(255,255,255,.18); border-radius:9px; background:rgba(255,255,255,.07); }
+.monthControl span { color:#9fb0d0; font-size:10px; }
+.month { width:145px; border:0; outline:0; background:transparent; color:#fff; font:inherit; font-size:12px; font-weight:800; color-scheme:dark; }
+.language { height:38px; border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:0 13px; background:rgba(255,255,255,.09); color:#fff; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }.language:hover { background:rgba(255,255,255,.16); }
+.kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.kpi,.panel { background:#fff; border:1px solid #dce4ef; border-radius:12px; box-shadow:0 2px 9px rgba(15,35,65,.035); }
+.kpi { position:relative; min-height:135px; padding:14px 15px; border-top:3px solid var(--accent,#2563eb); overflow:hidden; }
+.kpiHead { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; }
+.kpiIcon { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; background:color-mix(in srgb,var(--accent) 10%,white); font-size:16px; }
+.kpiTag { padding:4px 7px; border-radius:12px; background:#f2f5f9; color:#63718a; font-size:9px; font-weight:900; }
+.kpiLabel { color:#60708d; font-size:10px; font-weight:700; }.kpiValue { margin-bottom:2px; color:#101a2e; font-size:20px; font-weight:900; line-height:1.2; }.kpiSub { margin-top:7px; color:#9ba9bf; font-size:9px; }
+.metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.metric { display:flex; align-items:center; gap:12px; min-height:72px; padding:12px 15px; background:#fff; border:1px solid #dce4ef; border-radius:12px; }
+.metricRing { display:grid; place-items:center; flex:0 0 43px; height:43px; border:2px solid var(--metric); border-radius:50%; background:color-mix(in srgb,var(--metric) 7%,white); color:var(--metric); }.metricRing small { font-size:9px; font-weight:900; }
+.metric strong { display:block; color:var(--metric); font-size:16px; }.metric span { display:block; margin-top:4px; color:#66758f; font-size:9px; font-weight:700; }
+.layout { display:grid; grid-template-columns:minmax(355px,420px) 1fr; gap:15px; align-items:start; }
+.panel { padding:0; overflow:hidden; }.panelTitle { display:flex; align-items:center; gap:9px; min-height:51px; padding:11px 15px; border-bottom:1px solid #dce4ef; background:#fbfcfe; color:#14213a; font-size:13px; font-weight:900; }
+.panelTitle span { display:grid; place-items:center; width:28px; height:28px; border-radius:7px; background:#edf4ff; font-size:13px; }
+.statementPanel { height:580px; }.statementBody { height:calc(100% - 51px); padding:13px 15px 18px; overflow-y:auto; scrollbar-width:thin; }
+.section { margin-bottom:11px; }.sectionTitle { border-radius:7px; padding:8px 10px; font-size:10px; font-weight:900; letter-spacing:.2px; margin-bottom:4px; text-transform:uppercase; }
+.blue { background:#dbeafe; color:#1d4ed8; }.green { background:#d1fae5; color:#065f46; }.orange { background:#ffedd5; color:#c2410c; }.purple { background:#ede9fe; color:#6d28d9; }
+.row,.total { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed #e9eef5; color:#536480; font-size:10px; }
+.value { min-width:116px; padding:8px 9px; border:1px solid #dce4ef; border-radius:7px; color:#17233c; background:#fff; font-weight:800; font-variant-numeric:tabular-nums; text-align:end; white-space:nowrap; }
+.negative { color:#dc2626; }.positive { color:#059669; }
+.total { margin-top:5px; padding:9px 10px; border:1px solid #b9d6ff; border-radius:7px; background:#eff6ff; color:#123270; font-weight:900; }.total + .total { border-color:#91e4bd; background:#ecfdf5; color:#065f46; }
+.input { width:112px; border:1px solid #dbe3ee; border-radius:7px; padding:7px 8px; font:inherit; font-size:10px; }.labelInput { min-width:0; flex:1; border:1px dashed #aebbd0; border-radius:7px; padding:7px 8px; font:inherit; font-size:10px; }
+.delete,.add,.save { border-radius:6px; font:inherit; font-size:10px; font-weight:800; cursor:pointer; }.delete { flex:0 0 23px; border:0; background:#fff0f0; color:#dc2626; width:23px; height:23px; }
+.add { margin-top:7px; border:1px dashed #7c3aed; background:#f5f3ff; color:#6d28d9; padding:5px 9px; }.save { width:100%; border:0; background:#1f5fe4; color:#fff; padding:9px 14px; box-shadow:0 4px 10px rgba(31,95,228,.2); }.save:disabled { opacity:.55; cursor:default; }
+.adjustmentButtons { display:flex; gap:6px; margin-top:7px; }.positiveButton,.negativeButton { min-height:26px; border-radius:6px; padding:3px 9px; background:#fff; font:inherit; font-size:9px; line-height:1.1; font-weight:800; cursor:pointer; transition:background .15s,color .15s,border-color .15s; }
+.positiveButton { color:#059669; border:1px dashed #10b981; }.negativeButton { color:#dc2626; border:1px dashed #ef4444; }.positiveButton:hover { background:#ecfdf5; border-style:solid; }.negativeButton:hover { background:#fef2f2; border-style:solid; }
+.rateGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin-top:7px; }.rate { padding:6px; border:1px solid #e4eaf2; border-radius:7px; background:#f8fafc; text-align:center; }.rate span { display:block; color:#78869d; font-size:8px; font-weight:700; }.rate strong { display:block; margin-top:2px; color:#17233c; font-size:11px; }
+.chartCard { min-width:0; }.chartBody { padding:17px 14px 10px; }.layout > .chartCard { height:580px; }.layout > .chartCard .chartBody { height:calc(100% - 51px); padding-top:22px; }
+.chartGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin-top:15px; }.chartGrid .chartCard { min-height:290px; }
+.chartGridTwo { display:grid; grid-template-columns:1.1fr .9fr; gap:15px; margin-top:15px; }.chartGridTwo .chartCard { min-height:330px; }
+.tablePanel { margin-top:15px; }.tableWrap { overflow:auto; }.tableWrap table { width:100%; border-collapse:collapse; font-size:10px; }.tableWrap th { padding:12px 10px; color:#fff; background:#0d1d3b; white-space:nowrap; text-align:center; }.tableWrap td { padding:12px 10px; border-bottom:1px solid #e2e8f0; white-space:nowrap; text-align:center; font-weight:700; }.tableWrap tbody tr:nth-child(odd) { background:#f5faff; }.tableWrap tbody tr:hover { background:#edf6ff; }
+.empty { height:220px; display:flex; align-items:center; justify-content:center; color:#94a3b8; }.error { margin:18px 0; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:12px; }
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.statementPanel{height:auto}.statementBody{max-height:620px}.layout>.chartCard{height:480px}.chartGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:750px){.page{margin:-16px;padding:0 12px 24px}.top{margin:0 -12px 15px;padding:12px}.chartGrid,.chartGridTwo{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.brand small{display:none}}
+@media(max-width:560px){.top{align-items:flex-start;flex-direction:column}.controls{width:100%}.monthControl{flex:1}.month{width:100%}.kpis,.metrics,.rateGrid{grid-template-columns:1fr}.kpi{min-height:120px}}
