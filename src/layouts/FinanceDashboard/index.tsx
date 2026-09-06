@@ -108,10 +108,12 @@ export default function FinanceDashboard() {
     cancellationRate: gmv ? Number(((data.cancellations / gmv) * 100).toFixed(1)) : 0,
     ebitda,
     ebitdaRate: nmv ? Number(((ebitda / nmv) * 100).toFixed(1)) : 0,
+    g2nRate: nmv ? Number(((data.g2n / nmv) * 100).toFixed(1)) : 0,
     gmv,
     grossMargin: grossProfit,
     grossMarginRate: nmv ? Number(((grossProfit / nmv) * 100).toFixed(1)) : 0,
     nmv,
+    opex: opex.map((opexItem, index) => ({ ...opexItem, sortOrder: index })),
     totalOpex: draftOpex,
   } : item);
 
@@ -171,7 +173,7 @@ export default function FinanceDashboard() {
             <ChartCard title={c.opexChart}><ResponsiveContainer width="100%" height={280}><BarChart margin={{ left: 22, right: 12, top: 8, bottom: 8 }} data={opex.map((item) => ({ name: item.label, value: item.amount }))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Bar dataKey="value" fill="#7c3aed" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></ChartCard>
           </div>
 
-          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","GM%","OPEX","EBITDA","EBITDA%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{displayHistoryRows.map((item) => <tr key={item.month}><td>{monthLabel(item.month)}</td><td>{money.format(item.gmv)}</td><td>{money.format(item.nmv)}</td><td>{money.format(item.g2n)}</td><td>{item.cancellationRate}%</td><td>{money.format(item.cogsNmv)}</td><td>{money.format(item.grossMargin)}</td><td>{item.grossMarginRate}%</td><td>{money.format(item.totalOpex)}</td><td className={item.ebitda < 0 ? styles.negative : styles.positive}>{money.format(item.ebitda)}</td><td>{item.ebitdaRate}%</td></tr>)}</tbody></table></div></div>
+          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","GM%","OPEX","EBITDA","EBITDA%","Mktg%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{displayHistoryRows.map((item) => <FinanceSummaryRow key={item.month} item={item} label={monthLabel(item.month)} money={money}/>)}</tbody></table></div></div>
         </>}
       </div>
     </DashboardLayout>
@@ -185,3 +187,32 @@ function Rates({ items }: { items: string[][] }) { return <div className={styles
 function EditableRow({ item, sign, onChange, onDelete }: { item:EditableOpex; sign?:string; onChange:(patch:Partial<EditableOpex>)=>void; onDelete:()=>void }) { return <div className={styles.row}><input className={styles.labelInput} value={item.label} onChange={(e)=>onChange({label:e.target.value})}/><input className={styles.input} min="0" type="number" value={item.amount} onChange={(e)=>onChange({amount:+e.target.value})}/>{sign && <strong className={sign === "+" ? styles.positive : styles.negative}>{sign}</strong>}<button aria-label="Delete" className={styles.delete} onClick={onDelete}>×</button></div>; }
 function ChartCard({ title, children }: { title:string; children:React.ReactNode }) { return <div className={`${styles.panel} ${styles.chartCard}`}><div className={styles.panelTitle}><span>📊</span>{title}</div><div className={styles.chartBody}>{children}</div></div>; }
 function Donut({ data, money }: { data:Array<{name:string;value:number}>; money:Intl.NumberFormat }) { const rows=data.filter((x)=>x.value>0); return rows.length ? <ResponsiveContainer width="100%" height={240}><PieChart><Pie data={rows} dataKey="value" nameKey="name" innerRadius={52} outerRadius={82} paddingAngle={2}>{rows.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie><Tooltip formatter={(value:number)=>money.format(value)}/><Legend/></PieChart></ResponsiveContainer> : <div className={styles.empty}>—</div>; }
+
+function FinanceSummaryRow({ item, label, money }: { item:FinanceDashboardData; label:string; money:Intl.NumberFormat }) {
+  const g2nGrossProfit = item.g2n - item.cogsG2n;
+  const g2nGrossMarginRate = item.g2n ? (g2nGrossProfit / item.g2n) * 100 : 0;
+  const g2nEbitda = g2nGrossProfit - item.totalOpex;
+  const g2nEbitdaRate = item.g2n ? (g2nEbitda / item.g2n) * 100 : 0;
+  const marketing = item.opex.reduce((total, expense) => {
+    const normalized = expense.label.toLocaleLowerCase();
+    return /(marketing|advert|\bads\b|تسويق|إعلان|اعلان)/u.test(normalized) ? total + expense.amount : total;
+  }, 0);
+  const marketingRate = item.nmv ? (marketing / item.nmv) * 100 : 0;
+  const rate = (value: number) => `${value.toFixed(1)}%`;
+  const Value = ({ primary, secondary, tone }: { primary:React.ReactNode; secondary?:React.ReactNode; tone?:"blue"|"green"|"red"|"yellow" }) => <td><div className={`${styles.tablePrimary} ${tone ? styles[`${tone}Pill`] : ""}`}>{primary}</div>{secondary !== undefined && <div className={styles.tableSecondary}>{secondary}</div>}</td>;
+
+  return <tr>
+    <td className={styles.monthCell}>{label}</td>
+    <Value primary={money.format(item.gmv)}/>
+    <Value primary={money.format(item.nmv)} secondary={money.format(item.g2n)} tone="green"/>
+    <Value primary={rate(item.g2nRate)} secondary={money.format(item.g2n)} tone="blue"/>
+    <Value primary={rate(item.cancellationRate)} tone="red"/>
+    <Value primary={money.format(item.cogsNmv)} secondary={money.format(item.cogsG2n)}/>
+    <Value primary={money.format(item.grossMargin)} secondary={money.format(g2nGrossProfit)} tone="green"/>
+    <Value primary={rate(item.grossMarginRate)} secondary={rate(g2nGrossMarginRate)} tone="green"/>
+    <Value primary={money.format(item.totalOpex)}/>
+    <Value primary={money.format(item.ebitda)} secondary={money.format(g2nEbitda)} tone={item.ebitda < 0 ? "red" : "green"}/>
+    <Value primary={rate(item.ebitdaRate)} secondary={rate(g2nEbitdaRate)} tone={item.ebitdaRate < 0 ? "red" : "yellow"}/>
+    <Value primary={rate(marketingRate)} tone="yellow"/>
+  </tr>;
+}
