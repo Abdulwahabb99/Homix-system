@@ -250,7 +250,14 @@ export default function ShipmentEdit() {
     const sched = toIso(scheduledDeliveryDate);
     const del = toIso(deliveryDate);
     if (recv) body.shippingReceiveDate = recv;
-    if (sched) body.scheduledDeliveryDate = sched;
+    if (sched) {
+      body.scheduledDeliveryDate = sched;
+    } else if (data?.shipment.scheduledDeliveryDate) {
+      // Field was cleared: the "only send fields with a value" rule above would
+      // otherwise drop it and the old date would stick. Send null so the
+      // backend actually clears the column.
+      body.scheduledDeliveryDate = null;
+    }
     if (del) body.deliveryDate = del;
 
     if (firstName.trim() || lastName.trim() || phone.trim()) {
