@@ -65,6 +65,7 @@ const HINTS = {
     deductions: "إجمالي الإلغاءات والخصومات والقيم السالبة ÷ GMV.",
     cogs: "مجموع orders.totalCost للطلبات غير الملغاة. الرقم الفرعي هو تكلفة الطلبات المسلّمة فقط.",
     gp: "الرقم الأساسي: NMV ناقص COGS-NMV. الرقم الفرعي: G2N ناقص COGS-G2N.",
+    np: "صافي ربح الطلبات المسلّمة فقط: سعر البيع قبل الخصم ناقص orders.totalCost ناقص خصومات الطلبات. وهو يساوي G2N ناقص COGS-G2N.",
     gm: "الربح الإجمالي ÷ قيمة المبيعات المقابلة؛ الأساسي على NMV والفرعي على G2N.",
     opex: "إجمالي مصروفات التشغيل اليدوية المحفوظة لهذا الشهر.",
     ebitda: "الربح الإجمالي ناقص OPEX؛ الرقم الفرعي يستخدم ربح G2N ناقص نفس OPEX.",
@@ -78,6 +79,7 @@ const HINTS = {
     deductions: "Total cancellations, discounts, and negative adjustments divided by GMV.",
     cogs: "Sum of orders.totalCost for non-cancelled orders. The secondary value is cost for delivered orders only.",
     gp: "Primary: NMV minus COGS-NMV. Secondary: G2N minus COGS-G2N.",
+    np: "Delivered-order net profit only: gross selling price minus orders.totalCost minus order discounts. This equals G2N minus COGS-G2N.",
     gm: "Gross profit divided by its sales basis: primary uses NMV and secondary uses G2N.",
     opex: "Total manually maintained operating expenses saved for this month.",
     ebitda: "Gross profit minus OPEX. The secondary value uses G2N gross profit minus the same OPEX.",
@@ -204,7 +206,7 @@ export default function FinanceDashboard() {
             <ChartCard title={c.opexChart}><ResponsiveContainer width="100%" height={280}><BarChart margin={{ left: 22, right: 12, top: 8, bottom: 8 }} data={opex.map((item) => ({ name: item.label, value: item.amount }))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip formatter={(value: number) => money.format(value)}/><Bar dataKey="value" fill="#7c3aed" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></ChartCard>
           </div>
 
-          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","GM%","OPEX","EBITDA","EBITDA%","Mktg%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{displayHistoryRows.map((item) => <FinanceSummaryRow key={item.month} hints={hints} item={item} label={monthLabel(item.month)} money={money}/>)}</tbody></table></div></div>
+          <div className={`${styles.panel} ${styles.tablePanel}`}><div className={styles.panelTitle}>{c.monthlyTable}</div><div className={styles.tableWrap}><table><thead><tr>{[c.month,"GMV","NMV","G2N","Cancel%","COGS","GP","NP","GM%","OPEX","EBITDA","EBITDA%","Mktg%"].map((head) => <th key={head}>{head}</th>)}</tr></thead><tbody>{displayHistoryRows.map((item) => <FinanceSummaryRow key={item.month} hints={hints} item={item} label={monthLabel(item.month)} money={money}/>)}</tbody></table></div></div>
         </>}
       </div>
     </DashboardLayout>
@@ -242,6 +244,7 @@ function FinanceSummaryRow({ item, label, money, hints }: { item:FinanceDashboar
     <Value hint={hints.deductions} primary={rate(deductionRate)} tone={deductionRate > 15 ? "red" : "yellow"}/>
     <Value hint={hints.cogs} primary={money.format(item.cogsNmv)} secondary={hasG2nCogs ? money.format(item.cogsG2n) : undefined}/>
     <Value hint={hints.gp} primary={money.format(item.grossMargin)} secondary={hasG2nProfit ? money.format(g2nGrossProfit) : undefined} valueTone={item.grossMargin < 0 ? "negative" : "positive"}/>
+    <Value hint={hints.np} primary={money.format(g2nGrossProfit)} valueTone={g2nGrossProfit < 0 ? "negative" : "positive"}/>
     <Value hint={hints.gm} primary={rate(item.grossMarginRate)} secondary={hasG2nProfit ? rate(g2nGrossMarginRate) : undefined} tone={rateTone(item.grossMarginRate)}/>
     <Value hint={hints.opex} primary={money.format(item.totalOpex)}/>
     <Value hint={hints.ebitda} primary={money.format(item.ebitda)} secondary={hasG2nProfit ? money.format(g2nEbitda) : undefined} valueTone={item.ebitda < 0 ? "negative" : "positive"}/>
