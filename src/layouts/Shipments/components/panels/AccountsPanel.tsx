@@ -139,6 +139,7 @@ interface DeliveryFilterState {
   orderNumber: string;
   paymentMethod: string;
   settledDate: string;
+  deliveryDate: string;
 }
 
 const filterFieldSx = {
@@ -153,6 +154,7 @@ const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
   orderNumber: "",
   paymentMethod: "",
   settledDate: "",
+  deliveryDate: "",
 };
 
 function ErrorBox({ message }: { message: string }) {
@@ -260,6 +262,15 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
           label="تاريخ المحاسبة"
           value={filters.settledDate}
           onChange={(e) => setFilter("settledDate")(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <TextField
+          type="date"
+          size="small"
+          label="تاريخ التسليم الفعلي"
+          value={filters.deliveryDate}
+          onChange={(e) => setFilter("deliveryDate")(e.target.value)}
           InputLabelProps={{ shrink: true }}
           sx={filterFieldSx}
         />

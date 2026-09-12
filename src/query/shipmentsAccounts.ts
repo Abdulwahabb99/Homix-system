@@ -42,6 +42,8 @@ export interface AccountsParams {
   orderNumber?: string;
   paymentMethod?: string;
   settledDate?: string;
+  /** تاريخ التسليم الفعلي للطلب — غير «تاريخ المحاسبة» (settledDate) */
+  deliveryDate?: string;
 }
 
 function buildQuery(p: AccountsParams): string {
@@ -53,6 +55,7 @@ function buildQuery(p: AccountsParams): string {
   if (p.orderNumber)      query.set("orderNumber", p.orderNumber);
   if (p.paymentMethod)    query.set("paymentMethod", p.paymentMethod);
   if (p.settledDate)      query.set("settledDate", new Date(p.settledDate).toISOString());
+  if (p.deliveryDate)     query.set("deliveryDate", new Date(p.deliveryDate).toISOString());
   return query.toString();
 }
 
