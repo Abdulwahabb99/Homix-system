@@ -15,6 +15,7 @@ export interface DeliveryAccountItem {
   shippingCompanyName: string;
   deliveryDate: string | null;
   paymentMethodLabel: string;
+  costPrice: number | null;
   amountToCollect: number;
   receivedAmount: number;
   accountingStatusLabel: string;

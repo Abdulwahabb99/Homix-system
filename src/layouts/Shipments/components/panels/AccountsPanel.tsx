@@ -355,6 +355,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
               <th style={TH}>شركة الشحن</th>
               <th style={TH}>تاريخ التسليم الفعلي</th>
               <th style={TH}>طريقة الدفع</th>
+              <th style={{ ...TH, textAlign: "center" }}>سعر التكلفة</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ المطلوب تحصيله</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ المستلم</th>
               <th style={TH}>حالة المحاسبة</th>
@@ -386,6 +387,7 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                 <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.shippingCompanyName || "—"}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.deliveryDate)}</Box></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.paymentMethodLabel || "—"}</Box></td>
+                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.costPrice} /></td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amountToCollect} /></td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.receivedAmount} /></td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
