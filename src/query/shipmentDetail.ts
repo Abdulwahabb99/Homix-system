@@ -17,7 +17,16 @@ export interface ShipmentDetailFinancial {
   totalPrice: number;
 }
 
+export interface ShipmentDetailNoteAttachment {
+  createdAt: string;
+  description: string;
+  id: number;
+  name: string;
+  url: string;
+}
+
 export interface ShipmentDetailNote {
+  attachments: ShipmentDetailNoteAttachment[];
   id: number;
   createdAt: string;
   text: string;

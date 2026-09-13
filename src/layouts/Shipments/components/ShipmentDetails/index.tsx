@@ -124,6 +124,9 @@ function LoadedShipmentDetails({
               sending={note.sending}
               onChange={note.setNoteText}
               onSend={note.send}
+              selectedFiles={note.selectedFiles}
+              onFileChange={note.handleFileChange}
+              onRemoveFile={note.handleRemoveFile}
             />
           </Box>
 
