@@ -69,10 +69,11 @@ export interface ShipmentsListParams {
   scheduledDateTo?: any;
 }
 
-function toDateString(v: any): string | undefined {
+function toDateString(v: any, boundary: "start" | "end" = "start"): string | undefined {
   if (!v) return undefined;
   const m = moment.isMoment(v) ? v : moment(String(v), "DD-MM-YYYY");
-  return m.isValid() ? m.toISOString() : undefined;
+  if (!m.isValid()) return undefined;
+  return (boundary === "end" ? m.clone().endOf("day") : m.clone().startOf("day")).toISOString();
 }
 
 function buildQuery(p: ShipmentsListParams): string {
@@ -93,11 +94,11 @@ function buildQuery(p: ShipmentsListParams): string {
   if (p.governorate)    q.set("governorate",    p.governorate);
   if (p.vendorName)     q.set("vendorName",     p.vendorName);
   const sd = toDateString(p.startDate);
-  const ed = toDateString(p.endDate);
+  const ed = toDateString(p.endDate, "end");
   const df = toDateString(p.deliveryDateFrom);
-  const dt = toDateString(p.deliveryDateTo);
+  const dt = toDateString(p.deliveryDateTo, "end");
   const sfd = toDateString(p.scheduledDateFrom);
-  const std = toDateString(p.scheduledDateTo);
+  const std = toDateString(p.scheduledDateTo, "end");
   if (sd) q.set("startDate",       sd);
   if (ed) q.set("endDate",         ed);
   if (df) q.set("deliveryDateFrom", df);

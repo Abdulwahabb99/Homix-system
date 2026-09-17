@@ -109,10 +109,11 @@ const MAIN_TABS: { id: ShipmentTabId; label: string; icon: React.ReactNode; perm
   },
 ];
 
-function toIso(v: any): string | undefined {
+function toIso(v: any, boundary: "start" | "end" = "start"): string | undefined {
   if (!v) return undefined;
-  const m = moment.isMoment(v) ? v : moment.utc(String(v), "DD-MM-YYYY");
-  return m.isValid() ? m.toISOString() : undefined;
+  const m = moment.isMoment(v) ? v : moment(String(v), "DD-MM-YYYY");
+  if (!m.isValid()) return undefined;
+  return (boundary === "end" ? m.clone().endOf("day") : m.clone().startOf("day")).toISOString();
 }
 
 function dateFromUrl(str: string): any {
@@ -503,15 +504,15 @@ export default function Shipments() {
     if (vendorName)     q.set("vendorName",     vendorName);
     if (governorate)    q.set("governorate",    governorate);
     const sIso = toIso(startDate);
-    const eIso = toIso(endDate);
+    const eIso = toIso(endDate, "end");
     if (sIso) q.set("startDate", sIso);
     if (eIso) q.set("endDate",   eIso);
     const dIso  = toIso(deliveryDateFrom);
-    const dtIso = toIso(deliveryDateTo);
+    const dtIso = toIso(deliveryDateTo, "end");
     if (dIso)  q.set("deliveryDateFrom", dIso);
     if (dtIso) q.set("deliveryDateTo",   dtIso);
     const schIso  = toIso(scheduledDateFrom);
-    const schtIso = toIso(scheduledDateTo);
+    const schtIso = toIso(scheduledDateTo, "end");
     if (schIso)  q.set("scheduledDateFrom", schIso);
     if (schtIso) q.set("scheduledDateTo",   schtIso);
 
