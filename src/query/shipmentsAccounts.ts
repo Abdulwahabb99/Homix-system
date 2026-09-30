@@ -128,8 +128,12 @@ export interface UpdateDeliveryAccountPayload {
   accountingDate?: string | null;
   accountingReference?: string;
   accountingStatus?: number;
+  /** سعر التكلفة — يُكتب على بنود الطلب ويُجمَع في `totalCost`. */
+  costPrice?: number;
   /** يخفي السجل عن تبويب الحسابات فقط — الطلب/الشحنة نفسها تبقى كما هي في كل مكان آخر. */
   hidden?: boolean;
+  /** المبلغ المستلم فعلياً لهذا البند — الصفر قيمة صريحة لا «غير محدَّد». */
+  receivedAmount?: number;
 }
 
 export async function putDeliveryAccount(

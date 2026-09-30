@@ -10,6 +10,8 @@ export interface ShipmentDetailCustomer {
 
 export interface ShipmentDetailFinancial {
   amountToCollect: number;
+  /** مجموع تكلفة بنود الطلب — قابل للتعديل من صفحة تعديل الشحنة */
+  costPrice: number;
   discount: number;
   downPayment: number;
   receivedAmount: number;

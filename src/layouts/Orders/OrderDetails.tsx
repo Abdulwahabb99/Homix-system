@@ -57,6 +57,7 @@ function OrderDetails() {
     changeDownPayment,
     changeShippingFees,
     changeDiscount,
+    changeCostPrice,
     changePriority,
     updateCustomer,
     isUpdatingCustomer,
@@ -185,6 +186,7 @@ function OrderDetails() {
               changeDownPayment={changeDownPayment}
               changeShippingFees={changeShippingFees}
               changeDiscount={changeDiscount}
+              changeCostPrice={changeCostPrice}
               changePriority={changePriority}
               updateCustomer={updateCustomer}
               isUpdatingCustomer={isUpdatingCustomer}

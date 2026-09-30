@@ -149,3 +149,54 @@ export function useDeleteInventoryItemMutation() {
     onError: () => NotificationMeassage("error", "تعذّر حذف الصنف"),
   });
 }
+
+/** حقول التعديل الجماعي — المشترك فقط بين الأصناف. */
+export interface InventoryBulkPayload {
+  color?: string;
+  costPrice?: number;
+  quantity?: number;
+  size?: string;
+  status?: number;
+}
+
+export async function putInventoryItemsBulk(
+  inventoryItemIds: number[],
+  body: InventoryBulkPayload
+): Promise<void> {
+  await axiosRequest.put(`/shipments/inventory/bulk-update`, { data: body, inventoryItemIds });
+}
+
+export async function deleteInventoryItemsBulk(inventoryItemIds: number[]): Promise<void> {
+  await axiosRequest.post(`/shipments/inventory/bulk-delete`, { inventoryItemIds });
+}
+
+export function useBulkUpdateInventoryItemsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { inventoryItemIds: number[]; body: InventoryBulkPayload }) =>
+      putInventoryItemsBulk(vars.inventoryItemIds, vars.body),
+    onSuccess: async (_data, vars) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.inventoryRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", `تم تحديث ${vars.inventoryItemIds.length} صنف`);
+    },
+    onError: () => NotificationMeassage("error", "تعذّر تحديث الأصناف المحددة"),
+  });
+}
+
+export function useBulkDeleteInventoryItemsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteInventoryItemsBulk,
+    onSuccess: async (_data, inventoryItemIds) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.inventoryRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", `تم حذف ${inventoryItemIds.length} صنف`);
+    },
+    onError: () => NotificationMeassage("error", "تعذّر حذف الأصناف المحددة"),
+  });
+}

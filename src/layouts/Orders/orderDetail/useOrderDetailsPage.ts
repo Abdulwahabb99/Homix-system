@@ -176,6 +176,15 @@ export function useOrderDetailsPage() {
     [updateFinancialField]
   );
 
+  /* «سعر التكلفة» — الباك إند يكتبه على بنود الطلب ثم يجمعه في totalCost،
+     فنعيد الجلب بعد الحفظ مثل باقي الحقول المالية. */
+  const changeCostPrice = useCallback(
+    (costPrice: number) => {
+      updateFinancialField({ costPrice });
+    },
+    [updateFinancialField]
+  );
+
   const changePriority = useCallback(
     (priority: number | null) => {
       if (priority == null) return;
@@ -499,6 +508,7 @@ export function useOrderDetailsPage() {
     changeDownPayment,
     changeShippingFees,
     changeDiscount,
+    changeCostPrice,
     changePriority,
     updateCustomer,
     isUpdatingCustomer,

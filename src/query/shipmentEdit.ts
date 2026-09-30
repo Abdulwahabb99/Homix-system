@@ -12,6 +12,8 @@ export interface UpdateShipmentCustomer {
 
 export interface UpdateShipmentPayload {
   shipmentStatus?: number;
+  /** سعر التكلفة — يُكتب على بنود الطلب ويُجمَع في `totalCost`. */
+  costPrice?: number;
   shipmentType?: string;
   governorate?: string;
   deliveryBy?: number;
@@ -33,13 +35,19 @@ export async function putShipment(shipmentId: string, body: UpdateShipmentPayloa
   await axiosRequest.put(`/shipments/${shipmentId}`, body);
 }
 
-/** PUT /shipments/bulk-update — تعديل حالة الشحنة/نوعها/المحافظة/التوصيل بواسطة/المسؤول لعدة شحنات دفعة واحدة. */
+/**
+ * PUT /shipments/bulk-update — تعديل حالة الشحنة/نوعها/المحافظة/التوصيل بواسطة/
+ * المسؤول/موعد الجدولة وحالتها لعدة شحنات دفعة واحدة.
+ */
 export interface BulkUpdateShipmentPayload {
   shipmentStatus?: number;
   shipmentType?: string;
   governorate?: string;
   deliveryBy?: number;
   userId?: number;
+  scheduleStatus?: number;
+  /** ISO، أو `""` لمسح الموعد من كل الشحنات المحددة. */
+  scheduledDeliveryDate?: string | "";
 }
 
 export async function putShipmentsBulk(shipmentIds: number[], data: BulkUpdateShipmentPayload) {

@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Checkbox, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { Button, IconButton } from "@mui/material";
 import InventoryItemModal from "./InventoryItemModal";
+import InventoryBulkEditModal from "./InventoryBulkEditModal";
 import ConfirmDeleteModal from "../ConfirmDeleteModal";
-import { useDeleteInventoryItemMutation } from "query/shipmentsInventory";
+import {
+  useBulkDeleteInventoryItemsMutation,
+  useBulkUpdateInventoryItemsMutation,
+  useDeleteInventoryItemMutation,
+} from "query/shipmentsInventory";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import {
@@ -92,18 +97,37 @@ function InvTag({ icon, value }: { icon: string; value: string }) {
 }
 
 function InventoryCard({
-  item, onEdit, onDelete,
-}: { item: InventoryItem; onEdit: (item: InventoryItem) => void; onDelete: (item: InventoryItem) => void }) {
+  item, onEdit, onDelete, selected, onToggleSelect,
+}: {
+  item: InventoryItem;
+  onEdit: (item: InventoryItem) => void;
+  onDelete: (item: InventoryItem) => void;
+  selected: boolean;
+  onToggleSelect: (id: number) => void;
+}) {
   const available = item.quantity > 0;
   const qtyColor = item.quantity === 0 ? HX.red : item.quantity <= 2 ? HX.amber : HX.tx;
   return (
     <Box sx={{
-      bgcolor: HX.surface, border: `0.5px solid ${HX.border}`, borderRadius: HX.r,
+      bgcolor: HX.surface,
+      border: `${selected ? 1.5 : 0.5}px solid ${selected ? HX.accent : HX.border}`,
+      borderRadius: HX.r,
       overflow: "hidden", transition: ".2s",
       "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,0.08)", transform: "translateY(-2px)" },
     }}>
       <Box sx={{ position: "relative", pt: "12px" }}>
         <InventoryImage image={item.image} name={item.productName} />
+        <Checkbox
+          size="small"
+          checked={selected}
+          onChange={() => onToggleSelect(item.id)}
+          inputProps={{ "aria-label": `تحديد ${item.productName || item.productCode}` }}
+          sx={{
+            position: "absolute", bottom: 8, right: 8, p: "3px",
+            bgcolor: HX.surface, border: `0.5px solid ${HX.border}`, borderRadius: "6px",
+            "&:hover": { bgcolor: HX.surface },
+          }}
+        />
         <Box sx={{ position: "absolute", top: 8, right: 8, display: "flex", gap: "4px" }}>
           <IconButton
             size="small"
@@ -208,7 +232,12 @@ export default function InventoryPanel({ onExporterChange }: InventoryPanelProps
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<InventoryItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const deleteMutation = useDeleteInventoryItemMutation();
+  const bulkUpdateMutation = useBulkUpdateInventoryItemsMutation();
+  const bulkDeleteMutation = useBulkDeleteInventoryItemsMutation();
 
   /* الفلاتر تُرسَل للـ API. البحث النصّي مؤجَّل قليلاً حتى لا يُطلَب مع كل حرف. */
   const [debouncedCode, setDebouncedCode] = useState("");
@@ -251,6 +280,23 @@ export default function InventoryPanel({ onExporterChange }: InventoryPanelProps
 
   // الخادم يفلتر بالفعل، فلا نُعيد الفلترة على الصفحة المعروضة
   const items = rawItems;
+
+  /* التحديد يخص الصفحة المعروضة: صفحة جديدة أو فلتر جديد يعني أصنافاً أخرى،
+     وإبقاء تحديد غير مرئي يجعل «تعديل المحدد» يمسّ ما لا يراه المستخدم. */
+  const visibleIds = useMemo(() => items.map((item) => item.id), [items]);
+  useEffect(() => {
+    setSelectedIds((previous) => previous.filter((id) => visibleIds.includes(id)));
+  }, [visibleIds]);
+
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+  const someSelected = !allSelected && visibleIds.some((id) => selectedIds.includes(id));
+
+  const toggleSelect = (id: number) =>
+    setSelectedIds((previous) =>
+      previous.includes(id) ? previous.filter((selected) => selected !== id) : [...previous, id]
+    );
+
+  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : visibleIds);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -296,6 +342,61 @@ export default function InventoryPanel({ onExporterChange }: InventoryPanelProps
         </Button>
       </Box>
 
+      {/* شريط التحديد والإجراءات الجماعية */}
+      {items.length > 0 && (
+        <Box sx={{
+          bgcolor: selectedIds.length > 0 ? HX.accentLight : HX.surface,
+          borderRadius: HX.r,
+          border: `0.5px solid ${selectedIds.length > 0 ? HX.accentBorder : HX.border}`,
+          p: "6px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap",
+        }}>
+          <Checkbox
+            size="small"
+            checked={allSelected}
+            indeterminate={someSelected}
+            onChange={toggleSelectAll}
+            inputProps={{ "aria-label": "تحديد كل أصناف الصفحة" }}
+          />
+          <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: HX.tx2 }}>
+            {selectedIds.length > 0
+              ? `${selectedIds.length} صنف محدد`
+              : "تحديد كل أصناف الصفحة"}
+          </Typography>
+
+          {selectedIds.length > 0 && (
+            <Box sx={{ display: "flex", gap: "8px", ml: "auto", flexWrap: "wrap" }}>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<EditOutlinedIcon sx={{ fontSize: 15 }} />}
+                onClick={() => setIsBulkEditOpen(true)}
+                sx={{ color: "#fff", height: 30, fontFamily: FONT, fontSize: "11.5px" }}
+              >
+                تعديل المحدد
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />}
+                onClick={() => setIsBulkDeleteOpen(true)}
+                sx={{ height: 30, fontFamily: FONT, fontSize: "11.5px" }}
+              >
+                حذف المحدد
+              </Button>
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => setSelectedIds([])}
+                sx={{ height: 30, fontFamily: FONT, fontSize: "11.5px", color: HX.tx2 }}
+              >
+                إلغاء التحديد
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Cards grid */}
       {isLoading ? (
         <SkeletonGrid />
@@ -316,6 +417,8 @@ export default function InventoryPanel({ onExporterChange }: InventoryPanelProps
             <InventoryCard
               key={item.id}
               item={item}
+              selected={selectedIds.includes(item.id)}
+              onToggleSelect={toggleSelect}
               onEdit={(target) => { setEditingItem(target); setIsModalOpen(true); }}
               onDelete={setPendingDelete}
             />
@@ -327,6 +430,37 @@ export default function InventoryPanel({ onExporterChange }: InventoryPanelProps
         open={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditingItem(null); }}
         item={editingItem}
+      />
+
+      <InventoryBulkEditModal
+        open={isBulkEditOpen}
+        selectedCount={selectedIds.length}
+        isSaving={bulkUpdateMutation.isPending}
+        onClose={() => setIsBulkEditOpen(false)}
+        onSubmit={(payload) =>
+          bulkUpdateMutation.mutate(
+            { inventoryItemIds: selectedIds, body: payload },
+            {
+              onSuccess: () => {
+                setIsBulkEditOpen(false);
+                setSelectedIds([]);
+              },
+            }
+          )
+        }
+      />
+
+      <ConfirmDeleteModal
+        open={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        handleConfirmDelete={() =>
+          bulkDeleteMutation.mutate(selectedIds, {
+            onSuccess: () => {
+              setIsBulkDeleteOpen(false);
+              setSelectedIds([]);
+            },
+          })
+        }
       />
 
       <ConfirmDeleteModal

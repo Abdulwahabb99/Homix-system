@@ -1,11 +1,14 @@
 /**
  * تعديل جماعي لعدة شحنات محدَّدة: حالة الشحنة، نوع الشحنة، المحافظة،
- * التوصيل بواسطة، والمسؤول. كل حقل اختياري — يُرسل فقط ما تم اختياره فعلاً.
+ * التوصيل بواسطة، المسؤول، وموعد الجدولة وحالتها.
+ * كل حقل اختياري — يُرسل فقط ما تم اختياره فعلاً.
  */
 import React, { useState } from "react";
 import {
   Autocomplete,
   Button,
+  Checkbox,
+  FormControlLabel,
   Dialog,
   DialogActions,
   DialogContent,
@@ -19,6 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import moment from "moment";
 import { useShipmentsMetaQuery, type ShipmentsMetaOption } from "query/shipmentsMeta";
 import type { BulkUpdateShipmentPayload } from "query/shipmentEdit";
 
@@ -66,6 +70,11 @@ export default function ShipmentsBulkEditModal({
   const [governorate, setGovernorate] = useState<number | "">("");
   const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [assignee, setAssignee] = useState<ShipmentsMetaOption | null>(null);
+  const [scheduleStatus, setScheduleStatus] = useState<number | "">("");
+  const [scheduledDeliveryDate, setScheduledDeliveryDate] = useState("");
+  /* مسح الموعد فعل مقصود، ولا يمكن التعبير عنه بحقل فارغ — الحقل الفارغ يعني
+     «لا تلمس هذا الحقل». */
+  const [clearScheduledDate, setClearScheduledDate] = useState(false);
 
   const reset = () => {
     setShipmentStatus("");
@@ -73,6 +82,9 @@ export default function ShipmentsBulkEditModal({
     setGovernorate("");
     setDeliveryBy("");
     setAssignee(null);
+    setScheduleStatus("");
+    setScheduledDeliveryDate("");
+    setClearScheduledDate(false);
   };
 
   const handleClose = () => {
@@ -81,12 +93,22 @@ export default function ShipmentsBulkEditModal({
   };
 
   const handleSave = () => {
+    const scheduledIso = scheduledDeliveryDate
+      ? moment(scheduledDeliveryDate, "YYYY-MM-DD").toISOString()
+      : undefined;
+
     const data: BulkUpdateShipmentPayload = {
       ...(shipmentStatus !== "" && { shipmentStatus: Number(shipmentStatus) }),
       ...(shipmentType !== "" && { shipmentType }),
       ...(governorate !== "" && { governorate: String(governorate) }),
       ...(deliveryBy !== "" && { deliveryBy: Number(deliveryBy) }),
       ...(assignee && { userId: Number(assignee.value) }),
+      ...(scheduleStatus !== "" && { scheduleStatus: Number(scheduleStatus) }),
+      ...(clearScheduledDate
+        ? { scheduledDeliveryDate: "" as const }
+        : scheduledIso
+          ? { scheduledDeliveryDate: scheduledIso }
+          : {}),
     };
     if (Object.keys(data).length === 0) return;
     onEdit(data);
@@ -174,6 +196,54 @@ export default function ShipmentsBulkEditModal({
               ))}
             </Select>
           </FormControl>
+
+          <FormControl fullWidth variant="outlined" sx={formControlSx}>
+            <InputLabel id="bulk-schedule-status-label">حالة الجدولة</InputLabel>
+            <Select
+              labelId="bulk-schedule-status-label"
+              value={scheduleStatus}
+              label="حالة الجدولة"
+              onChange={(e) => setScheduleStatus(e.target.value as number | "")}
+              MenuProps={menuProps}
+            >
+              {(meta?.scheduleStatuses ?? []).map((option) => (
+                <MenuItem key={option.value} value={Number(option.value)}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            type="date"
+            label="موعد الجدولة"
+            value={scheduledDeliveryDate}
+            onChange={(e) => {
+              setScheduledDeliveryDate(e.target.value);
+              if (e.target.value) setClearScheduledDate(false);
+            }}
+            disabled={clearScheduledDate}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            sx={formControlSx}
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={clearScheduledDate}
+                onChange={(e) => {
+                  setClearScheduledDate(e.target.checked);
+                  if (e.target.checked) setScheduledDeliveryDate("");
+                }}
+              />
+            }
+            label={
+              <Typography variant="caption" sx={{ fontFamily: FONT }}>
+                مسح موعد الجدولة من الشحنات المحددة
+              </Typography>
+            }
+            sx={{ mt: -1.5, mr: 0 }}
+          />
 
           <Autocomplete
             options={meta?.assignees ?? []}

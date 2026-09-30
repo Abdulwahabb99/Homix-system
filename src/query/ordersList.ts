@@ -77,6 +77,8 @@ function mapListItemRow(row) {
           : undefined,
     totalPrice: row.totalPrice,
     totalCost: row.totalCost,
+    /** اسم المحافظة كما يرسله الـ API — يُستنتج من عنوان العميل عند إنشاء الطلب */
+    governorate: row.governorate ?? "",
     items: [
       {
         code: row.productCode,

@@ -141,6 +141,7 @@ export default function ShipmentEdit() {
   const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [shippingCompany, setShippingCompany] = useState("");
   const [shippingFees, setShippingFees] = useState("");
+  const [costPrice, setCostPrice] = useState("");
 
   const [shippingReceiveDate, setShippingReceiveDate] = useState("");
   const [scheduledDeliveryDate, setScheduledDeliveryDate] = useState("");
@@ -206,6 +207,7 @@ export default function ShipmentEdit() {
     setGovernorate(shipment.governorate ?? "");
     setShippingCompany(shipment.shippingCompany != null ? String(shipment.shippingCompany) : "");
     setShippingFees(shipment.shippingCost != null ? String(shipment.shippingCost) : "");
+    setCostPrice(financial?.costPrice != null ? String(financial.costPrice) : "");
 
     setShippingReceiveDate(toYmd(shipment.receivedInWarehouseDate));
     setScheduledDeliveryDate(toYmd(shipment.scheduledDeliveryDate));
@@ -244,6 +246,15 @@ export default function ShipmentEdit() {
     }
     if (shippingFees.trim() !== "" && Number.isFinite(Number(shippingFees))) {
       body.shippingFees = Number(shippingFees);
+    }
+    /* تُرسل فقط عند تغيّرها — الباك إند يعيد كتابة بنود الطلب لكل قيمة تصله. */
+    if (
+      costPrice.trim() !== ""
+      && Number.isFinite(Number(costPrice))
+      && Number(costPrice) >= 0
+      && Number(costPrice) !== Number(data?.financial?.costPrice ?? NaN)
+    ) {
+      body.costPrice = Number(costPrice);
     }
 
     const recv = toIso(shippingReceiveDate);
@@ -461,6 +472,17 @@ export default function ShipmentEdit() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField {...fieldBaseProps} type="number" label="تكلفة الشحن" value={shippingFees} onChange={(e) => setShippingFees(e.target.value)} inputProps={{ min: 0 }} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                {...fieldBaseProps}
+                type="number"
+                label="سعر التكلفة"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                inputProps={{ min: 0, step: "0.01" }}
+                helperText="يُوزَّع على بنود الطلب ويُحدِّث إجمالي التكلفة"
+              />
             </Grid>
           </Grid>
         </DetailCard>

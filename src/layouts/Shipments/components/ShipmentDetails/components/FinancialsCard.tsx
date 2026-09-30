@@ -18,6 +18,7 @@ export default function FinancialsCard({ financial, shipment }: FinancialsCardPr
   const pay = getPaymentBadgeColors(shipment.paymentStatus);
   const rows = [
     { label: "إجمالي سعر البيع", value: `${fmtNum(financial.totalPrice)} ج.م` },
+    { label: "سعر التكلفة", value: `${fmtNum(financial.costPrice)} ج.م` },
     { label: "تكلفة الشحن", value: `${fmtNum(financial.shippingCost)} ج.م` },
   ];
 

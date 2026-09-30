@@ -3,11 +3,18 @@ import { Box, Checkbox } from "@mui/material";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import moment from "moment";
 import EditIcon from "@mui/icons-material/Edit";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
-import { SHIPMENTS_LIST_PAGE_SIZE, type ShipmentItem } from "query/shipmentsList";
+import {
+  SHIPMENTS_LIST_PAGE_SIZE,
+  type GroupedShipmentInfo,
+  type ShipmentItem,
+} from "query/shipmentsList";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -33,6 +40,45 @@ const TD: React.CSSProperties = {
   borderBottom: `0.5px solid ${HX.border}`,
   verticalAlign: "middle",
 };
+
+/**
+ * أيقونة اكتمال «التوصيل المجمع».
+ *
+ * الطلبات المرتبطة هي نواتج تقسيم أوردر واحد، فتتشارك رقم الأوردر. تظهر الأيقونة
+ * خضراء حين تكون كلها وصلت المخزن، وكهرمانية مع العدّاد حين ما زال بعضها ناقصاً.
+ * الحساب تلقائي من حالات الطلبات — لا يُضبط يدوياً.
+ */
+function GroupedShipmentIcon({ grouped }: { grouped: GroupedShipmentInfo | null }) {
+  if (!grouped || grouped.relatedCount <= 1) {
+    return null;
+  }
+
+  const { complete, inWarehouseCount, relatedCount } = grouped;
+  const title = complete
+    ? `اكتمل بالمخزن — كل الطلبات المرتبطة (${relatedCount}) وصلت`
+    : `لم يكتمل بالمخزن — ${inWarehouseCount} من ${relatedCount} وصلت`;
+
+  return (
+    <Tooltip title={title} arrow>
+      <Box
+        component="span"
+        aria-label={title}
+        sx={{
+          display: "inline-flex", alignItems: "center", gap: "2px",
+          px: "5px", py: "1px", borderRadius: "5px",
+          fontFamily: FONT, fontSize: "10px", fontWeight: 700,
+          bgcolor: complete ? "#dcfce7" : "#fef3c7",
+          color: complete ? "#15803d" : "#b45309",
+        }}
+      >
+        {complete
+          ? <Inventory2OutlinedIcon sx={{ fontSize: 12 }} />
+          : <PendingActionsOutlinedIcon sx={{ fontSize: 12 }} />}
+        {inWarehouseCount}/{relatedCount}
+      </Box>
+    </Tooltip>
+  );
+}
 
 function ActionBtn({
   onClick,
@@ -173,6 +219,7 @@ export default function ShipmentsTable({
               )}
               <th style={TH}>رقم العملية</th>
               <th style={TH}>رقم الشحنة</th>
+              <th style={TH}>كود المنتج</th>
               <th style={TH}>اسم العميل</th>
               <th style={TH}>البائع</th>
               <th style={TH}>المحافظة</th>
@@ -238,6 +285,19 @@ export default function ShipmentsTable({
                   </Box>
                 </td>
 
+                {/* كود المنتج */}
+                <td style={TD} title={s.productSku || undefined}>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface3,
+                      px: "6px", py: "2px", borderRadius: "5px", color: HX.tx2,
+                    }}
+                  >
+                    {s.productSku || "—"}
+                  </Box>
+                </td>
+
                 {/* اسم العميل */}
                 <td style={TD}>
                   <Box component="span" sx={{ fontSize: "12px", fontWeight: 600 }}>
@@ -264,10 +324,13 @@ export default function ShipmentsTable({
                   <ShipmentStatusBadge status={s.shipmentStatus} label={s.shipmentStatusLabel} />
                 </td>
 
-                {/* نوع الشحنة */}
+                {/* نوع الشحنة — ومعها أيقونة اكتمال المجموعة للتوصيل المجمع */}
                 <td style={TD}>
-                  <Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>
-                    {s.shipmentTypeLabel || "—"}
+                  <Box sx={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>
+                      {s.shipmentTypeLabel || "—"}
+                    </Box>
+                    <GroupedShipmentIcon grouped={s.groupedShipment} />
                   </Box>
                 </td>
 

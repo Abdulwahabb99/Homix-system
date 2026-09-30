@@ -26,6 +26,7 @@ interface FinancialDetailsCardProps {
   changeDownPayment: (downPayment: number) => void;
   changeShippingFees: (shippingFees: number) => void;
   changeDiscount: (totalDiscounts: number) => void;
+  changeCostPrice: (costPrice: number) => void;
 }
 
 /** صف واحد في جدول التفاصيل المالية */
@@ -151,6 +152,7 @@ export default function FinancialDetailsCard({
   changeDownPayment,
   changeShippingFees,
   changeDiscount,
+  changeCostPrice,
 }: FinancialDetailsCardProps) {
   const sell = Number(orderDetails.subTotalPrice ?? orderTotalPrice ?? 0);
   const ship = Number(orderDetails.shippingFees ?? orderTotalShipping ?? 0);
@@ -168,6 +170,7 @@ export default function FinancialDetailsCard({
   const downEdit = useInlineNumberEdit(changeDownPayment);
   const shipEdit = useInlineNumberEdit(changeShippingFees);
   const discEdit = useInlineNumberEdit(changeDiscount);
+  const costEdit = useInlineNumberEdit(changeCostPrice);
 
   return (
     <SectionCard
@@ -179,7 +182,12 @@ export default function FinancialDetailsCard({
         <MoneyValue value={sell} />
       </FinancialRow>
       <FinancialRow label="سعر التكلفة">
-        <MoneyValue value={cost} />
+        <EditableMoneyValue
+          edit={costEdit}
+          value={cost}
+          isVendor={isVendor}
+          ariaLabel="تعديل سعر التكلفة"
+        />
       </FinancialRow>
       <FinancialRow label="هامش الربح">
         <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.81rem", color: margin >= 0 ? OD.green : OD.red }}>

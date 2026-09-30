@@ -1,5 +1,5 @@
 /**
- * تعديل حالة المحاسبة لتسليم واحد.
+ * تعديل بيانات المحاسبة لتسليم واحد: الحالة، المبلغ المستلم، سعر التكلفة، والمرجع.
  * التعديل داخل نافذة وليس داخل الجدول حتى لا يتغيّر شيء بضغطة واحدة بالخطأ.
  */
 import React, { useEffect, useRef, useState } from "react";
@@ -35,6 +35,14 @@ const fieldSx = {
   "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "12px" },
 } as const;
 
+/** رقم غير سالب، أو `null` حين لا تصلح القيمة. */
+function parseAmount(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -46,6 +54,8 @@ interface Props {
 
 export default function EditDeliveryAccountModal({ open, onClose, item, statusOptions, isAdmin }: Props) {
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [reference, setReference] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -55,6 +65,8 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
   useEffect(() => {
     if (!open || !item) return;
     setAccountingStatus(item.accountingStatus ?? "");
+    setReceivedAmount(item.receivedAmount != null ? String(item.receivedAmount) : "");
+    setCostPrice(item.costPrice != null ? String(item.costPrice) : "");
     setReference(item.reference ?? "");
   }, [open, item]);
 
@@ -69,9 +81,34 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
       return;
     }
 
+    const parsedReceivedAmount = parseAmount(receivedAmount);
+    if (receivedAmount.trim() !== "" && parsedReceivedAmount === null) {
+      NotificationMeassage("error", "المبلغ المستلم لازم يكون رقمًا صحيحًا غير سالب");
+      return;
+    }
+
+    const parsedCostPrice = parseAmount(costPrice);
+    if (costPrice.trim() !== "" && parsedCostPrice === null) {
+      NotificationMeassage("error", "سعر التكلفة لازم يكون رقمًا صحيحًا غير سالب");
+      return;
+    }
+
     // تاريخ المحاسبة بيتحدد أوتوماتيك مع تغيير الحالة في الباك إند — مفيش إدخال يدوي له.
     updateMutation.mutate(
-      { orderId: item.id, body: { accountingStatus: Number(accountingStatus) } },
+      {
+        orderId: item.id,
+        body: {
+          accountingStatus: Number(accountingStatus),
+          /* تُرسل فقط عند تغيّرها فعلاً — إرسال نفس الرقم يعلّم الحقل «معدَّل يدوياً»
+             في الباك إند بلا سبب. */
+          ...(parsedReceivedAmount !== null && parsedReceivedAmount !== item.receivedAmount
+            ? { receivedAmount: parsedReceivedAmount }
+            : {}),
+          ...(parsedCostPrice !== null && parsedCostPrice !== item.costPrice
+            ? { costPrice: parsedCostPrice }
+            : {}),
+        },
+      },
       { onSuccess: onClose }
     );
   };
@@ -95,7 +132,7 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
       maxWidth="xs"
     >
       <DialogTitle sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 700 }}>
-        تعديل حالة المحاسبة
+        تعديل بيانات المحاسبة
       </DialogTitle>
       <DialogContent dividers>
         <Typography variant="caption" color="text.secondary" display="block" mb={2}>
@@ -130,6 +167,32 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
             <Typography sx={{ fontFamily: FONT, fontSize: "11px", color: "text.disabled", mt: "2px" }}>
               تغيير الحالة متاح للأدمن فقط
             </Typography>
+          </Box>
+        )}
+
+        {isAdmin && (
+          <Box sx={{ display: "flex", gap: "10px", mb: 2 }}>
+            <TextField
+              label="المبلغ المستلم"
+              size="small"
+              fullWidth
+              type="number"
+              inputProps={{ min: 0, step: "0.01" }}
+              value={receivedAmount}
+              onChange={(e) => setReceivedAmount(e.target.value)}
+              helperText={`المطلوب تحصيله ${Number(item?.amountToCollect ?? 0).toLocaleString("en-US")} ج.م`}
+              sx={fieldSx}
+            />
+            <TextField
+              label="سعر التكلفة"
+              size="small"
+              fullWidth
+              type="number"
+              inputProps={{ min: 0, step: "0.01" }}
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+              sx={fieldSx}
+            />
           </Box>
         )}
 

@@ -64,6 +64,7 @@ const BASE_COLS = [
   { key: "orderNumber",   label: "رقم الطلب",      w: 70  },
   { key: "productCode",   label: "كود المنتج",     w: 104 },
   { key: "customerName",  label: "اسم العميل",     w: 128 },
+  { key: "governorate",   label: "المحافظة",       w: 96  },
   { key: "status",        label: "حالة الطلب",     w: 83 },
   { key: "orderSource",   label: "مصدر الطلب",     w: 96 },
   { key: "factory",       label: "اسم المصنع",     w: 120 },
@@ -220,6 +221,8 @@ interface Order {
   code?: string;
   orderNumber?: string;
   customerName?: string;
+  /** اسم المحافظة كما يرسله الـ API */
+  governorate?: string;
   status?: number;
   totalPrice?: number | string;
   items?: { unitCost?: number | string; quantity?: number | string; code?: string }[];
@@ -684,6 +687,13 @@ export default function OrdersHomixTableV2({
                         {order.customerName || "—"}
                       </EllipsisText>
                     </span>
+                  </td>
+
+                  {/* المحافظة — يستنتجها الباك إند من عنوان العميل */}
+                  <td style={TD}>
+                    <EllipsisText title={order.governorate || undefined} style={{ color: HX.tx2 }}>
+                      {order.governorate || "—"}
+                    </EllipsisText>
                   </td>
 
                   {/* حالة الطلب */}

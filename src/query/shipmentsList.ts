@@ -20,6 +20,8 @@ export interface ShipmentItem {
   customerName: string;
   customerPhone: string;
   sellerName: string;
+  /** كود المنتج (SKU) لأول بند في الشحنة */
+  productSku: string;
   governorate: string;
   shipmentStatus: number;
   shipmentStatusLabel: string;
@@ -38,6 +40,15 @@ export interface ShipmentItem {
   scheduledDeliveryDate: string | null;
   deliveryDate: string | null;
   daysCounter: number;
+  /** ملخّص مجموعة التوصيل المجمع — `null` للشحنات المنفصلة */
+  groupedShipment: GroupedShipmentInfo | null;
+}
+
+/** حالة اكتمال الطلبات المرتبطة بنفس رقم الأوردر في المخزن */
+export interface GroupedShipmentInfo {
+  relatedCount: number;
+  inWarehouseCount: number;
+  complete: boolean;
 }
 
 export interface ShipmentsListResponse {
