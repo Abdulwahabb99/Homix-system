@@ -26,6 +26,8 @@ import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDet
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
+import ReceiptsPanel from "./components/receipts/ReceiptsPanel";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
 import { usePermissions, type PermissionKey } from "shared/permissions";
 import ReportsPanel from "./components/panels/ReportsPanel";
@@ -42,7 +44,7 @@ import moment from "moment";
 
 const FONT = "'Cairo', sans-serif";
 
-type ShipmentTabId = "shipments" | "returns" | "inventory" | "accounts" | "reports";
+type ShipmentTabId = "receipts" | "shipments" | "returns" | "inventory" | "accounts" | "reports";
 
 const MemoizedReturnsPanel = React.memo(ReturnsPanel);
 const MemoizedInventoryPanel = React.memo(InventoryPanel);
@@ -62,6 +64,7 @@ const MAIN_TABS: { id: ShipmentTabId; label: string; icon: React.ReactNode; perm
       </svg>
     ),
   },
+  { id: "receipts", label: "الاستلامات", icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, permission: "ship_inventory_view" },
   {
     id: "returns",
     label: "المرتجعات",
@@ -580,7 +583,7 @@ export default function Shipments() {
   return (
     <DashboardLayout
       pageTitle="الشحن والتوصيل"
-      pageSubtitle="إدارة الشحنات، المرتجعات، المخزون، الحسابات، وتقارير الأداء"
+      pageSubtitle="إدارة الشحنات، الاستلامات، المرتجعات، المخزون، الحسابات، وتقارير الأداء"
       pageActions={
         <>
           {!isVendor && activeTab === "shipments" && shipmentSelectionModel.length > 0 && (
@@ -756,7 +759,7 @@ export default function Shipments() {
                 <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 600, fontFamily: FONT }}>
                   {tab.label}
                 </Box>
-                <Box
+                {tab.id !== "receipts" && <Box
                   component="span"
                   sx={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -767,7 +770,7 @@ export default function Shipments() {
                   }}
                 >
                   {count}
-                </Box>
+                </Box>}
               </Box>
             );
           })}
@@ -810,6 +813,7 @@ export default function Shipments() {
             <MemoizedReturnsPanel onExporterChange={setReturnsExporter} />
           </Box>
         )}
+        {activeTab === "receipts" && isTabVisible("receipts") && <Box id="shipment-tab-panel-receipts" role="tabpanel"><ReceiptsPanel /></Box>}
         {activeTab === "inventory" && isTabVisible("inventory") && (
           <Box id="shipment-tab-panel-inventory" role="tabpanel">
             <MemoizedInventoryPanel onExporterChange={setInventoryExporter} />

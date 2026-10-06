@@ -38,6 +38,7 @@ export const factoryKeys = {
 };
 
 export const shipmentKeys = {
+  receipts: (filtersKey: string) => [...shipmentKeys.all(), "receipts", filtersKey] as const,
   all: () => ["shipments"] as const,
   lists: () => [...shipmentKeys.all(), "list"] as const,
   list: (filtersKey: string) => [...shipmentKeys.lists(), filtersKey] as const,
