@@ -8,6 +8,7 @@ import ProductImageLightbox from "./components/ProductImageLightbox";
 import ProductLineCard from "./components/ProductLineCard";
 import OrderStatusCard from "./components/OrderStatusCard";
 import OrderNotesCard from "./components/OrderNotesCard";
+import SellerChatCard from "./components/SellerChatCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
 import FinancialDetailsCard from "./components/FinancialDetailsCard";
 import QuickActionsCard from "./components/QuickActionsCard";
@@ -175,6 +176,8 @@ export default function OrderDetailsView({
               handleAddComment={handleAddComment}
               setPendingDeleteNoteId={setPendingDeleteNoteId}
             />
+
+            {!isVendor && <SellerChatCard orderId={Number(orderDetails?.id)} isAdmin={isAdmin} />}
           </Stack>
 
           {/* ——— العمود الأيسر (الشريط الجانبي) ——— */}
