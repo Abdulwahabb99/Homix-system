@@ -64,7 +64,7 @@ const MAIN_TABS: { id: ShipmentTabId; label: string; icon: React.ReactNode; perm
       </svg>
     ),
   },
-  { id: "receipts", label: "الاستلامات", icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, permission: "ship_inventory_view" },
+  { id: "receipts", label: "الاستلامات", icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, permission: "ship_receipts_view" },
   {
     id: "returns",
     label: "المرتجعات",
