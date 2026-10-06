@@ -336,14 +336,18 @@ export default function ReceiptsPanel() {
           InputLabelProps={{ shrink: true }}
           sx={filterFieldSx}
         />
-        <Button onClick={() => { setSearch(""); setDate(""); setPage(1); }} sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}>
+        <Button onClick={() => { setSearch(""); setDate(""); setPage(1); }} sx={{ height: 38, fontFamily: FONT, fontSize: "12px", color: HX.tx2 }}>
           إعادة ضبط
         </Button>
         <Button
           variant="outlined"
           startIcon={<HistoryOutlinedIcon sx={{ fontSize: 17 }} />}
           onClick={() => { setHistoryPage(1); setHistoryOpen(true); void history.refetch(); }}
-          sx={{ height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
+          sx={{
+            height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto",
+            color: HX.accent, borderColor: HX.accentBorder,
+            "&:hover": { borderColor: HX.accent, bgcolor: HX.accentLight },
+          }}
         >
           سجل السندات
         </Button>
