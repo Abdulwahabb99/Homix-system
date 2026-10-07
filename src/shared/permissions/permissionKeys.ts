@@ -47,7 +47,7 @@ export type KnownPermissionKey =
   | "products_view" | "products_edit" | "products_import"
   | "vendors_view" | "vendors_create" | "vendors_edit" | "vendors_delete"
   | "employees_view" | "employees_create" | "employees_edit" | "employees_delete"
-  | "customers_view" | "customers_edit"
+  | "customers_view" | "customers_edit" | "customers_create"
   | "ship_view" | "ship_edit"
   | "ship_inventory_view" | "ship_receipts_view" | "ship_returns_view" | "ship_accounts_view"
   | "ship_delivery_accounts_view" | "ship_expenses_view" | "ship_performance_view"

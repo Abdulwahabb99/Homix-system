@@ -2,6 +2,7 @@ import Icon from "@mui/material/Icon";
 import React, { lazy, Suspense } from "react";
 import Spinner from "components/Spinner/Spinner";
 import Vendors from "layouts/Vendors";
+const Customers = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Customers/Customers"));
 const Products = React.lazy(() => import(/* webpackPrefetch: true */ "layouts/Products/Products"));
 const Dashboard = React.lazy(
   () => import(/* webpackPrefetch: true */ "claude/dashboard/HomixDashboardPage")
@@ -141,6 +142,20 @@ export const adminRoutes = [
     component: (
       <ProtectedRoutes>
         <Vendors />
+      </ProtectedRoutes>
+    ),
+  },
+  {
+    type: "collapse",
+    name: "العملاء",
+    key: "customers",
+    icon: <Icon fontSize="small">people_alt</Icon>,
+    route: "/customers",
+    component: (
+      <ProtectedRoutes>
+        <Suspense fallback={<Spinner />}>
+          <Customers />
+        </Suspense>
       </ProtectedRoutes>
     ),
   },
