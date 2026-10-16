@@ -115,6 +115,7 @@ type NavItem = {
 const adminMain: NavItem[] = [
   { to: "/home", label: "لوحة التحكم", icon: icons.dashboard, end: true, perm: "dashboard_view" },
   { to: "/orders", label: "الطلبات", icon: icons.orders, badgeKey: "orders", badgeType: "warn", perm: "orders_view" },
+  { to: "/customers", label: "العملاء", icon: icons.users, perm: "customers_view" },
   { to: "/products", label: "المنتجات", icon: icons.product, badgeKey: "products", badgeType: "default", perm: "products_view" },
   { to: "/shipments", label: "الشحن والتوصيل", icon: icons.shipments, perm: "ship_view" },
   { to: "/tickets", label: "التذاكر", icon: icons.tickets, perm: "tickets_view" },
