@@ -19,6 +19,7 @@ interface OrderStatusCardProps {
   manufactureStatus: number | null;
   users: any[];
   changeOrderStatus: (status: number | null) => void;
+  changeConfirmationStatus: (status: number | null) => void;
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
   changeDeliveryBy: (deliveryBy: number | null) => void;
@@ -34,6 +35,7 @@ export default function OrderStatusCard({
   manufactureStatus,
   users,
   changeOrderStatus,
+  changeConfirmationStatus,
   changeDeliveryStatus,
   changeAssignee,
   changeDeliveryBy,
@@ -44,6 +46,7 @@ export default function OrderStatusCard({
 }: OrderStatusCardProps) {
   const {
     orderStatusOptions,
+    confirmationStatusOptions,
     manufactureOptions,
     assigneeOptions,
     deliveryStatusOptions,
@@ -72,6 +75,21 @@ export default function OrderStatusCard({
             options={orderStatusOptions}
             value={orderDetails.status != null ? Number(orderDetails.status) : null}
             onChange={changeOrderStatus}
+            withSectionBorder={false}
+            boxSx={{ p: 0 }}
+            formControlSx={statusSelectSx}
+          />
+        </Box>
+
+        {/* حالة التأكيد */}
+        <Box>
+          <Typography sx={statusFieldLabelSx}>حالة التأكيد</Typography>
+          <SelectComponent
+            id="order-confirmation-status"
+            disabled={isVendor}
+            options={confirmationStatusOptions}
+            value={orderDetails.confirmationStatus != null ? Number(orderDetails.confirmationStatus) : null}
+            onChange={changeConfirmationStatus}
             withSectionBorder={false}
             boxSx={{ p: 0 }}
             formControlSx={statusSelectSx}

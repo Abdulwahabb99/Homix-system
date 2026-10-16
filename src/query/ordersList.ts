@@ -12,6 +12,7 @@ export const ORDERS_LIST_PAGE_SIZE = 30;
  * @param {string} [p.paymentStatusParam]
  * @param {string} [p.deliveryStatusParam] «حالة التأخير» — في الموعد / قارب / متأخر
  * @param {string} [p.manufactureStatusParam] «حالة التصنيع» — مقبول / قيد التصنيع / ...
+ * @param {string} [p.confirmationStatusParam] حالة التأكيد
  * @param {string} [p.userIdParam]
  * @param {string} [p.deliveryByParam] معرفات «التوصيل بواسطة» من الـ meta مفصولة بفواصل
  * @param {string} [p.shippingCompanyParam] معرفات «شركات الشحن» مفصولة بفواصل
@@ -34,6 +35,7 @@ export function buildOrdersFilterQuery(p) {
   if (p.paymentStatusParam) query.set("paymentStatus", p.paymentStatusParam);
   if (p.deliveryStatusParam) query.set("deliveryStatus", p.deliveryStatusParam);
   if (p.manufactureStatusParam) query.set("manufactureStatus", p.manufactureStatusParam);
+  if (p.confirmationStatusParam) query.set("confirmationStatus", p.confirmationStatusParam);
   if (p.userIdParam)       query.set("userId",         p.userIdParam);
   if (p.deliveryByParam)   query.set("deliveryBy",     p.deliveryByParam);
   if (p.orderSourceParam)  query.set("orderSource",    p.orderSourceParam);
@@ -88,6 +90,8 @@ function mapListItemRow(row) {
       },
     ],
     paymentStatus: row.paymentStatus,
+    confirmationStatus: row.confirmationStatus,
+    confirmationStatusLabel: row.confirmationStatusLabel,
     PoDate: row.poDate ?? undefined,
     createdAt: row.orderDate,
     /** المعرّف — يُستخدم لتعبئة نموذج التعديل */
@@ -132,6 +136,7 @@ function mapOrderRow(order) {
     toBeCollected: order.toBeCollected,
     shippingFees: order.shippingFees,
     paymentStatus: order.paymentStatus,
+    confirmationStatus: order.confirmationStatus,
     notes: order.notes,
     commission: order.commission,
     PoDate: order.PoDate,

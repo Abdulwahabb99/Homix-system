@@ -29,6 +29,9 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const [commission, setCommission] = useState(data.commission);
   const [paymentStatus, setPaymentStatus] = useState(data.paymentStatus ? data.paymentStatus : "");
   const [orderSource, setOrderSource] = useState(data.orderSource ?? "");
+  const [confirmationStatus, setConfirmationStatus] = useState<number | "">(
+    data.confirmationStatus ?? ""
+  );
   const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [downPayment, setDownPayment] = useState(data.downPayment);
   const [shippingCost, setShippingCost] = useState(data.shippingFees);
@@ -54,6 +57,7 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
   const { data: ordersMeta } = useOrdersMeta();
   const orderSourceOptions = ordersMeta?.orderSources ?? [];
   const deliveryByOptions = ordersMeta?.deliveryByOptions ?? [];
+  const confirmationStatusOptions = ordersMeta?.confirmationStatuses ?? [];
 
   /**
    * «التوصيل بواسطة» يأتي كمعرّف في `deliveryBy` وكنص في `deliveryByLabel`،
@@ -114,6 +118,24 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
                   </MenuItem>
                 );
               })}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth style={{ margin: "10px 0" }}>
+            <InputLabel id="confirmationStatus">حالة التأكيد</InputLabel>
+            <Select
+              fullWidth
+              labelId="confirmationStatus"
+              id="confirmationStatus-select"
+              value={confirmationStatus}
+              label="حالة التأكيد"
+              onChange={(e) => setConfirmationStatus(Number(e.target.value))}
+              sx={{ height: 35 }}
+            >
+              {confirmationStatusOptions.map((option) => (
+                <MenuItem key={option.id} value={option.id}>
+                  {option.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <FormControl fullWidth style={{ margin: "10px 0" }}>
@@ -289,7 +311,8 @@ const EditOrderModal = ({ open, onEdit, onClose, data, vendors, isSubmitting }) 
               totalCompanyDue,
               expectedDeliveryDate,
               orderSource,
-              deliveryBy
+              deliveryBy,
+              confirmationStatus
             )
           }
           variant="contained"

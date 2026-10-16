@@ -17,6 +17,7 @@ export type OrdersSummaryParams = {
   vendorId?: string | null;
   status?: string | null;
   manufactureStatus?: string | null;
+  confirmationStatus?: string | null;
   paymentStatus?: string | null;
   deliveryBy?: string | null;
   orderSource?: string | null;
@@ -67,6 +68,7 @@ export function buildOrdersSummarySearchParams(params: OrdersSummaryParams): str
   appendKnownString(qs, "vendorId", params.vendorId);
   appendKnownString(qs, "status", params.status);
   appendKnownString(qs, "manufactureStatus", params.manufactureStatus);
+  appendKnownString(qs, "confirmationStatus", params.confirmationStatus);
   appendKnownString(qs, "paymentStatus", params.paymentStatus);
   appendKnownString(qs, "deliveryBy", params.deliveryBy);
   appendKnownString(qs, "orderSource", params.orderSource);

@@ -53,6 +53,7 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
   const [deliveryBy, setDeliveryBy] = useState("");
   const [assignee, setAssignee] = useState(null);
   const [orderSource, setOrderSource] = useState("");
+  const [confirmationStatus, setConfirmationStatus] = useState("");
   const { data: ordersMeta } = useOrdersMeta();
 
   return (
@@ -114,6 +115,23 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth variant="outlined" sx={formControlSx}>
+            <InputLabel id="bulk-confirmation-status-label">حالة التأكيد</InputLabel>
+            <Select
+              labelId="bulk-confirmation-status-label"
+              id="bulk-confirmation-status-select"
+              value={confirmationStatus}
+              label="حالة التأكيد"
+              onChange={(e) => setConfirmationStatus(e.target.value)}
+              color="primary"
+              MenuProps={menuProps}
+            >
+              {(ordersMeta?.confirmationStatuses ?? []).map((option) => (
+                <MenuItem key={option.id} value={option.id}>{option.label}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -183,7 +201,7 @@ const BulkEditModal = ({ open, onEdit, onClose }) => {
           إلغاء
         </Button>
         <Button
-          onClick={() => onEdit(orderStatus, paymentStatus, deliveryBy, assignee?.id ?? null, orderSource)}
+          onClick={() => onEdit(orderStatus, paymentStatus, deliveryBy, assignee?.id ?? null, orderSource, confirmationStatus)}
           variant="contained"
           color="primary"
         >

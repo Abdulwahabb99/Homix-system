@@ -23,6 +23,8 @@ export interface FiltersPanelValue {
   deliveryStatus: number[];
   /** «حالة التصنيع» — مقبول / قيد التصنيع / جاهز للشحن / ... */
   manufactureStatus: number[];
+  /** حالة متابعة وتأكيد الطلب مع العميل */
+  confirmationStatus: number[];
   userId: string[];
   /** معرفات «التوصيل بواسطة» من `deliveryByOptions` */
   deliveryBy: number[];
@@ -139,6 +141,15 @@ export default function OrdersHomixFiltersPanel({
     [meta?.manufactureStatuses]
   );
 
+  const confirmationOpts = useMemo(
+    () =>
+      (meta?.confirmationStatuses ?? []).map((status) => ({
+        value: status.id,
+        label: status.label,
+      })),
+    [meta?.confirmationStatuses]
+  );
+
   const paymentOpts = useMemo(
     () =>
       meta?.paymentStatuses?.length
@@ -188,6 +199,7 @@ export default function OrdersHomixFiltersPanel({
   const [draftStatus,   setDraftStatus]   = useState<number[]>(value.orderStatus ?? []);
   const [draftDelivery, setDraftDelivery] = useState<number[]>(value.deliveryStatus ?? []);
   const [draftManufacture, setDraftManufacture] = useState<number[]>(value.manufactureStatus ?? []);
+  const [draftConfirmation, setDraftConfirmation] = useState<number[]>(value.confirmationStatus ?? []);
   const [draftPayment,  setDraftPayment]  = useState<string[]>((value.paymentStatus ?? []).map(String));
   const [draftVendor,   setDraftVendor]   = useState<string[]>((value.selectedVendor ?? []).map(String));
   const [draftUserId,   setDraftUserId]   = useState<string[]>((value.userId ?? []).map(String));
@@ -206,6 +218,7 @@ export default function OrdersHomixFiltersPanel({
     setDraftStatus(value.orderStatus ?? []);
     setDraftDelivery(value.deliveryStatus ?? []);
     setDraftManufacture(value.manufactureStatus ?? []);
+    setDraftConfirmation(value.confirmationStatus ?? []);
     setDraftPayment((value.paymentStatus ?? []).map(String));
     setDraftVendor((value.selectedVendor ?? []).map(String));
     setDraftUserId((value.userId ?? []).map(String));
@@ -216,6 +229,8 @@ export default function OrdersHomixFiltersPanel({
   const totalActive =
     draftStatus.length +
     draftDelivery.length +
+    draftManufacture.length +
+    draftConfirmation.length +
     draftPayment.length +
     (isVendor ? 0 : draftVendor.length) +
     draftUserId.length +
@@ -231,6 +246,7 @@ export default function OrdersHomixFiltersPanel({
       paymentStatus:  draftPayment,
       deliveryStatus: draftDelivery,
       manufactureStatus: draftManufacture,
+      confirmationStatus: draftConfirmation,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
       orderSource:    draftOrderSource,
@@ -248,6 +264,7 @@ export default function OrdersHomixFiltersPanel({
     paymentStatus:  (value.paymentStatus ?? []).map(String),
     deliveryStatus: value.deliveryStatus ?? [],
     manufactureStatus: value.manufactureStatus ?? [],
+    confirmationStatus: value.confirmationStatus ?? [],
     userId:         (value.userId ?? []).map(String),
     deliveryBy:     value.deliveryBy ?? [],
     orderSource:    value.orderSource ?? [],
@@ -260,6 +277,7 @@ export default function OrdersHomixFiltersPanel({
       paymentStatus:  draftPayment,
       deliveryStatus: draftDelivery,
       manufactureStatus: draftManufacture,
+      confirmationStatus: draftConfirmation,
       userId:         draftUserId,
       deliveryBy:     draftDeliveryBy,
       orderSource:    draftOrderSource,
@@ -271,6 +289,8 @@ export default function OrdersHomixFiltersPanel({
   const handleReset = () => {
     setDraftStatus([]);
     setDraftDelivery([]);
+    setDraftManufacture([]);
+    setDraftConfirmation([]);
     setDraftPayment([]);
     setDraftVendor([]);
     setDraftUserId([]);
@@ -287,8 +307,16 @@ export default function OrdersHomixFiltersPanel({
       onRemove: () => setDraftStatus((p) => p.filter((x) => x !== s)),
     })),
     ...draftDelivery.map((s) => ({
-      label: `تصنيع: ${manufactureOpts.find((o) => o.value === s)?.label ?? s}`,
+      label: `تأخير: ${DELIVERY_STATUS.find((o) => o.value === s)?.label ?? s}`,
       onRemove: () => setDraftDelivery((p) => p.filter((x) => x !== s)),
+    })),
+    ...draftManufacture.map((s) => ({
+      label: `تصنيع: ${manufactureOpts.find((o) => o.value === s)?.label ?? s}`,
+      onRemove: () => setDraftManufacture((p) => p.filter((x) => x !== s)),
+    })),
+    ...draftConfirmation.map((s) => ({
+      label: `تأكيد: ${confirmationOpts.find((o) => o.value === s)?.label ?? s}`,
+      onRemove: () => setDraftConfirmation((p) => p.filter((x) => x !== s)),
     })),
     ...(isVendor ? [] : draftPayment.map((p) => ({
       label: `دفع: ${paymentOpts.find((o) => String(o.value) === p)?.label ?? p}`,
@@ -422,6 +450,19 @@ export default function OrdersHomixFiltersPanel({
                   onChange={setDraftDelivery}
                   onClose={handleDropdownClose}
                   options={DELIVERY_STATUS}
+                  placeholder="كل الحالات"
+                />
+              </FieldBox>
+            </Grid>
+
+            {/* حالة التأكيد */}
+            <Grid item xs={12} sm={6} md={2}>
+              <FieldBox label="حالة التأكيد">
+                <MultiSelect
+                  value={draftConfirmation}
+                  onChange={setDraftConfirmation}
+                  onClose={handleDropdownClose}
+                  options={confirmationOpts}
                   placeholder="كل الحالات"
                 />
               </FieldBox>

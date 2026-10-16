@@ -15,6 +15,7 @@ export interface SelectOption {
 
 export interface OrderStatusOptions {
   orderStatusOptions: SelectOption[];
+  confirmationStatusOptions: SelectOption[];
   manufactureOptions: SelectOption[];
   assigneeOptions: SelectOption[];
   deliveryStatusOptions: SelectOption[];
@@ -41,6 +42,15 @@ export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
       : statusoptions;
   }, [metaQuery.data]);
 
+  const confirmationStatusOptions = useMemo(
+    () =>
+      (metaQuery.data?.confirmationStatuses ?? []).map((status) => ({
+        value: status.id,
+        label: status.label,
+      })),
+    [metaQuery.data?.confirmationStatuses]
+  );
+
   const deliveryByOptions = useMemo(() => {
     const fromMeta = metaQuery.data?.deliveryByOptions;
     return fromMeta?.length
@@ -60,6 +70,7 @@ export function useOrderStatusOptions(users: any[]): OrderStatusOptions {
 
   return {
     orderStatusOptions,
+    confirmationStatusOptions,
     manufactureOptions,
     assigneeOptions,
     deliveryStatusOptions: DELIVERY_STATUS,

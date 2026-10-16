@@ -24,6 +24,7 @@ export interface OrdersMetaPriority {
 
 export interface OrdersMeta {
   assignees: OrdersMetaAssignee[];
+  confirmationStatuses: OrdersMetaIdLabel[];
   /** خيارات «التوصيل بواسطة» (هوميكس / بائع …) */
   deliveryByOptions: OrdersMetaIdLabel[];
   manufactureStatuses: OrdersMetaIdLabel[];
@@ -93,6 +94,7 @@ function mapPriorities(raw: unknown): OrdersMetaPriority[] {
 function emptyOrdersMeta(): OrdersMeta {
   return {
     assignees: [],
+    confirmationStatuses: [],
     deliveryByOptions: [],
     manufactureStatuses: [],
     orderSources: [],
@@ -107,6 +109,9 @@ function emptyOrdersMeta(): OrdersMeta {
 export function mapApiToOrdersMeta(raw: Record<string, unknown>): OrdersMeta {
   return {
     assignees: mapAssignees(raw.assignees),
+    confirmationStatuses: mapIdLabelOptions(
+      raw.confirmationStatuses ?? raw.confirmation_statuses
+    ),
     deliveryByOptions: mapIdLabelOptions(
       raw.deliveryByOptions ?? raw.delivery_by_options
     ),

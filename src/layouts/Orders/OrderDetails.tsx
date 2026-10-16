@@ -56,6 +56,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
     isUpdatingComment,
     changeManufactureStatus,
     changeOrderStatus,
+    changeConfirmationStatus,
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryBy,
@@ -143,6 +144,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
               orderTotalToBeCollected={orderTotalToBeCollected} orderTotalCost={orderTotalCost} orderId={id}
               isVendor={isVendor} isAdmin={isAdmin} isAddingComment={isAddingComment} isUpdatingComment={isUpdatingComment}
               navigate={navigate} changeManufactureStatus={changeManufactureStatus} changeOrderStatus={changeOrderStatus}
+              changeConfirmationStatus={changeConfirmationStatus}
               changeDeliveryStatus={changeDeliveryStatus} changeAssignee={changeAssignee} changeDeliveryBy={changeDeliveryBy}
               changeShipmentType={changeShipmentType} changeDownPayment={changeDownPayment} changeShippingFees={changeShippingFees}
               changeDiscount={changeDiscount} changeCostPrice={changeCostPrice} changePriority={changePriority}
@@ -220,6 +222,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
               navigate={navigate}
               changeManufactureStatus={changeManufactureStatus}
               changeOrderStatus={changeOrderStatus}
+              changeConfirmationStatus={changeConfirmationStatus}
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
               changeDeliveryBy={changeDeliveryBy}

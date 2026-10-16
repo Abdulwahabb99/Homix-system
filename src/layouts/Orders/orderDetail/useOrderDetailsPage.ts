@@ -86,6 +86,14 @@ export function useOrderDetailsPage(orderId?: string | number) {
     [updateOrderField]
   );
 
+  const changeConfirmationStatus = useCallback(
+    (confirmationStatus: number | null) => {
+      if (confirmationStatus == null) return;
+      updateOrderField({ confirmationStatus });
+    },
+    [updateOrderField]
+  );
+
   const changeDeliveryStatus = useCallback(
     (deliveryStatus: number | null) => {
       if (deliveryStatus == null) return;
@@ -502,6 +510,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
     isUpdatingComment,
     changeManufactureStatus,
     changeOrderStatus,
+    changeConfirmationStatus,
     changeDeliveryStatus,
     changeAssignee,
     changeDeliveryBy,

@@ -102,6 +102,11 @@ function Orders() {
     if (!raw) return [];
     return raw.split(",").map(Number).filter((n) => !isNaN(n));
   }, [searchParams]);
+  const confirmationStatusList = useMemo(() => {
+    const raw = searchParams.get("confirmationStatus");
+    if (!raw) return [];
+    return raw.split(",").map(Number).filter((n) => !isNaN(n));
+  }, [searchParams]);
   const priorityList = useMemo(() => {
     const raw = searchParams.get("priority");
     return raw ? raw.split(",") : [];
@@ -181,6 +186,7 @@ function Orders() {
   const paymentStatusParam = searchParams.get("paymentStatus");
   const deliveryStatusParam = searchParams.get("deliveryStatus");
   const manufactureStatusParam = searchParams.get("manufactureStatus");
+  const confirmationStatusParam = searchParams.get("confirmationStatus");
   const deliveryByParam = searchParams.get("deliveryBy");
   const orderSourceParam = searchParams.get("orderSource");
   const priorityParam = searchParams.get("priority");
@@ -197,6 +203,7 @@ function Orders() {
       JSON.stringify({
         p: page, on: orderNumberParam, v: vendorIdParam,
         s: orderStatusParam, ps: paymentStatusParam, ds: deliveryStatusParam,
+        ms: manufactureStatusParam, cs: confirmationStatusParam,
         u: filterUserId || null,
         db: deliveryByParam || null,
         osrc: orderSourceParam || null,
@@ -209,7 +216,7 @@ function Orders() {
       }),
     [
       page, orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, manufactureStatusParam, filterUserId, deliveryByParam, orderSourceParam, priorityParam, sortKey, startDate, endDate,
+      deliveryStatusParam, manufactureStatusParam, confirmationStatusParam, filterUserId, deliveryByParam, orderSourceParam, priorityParam, sortKey, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
   );
@@ -225,6 +232,8 @@ function Orders() {
         s: orderStatusParam || null,
         ps: paymentStatusParam || null,
         ds: deliveryStatusParam || null,
+        ms: manufactureStatusParam || null,
+        cs: confirmationStatusParam || null,
         u: filterUserId || null,
         db: deliveryByParam || null,
         osrc: orderSourceParam || null,
@@ -242,6 +251,7 @@ function Orders() {
       paymentStatusParam,
       deliveryStatusParam,
       manufactureStatusParam,
+      confirmationStatusParam,
       filterUserId,
       deliveryByParam,
       orderSourceParam,
@@ -262,6 +272,7 @@ function Orders() {
       paymentStatus: paymentStatusParam || undefined,
       deliveryStatus: deliveryStatusParam || undefined,
       manufactureStatus: manufactureStatusParam || undefined,
+      confirmationStatus: confirmationStatusParam || undefined,
       deliveryBy: deliveryByParam || undefined,
       orderSource: orderSourceParam || undefined,
       userId: filterUserId || undefined,
@@ -279,6 +290,7 @@ function Orders() {
       paymentStatusParam,
       deliveryStatusParam,
       manufactureStatusParam,
+      confirmationStatusParam,
       filterUserId,
       deliveryByParam,
       orderSourceParam,
@@ -294,7 +306,7 @@ function Orders() {
   const ordersFilterParams = useMemo(
     () => ({
       orderNumberParam, vendorIdParam, orderStatusParam,
-      paymentStatusParam, deliveryStatusParam, manufactureStatusParam,
+      paymentStatusParam, deliveryStatusParam, manufactureStatusParam, confirmationStatusParam,
       userIdParam: filterUserId || undefined,
       deliveryByParam: deliveryByParam || undefined,
       orderSourceParam: orderSourceParam || undefined,
@@ -308,7 +320,7 @@ function Orders() {
     }),
     [
       orderNumberParam, vendorIdParam, orderStatusParam, paymentStatusParam,
-      deliveryStatusParam, manufactureStatusParam, filterUserId, deliveryByParam, orderSourceParam,
+      deliveryStatusParam, manufactureStatusParam, confirmationStatusParam, filterUserId, deliveryByParam, orderSourceParam,
       priorityParam, sortConfig, startDate, endDate,
       apiOperationCode, apiCustomerName, apiProductCode,
     ]
@@ -386,7 +398,7 @@ function Orders() {
     id: any, orderSt: any, commission: any, totalVendorDue: any, pay: any,
     downPayment: any, toBeCollected: any, shippingFees: any, selectedV: any,
     administrator: any, totalCompanyDue: any, expectedDeliveryDate: any,
-    orderSource: any, deliveryBy: any
+    orderSource: any, deliveryBy: any, confirmationStatus: any
   ) => {
     setIsSubmitting(true);
     axiosRequest
@@ -397,6 +409,7 @@ function Orders() {
         ...(administrator && { userId: administrator }),
         ...(orderSource !== "" && orderSource != null && { orderSource }),
         ...(deliveryBy !== "" && deliveryBy != null && { deliveryBy }),
+        ...(confirmationStatus !== "" && confirmationStatus != null && { confirmationStatus }),
         commission, paymentStatus: pay, downPayment, shippingFees,
         toBeCollected, totalVendorDue, totalCompanyDue,
       })
@@ -445,6 +458,7 @@ function Orders() {
     paymentStatus: string[];
     deliveryStatus: number[];
     manufactureStatus: number[];
+    confirmationStatus: number[];
     userId: string[];
     deliveryBy: number[];
     orderSource: number[];
@@ -456,6 +470,7 @@ function Orders() {
       paymentStatus:  d.paymentStatus?.length ? d.paymentStatus : "",
       deliveryStatus: d.deliveryStatus?.length ? d.deliveryStatus.map(String) : "",
       manufactureStatus: d.manufactureStatus?.length ? d.manufactureStatus.map(String) : "",
+      confirmationStatus: d.confirmationStatus?.length ? d.confirmationStatus.map(String) : "",
       userId:         d.userId?.length ? d.userId : "",
       deliveryBy:     d.deliveryBy?.length ? d.deliveryBy.map(String).join(",") : "",
       orderSource:    d.orderSource?.length ? d.orderSource.map(String).join(",") : "",
@@ -470,6 +485,7 @@ function Orders() {
       paymentStatus: "",
       deliveryStatus: "",
       manufactureStatus: "",
+      confirmationStatus: "",
       userId: "",
       deliveryBy: "",
       orderSource: "",
@@ -493,7 +509,7 @@ function Orders() {
     [orders, selectionModel]
   );
 
-  const bulkEdit = (orderSt: any, pay: any, deliveryBy: any, assigneeId: any, orderSource: any) => {
+  const bulkEdit = (orderSt: any, pay: any, deliveryBy: any, assigneeId: any, orderSource: any, confirmationStatus: any) => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
     axiosRequest
       .put(`${baseURI}/orders/bulk-update`, {
@@ -504,6 +520,7 @@ function Orders() {
           ...(deliveryBy && { deliveryBy }),
           ...(assigneeId && { userId: assigneeId }),
           ...(orderSource && { orderSource }),
+          ...(confirmationStatus && { confirmationStatus }),
         },
       })
       .then(() => {
@@ -743,6 +760,7 @@ function Orders() {
                   paymentStatus:  paymentList,
                   deliveryStatus: deliveryStatusList,
                   manufactureStatus: manufactureStatusList,
+                  confirmationStatus: confirmationStatusList,
                   userId:         userIdList,
                   deliveryBy:     deliveryByList,
                   orderSource:    orderSourceList,

@@ -41,6 +41,7 @@ export type OrderDetailsViewProps = {
   navigate: NavigateFunction;
   changeManufactureStatus: (status: number | null) => void;
   changeOrderStatus: (status: number | null) => void;
+  changeConfirmationStatus: (status: number | null) => void;
   changeDeliveryStatus: (status: number | null) => void;
   changeAssignee: (userId: number | null) => void;
   changeDeliveryBy: (deliveryBy: number | null) => void;
@@ -84,6 +85,7 @@ export default function OrderDetailsView({
   navigate,
   changeManufactureStatus,
   changeOrderStatus,
+  changeConfirmationStatus,
   changeDeliveryStatus,
   changeAssignee,
   changeDeliveryBy,
@@ -148,6 +150,7 @@ export default function OrderDetailsView({
               manufactureStatus={manufactureStatus}
               users={users}
               changeOrderStatus={changeOrderStatus}
+              changeConfirmationStatus={changeConfirmationStatus}
               changeDeliveryStatus={changeDeliveryStatus}
               changeAssignee={changeAssignee}
               changeDeliveryBy={changeDeliveryBy}
