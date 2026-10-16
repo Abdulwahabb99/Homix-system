@@ -122,9 +122,11 @@ const fieldBaseProps = {
   InputLabelProps: { shrink: true },
 } as const;
 
-export default function ShipmentEdit() {
+export type ShipmentEditProps = { shipmentId?: string | number; embedded?: boolean; onClose?: () => void; onSaved?: () => void };
+
+export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = false, onClose, onSaved }: ShipmentEditProps = {}) {
   const { id } = useParams();
-  const shipmentId = id ?? "";
+  const shipmentId = String(shipmentIdProp ?? id ?? "");
   const navigate = useNavigate();
   /** فلاتر القائمة تُمرَّر في رابط هذه الصفحة، ومنه نبنيه رابط العودة. */
   const location = useLocation();
@@ -298,13 +300,20 @@ export default function ShipmentEdit() {
     return body;
   }
 
-  const goBack = () => navigate(`/shipments/${shipmentId}`);
+  const goBack = () => embedded && onClose ? onClose() : navigate(`/shipments/${shipmentId}`);
   /**
    * سهم الرجوع وحفظ التعديلات يعودان لقائمة الشحنات، لا لصفحة تفاصيل الشحنة.
    * نُعيد معها نفس فلاتر الرابط التي وصلت من القائمة، فلا يفقد المستخدم فلترته.
    */
   const shipmentsListUrl = `/shipments${location.search}`;
-  const goToShipmentsList = () => navigate(shipmentsListUrl);
+  const goToShipmentsList = () => {
+    if (embedded) {
+      onSaved?.();
+      onClose?.();
+      return;
+    }
+    navigate(shipmentsListUrl);
+  };
 
   const handleSave = () => {
     if (updateMutation.isPending || !shipmentId) return;
@@ -360,28 +369,29 @@ export default function ShipmentEdit() {
   );
 
   if (isLoading) {
+    const state = <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: embedded ? 300 : "60vh" }}><CircularProgress size={42} sx={{ color: HX.accent }} /></Box>;
+    if (embedded) return state;
     return (
       <DashboardLayout header={<HomixPageHeader breadcrumb={breadcrumb} />}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-          <CircularProgress size={42} sx={{ color: HX.accent }} />
-        </Box>
+        {state}
       </DashboardLayout>
     );
   }
   if (isError || !data) {
+    const state = <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: embedded ? 300 : "60vh", fontFamily: FONT, color: HX.tx2 }}>تعذّر تحميل تفاصيل الشحنة</Box>;
+    if (embedded) return state;
     return (
       <DashboardLayout header={<HomixPageHeader breadcrumb={breadcrumb} />}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", fontFamily: FONT, color: HX.tx2 }}>
-          تعذّر تحميل تفاصيل الشحنة
-        </Box>
+        {state}
       </DashboardLayout>
     );
   }
 
-  return (
-    <DashboardLayout header={<HomixPageHeader breadcrumb={breadcrumb} actions={actions} />}>
+  const form = (
+    <>
       <ToastContainer />
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: 920, mx: "auto", pb: "24px" }}>
+        {embedded && <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>{actions}</Box>}
         {/* Back + read-only identity */}
         <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <IconButton onClick={goToShipmentsList} sx={{ color: HX.tx2, border: `1px solid ${HX.border}`, borderRadius: "9px", p: "6px" }}>
@@ -572,6 +582,8 @@ export default function ShipmentEdit() {
           {actions}
         </Box>
       </Box>
-    </DashboardLayout>
+    </>
   );
+  if (embedded) return form;
+  return <DashboardLayout header={<HomixPageHeader breadcrumb={breadcrumb} actions={actions} />}>{form}</DashboardLayout>;
 }

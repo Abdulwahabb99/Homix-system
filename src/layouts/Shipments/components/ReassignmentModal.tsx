@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, TextField } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -17,14 +17,13 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
   const [reason, setReason] = useState(REASONS[0]);
   const [customReason, setCustomReason] = useState("");
   const [notes, setNotes] = useState("");
-  const [keepOldPending, setKeepOldPending] = useState(false);
   const client = useQueryClient();
   const save = useMutation({
     mutationFn: async () => axiosRequest.post("/shipments/reassignments", {
       sourceOrderId: source?.id,
       targetOperationNumber: targetOperationNumber.trim(),
       reason: reason === "سبب آخر" ? customReason.trim() : reason,
-      notes: notes.trim(), keepOldPending,
+      notes: notes.trim(),
     }),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: reassignmentKey });
@@ -43,7 +42,7 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
       <TextField select label="سبب إعادة التخصيص" value={reason} onChange={(event) => setReason(event.target.value)} fullWidth size="small">{REASONS.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField>
       {reason === "سبب آخر" && <TextField label="السبب" value={customReason} onChange={(event) => setCustomReason(event.target.value)} required fullWidth size="small" />}
       <TextField label="ملاحظات إضافية" value={notes} onChange={(event) => setNotes(event.target.value)} multiline minRows={3} fullWidth size="small" />
-      <FormControlLabel control={<Checkbox checked={keepOldPending} onChange={(event) => setKeepOldPending(event.target.checked)} />} label="العميل ما زال يحتاج الطلب الأصلي — اتركه معلقًا" />
+      {reason === "إعادة تخصيص - العميل لسه محتاج الطلب" && <Box sx={{ bgcolor: "#fff7e6", color: "#92400e", p: 1.5, borderRadius: 2, fontSize: 12 }}>الحالة المختارة ستُبقي الطلب الأصلي «معلقًا» تلقائيًا.</Box>}
       <Box sx={{ bgcolor: "#e6f7ef", color: "#087446", p: 1.5, borderRadius: 2, fontSize: 12 }}>الطلب الجديد يصبح «في المخزن». لا تُنقل كمية المخزون ولا تتغير المبالغ والمدفوعات.</Box>
     </DialogContent>
     <DialogActions sx={{ p: 2 }}><Button onClick={onClose} disabled={save.isPending}>إلغاء</Button><Button variant="contained" disabled={save.isPending || !targetOperationNumber.trim() || (reason === "سبب آخر" && customReason.trim().length < 2)} onClick={() => save.mutate()}>تأكيد إعادة التخصيص</Button></DialogActions>

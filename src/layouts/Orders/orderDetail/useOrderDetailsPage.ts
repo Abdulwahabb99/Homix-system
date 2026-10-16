@@ -14,8 +14,9 @@ function getApiErrorMessage(error: any, fallback: string): string {
   );
 }
 
-export function useOrderDetailsPage() {
-  const { id } = useParams();
+export function useOrderDetailsPage(orderId?: string | number) {
+  const { id: routeId } = useParams();
+  const id = orderId == null ? routeId : String(orderId);
   const [isLoading, setIsLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [manufactureStatus, setManufactureStatus] = useState<number | null>(null);

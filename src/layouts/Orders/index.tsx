@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -22,6 +23,7 @@ import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
 import { ORDERS_SORT_OPTIONS } from "layouts/Orders/utils/constants";
 import { useOrdersSummaryQuery } from "query/ordersSummary.api";
+import OrderDetails from "./OrderDetails";
 
 /* ── New UI components ── */
 import OrdersHomixListingHeader from "layouts/Orders/components/OrdersHomixListingHeader";
@@ -164,6 +166,7 @@ function Orders() {
   const [isBulkEditModalOpen,   setIsBulkEditModalOpen]   = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isSubmitting,          setIsSubmitting]          = useState(false);
+  const [viewOrder,             setViewOrder]             = useState<any | null>(null);
   const [selectionModel,        setSelectionModel]        = useState<(string | number)[]>([]);
   const [isExportLoading,       setIsExportLoading]       = useState(false);
 
@@ -653,6 +656,26 @@ function Orders() {
           isSubmitting={isSubmitting}
         />
       )}
+      <Dialog
+        open={Boolean(viewOrder)}
+        onClose={() => setViewOrder(null)}
+        fullWidth
+        maxWidth="xl"
+        dir="rtl"
+        PaperProps={{ sx: { height: { xs: "100%", md: "92vh" }, m: { xs: 0, md: 2 }, borderRadius: { xs: 0, md: "16px" } } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'Cairo', sans-serif", fontWeight: 800, borderBottom: `1px solid ${HX.border}` }}>
+          تفاصيل الطلب #{viewOrder?.orderNumber || viewOrder?.code || viewOrder?.orderId || ""}
+          <IconButton aria-label="إغلاق" onClick={() => setViewOrder(null)} sx={{ minWidth: 44, minHeight: 44 }}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: HX.bg, p: { xs: 1.5, md: 2.5 } }}>
+          {viewOrder && <OrderDetails orderId={viewOrder.orderId} embedded />}
+        </DialogContent>
+        {!isVendor && <DialogActions sx={{ p: 2, borderTop: `1px solid ${HX.border}` }}>
+          <Button onClick={() => setViewOrder(null)}>إغلاق</Button>
+          <Button variant="contained" onClick={() => { setSelectedEditOrder(viewOrder); setViewOrder(null); setIsEditModalOpen(true); }}>تعديل الطلب</Button>
+        </DialogActions>}
+      </Dialog>
       {isDeleteModalOpen && selectedEditOrder && (
         <ConfirmDeleteModal
           title="الطلب"
@@ -751,7 +774,7 @@ function Orders() {
               onSelectionModelChange={(m) => setSelectionModel(m)}
               onEdit={(row) => { setSelectedEditOrder(row as any); setIsEditModalOpen(true); }}
               onDelete={(row) => { setSelectedEditOrder(row as any); setIsDeleteModalOpen(true); }}
-              onView={(orderId) => window.open(`/orders/${orderId}`, "_blank", "noopener,noreferrer")}
+              onView={(orderId) => setViewOrder(orders.find((row: any) => String(row.orderId) === String(orderId)) ?? { orderId })}
               onBulkEdit={() => setIsBulkEditModalOpen(true)}
               onBulkDelete={() => setIsBulkDeleteModalOpen(true)}
               onBulkPrintInvoice={() => void handleBulkPrintInvoice()}

@@ -13,7 +13,13 @@ import OrderDetailsView from "./orderDetail/OrderDetailsView";
 import OrderDetailsLayoutHeader from "./orderDetail/OrderDetailsLayoutHeader";
 import { useOrderDetailsPage } from "./orderDetail/useOrderDetailsPage";
 
-function OrderDetails() {
+export type OrderDetailsProps = {
+  orderId?: string | number;
+  embedded?: boolean;
+  onRequestEdit?: () => void;
+};
+
+function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetailsProps = {}) {
   const navigate = useNavigate();
   const componentRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -67,7 +73,7 @@ function OrderDetails() {
     handleAddComment,
     handleFileChange,
     handleRemoveFile,
-  } = useOrderDetailsPage();
+  } = useOrderDetailsPage(orderId);
 
   const handleDownloadInvoice = async () => {
     if (!componentRef.current) {
@@ -92,7 +98,7 @@ function OrderDetails() {
     }
   };
 
-  return (
+  const body = (
     <>
       {orderDetails?.id && (
         <div
@@ -111,7 +117,42 @@ function OrderDetails() {
           <OrderInvoiceDocument ref={componentRef} orderDetails={orderDetails} />
         </div>
       )}
-      <DashboardLayout
+      {embedded ? (
+        <Box sx={{ width: "100%", fontFamily: "'Cairo', sans-serif" }}>
+          <ToastContainer />
+          <ConfirmDeleteModal
+            open={pendingDeleteNoteId != null}
+            onClose={() => setPendingDeleteNoteId(null)}
+            handleConfirmDelete={() => pendingDeleteNoteId != null && deleteComment(pendingDeleteNoteId)}
+            title="التعليق"
+            message="سيتم حذف التعليق نهائياً. هل تريد المتابعة؟"
+            tone="danger"
+            confirmButtonText="حذف"
+            cancelButtonText="رجوع"
+          />
+          {isEditModalOpenned && slectedOrderLine && (
+            <EditOrderProductsModal open={isEditModalOpenned} onClose={() => setIsEditModalOpenned(false)} onEdit={onEdit} data={slectedOrderLine} />
+          )}
+          {isLoading ? <OrderDetailsSkeleton /> : orderDetails ? (
+            <OrderDetailsView
+              orderDetails={orderDetails} orderlines={orderlines} manufactureStatus={manufactureStatus}
+              administrator={administrator} users={users} comments={comments} commentText={commentText}
+              setCommentText={setCommentText} editingIndex={editingIndex} setEditingIndex={setEditingIndex}
+              editedCommentText={editedCommentText} setEditedCommentText={setEditedCommentText} setComments={setComments}
+              selectedFiles={selectedFiles} orderTotalPrice={orderTotalPrice} orderTotalShipping={orderTotalShipping}
+              orderTotalToBeCollected={orderTotalToBeCollected} orderTotalCost={orderTotalCost} orderId={id}
+              isVendor={isVendor} isAdmin={isAdmin} isAddingComment={isAddingComment} isUpdatingComment={isUpdatingComment}
+              navigate={navigate} changeManufactureStatus={changeManufactureStatus} changeOrderStatus={changeOrderStatus}
+              changeDeliveryStatus={changeDeliveryStatus} changeAssignee={changeAssignee} changeDeliveryBy={changeDeliveryBy}
+              changeShipmentType={changeShipmentType} changeDownPayment={changeDownPayment} changeShippingFees={changeShippingFees}
+              changeDiscount={changeDiscount} changeCostPrice={changeCostPrice} changePriority={changePriority}
+              updateCustomer={updateCustomer} isUpdatingCustomer={isUpdatingCustomer} updateComment={updateComment}
+              handleFileChange={handleFileChange} handleRemoveFile={handleRemoveFile} handleAddComment={handleAddComment}
+              setPendingDeleteNoteId={setPendingDeleteNoteId} handleDownloadInvoice={handleDownloadInvoice}
+            />
+          ) : null}
+        </Box>
+      ) : <DashboardLayout
         header={
           orderDetails && !isLoading ? (
             <OrderDetailsLayoutHeader
@@ -119,7 +160,7 @@ function OrderDetails() {
               routeOrderId={id}
               isVendor={isVendor}
               invoicePdfLoading={invoicePdfLoading}
-              onNavigateEdit={() => navigate(`/orders/edit/${id}`)}
+              onNavigateEdit={() => onRequestEdit ? onRequestEdit() : navigate(`/orders/edit/${id}`)}
               onDownloadInvoice={handleDownloadInvoice}
             />
           ) : undefined
@@ -199,9 +240,10 @@ function OrderDetails() {
             />
           )}
         </Box>
-      </DashboardLayout>
+      </DashboardLayout>}
     </>
   );
+  return body;
 }
 
 export default OrderDetails;

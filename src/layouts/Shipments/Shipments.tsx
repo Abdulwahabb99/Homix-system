@@ -4,7 +4,8 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { ToastContainer, toast } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
-import { Box } from "@mui/material";
+import { Box, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -29,6 +30,8 @@ import InventoryPanel from "./components/panels/InventoryPanel";
 import ReceiptsPanel from "./components/receipts/ReceiptsPanel";
 import ReassignmentsPanel from "./components/panels/ReassignmentsPanel";
 import ReassignmentModal from "./components/ReassignmentModal";
+import ShipmentDetails from "./components/ShipmentDetails";
+import ShipmentEdit from "./components/ShipmentEdit/ShipmentEdit";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
@@ -145,6 +148,7 @@ interface ShipmentsTabContentProps {
   totalCount: number;
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
+  onView: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
   onReassign: (shipment: ShipmentItem) => void;
   selectionModel: number[];
@@ -168,6 +172,7 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
   totalCount,
   onPageChange,
   onEdit,
+  onView,
   onDelete,
   onReassign,
   selectionModel,
@@ -194,6 +199,7 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         totalCount={totalCount}
         onPageChange={onPageChange}
         onEdit={onEdit}
+        onView={onView}
         onDelete={onDelete}
         onReassign={onReassign}
         selectionModel={selectionModel}
@@ -214,6 +220,8 @@ export default function Shipments() {
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState<ShipmentTabId>("shipments");
   const [reassignSource, setReassignSource] = useState<ShipmentItem | null>(null);
+  const [viewShipment, setViewShipment] = useState<ShipmentItem | null>(null);
+  const [editShipment, setEditShipment] = useState<ShipmentItem | null>(null);
   const { can } = usePermissions();
 
   /* Tabs the user has no permission for are hidden outright — showing them only
@@ -571,17 +579,12 @@ export default function Shipments() {
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
-  /**
-   * نحمل فلاتر القائمة في رابط صفحة التعديل، فتعود صفحة التعديل بها إلى القائمة
-   * بعد الحفظ ويجد المستخدم فلترته وصفحته كما كانت. الرابط هو الناقل (لا حالة
-   * الراوتر) حتى ينجو التمرير من إعادة تحميل الصفحة أو فتحها في تاب جديد.
-   */
   const handleEditShipment = React.useCallback(
     (shipment: ShipmentItem) => {
-      const query = searchParams.toString();
-      navigate(`/shipments/edit/${shipment.id}${query ? `?${query}` : ""}`);
+      setViewShipment(null);
+      setEditShipment(shipment);
     },
-    [navigate, searchParams]
+    []
   );
   const handleDeleteShipment = React.useCallback((shipment: ShipmentItem) => {
     setSelectedShipment(shipment);
@@ -718,16 +721,22 @@ export default function Shipments() {
           aria-label="أقسام الشحن والتوصيل"
           sx={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            gap: "12px", flexWrap: "wrap",
+            gap: "12px", overflowX: "auto", direction: "ltr",
             mb: "16px",
             bgcolor: HX.surface,
-            borderRadius: "12px",
+            borderRadius: "14px",
             border: `1px solid ${HX.border}`,
-            p: "6px",
+            p: "7px",
             width: "100%",
+            minHeight: 60,
+            boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+            "&::-webkit-scrollbar": { height: 4 },
           }}
         >
-          {[visibleTabs.filter((tab) => !["shipments", "receipts", "reassignments"].includes(tab.id)), visibleTabs.filter((tab) => ["shipments", "receipts", "reassignments"].includes(tab.id))].map((group, groupIndex) => <Box key={groupIndex} sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>{group.map((tab) => {
+          {[
+            ["receipts", "reassignments", "shipments"],
+            ["returns", "inventory", "accounts", "reports"],
+          ].map((ids) => ids.map((id) => visibleTabs.find((tab) => tab.id === id)).filter(Boolean) as typeof visibleTabs).map((group, groupIndex) => <Box key={groupIndex} sx={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>{group.map((tab) => {
             const active = activeTab === tab.id;
             const count = tabCounts[tab.id as keyof typeof tabCounts] ?? 0;
             return (
@@ -753,9 +762,10 @@ export default function Shipments() {
                   cursor: "pointer",
                   minWidth: 0,
                   whiteSpace: "nowrap",
+                  direction: "rtl",
                   bgcolor: active ? HX.accent : "#FFFFFF",
                   color: active ? "#fff" : HX.tx2,
-                  boxShadow: active ? "0 2px 10px rgba(99,102,241,0.28)" : "none",
+                  boxShadow: active ? "0 3px 10px rgba(99,102,241,0.24)" : "none",
                   transition: "background .15s, box-shadow .15s, color .15s",
                   "&:hover": !active ? { bgcolor: HX.surface3, color: HX.tx } : {},
                   "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 },
@@ -767,7 +777,7 @@ export default function Shipments() {
                 <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 600, fontFamily: FONT }}>
                   {tab.label}
                 </Box>
-                {tab.id !== "reassignments" && <Box
+                <Box
                   component="span"
                   sx={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -778,7 +788,7 @@ export default function Shipments() {
                   }}
                 >
                   {count}
-                </Box>}
+                </Box>
               </Box>
             );
           })}</Box>)}
@@ -809,6 +819,7 @@ export default function Shipments() {
               onApply={handleApply}
               onReset={handleReset}
               onEdit={handleEditShipment}
+              onView={setViewShipment}
               onDelete={handleDeleteShipment}
               onReassign={setReassignSource}
               selectionModel={shipmentSelectionModel}
@@ -840,6 +851,34 @@ export default function Shipments() {
           </Box>
         )}
       </Box>
+      <Dialog
+        open={Boolean(viewShipment)}
+        onClose={() => setViewShipment(null)}
+        fullWidth maxWidth="xl" dir="rtl"
+        PaperProps={{ sx: { height: { xs: "100%", md: "92vh" }, m: { xs: 0, md: 2 }, borderRadius: { xs: 0, md: "16px" } } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: FONT, fontWeight: 800, borderBottom: `1px solid ${HX.border}` }}>
+          تفاصيل الشحنة {viewShipment?.shipmentNumber || viewShipment?.orderNumber || ""}
+          <IconButton aria-label="إغلاق" onClick={() => setViewShipment(null)} sx={{ minWidth: 44, minHeight: 44 }}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: HX.bg, p: { xs: 1.5, md: 2.5 } }}>
+          {viewShipment && <ShipmentDetails shipmentId={viewShipment.id} embedded onEdit={() => handleEditShipment(viewShipment)} />}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(editShipment)}
+        onClose={() => setEditShipment(null)}
+        fullWidth maxWidth="lg" dir="rtl"
+        PaperProps={{ sx: { height: { xs: "100%", md: "92vh" }, m: { xs: 0, md: 2 }, borderRadius: { xs: 0, md: "16px" } } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: FONT, fontWeight: 800, borderBottom: `1px solid ${HX.border}` }}>
+          تعديل الشحنة {editShipment?.shipmentNumber || editShipment?.orderNumber || ""}
+          <IconButton aria-label="إغلاق" onClick={() => setEditShipment(null)} sx={{ minWidth: 44, minHeight: 44 }}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: HX.bg, p: { xs: 1.5, md: 2.5 } }}>
+          {editShipment && <ShipmentEdit shipmentId={editShipment.id} embedded onClose={() => setEditShipment(null)} onSaved={() => queryClient.invalidateQueries({ queryKey: shipmentKeys.all() })} />}
+        </DialogContent>
+      </Dialog>
       <ReassignmentModal source={reassignSource} onClose={() => setReassignSource(null)} onSuccess={() => setActiveTab("reassignments")} />
     </DashboardLayout>
   );

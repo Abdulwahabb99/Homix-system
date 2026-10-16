@@ -7,7 +7,6 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
@@ -140,6 +139,7 @@ interface ShipmentsTableProps {
   totalCount: number;
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
+  onView: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
   onReassign?: (shipment: ShipmentItem) => void;
   selectionModel?: number[];
@@ -157,6 +157,7 @@ export default function ShipmentsTable({
   totalCount,
   onPageChange,
   onEdit,
+  onView,
   onDelete,
   onReassign,
   selectionModel = [],
@@ -267,24 +268,20 @@ export default function ShipmentsTable({
 
                 {/* رقم الشحنة */}
                 <td style={TD}>
-                  {/* رابط حقيقي بـ target="_blank" لا زر بـ navigate: تفاصيل الشحنة
-                      تُفتح في تاب جديد فلا يفقد المستخدم فلاتره وموضعه في القائمة،
-                      ويعمل معه الضغط بالزر الأوسط و«فتح في نافذة جديدة» طبيعياً. */}
                   <Box
-                    component="a"
-                    href={`/shipments/${s.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    component="button"
+                    type="button"
+                    onClick={() => onView(s)}
                     sx={{
                       border: "none", background: "none", p: 0, cursor: "pointer",
                       fontFamily: FONT, fontSize: "12px", fontWeight: 700, color: HX.accent,
                       display: "inline-flex", alignItems: "center", gap: "3px",
-                      textDecoration: "none",
+                      textDecoration: "none", minHeight: 44,
                       "&:hover": { textDecoration: "underline" },
+                      "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 },
                     }}
                   >
                     {s.shipmentNumber || s.orderNumber || "—"}
-                    <OpenInNewIcon sx={{ fontSize: 11, opacity: 0.6 }} />
                   </Box>
                 </td>
 

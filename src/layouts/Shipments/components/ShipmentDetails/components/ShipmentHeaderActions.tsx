@@ -18,10 +18,12 @@ const btnBase = {
 /** Top-bar action buttons: تعديل / تصدير PDF / إعادة جدولة / تتبع الشحنة. */
 export default function ShipmentHeaderActions({
   shipmentId,
+  onEdit,
   onExportPdf,
   exportPdfLoading = false,
 }: {
   shipmentId?: string;
+  onEdit?: () => void;
   /** عند تمريرها تُصدَّر فاتورة الشحنة كـ PDF بدل طباعة الصفحة */
   onExportPdf?: () => void;
   exportPdfLoading?: boolean;
@@ -30,7 +32,7 @@ export default function ShipmentHeaderActions({
   return (
     <>
       {shipmentId && (
-        <Box component="button" type="button" onClick={() => navigate(`/shipments/edit/${shipmentId}`)} sx={{
+        <Box component="button" type="button" onClick={() => onEdit ? onEdit() : navigate(`/shipments/edit/${shipmentId}`)} sx={{
           ...btnBase, border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2,
           "&:hover": { borderColor: HX.accent, color: HX.accent },
         }}>

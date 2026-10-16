@@ -28,22 +28,24 @@ import { downloadOrderInvoicePdf } from "layouts/Orders/utils/invoicePdf";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { buildShipmentInvoiceModel } from "./shipmentInvoiceAdapter";
 
-export default function ShipmentDetails() {
+export type ShipmentDetailsProps = { shipmentId?: string | number; embedded?: boolean; onEdit?: () => void };
+
+export default function ShipmentDetails({ shipmentId, embedded = false, onEdit }: ShipmentDetailsProps = {}) {
   const { id } = useParams();
-  const shipmentDetailId = id as string;
+  const shipmentDetailId = String(shipmentId ?? id ?? "");
 
   const { data, isLoading, isError } = useShipmentDetailQuery(shipmentDetailId);
   const { data: meta } = useShipmentsMetaQuery();
 
   if (isLoading) {
-    return <CenterState><CircularProgress size={42} sx={{ color: HX.accent }} /></CenterState>;
+    return embedded ? <Box sx={{ minHeight: 300, display: "grid", placeItems: "center" }}><CircularProgress size={42} sx={{ color: HX.accent }} /></Box> : <CenterState><CircularProgress size={42} sx={{ color: HX.accent }} /></CenterState>;
   }
   if (isError || !data) {
-    return <CenterState>تعذّر تحميل تفاصيل الشحنة</CenterState>;
+    return embedded ? <Box sx={{ minHeight: 300, display: "grid", placeItems: "center" }}>تعذّر تحميل تفاصيل الشحنة</Box> : <CenterState>تعذّر تحميل تفاصيل الشحنة</CenterState>;
   }
 
   return (
-    <LoadedShipmentDetails shipmentDetailId={shipmentDetailId} data={data} statusOptions={meta?.shipmentStatuses ?? []} />
+    <LoadedShipmentDetails shipmentDetailId={shipmentDetailId} data={data} statusOptions={meta?.shipmentStatuses ?? []} embedded={embedded} onEdit={onEdit} />
   );
 }
 
@@ -55,10 +57,14 @@ function LoadedShipmentDetails({
   shipmentDetailId,
   data,
   statusOptions,
+  embedded,
+  onEdit,
 }: {
   shipmentDetailId: string;
   data: ShipmentDetailData;
   statusOptions: ShipmentsMetaOption[];
+  embedded: boolean;
+  onEdit?: () => void;
 }) {
   const { shipment, customer, financial, products, timeline, vendor, notes } = data;
 
@@ -89,64 +95,38 @@ function LoadedShipmentDetails({
     }
   };
 
+  const details = (
+    <>
+      <ToastContainer />
+      <div
+        aria-hidden
+        style={{ position: "fixed", left: "-10000px", top: 0, width: 800, zIndex: -1, pointerEvents: "none", overflow: "hidden", background: "#fff" }}
+      >
+        <OrderInvoiceDocument ref={invoiceRef} orderDetails={invoiceModel} />
+      </div>
+      <Box sx={{ fontFamily: FONT, mt: embedded ? 0 : "12px", display: "flex", flexDirection: "column", gap: "14px" }}>
+        {embedded && <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, flexWrap: "wrap" }}><ShipmentHeaderActions shipmentId={shipmentDetailId} onEdit={onEdit} onExportPdf={handleExportPdf} exportPdfLoading={invoicePdfLoading} /></Box>}
+        <ShipmentHeaderStrip shipment={shipment} />
+        <Box sx={{ display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", lg: "1fr 330px" }, alignItems: "start" }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <ProductsCard products={products} /><ShipmentInfoCard shipment={shipment} /><TimelineCard timeline={timeline} />
+            <NotesCard notes={notes ?? []} noteText={note.noteText} sending={note.sending} onChange={note.setNoteText} onSend={note.send} selectedFiles={note.selectedFiles} onFileChange={note.handleFileChange} onRemoveFile={note.handleRemoveFile} />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <ClientCard customer={customer} shipment={shipment} /><SellerCard vendor={vendor} shipment={shipment} />
+            <FinancialsCard financial={financial} shipment={shipment} />
+            <StatusControlCard shipment={shipment} statusOptions={statusOptions} currentStatus={status.currentStatus} onChange={status.setStatusValue} saving={status.saving} saved={status.saved} onSave={status.save} />
+          </Box>
+        </Box>
+      </Box>
+    </>
+  );
+  if (embedded) return details;
   return (
     <DashboardLayout
       header={<HomixPageHeader breadcrumb={<ShipmentBreadcrumb shipNumber={shipNumber} />} actions={<ShipmentHeaderActions shipmentId={shipmentDetailId} onExportPdf={handleExportPdf} exportPdfLoading={invoicePdfLoading} />} />}
     >
-      <ToastContainer />
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          left: "-10000px",
-          top: 0,
-          width: 800,
-          zIndex: -1,
-          pointerEvents: "none",
-          overflow: "hidden",
-          background: "#fff",
-        }}
-      >
-        <OrderInvoiceDocument ref={invoiceRef} orderDetails={invoiceModel} />
-      </div>
-      <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px" }}>
-        <ShipmentHeaderStrip shipment={shipment} />
-
-        <Box sx={{ display: "grid", gap: "14px", gridTemplateColumns: { xs: "1fr", lg: "1fr 330px" }, alignItems: "start" }}>
-          {/* LEFT */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <ProductsCard products={products} />
-            <ShipmentInfoCard shipment={shipment} />
-            <TimelineCard timeline={timeline} />
-            <NotesCard
-              notes={notes ?? []}
-              noteText={note.noteText}
-              sending={note.sending}
-              onChange={note.setNoteText}
-              onSend={note.send}
-              selectedFiles={note.selectedFiles}
-              onFileChange={note.handleFileChange}
-              onRemoveFile={note.handleRemoveFile}
-            />
-          </Box>
-
-          {/* RIGHT */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <ClientCard customer={customer} shipment={shipment} />
-            <SellerCard vendor={vendor} shipment={shipment} />
-            <FinancialsCard financial={financial} shipment={shipment} />
-            <StatusControlCard
-              shipment={shipment}
-              statusOptions={statusOptions}
-              currentStatus={status.currentStatus}
-              onChange={status.setStatusValue}
-              saving={status.saving}
-              saved={status.saved}
-              onSave={status.save}
-            />
-          </Box>
-        </Box>
-      </Box>
+      {details}
     </DashboardLayout>
   );
 }
