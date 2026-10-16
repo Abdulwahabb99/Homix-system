@@ -22,6 +22,44 @@ const option = {
 const emptyRule = (): Omit<FineRule, "id"> => ({ name: "", description: "", trigger: "delivery_delay", amountType: "percent", amount: 0, frequency: "once", basis: "subtotal", graceHours: 0, maxAmount: null, effectiveFrom: new Date().toISOString(), active: true });
 const key = ["fines"];
 const font = "'Cairo', sans-serif";
+const modalFieldSx = {
+  minWidth: 0,
+  width: "100%",
+  "& .MuiInputLabel-root": { bgcolor: HX.surface, fontFamily: font, fontSize: 12, lineHeight: 1.5, px: "4px" },
+  "& .MuiOutlinedInput-root": {
+    bgcolor: HX.surface,
+    borderRadius: "10px",
+    fontFamily: font,
+    fontSize: 12,
+    height: "48px !important",
+    minHeight: "48px !important",
+  },
+  "& .MuiOutlinedInput-root.MuiInputBase-multiline": {
+    alignItems: "flex-start",
+    height: "auto !important",
+    minHeight: "88px !important",
+    py: "4px",
+  },
+  "& .MuiOutlinedInput-input": {
+    boxSizing: "border-box",
+    height: "auto !important",
+    lineHeight: 1.5,
+    minHeight: "0 !important",
+    px: "14px !important",
+    py: "12px !important",
+  },
+  "& .MuiSelect-select": {
+    alignItems: "center",
+    display: "flex",
+    height: "48px !important",
+    minHeight: "48px !important",
+    py: "0 !important",
+  },
+  "& textarea.MuiOutlinedInput-input": {
+    minHeight: "56px !important",
+    py: "8px !important",
+  },
+} as const;
 const label = (group: keyof typeof option, value: string) => option[group].find(([id]) => id === value)?.[1] ?? value;
 const date = (value: string) => new Date(value).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
 
@@ -71,15 +109,15 @@ export default function Fines() {
         {editing && "id" in editing ? "تعديل قاعدة الغرامة" : "قاعدة غرامة جديدة"}
         <IconButton aria-label="إغلاق" onClick={() => setEditing(null)} size="small" sx={{ bgcolor: HX.surface2 }}><CloseOutlinedIcon sx={{ fontSize: 18 }} /></IconButton>
       </DialogTitle>
-      <DialogContent dividers sx={{ p: "20px !important", display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 2, "& .MuiInputBase-root": { fontFamily: font, fontSize: 12, borderRadius: "10px" }, "& .MuiInputLabel-root": { fontFamily: font, fontSize: 12 } }}>
+      <DialogContent dividers sx={{ p: "20px !important", display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, alignItems: "start", gap: 2, maxHeight: "min(720px, calc(100vh - 170px))", overflowY: "auto" }}>
         {editing && <>
-          <TextField label="اسم القاعدة" placeholder="مثال: تأخير التسليم عن الموعد" value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} sx={{ gridColumn: { sm: "span 2" } }} required />
-          <TextField label="سبب الغرامة (وصف)" placeholder="اشرح إمتى القاعدة دي تتفعل بالظبط" value={editing.description} onChange={(event) => setEditing({ ...editing, description: event.target.value })} multiline minRows={2} sx={{ gridColumn: { sm: "span 2" } }} />
-          {(["trigger", "amountType", "frequency", "basis"] as const).map((field) => <TextField key={field} select label={{ trigger: "سبب تطبيق الغرامة", amountType: "طريقة الحساب", frequency: "تكرار الحساب", basis: "أساس الحساب" }[field]} value={editing[field]} onChange={(event) => setEditing({ ...editing, [field]: event.target.value })}>{option[field].map(([value, title]) => <MenuItem key={value} value={value}>{title}</MenuItem>)}</TextField>)}
-          <TextField label={editing.amountType === "percent" ? "قيمة النسبة %" : "قيمة الغرامة (ج.م)"} type="number" value={editing.amount} onChange={(event) => setEditing({ ...editing, amount: Number(event.target.value) })} />
-          <TextField label="فترة السماح قبل التفعيل (بالساعات)" type="number" value={editing.graceHours} onChange={(event) => setEditing({ ...editing, graceHours: Number(event.target.value) })} />
-          <TextField label="الحد الأقصى (اختياري)" type="number" value={editing.maxAmount ?? ""} onChange={(event) => setEditing({ ...editing, maxAmount: event.target.value === "" ? null : Number(event.target.value) })} />
-          <TextField label="تاريخ السريان" type="datetime-local" value={editing.effectiveFrom.slice(0, 16)} onChange={(event) => setEditing({ ...editing, effectiveFrom: new Date(event.target.value).toISOString() })} InputLabelProps={{ shrink: true }} />
+          <TextField label="اسم القاعدة" placeholder="مثال: تأخير التسليم عن الموعد" value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} sx={{ ...modalFieldSx, gridColumn: { sm: "span 2" } }} required />
+          <TextField label="سبب الغرامة (وصف)" placeholder="اشرح إمتى القاعدة دي تتفعل بالظبط" value={editing.description} onChange={(event) => setEditing({ ...editing, description: event.target.value })} multiline minRows={2} sx={{ ...modalFieldSx, gridColumn: { sm: "span 2" } }} />
+          {(["trigger", "amountType", "frequency", "basis"] as const).map((field) => <TextField key={field} select label={{ trigger: "سبب تطبيق الغرامة", amountType: "طريقة الحساب", frequency: "تكرار الحساب", basis: "أساس الحساب" }[field]} value={editing[field]} onChange={(event) => setEditing({ ...editing, [field]: event.target.value })} sx={modalFieldSx}>{option[field].map(([value, title]) => <MenuItem key={value} value={value}>{title}</MenuItem>)}</TextField>)}
+          <TextField label={editing.amountType === "percent" ? "قيمة النسبة %" : "قيمة الغرامة (ج.م)"} type="number" value={editing.amount} onChange={(event) => setEditing({ ...editing, amount: Number(event.target.value) })} sx={modalFieldSx} />
+          <TextField label="فترة السماح قبل التفعيل (بالساعات)" type="number" value={editing.graceHours} onChange={(event) => setEditing({ ...editing, graceHours: Number(event.target.value) })} sx={modalFieldSx} />
+          <TextField label="الحد الأقصى (اختياري)" type="number" value={editing.maxAmount ?? ""} onChange={(event) => setEditing({ ...editing, maxAmount: event.target.value === "" ? null : Number(event.target.value) })} sx={modalFieldSx} />
+          <TextField label="تاريخ السريان" type="datetime-local" value={editing.effectiveFrom.slice(0, 16)} onChange={(event) => setEditing({ ...editing, effectiveFrom: new Date(event.target.value).toISOString() })} InputLabelProps={{ shrink: true }} sx={modalFieldSx} />
           <FormControlLabel sx={{ gridColumn: { sm: "span 2" }, m: 0, justifyContent: "flex-start", "& .MuiFormControlLabel-label": { fontFamily: font, fontSize: 12, fontWeight: 700 } }} control={<Switch checked={editing.active} onChange={(_, active) => setEditing({ ...editing, active })} />} label="تفعيل القاعدة فورًا" />
         </>}
       </DialogContent>
