@@ -15,6 +15,7 @@ const ProtectedRoutes = React.lazy(
 const Financialreports = React.lazy(
   () => import(/* webpackPrefetch: true */ "layouts/Financialreports")
 );
+const Fines = React.lazy(() => import("layouts/Fines/Fines"));
 const FinanceDashboard = React.lazy(() => import("layouts/FinanceDashboard"));
 const Factories = React.lazy(
   () => import(/* webpackPrefetch: true */ "layouts/Factories")
@@ -124,6 +125,14 @@ export const adminRoutes = [
         <Financialreports />
       </ProtectedRoutes>
     ),
+  },
+  {
+    type: "collapse",
+    name: "الغرامات والقواعد",
+    key: "fines",
+    icon: <Icon fontSize="small">warning_amber</Icon>,
+    route: "/fines",
+    component: <ProtectedRoutes><Fines /></ProtectedRoutes>,
   },
   {
     type: "collapse",

@@ -17,6 +17,7 @@ export interface NewOrderLineItem {
 /** POST /orders — manual order creation payload (matches the create-order form). */
 export interface NewOrderPayload {
   customer: {
+    existingCustomerId?: number;
     first_name: string;
     last_name: string;
     phone: string;

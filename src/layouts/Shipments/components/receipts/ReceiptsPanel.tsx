@@ -27,6 +27,7 @@ import {
   useReceiptDocuments,
   useReceiptList,
   useReceiveItems,
+  useCancelReceipt,
   ReceiptDocument as DocumentData,
 } from "query/shipmentReceipts";
 import ReceiptDocumentDialog from "./ReceiptDocument";
@@ -126,12 +127,14 @@ function ItemTable({
   onSelect,
   mode,
   onDocument,
+  onCancel,
 }: {
   items: ReceiptItem[];
   selected: ReceiptItem[];
   onSelect: (items: ReceiptItem[]) => void;
   mode: "received" | "candidates";
   onDocument?: (number: string) => void;
+  onCancel?: (item: ReceiptItem) => void;
 }) {
   const has = (item: ReceiptItem) => selected.some((entry) => entry.orderId === item.orderId);
   const all = items.length > 0 && items.every(has);
@@ -175,6 +178,7 @@ function ItemTable({
                   <th style={TH}>استلم بواسطة</th>
                   <th style={TH}>الملاحظات</th>
                   <th style={TH}>سند الاستلام</th>
+                  {onCancel && <th style={TH}>إجراءات</th>}
                 </>
               )}
             </tr>
@@ -212,6 +216,7 @@ function ItemTable({
                     <td style={TD}>
                       <DocumentBadge number={item.documentNumber} onClick={() => item.documentNumber && onDocument?.(item.documentNumber)} />
                     </td>
+                    {onCancel && <td style={TD}><Button size="small" color="error" onClick={() => onCancel(item)}>إلغاء الاستلام</Button></td>}
                   </>
                 )}
               </tr>
@@ -259,6 +264,8 @@ export default function ReceiptsPanel() {
   const list = useReceiptList("received", page, debounced, date);
   const candidates = useReceiptList("candidates", candidatePage, candidateDebounced, "", open);
   const receive = useReceiveItems();
+  const cancel = useCancelReceipt();
+  const [cancelItem, setCancelItem] = useState<ReceiptItem | null>(null);
   const combined = useReceiptDocument();
 
   const items = list.data?.items ?? [];
@@ -414,7 +421,7 @@ export default function ReceiptsPanel() {
       ) : (
         <>
           <Box sx={{ opacity: list.isFetching ? 0.7 : 1, transition: "opacity .2s" }}>
-            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} />
+            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? setCancelItem : undefined} />
           </Box>
           {totalPages > 1 && (
             <Box sx={{ ...cardSx, overflow: "hidden" }}>
@@ -425,6 +432,11 @@ export default function ReceiptsPanel() {
       )}
 
       {/* نافذة تسجيل استلام جديد */}
+      <Dialog open={Boolean(cancelItem)} onClose={() => setCancelItem(null)} dir="rtl" fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontFamily: FONT }}>إلغاء استلام الصنف</DialogTitle>
+        <DialogContent sx={{ fontFamily: FONT, fontSize: 13 }}>سيتم إرجاع حالة الطلب والشحنة وسحب الكمية المضافة للمخزون. الاستلامات القديمة التي لم تُحفظ حالتها السابقة تحتاج مراجعة يدوية.</DialogContent>
+        <DialogActions><Button onClick={() => setCancelItem(null)}>رجوع</Button><Button color="error" disabled={cancel.isPending} onClick={() => cancelItem && cancel.mutate(cancelItem.orderId, { onSuccess: () => { setCancelItem(null); setSelected([]); }, onError: (failure) => setError(receiptError(failure)) })}>تأكيد الإلغاء</Button></DialogActions>
+      </Dialog>
       <Dialog open={open} onClose={receive.isPending ? undefined : () => setOpen(false)} maxWidth="lg" fullWidth dir="rtl">
         <DialogTitle sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 700 }}>تسجيل استلام من المصنع</DialogTitle>
         <DialogContent dividers>

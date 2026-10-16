@@ -108,7 +108,7 @@ export default function OrderCreate() {
         <Box sx={{ display: "grid", gap: "16px", gridTemplateColumns: { xs: "1fr", lg: "1fr 330px" }, alignItems: "start" }}>
           {/* LEFT — form */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <MemoizedCustomerSection customer={form.customer} onChange={form.setCustomerField} />
+            <MemoizedCustomerSection customer={form.customer} onChange={form.setCustomerField} onSelect={form.selectCustomer} />
             <MemoizedProductsSection
               lineItems={form.lineItems}
               onOpenPicker={openPicker}

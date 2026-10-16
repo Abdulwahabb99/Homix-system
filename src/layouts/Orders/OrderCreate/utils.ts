@@ -58,6 +58,7 @@ export function suggestedToBeCollected(
 export function buildOrderPayload(form: OrderCreateFormState): NewOrderPayload {
   return {
     customer: {
+      ...(form.customer.existingCustomerId ? { existingCustomerId: form.customer.existingCustomerId } : {}),
       first_name: form.customer.firstName.trim(),
       last_name: form.customer.lastName.trim(),
       phone: form.customer.phone.trim(),

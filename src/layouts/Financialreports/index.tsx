@@ -8,6 +8,9 @@ import { Box, CircularProgress } from "@mui/material";
 import { ToastContainer } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import moment from "moment-timezone";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { exportFinancialReport } from "query/financialReport";
@@ -49,10 +52,13 @@ const stateBoxSx = {
 export default function Financialreports() {
   const [billingDay, setBillingDay] = useState<BillingDay>(DEFAULT_BILLING_DAY);
   const [tab, setTab] = useState<SettlementTabKey>(DEFAULT_TAB);
+  const [view, setView] = useState<"current" | "archive">("current");
+  const [archiveMonth, setArchiveMonth] = useState(() => moment().tz("Africa/Cairo").subtract(1, "month").format("YYYY-MM"));
   const [isExporting, setIsExporting] = useState(false);
   const { canExport } = usePermissions();
 
-  const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay);
+  const referenceDate = view === "archive" ? `${archiveMonth}-${billingDay}` : undefined;
+  const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay, referenceDate);
 
   const activeSellers = sections[tab];
   const counts: Record<SettlementTabKey, number> = {
@@ -65,7 +71,7 @@ export default function Financialreports() {
   const handleExportExcel = () => {
     if (isExporting) return;
     setIsExporting(true);
-    exportFinancialReport(billingDay)
+    exportFinancialReport(billingDay, undefined, referenceDate)
       .catch(() => NotificationMeassage("error", "حدث خطأ أثناء التصدير"))
       .finally(() => setIsExporting(false));
   };
@@ -108,11 +114,11 @@ export default function Financialreports() {
   } else if (activeSellers.length === 0) {
     tabContent = <Box sx={stateBoxSx}>لا توجد بيانات لهذه الدورة.</Box>;
   } else if (tab === "warehouse") {
-    tabContent = <WarehouseTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
+    tabContent = <WarehouseTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} referenceDate={referenceDate} />;
   } else if (tab === "seller") {
-    tabContent = <SellerTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
+    tabContent = <SellerTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} referenceDate={referenceDate} />;
   } else {
-    tabContent = <ComprehensiveTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} />;
+    tabContent = <ComprehensiveTab sellers={activeSellers} billingDay={billingDay} cycle={cycle} referenceDate={referenceDate} />;
   }
 
   return (
@@ -120,6 +126,28 @@ export default function Financialreports() {
       <ToastContainer />
 
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "16px", fontFamily: FONT }}>
+        <Box role="tablist" aria-label="حالة الفواتير" sx={{ display: "flex", alignSelf: "flex-start", gap: 1, p: "4px", bgcolor: HX.surface, border: `1px solid ${HX.border}`, borderRadius: "12px" }}>
+          {([
+            { key: "current", label: "الفواتير الجارية", icon: <ReceiptLongOutlinedIcon sx={{ fontSize: 17 }} /> },
+            { key: "archive", label: "الأرشيف", icon: <ArchiveOutlinedIcon sx={{ fontSize: 17 }} /> },
+          ] as const).map((item) => (
+            <Box key={item.key} component="button" type="button" role="tab" aria-selected={view === item.key}
+              onClick={() => setView(item.key)}
+              sx={{ display: "flex", alignItems: "center", gap: "7px", minHeight: 40, px: "16px", border: "none", borderRadius: "9px", bgcolor: view === item.key ? HX.accent : "transparent", color: view === item.key ? "#fff" : HX.tx2, fontFamily: FONT, fontSize: "13px", fontWeight: 700, cursor: "pointer", "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 } }}>
+              {item.icon}{item.label}
+            </Box>
+          ))}
+        </Box>
+        {view === "archive" && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", p: "14px 16px", bgcolor: HX.surface, border: `1px solid ${HX.border}`, borderRadius: "12px" }}>
+            <Box component="label" htmlFor="financial-archive-month" sx={{ color: HX.tx, fontSize: "13px", fontWeight: 700 }}>شهر دورة الفوترة</Box>
+            <Box component="input" id="financial-archive-month" type="month" value={archiveMonth}
+              max={moment().tz("Africa/Cairo").subtract(1, "month").format("YYYY-MM")}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setArchiveMonth(event.target.value)}
+              sx={{ minHeight: 40, px: "10px", border: `1px solid ${HX.border}`, borderRadius: "8px", bgcolor: HX.surface, color: HX.tx, fontFamily: FONT }} />
+            <Box component="span" sx={{ color: HX.tx2, fontSize: "12px" }}>اختر الشهر ويوم 13 أو 28 لعرض فاتورة دورة سابقة وتصديرها.</Box>
+          </Box>
+        )}
         {isLoading ? (
           <FinancialReportsSkeleton />
         ) : (

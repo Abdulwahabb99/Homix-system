@@ -75,6 +75,18 @@ export function useReceiveItems() {
     },
   });
 }
+export function useCancelReceipt() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: number) => (await axiosRequest.post(`/shipments/receipts/${orderId}/cancel`)).data.data,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: shipmentKeys.all() }),
+        client.invalidateQueries({ queryKey: orderKeys.all() }),
+      ]);
+    },
+  });
+}
 export function useReceiptDocument() {
   const client = useQueryClient();
   return useMutation({

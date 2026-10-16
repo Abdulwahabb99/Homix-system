@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateOrderFormMutation } from "query/orderCreateForm.api";
 import { DEFAULT_DELIVERY_BY, DEFAULT_PAYMENT_STATUS } from "../constants";
 import type { CustomerForm, OrderLineItem, OrderTotals } from "../types";
+import type { CustomerListItem } from "query/customers";
 import {
   buildOrderPayload,
   itemsTotal,
@@ -59,7 +60,14 @@ export function useOrderCreateForm() {
   const [toBeCollectedInput, setToBeCollectedInput] = useState<string>("");
 
   const setCustomerField = useCallback((field: keyof CustomerForm, value: string) => {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
+    setCustomer((prev) => ({ ...prev, existingCustomerId: undefined, [field]: value }));
+  }, []);
+  const selectCustomer = useCallback((item: CustomerListItem) => {
+    setCustomer({
+      existingCustomerId: item.id, firstName: item.firstName, lastName: item.lastName,
+      phone: item.phoneNumber, email: item.email, address1: item.address,
+      address2: "", city: "", province: item.governorate, country: "مصر",
+    });
   }, []);
 
   const addLineItem = useCallback((item: OrderLineItem) => {
@@ -136,6 +144,7 @@ export function useOrderCreateForm() {
   return {
     customer,
     setCustomerField,
+    selectCustomer,
     lineItems,
     addLineItem,
     removeLineItem,

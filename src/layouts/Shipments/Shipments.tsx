@@ -27,6 +27,9 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import ReturnsPanel from "./components/panels/ReturnsPanel";
 import InventoryPanel from "./components/panels/InventoryPanel";
 import ReceiptsPanel from "./components/receipts/ReceiptsPanel";
+import ReassignmentsPanel from "./components/panels/ReassignmentsPanel";
+import ReassignmentModal from "./components/ReassignmentModal";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AccountsPanel, { type AccountsPanelExporter } from "./components/panels/AccountsPanel";
 import { usePermissions, type PermissionKey } from "shared/permissions";
@@ -44,7 +47,7 @@ import moment from "moment";
 
 const FONT = "'Cairo', sans-serif";
 
-type ShipmentTabId = "receipts" | "shipments" | "returns" | "inventory" | "accounts" | "reports";
+type ShipmentTabId = "receipts" | "reassignments" | "shipments" | "returns" | "inventory" | "accounts" | "reports";
 
 const MemoizedReturnsPanel = React.memo(ReturnsPanel);
 const MemoizedInventoryPanel = React.memo(InventoryPanel);
@@ -65,6 +68,7 @@ const MAIN_TABS: { id: ShipmentTabId; label: string; icon: React.ReactNode; perm
     ),
   },
   { id: "receipts", label: "الاستلامات", icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, permission: "ship_receipts_view" },
+  { id: "reassignments", label: "إعادة التخصيص", icon: <SwapHorizOutlinedIcon sx={{ fontSize: 16 }} />, permission: "ship_view" },
   {
     id: "returns",
     label: "المرتجعات",
@@ -142,6 +146,7 @@ interface ShipmentsTabContentProps {
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
+  onReassign: (shipment: ShipmentItem) => void;
   selectionModel: number[];
   onToggleSelect: (id: number) => void;
   onToggleAll: () => void;
@@ -164,6 +169,7 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
   onPageChange,
   onEdit,
   onDelete,
+  onReassign,
   selectionModel,
   onToggleSelect,
   onToggleAll,
@@ -189,6 +195,7 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         onPageChange={onPageChange}
         onEdit={onEdit}
         onDelete={onDelete}
+        onReassign={onReassign}
         selectionModel={selectionModel}
         onToggleSelect={onToggleSelect}
         onToggleAll={onToggleAll}
@@ -206,6 +213,7 @@ export default function Shipments() {
 
   const page = parseInt(searchParams.get("page")) || 1;
   const [activeTab, setActiveTab] = useState<ShipmentTabId>("shipments");
+  const [reassignSource, setReassignSource] = useState<ShipmentItem | null>(null);
   const { can } = usePermissions();
 
   /* Tabs the user has no permission for are hidden outright — showing them only
@@ -709,19 +717,17 @@ export default function Shipments() {
           role="tablist"
           aria-label="أقسام الشحن والتوصيل"
           sx={{
-            display: "flex",
-            gap: "4px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: "12px", flexWrap: "wrap",
             mb: "16px",
             bgcolor: HX.surface,
             borderRadius: "12px",
             border: `1px solid ${HX.border}`,
-            p: "4px",
+            p: "6px",
             width: "100%",
-            overflowX: "auto",
-            "&::-webkit-scrollbar": { display: "none" },
           }}
         >
-          {visibleTabs.map((tab) => {
+          {[visibleTabs.filter((tab) => !["shipments", "receipts", "reassignments"].includes(tab.id)), visibleTabs.filter((tab) => ["shipments", "receipts", "reassignments"].includes(tab.id))].map((group, groupIndex) => <Box key={groupIndex} sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>{group.map((tab) => {
             const active = activeTab === tab.id;
             const count = tabCounts[tab.id as keyof typeof tabCounts] ?? 0;
             return (
@@ -734,13 +740,14 @@ export default function Shipments() {
                 aria-controls={`shipment-tab-panel-${tab.id}`}
                 onClick={() => handleTabChange(tab.id)}
                 sx={{
-                  flex: 1,
+                  flex: "0 0 auto",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "6px",
-                  py: "7px",
-                  px: "6px",
+                  minHeight: 44,
+                  py: "8px",
+                  px: "13px",
                   borderRadius: "9px",
                   border: "none",
                   cursor: "pointer",
@@ -751,6 +758,7 @@ export default function Shipments() {
                   boxShadow: active ? "0 2px 10px rgba(99,102,241,0.28)" : "none",
                   transition: "background .15s, box-shadow .15s, color .15s",
                   "&:hover": !active ? { bgcolor: HX.surface3, color: HX.tx } : {},
+                  "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 },
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: active ? 1 : 0.6 }}>
@@ -759,7 +767,7 @@ export default function Shipments() {
                 <Box component="span" sx={{ fontSize: "12.5px", fontWeight: 600, fontFamily: FONT }}>
                   {tab.label}
                 </Box>
-                {tab.id !== "receipts" && <Box
+                {tab.id !== "reassignments" && <Box
                   component="span"
                   sx={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -773,7 +781,7 @@ export default function Shipments() {
                 </Box>}
               </Box>
             );
-          })}
+          })}</Box>)}
         </Box>
 
         {/* Keep visited panels mounted so returning to a tab does not rebuild its
@@ -802,6 +810,7 @@ export default function Shipments() {
               onReset={handleReset}
               onEdit={handleEditShipment}
               onDelete={handleDeleteShipment}
+              onReassign={setReassignSource}
               selectionModel={shipmentSelectionModel}
               onToggleSelect={toggleShipmentSelect}
               onToggleAll={toggleShipmentSelectAll}
@@ -814,6 +823,7 @@ export default function Shipments() {
           </Box>
         )}
         {activeTab === "receipts" && isTabVisible("receipts") && <Box id="shipment-tab-panel-receipts" role="tabpanel"><ReceiptsPanel /></Box>}
+        {activeTab === "reassignments" && isTabVisible("reassignments") && <Box id="shipment-tab-panel-reassignments" role="tabpanel"><ReassignmentsPanel /></Box>}
         {activeTab === "inventory" && isTabVisible("inventory") && (
           <Box id="shipment-tab-panel-inventory" role="tabpanel">
             <MemoizedInventoryPanel onExporterChange={setInventoryExporter} />
@@ -830,6 +840,7 @@ export default function Shipments() {
           </Box>
         )}
       </Box>
+      <ReassignmentModal source={reassignSource} onClose={() => setReassignSource(null)} onSuccess={() => setActiveTab("reassignments")} />
     </DashboardLayout>
   );
 }

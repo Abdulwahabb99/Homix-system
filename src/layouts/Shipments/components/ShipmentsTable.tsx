@@ -8,6 +8,7 @@ import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlin
 import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
 import {
@@ -140,6 +141,7 @@ interface ShipmentsTableProps {
   onPageChange: (page: number) => void;
   onEdit: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
+  onReassign?: (shipment: ShipmentItem) => void;
   selectionModel?: number[];
   onToggleSelect?: (id: number) => void;
   onToggleAll?: () => void;
@@ -156,6 +158,7 @@ export default function ShipmentsTable({
   onPageChange,
   onEdit,
   onDelete,
+  onReassign,
   selectionModel = [],
   onToggleSelect,
   onToggleAll,
@@ -406,6 +409,10 @@ export default function ShipmentsTable({
                 {!isVendor && (
                   <td style={{ ...TD, textAlign: "center" }}>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                      {onReassign && <ActionBtn
+                        onClick={(e) => { e.stopPropagation(); onReassign(s); }}
+                        bg={HX.amberLight} hoverBg={HX.amber} color={HX.amber} title="إعادة تخصيص"
+                      ><SwapHorizOutlinedIcon sx={{ fontSize: 16 }} /></ActionBtn>}
                       <ActionBtn
                         onClick={(e) => { e.stopPropagation(); onEdit(s); }}
                         bg={HX.blueLight} hoverBg={HX.blue} color={HX.blue} title="تعديل"

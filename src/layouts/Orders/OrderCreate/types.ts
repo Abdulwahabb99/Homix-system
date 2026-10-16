@@ -13,6 +13,7 @@ export interface OrderLineItem {
 }
 
 export interface CustomerForm {
+  existingCustomerId?: number;
   firstName: string;
   lastName: string;
   phone: string;

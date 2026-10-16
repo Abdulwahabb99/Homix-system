@@ -18,6 +18,7 @@ export interface CustomerListItem {
 }
 
 export interface CustomersSummary {
+  customersWithoutOrders: number;
   topSpender: { name: string; totalSpend: number } | null;
   totalCustomers: number;
   totalSpend: number;
@@ -53,11 +54,12 @@ const toQuery = (filters: CustomerFilters): URLSearchParams => {
   return params;
 };
 
-export function useCustomersQuery(filters: CustomerFilters) {
+export function useCustomersQuery(filters: CustomerFilters, enabled = true) {
   const query = toQuery(filters);
   return useQuery<{ items: CustomerListItem[]; page: number; size: number; totalCount: number }>({
     queryKey: keys.list(query.toString()),
     queryFn: async () => (await axiosRequest.get(`/customers?${query}`)).data.data,
+    enabled,
   });
 }
 

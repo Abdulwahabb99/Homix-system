@@ -19,8 +19,8 @@ import VendorSettlementInvoiceDocument from "../../vendorInvoice/VendorSettlemen
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
 
 export default function ComprehensiveTab({
-  sellers, billingDay, cycle,
-}: { sellers: SettlementSeller[]; billingDay: BillingDay; cycle: FinancialCycle | null }) {
+  sellers, billingDay, cycle, referenceDate,
+}: { sellers: SettlementSeller[]; billingDay: BillingDay; cycle: FinancialCycle | null; referenceDate?: string }) {
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [printSeller, setPrintSeller] = useState<{ seller: SettlementSeller; totals: SellerTotals } | null>(null);
   const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
@@ -29,7 +29,7 @@ export default function ComprehensiveTab({
   const handleExport = (vendorId: string) => {
     if (exportingId) return;
     setExportingId(vendorId);
-    exportFinancialReport(billingDay, vendorId)
+    exportFinancialReport(billingDay, vendorId, referenceDate)
       .catch(() => NotificationMeassage("error", "حدث خطأ أثناء تصدير فاتورة المورّد"))
       .finally(() => setExportingId(null));
   };

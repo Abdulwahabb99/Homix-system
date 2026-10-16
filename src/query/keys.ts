@@ -63,7 +63,7 @@ export const shipmentKeys = {
 export const financialKeys = {
   all: () => ["financial"] as const,
   /** تقرير دورة الفوترة — مفتاح حسب يوم الفوترة (13 / 28) */
-  report: (billingDay: number | string) => [...financialKeys.all(), "report", String(billingDay)] as const,
+  report: (billingDay: number | string, referenceDate?: string) => [...financialKeys.all(), "report", String(billingDay), referenceDate ?? "current"] as const,
 };
 
 export const ticketKeys = {

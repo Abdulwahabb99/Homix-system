@@ -7,7 +7,7 @@
  * الاصطلاحات: استخدم `axiosRequest` دائماً، ومفاتيح `financialKeys`، وعالِج
  * `force_logout` كبقية استعلامات المشروع.
  */
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
@@ -23,8 +23,10 @@ export const FINANCIAL_REPORT_EXPORT_PATH = `${FINANCIAL_REPORT_PATH}/export`;
  * معاملات التقرير — مصدر واحد يستخدمه الجلب والتصدير، فلا يُصدَّر ملف بدورة
  * فوترة مختلفة عمّا يراه المستخدم.
  */
-export function buildFinancialReportQuery(billingDay: BillingDay): string {
-  return new URLSearchParams({ billingDay: String(billingDay) }).toString();
+export function buildFinancialReportQuery(billingDay: BillingDay, referenceDate?: string): string {
+  const params = new URLSearchParams({ billingDay: String(billingDay) });
+  if (referenceDate) params.set("referenceDate", referenceDate);
+  return params.toString();
 }
 
 /** بيانات الدورة الحالية (cycle) */
@@ -204,9 +206,10 @@ export const EMPTY_REPORT: FinancialReport = {
 
 export async function fetchFinancialReport(
   billingDay: BillingDay,
-  navigate: NavigateFunction
+  navigate: NavigateFunction,
+  referenceDate?: string,
 ): Promise<FinancialReport> {
-  const url = `${FINANCIAL_REPORT_PATH}?${buildFinancialReportQuery(billingDay)}`;
+  const url = `${FINANCIAL_REPORT_PATH}?${buildFinancialReportQuery(billingDay, referenceDate)}`;
   const { data } = await axiosRequest.get(url);
 
   const root = data as ApiFinancialReportResponse;
@@ -231,8 +234,8 @@ export async function fetchFinancialReport(
  * تمرير `vendorId` (مثلاً من صف مورّد واحد في تبويب البائع/المخزن/الشاملة)
  * يقصر التصدير على فاتورة هذا المورّد وحده — الـ BE يدعم الفلترة بالفعل.
  */
-export async function exportFinancialReport(billingDay: BillingDay, vendorId?: string | number): Promise<void> {
-  const params = new URLSearchParams({ billingDay: String(billingDay) });
+export async function exportFinancialReport(billingDay: BillingDay, vendorId?: string | number, referenceDate?: string): Promise<void> {
+  const params = new URLSearchParams(buildFinancialReportQuery(billingDay, referenceDate));
   if (vendorId !== undefined && vendorId !== null && String(vendorId).trim() !== "") {
     params.set("vendorId", String(vendorId));
   }
@@ -241,18 +244,17 @@ export async function exportFinancialReport(billingDay: BillingDay, vendorId?: s
     { responseType: "blob" }
   );
   const fileName = vendorId
-    ? `vendor-invoice-${vendorId}-day-${billingDay}.xlsx`
-    : `financial-report-day-${billingDay}.xlsx`;
+    ? `vendor-invoice-${vendorId}-day-${billingDay}${referenceDate ? `-${referenceDate}` : ""}.xlsx`
+    : `financial-report-day-${billingDay}${referenceDate ? `-${referenceDate}` : ""}.xlsx`;
   downloadBlobResponse(res, fileName);
 }
 
-export function useFinancialReport(billingDay: BillingDay) {
+export function useFinancialReport(billingDay: BillingDay, referenceDate?: string) {
   const navigate = useNavigate();
 
   return useQuery({
-    queryKey: financialKeys.report(billingDay),
-    queryFn: () => fetchFinancialReport(billingDay, navigate),
-    placeholderData: keepPreviousData,
+    queryKey: financialKeys.report(billingDay, referenceDate),
+    queryFn: () => fetchFinancialReport(billingDay, navigate, referenceDate),
     staleTime: 30_000,
   });
 }

@@ -19,6 +19,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import moment from "moment";
 import { ToastContainer } from "react-toastify";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -193,7 +194,7 @@ export default function Customers() {
     >
       <ToastContainer />
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-        <Box sx={{ display: "grid", gap: "12px", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", md: "repeat(3,1fr)" } }}>
+        <Box sx={{ display: "grid", gap: "12px", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(4,1fr)" } }}>
           <KpiCard
             icon={<PeopleAltOutlinedIcon sx={{ fontSize: 18 }} />}
             label="إجمالي العملاء"
@@ -209,6 +210,12 @@ export default function Customers() {
             label="أعلى عميل إنفاقًا"
             value={summary.data?.topSpender?.name ?? "—"}
             sub={summary.data?.topSpender ? `${money(summary.data.topSpender.totalSpend)} ج.م` : undefined}
+          />
+          <KpiCard
+            icon={<AccessTimeOutlinedIcon sx={{ fontSize: 18 }} />}
+            label="عملاء لم يطلبوا بعد"
+            value={summary.data?.customersWithoutOrders ?? "—"}
+            sub="فرصة للمتابعة"
           />
         </Box>
 
@@ -271,7 +278,12 @@ export default function Customers() {
                     {items.map((item, idx) => (
                       <tr key={item.id} style={{ background: idx % 2 === 0 ? HX.surface : HX.surface2 }}>
                         <td style={TD}>
-                          <Box sx={{ fontWeight: 700 }}>{`${item.firstName} ${item.lastName}`.trim() || "—"}</Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: "9px", fontWeight: 700 }}>
+                            <Box aria-hidden="true" sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, width: 34, height: 34, borderRadius: "50%", bgcolor: HX.accent, color: "#fff", fontWeight: 800, fontSize: "13px" }}>
+                              {(item.firstName || item.lastName || "؟").trim().charAt(0).toUpperCase()}
+                            </Box>
+                            {`${item.firstName} ${item.lastName}`.trim() || "—"}
+                          </Box>
                         </td>
                         <td style={TD}>{item.email || "—"}</td>
                         <td style={TD} dir="ltr">{item.phoneNumber || "—"}</td>

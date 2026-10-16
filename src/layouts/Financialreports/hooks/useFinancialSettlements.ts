@@ -83,8 +83,8 @@ export interface UseFinancialSettlementsResult {
   sections: Record<SettlementTabKey, SettlementSeller[]>;
 }
 
-export function useFinancialSettlements(billingDay: BillingDay): UseFinancialSettlementsResult {
-  const { data, isLoading, isError, isFetching } = useFinancialReport(billingDay);
+export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: string): UseFinancialSettlementsResult {
+  const { data, isLoading, isError, isFetching } = useFinancialReport(billingDay, referenceDate);
 
   return useMemo(() => {
     if (!data) {
