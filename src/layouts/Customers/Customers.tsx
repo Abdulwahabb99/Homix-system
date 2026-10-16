@@ -11,7 +11,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  InputAdornment,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
@@ -20,6 +22,8 @@ import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import SyncOutlinedIcon from "@mui/icons-material/SyncOutlined";
 import moment from "moment";
 import { ToastContainer } from "react-toastify";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -46,7 +50,7 @@ const TH: React.CSSProperties = {
 
 const TD: React.CSSProperties = {
   fontFamily: FONT, fontSize: "12px", color: HX.tx,
-  padding: "9px 12px", textAlign: "right", whiteSpace: "nowrap",
+  padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap",
   borderBottom: `0.5px solid ${HX.border}`, verticalAlign: "middle",
 };
 
@@ -63,6 +67,10 @@ function money(value: number): string {
 function fmtDate(value: string | null): string {
   if (!value) return "—";
   return moment(value).format("D MMMM YYYY");
+}
+
+function customerName(item: CustomerListItem): string {
+  return `${item.firstName} ${item.lastName}`.trim() || "عميل بدون اسم";
 }
 
 function KpiCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub?: string }) {
@@ -133,7 +141,9 @@ export default function Customers() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [sort, setSort] = useState<"recent" | "spend" | "orders">("recent");
+  const [ordersFilter, setOrdersFilter] = useState<"all" | "with" | "without">("all");
+  const [governorate, setGovernorate] = useState("");
+  const [sort, setSort] = useState<"recent" | "spend" | "spend_asc" | "orders" | "name">("spend");
   const [createOpen, setCreateOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -142,7 +152,7 @@ export default function Customers() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const filters = { page, search: debounced, size: PAGE_SIZE, sort };
+  const filters = { governorate, orders: ordersFilter, page, search: debounced, size: PAGE_SIZE, sort };
   const list = useCustomersQuery(filters);
   const summary = useCustomersSummaryQuery();
 
@@ -153,7 +163,7 @@ export default function Customers() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      await exportCustomers({ search: debounced, sort });
+      await exportCustomers({ governorate, orders: ordersFilter, search: debounced, sort });
       NotificationMeassage("success", "تم تصدير العملاء");
     } catch {
       NotificationMeassage("error", "تعذّر تصدير العملاء");
@@ -194,22 +204,35 @@ export default function Customers() {
     >
       <ToastContainer />
       <Box sx={{ mt: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <Box sx={{
+          display: "flex", alignItems: "center", gap: "8px", px: "14px", py: "10px",
+          border: `1px solid ${HX.accentBorder}`, borderRadius: "10px", bgcolor: HX.accentLight,
+          color: HX.accent,
+        }}>
+          <SyncOutlinedIcon aria-hidden="true" sx={{ fontSize: 17, flexShrink: 0 }} />
+          <Typography sx={{ fontFamily: FONT, fontSize: "11.5px", lineHeight: 1.7 }}>
+            بيانات العملاء مجمّعة من Shopify والعملاء المضافين يدويًا، وتشمل عدد الطلبات وإجمالي الإنفاق.
+          </Typography>
+        </Box>
+
         <Box sx={{ display: "grid", gap: "12px", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(4,1fr)" } }}>
           <KpiCard
             icon={<PeopleAltOutlinedIcon sx={{ fontSize: 18 }} />}
             label="إجمالي العملاء"
             value={summary.data?.totalCustomers ?? "—"}
+            sub={summary.data ? `${summary.data.customersWithOrders} عندهم طلبات فعلية` : undefined}
           />
           <KpiCard
             icon={<PaidOutlinedIcon sx={{ fontSize: 18 }} />}
             label="إجمالي إنفاق العملاء"
             value={`${money(summary.data?.totalSpend ?? 0)} ج.م`}
+            sub={summary.data?.totalCustomers ? `متوسط ${money(summary.data.totalSpend / summary.data.totalCustomers)} ج.م / عميل` : undefined}
           />
           <KpiCard
             icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 18 }} />}
             label="أعلى عميل إنفاقًا"
             value={summary.data?.topSpender?.name ?? "—"}
-            sub={summary.data?.topSpender ? `${money(summary.data.topSpender.totalSpend)} ج.م` : undefined}
+            sub={summary.data?.topSpender ? `${money(summary.data.topSpender.totalSpend)} ج.م · ${summary.data.topSpender.ordersCount} طلبات` : undefined}
           />
           <KpiCard
             icon={<AccessTimeOutlinedIcon sx={{ fontSize: 18 }} />}
@@ -219,26 +242,55 @@ export default function Customers() {
           />
         </Box>
 
-        <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <Box sx={{ ...cardSx, p: "12px 14px", display: "grid", gap: "8px", gridTemplateColumns: { xs: "1fr", md: "minmax(260px,1fr) 170px 170px 170px" } }}>
           <TextField
             size="small"
             placeholder="دوّر بالاسم أو الإيميل أو الموبايل..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ ...fieldSx, flex: "1 1 260px" }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlinedIcon aria-hidden="true" sx={{ fontSize: 18, color: HX.tx3 }} /></InputAdornment> }}
+            inputProps={{ "aria-label": "البحث في العملاء" }}
+            sx={fieldSx}
           />
           <TextField
             select
             size="small"
-            label="ترتيب حسب"
+            value={ordersFilter}
+            onChange={(e) => { setOrdersFilter(e.target.value as typeof ordersFilter); setPage(1); }}
+            SelectProps={{ native: true }}
+            inputProps={{ "aria-label": "فلتر الطلبات" }}
+            sx={fieldSx}
+          >
+            <option value="all">كل العملاء</option>
+            <option value="with">عندهم طلبات</option>
+            <option value="without">من غير طلبات</option>
+          </TextField>
+          <TextField
+            select
+            size="small"
+            value={governorate}
+            onChange={(e) => { setGovernorate(e.target.value); setPage(1); }}
+            SelectProps={{ native: true }}
+            inputProps={{ "aria-label": "فلتر المحافظة" }}
+            sx={fieldSx}
+          >
+            <option value="">كل المحافظات</option>
+            {(summary.data?.governorates ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
+          </TextField>
+          <TextField
+            select
+            size="small"
             value={sort}
             onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
             SelectProps={{ native: true }}
-            sx={{ ...fieldSx, minWidth: 160 }}
+            inputProps={{ "aria-label": "ترتيب العملاء" }}
+            sx={fieldSx}
           >
-            <option value="recent">الأحدث انضمامًا</option>
-            <option value="spend">الأعلى إنفاقًا</option>
+            <option value="spend">الأكثر إنفاقًا</option>
+            <option value="spend_asc">الأقل إنفاقًا</option>
             <option value="orders">الأكثر طلبات</option>
+            <option value="recent">الأحدث انضمامًا</option>
+            <option value="name">الاسم (أ-ي)</option>
           </TextField>
         </Box>
 
@@ -260,7 +312,17 @@ export default function Customers() {
           <>
             <Box sx={{ ...cardSx, opacity: list.isFetching ? 0.7 : 1, transition: "opacity .2s" }}>
               <Box sx={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl" }}>
+                <table style={{ width: "100%", minWidth: 1050, tableLayout: "fixed", borderCollapse: "collapse", direction: "rtl" }}>
+                  <colgroup>
+                    <col style={{ width: 180 }} />
+                    <col style={{ width: 190 }} />
+                    <col style={{ width: 135 }} />
+                    <col style={{ width: 260 }} />
+                    <col style={{ width: 125 }} />
+                    <col style={{ width: 80 }} />
+                    <col style={{ width: 125 }} />
+                    <col style={{ width: 130 }} />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th style={TH}>اسم العميل</th>
@@ -271,7 +333,6 @@ export default function Customers() {
                       <th style={{ ...TH, textAlign: "center" }}>الطلبات</th>
                       <th style={{ ...TH, textAlign: "center" }}>إجمالي الإنفاق</th>
                       <th style={TH}>تاريخ الانضمام</th>
-                      <th style={TH}>المصدر</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -280,34 +341,36 @@ export default function Customers() {
                         <td style={TD}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: "9px", fontWeight: 700 }}>
                             <Box aria-hidden="true" sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, width: 34, height: 34, borderRadius: "50%", bgcolor: HX.accent, color: "#fff", fontWeight: 800, fontSize: "13px" }}>
-                              {(item.firstName || item.lastName || "؟").trim().charAt(0).toUpperCase()}
+                              {customerName(item).charAt(0).toUpperCase()}
                             </Box>
-                            {`${item.firstName} ${item.lastName}`.trim() || "—"}
+                            <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }} title={customerName(item)}>
+                              {customerName(item)}
+                            </Box>
                           </Box>
                         </td>
-                        <td style={TD}>{item.email || "—"}</td>
+                        <td style={{ ...TD, overflow: "hidden", textOverflow: "ellipsis" }} title={item.email || undefined}>{item.email || "—"}</td>
                         <td style={TD} dir="ltr">{item.phoneNumber || "—"}</td>
-                        <td style={{ ...TD, maxWidth: 260, whiteSpace: "normal" }}>
-                          <Box sx={{ color: HX.tx2, fontSize: "11.5px" }}>{item.address || "—"}</Box>
+                        <td style={{ ...TD, overflow: "hidden" }}>
+                          <Tooltip title={item.address || ""} placement="top" arrow disableHoverListener={!item.address}>
+                            <Box tabIndex={item.address ? 0 : undefined} sx={{ color: HX.tx2, fontSize: "11.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {item.address || "—"}
+                            </Box>
+                          </Tooltip>
                         </td>
                         <td style={TD}>
                           {item.governorate ? (
-                            <Box component="span" sx={{ display: "inline-flex", px: "8px", py: "3px", borderRadius: "100px", fontSize: "11px", fontWeight: 600, bgcolor: HX.blueLight, color: HX.blue }}>
+                            <Box component="span" sx={{ display: "inline-flex", maxWidth: "100%", px: "8px", py: "3px", borderRadius: "100px", fontSize: "11px", fontWeight: 600, bgcolor: HX.blueLight, color: HX.blue, overflow: "hidden", textOverflow: "ellipsis" }}>
                               {item.governorate}
                             </Box>
                           ) : "—"}
                         </td>
-                        <td style={{ ...TD, textAlign: "center" }}>{item.ordersCount}</td>
-                        <td style={{ ...TD, textAlign: "center", fontWeight: 700 }}>{money(item.totalSpend)} ج.م</td>
-                        <td style={TD}>{fmtDate(item.createdAt)}</td>
-                        <td style={TD}>
-                          <Box component="span" sx={{
-                            display: "inline-flex", px: "8px", py: "3px", borderRadius: "100px", fontSize: "11px", fontWeight: 600,
-                            bgcolor: item.isManual ? HX.amberLight : HX.greenLight, color: item.isManual ? "#92400e" : "#065f46",
-                          }}>
-                            {item.isManual ? "يدوي" : "Shopify"}
+                        <td style={{ ...TD, textAlign: "center" }}>
+                          <Box component="span" sx={{ display: "inline-flex", minWidth: 24, height: 24, alignItems: "center", justifyContent: "center", px: "6px", borderRadius: "100px", bgcolor: HX.accentLight, color: HX.accent, fontWeight: 700 }}>
+                            {item.ordersCount}
                           </Box>
                         </td>
+                        <td style={{ ...TD, textAlign: "center", fontWeight: 700 }}>{money(item.totalSpend)} ج.م</td>
+                        <td style={TD}>{fmtDate(item.createdAt)}</td>
                       </tr>
                     ))}
                   </tbody>

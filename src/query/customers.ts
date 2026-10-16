@@ -19,16 +19,20 @@ export interface CustomerListItem {
 
 export interface CustomersSummary {
   customersWithoutOrders: number;
-  topSpender: { name: string; totalSpend: number } | null;
+  customersWithOrders: number;
+  governorates: string[];
+  topSpender: { name: string; ordersCount: number; totalSpend: number } | null;
   totalCustomers: number;
   totalSpend: number;
 }
 
 export interface CustomerFilters {
+  governorate?: string;
+  orders?: "all" | "with" | "without";
   page?: number;
   search?: string;
   size?: number;
-  sort?: "recent" | "spend" | "orders";
+  sort?: "recent" | "spend" | "spend_asc" | "orders" | "name";
 }
 
 export interface CreateCustomerPayload {
@@ -49,6 +53,8 @@ const toQuery = (filters: CustomerFilters): URLSearchParams => {
   const params = new URLSearchParams();
   if (filters.page) params.set("page", String(filters.page));
   if (filters.size) params.set("size", String(filters.size));
+  if (filters.governorate?.trim()) params.set("governorate", filters.governorate.trim());
+  if (filters.orders && filters.orders !== "all") params.set("orders", filters.orders);
   if (filters.search?.trim()) params.set("search", filters.search.trim());
   if (filters.sort) params.set("sort", filters.sort);
   return params;

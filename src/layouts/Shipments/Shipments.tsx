@@ -734,8 +734,8 @@ export default function Shipments() {
           }}
         >
           {[
-            ["receipts", "reassignments", "shipments"],
             ["returns", "inventory", "accounts", "reports"],
+            ["receipts", "reassignments", "shipments"],
           ].map((ids) => ids.map((id) => visibleTabs.find((tab) => tab.id === id)).filter(Boolean) as typeof visibleTabs).map((group, groupIndex) => <Box key={groupIndex} sx={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>{group.map((tab) => {
             const active = activeTab === tab.id;
             const count = tabCounts[tab.id as keyof typeof tabCounts] ?? 0;
