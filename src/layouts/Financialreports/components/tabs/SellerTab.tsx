@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { money } from "../../utils/calc";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
-import { exportFinancialReport, type FinancialCycle } from "query/financialReport";
+import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
@@ -18,8 +18,8 @@ import SellerSettlementInvoiceDocument from "../../vendorInvoice/SellerSettlemen
 const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 40px";
 
 export default function SellerTab({
-  sellers, billingDay, cycle, referenceDate,
-}: { sellers: SettlementSeller[]; billingDay: BillingDay; cycle: FinancialCycle | null; referenceDate?: string }) {
+  sellers, billingDay, cycle, referenceDate, range,
+}: { sellers: SettlementSeller[]; billingDay: BillingDay; cycle: FinancialCycle | null; referenceDate?: string; range?: FinancialDateRange }) {
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [printSeller, setPrintSeller] = useState<{ seller: SettlementSeller; totals: SellerTotals } | null>(null);
   const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
@@ -28,7 +28,7 @@ export default function SellerTab({
   const handleExport = (vendorId: string) => {
     if (exportingId) return;
     setExportingId(vendorId);
-    exportFinancialReport(billingDay, vendorId, referenceDate)
+    exportFinancialReport(billingDay, vendorId, referenceDate, range)
       .catch(() => NotificationMeassage("error", "حدث خطأ أثناء تصدير فاتورة المورّد"))
       .finally(() => setExportingId(null));
   };
@@ -70,7 +70,7 @@ export default function SellerTab({
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
     <>
       <DetailHeaderBar
-        title={`تفاصيل تسويات البائع — ${s.name}`}
+        title={`تفاصيل تسليمات البائع — ${s.name}`}
         onPrint={() => handlePrintInvoice(s, t)}
         onExport={() => handleExport(s.id)}
         exporting={exportingId === s.id}

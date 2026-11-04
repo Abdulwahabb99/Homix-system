@@ -4,7 +4,7 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 
 const FONT = "'Cairo', sans-serif";
 
-/** يطابق كل الحالات الاثنتي عشرة في SHIPMENT_STATUS بالباك-إند (وألوان ShipmentDetails/constants.ts). */
+/** يطابق كل الحالات (21) في SHIPMENT_STATUS بالباك-إند (وألوان ShipmentDetails/constants.ts). */
 const STATUS_CFG: Record<number, { label: string; bg: string; color: string }> = {
   1:  { label: "معلقة",             bg: HX.amberLight,  color: "#92400e" },
   2:  { label: "في المخزن",        bg: HX.blueLight,   color: "#1e40af" },
@@ -18,6 +18,16 @@ const STATUS_CFG: Record<number, { label: string; bg: string; color: string }> =
   10: { label: "فشل في التوصيل",   bg: HX.redLight,    color: "#7f1d1d" },
   11: { label: "شحنة مجدولة",      bg: HX.blueLight,   color: "#1e40af" },
   12: { label: "خرجت للتوصيل",     bg: HX.tealLight,   color: "#0f766e" },
+  // 13-19: ملغي (رمادي مثل «ملغية»)، 20-21: مرفوض (أحمر مثل «مرفوضة»)
+  13: { label: "ملغي قبل التأكيد للتصنيع", bg: HX.surface3,    color: HX.tx2 },
+  14: { label: "ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)", bg: HX.surface3,    color: HX.tx2 },
+  15: { label: "ملغي بعد التصنيع (لا يوجد رد من العميل)", bg: HX.surface3,    color: HX.tx2 },
+  16: { label: "ملغي بعد التصنيع (تغيير رأي)", bg: HX.surface3,    color: HX.tx2 },
+  17: { label: "ملغي بعد التصنيع (ظروف خاصة)", bg: HX.surface3,    color: HX.tx2 },
+  18: { label: "ملغي بعد التصنيع (بسبب التأخير)", bg: HX.surface3,    color: HX.tx2 },
+  19: { label: "ملغي بعد التصنيع (طلب وهمي)", bg: HX.surface3,    color: HX.tx2 },
+  20: { label: "مرفوض بعد التصنيع (المنتج غير مطابق)", bg: HX.redLight,    color: "#991b1b" },
+  21: { label: "مرفوض بعد التصنيع (غير مناسب للعميل)", bg: HX.redLight,    color: "#991b1b" },
 };
 
 const TYPE_CFG: Record<number, { label: string; bg: string; color: string }> = {

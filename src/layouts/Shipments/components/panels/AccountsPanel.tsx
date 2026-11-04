@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, Checkbox, IconButton, MenuItem, TextField } from "@mui/material";
+import { Box, Button, Checkbox, IconButton, MenuItem, TextField, Typography } from "@mui/material";
+import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
@@ -138,8 +139,10 @@ interface DeliveryFilterState {
   accountingStatus: string;
   orderNumber: string;
   paymentMethod: string;
-  settledDate: string;
-  deliveryDate: string;
+  settledDateFrom: string;
+  settledDateTo: string;
+  deliveryDateFrom: string;
+  deliveryDateTo: string;
 }
 
 const filterFieldSx = {
@@ -153,9 +156,46 @@ const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
   accountingStatus: "",
   orderNumber: "",
   paymentMethod: "",
-  settledDate: "",
-  deliveryDate: "",
+  settledDateFrom: "",
+  settledDateTo: "",
+  deliveryDateFrom: "",
+  deliveryDateTo: "",
 };
+
+/** المنتقي المشترك يتعامل بصيغة DD-MM-YYYY؛ الحالة والطلبات تبقى YYYY-MM-DD خام. */
+const toPickerDate = (iso: string) => (iso ? moment(iso, "YYYY-MM-DD").format("DD-MM-YYYY") : "");
+const fromPickerDate = (v: unknown) => {
+  if (!v) return "";
+  const m = moment.isMoment(v) ? v : moment(String(v), "DD-MM-YYYY");
+  return m.isValid() ? m.locale("en").format("YYYY-MM-DD") : "";
+};
+
+function DateRangeFilter({ label, from, to, onChange }: {
+  label: string;
+  from: string;
+  to: string;
+  onChange: (from: string, to: string) => void;
+}) {
+  return (
+    <Box sx={{ minWidth: 220 }}>
+      <Typography component="label" sx={{
+        display: "block", mb: "4px", color: HX.tx2,
+        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+      }}>
+        {label}
+      </Typography>
+      <DateRangePickerWrapper
+        startDate={toPickerDate(from)}
+        endDate={toPickerDate(to)}
+        allowPastDays={true}
+        allowFutureDays={false}
+        useDefaultPresets={true}
+        handleDatesChange={(start, end) => onChange(fromPickerDate(start), fromPickerDate(end))}
+        onReset={() => onChange("", "")}
+      />
+    </Box>
+  );
+}
 
 function ErrorBox({ message }: { message: string }) {
   return (
@@ -256,23 +296,17 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
             </MenuItem>
           ))}
         </TextField>
-        <TextField
-          type="date"
-          size="small"
+        <DateRangeFilter
           label="تاريخ المحاسبة"
-          value={filters.settledDate}
-          onChange={(e) => setFilter("settledDate")(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={filterFieldSx}
+          from={filters.settledDateFrom}
+          to={filters.settledDateTo}
+          onChange={(from, to) => setFilters((c) => ({ ...c, settledDateFrom: from, settledDateTo: to }))}
         />
-        <TextField
-          type="date"
-          size="small"
+        <DateRangeFilter
           label="تاريخ التسليم الفعلي"
-          value={filters.deliveryDate}
-          onChange={(e) => setFilter("deliveryDate")(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={filterFieldSx}
+          from={filters.deliveryDateFrom}
+          to={filters.deliveryDateTo}
+          onChange={(from, to) => setFilters((c) => ({ ...c, deliveryDateFrom: from, deliveryDateTo: to }))}
         />
         <Button
           variant="contained"
@@ -438,11 +472,13 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
 
 function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
   const [page, setPage] = useState(1);
+  const [dates, setDates] = useState({ settledDateFrom: "", settledDateTo: "" });
+  const [appliedDates, setAppliedDates] = useState({ settledDateFrom: "", settledDateTo: "" });
   const [editItem, setEditItem] = useState<ExpenseItem | null>(null);
   const [selectionModel, setSelectionModel] = useState<number[]>([]);
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
-  const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page });
+  const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page, ...appliedDates });
   const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -466,7 +502,7 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
     });
   };
 
-  const exportCurrentView = useCallback(() => exportExpenseAccounts(), []);
+  const exportCurrentView = useCallback(() => exportExpenseAccounts(appliedDates), [appliedDates]);
 
   useEffect(() => {
     onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير المصروفات" });
@@ -477,6 +513,31 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <AddExpenseForm />
+      </Box>
+
+      <Box sx={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap" }}>
+        <DateRangeFilter
+          label="تاريخ المحاسبة"
+          from={dates.settledDateFrom}
+          to={dates.settledDateTo}
+          onChange={(from, to) => setDates({ settledDateFrom: from, settledDateTo: to })}
+        />
+        <Button
+          variant="contained"
+          onClick={() => { setPage(1); setAppliedDates(dates); }}
+          sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px" }}
+        >
+          تطبيق
+        </Button>
+        <Button
+          onClick={() => {
+            const empty = { settledDateFrom: "", settledDateTo: "" };
+            setPage(1); setDates(empty); setAppliedDates(empty);
+          }}
+          sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
+        >
+          إعادة ضبط
+        </Button>
       </Box>
 
       {selectionModel.length > 0 && (

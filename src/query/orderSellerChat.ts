@@ -19,6 +19,8 @@ export interface SellerChatMessage {
   createdAt: string;
   id: number;
   text: string;
+  /** معرّف كاتب الرسالة — يُستخدم لتحديد "رسائلي" مقابل رسائل الآخرين */
+  userId?: number;
   userName: string;
 }
 

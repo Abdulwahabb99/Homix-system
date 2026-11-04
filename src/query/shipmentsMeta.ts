@@ -28,6 +28,8 @@ export interface ShipmentsMeta {
   inventoryStatuses: ShipmentsMetaOption[];
   expenseTypes: ShipmentsMetaOption[];
   scheduleStatuses: ShipmentsMetaOption[];
+  /** البائعون لفلتر «البائع» متعدد الاختيار */
+  vendors: ShipmentsMetaOption[];
   subTabCounts: {
     accountDeliveries: number;
     accountExpenses: number;
@@ -65,6 +67,7 @@ function normalizeMeta(raw: any): ShipmentsMeta {
     inventoryStatuses:      pick("inventoryStatuses",      []),
     expenseTypes:           pick("expenseTypes",           []),
     scheduleStatuses:       pick("scheduleStatuses",       []),
+    vendors:                pick("vendors",                []),
     subTabCounts: {
       accountDeliveries: Number(raw.subTabCounts?.accountDeliveries) || 0,
       accountExpenses: Number(raw.subTabCounts?.accountExpenses) || 0,
@@ -92,6 +95,7 @@ const FALLBACK: ShipmentsMeta = {
   inventoryStatuses: [],
   expenseTypes: [],
   scheduleStatuses: [],
+  vendors: [],
   subTabCounts: {
     accountDeliveries: 0,
     accountExpenses: 0,

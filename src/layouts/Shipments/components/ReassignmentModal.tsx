@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Autocomplete, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { ShipmentItem } from "query/shipmentsList";
+import { ReassignmentCandidate, useReassignmentCandidates } from "query/reassignmentCandidates";
+import { HX } from "layouts/Orders/ordersHomixTheme";
 import { reassignmentKey } from "./panels/ReassignmentsPanel";
 
 const REASONS = [
@@ -14,6 +16,17 @@ const REASONS = [
 
 export default function ReassignmentModal({ source, onClose, onSuccess }: { source: ShipmentItem | null; onClose: () => void; onSuccess: () => void }) {
   const [targetOperationNumber, setTargetOperationNumber] = useState("");
+  const [picked, setPicked] = useState<ReassignmentCandidate | null>(null);
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(targetOperationNumber), 300);
+    return () => clearTimeout(timer);
+  }, [targetOperationNumber]);
+  useEffect(() => {
+    if (!source) { setTargetOperationNumber(""); setPicked(null); setDebounced(""); }
+  }, [source]);
+  const candidates = useReassignmentCandidates(source?.id, debounced);
+  const searching = targetOperationNumber.trim() !== debounced.trim() || candidates.isFetching;
   const [reason, setReason] = useState(REASONS[0]);
   const [customReason, setCustomReason] = useState("");
   const [notes, setNotes] = useState("");
@@ -21,7 +34,9 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
   const save = useMutation({
     mutationFn: async () => axiosRequest.post("/shipments/reassignments", {
       sourceOrderId: source?.id,
-      targetOperationNumber: targetOperationNumber.trim(),
+      ...(picked && picked.operationNumber === targetOperationNumber.trim()
+        ? { targetOrderId: picked.id }
+        : { targetOperationNumber: targetOperationNumber.trim() }),
       reason: reason === "سبب آخر" ? customReason.trim() : reason,
       notes: notes.trim(),
     }),
@@ -37,8 +52,56 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
   return <Dialog open={Boolean(source)} onClose={save.isPending ? undefined : onClose} dir="rtl" fullWidth maxWidth="sm">
     <DialogTitle sx={{ fontFamily: "Cairo", fontWeight: 800 }}>إعادة تخصيص الصنف</DialogTitle>
     <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "18px !important" }}>
-      <Box sx={{ fontSize: 13 }}>الطلب الأصلي: <strong>#{source?.orderNumber || source?.id}</strong> — {source?.productSku || "—"}</Box>
-      <TextField label="رقم العملية الجديدة" value={targetOperationNumber} onChange={(event) => setTargetOperationNumber(event.target.value)} required fullWidth size="small" helperText="أدخل رقم العملية الظاهر في جدول الشحنات. يجب أن يطابق المنتج وSKU والكمية." />
+      <Box sx={{ fontSize: 13, lineHeight: 1.9 }}>
+        الطلب الأصلي: <strong>#{source?.orderNumber || source?.id}</strong> — {source?.productSku || "—"}
+        <br />
+        البائع: <strong>{source?.sellerName || "—"}</strong> · العميل: {source?.customerName || "—"} · القيمة: <strong>{Number(source?.amountToCollect ?? 0).toLocaleString("ar-EG")} ج.م</strong>
+      </Box>
+      <Autocomplete<ReassignmentCandidate, false, false, true>
+        freeSolo
+        fullWidth
+        size="small"
+        options={candidates.data ?? []}
+        filterOptions={(options) => options}
+        loading={searching}
+        loadingText="جارٍ البحث..."
+        noOptionsText={targetOperationNumber.trim() ? "لا توجد نتائج" : "اكتب رقم العملية للبحث"}
+        inputValue={targetOperationNumber}
+        onInputChange={(_event, value, reason) => {
+          setTargetOperationNumber(value);
+          if (reason === "input") setPicked(null);
+        }}
+        onChange={(_event, value) => setPicked(typeof value === "string" ? null : value)}
+        getOptionLabel={(option) => (typeof option === "string" ? option : option.operationNumber || String(option.id))}
+        getOptionDisabled={(option) => typeof option !== "string" && !option.eligible}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        componentsProps={{ paper: { sx: { direction: "rtl", fontFamily: "Cairo" } } }}
+        renderOption={(props, option) => (
+          <Box component="li" {...props} key={option.id} sx={{ display: "block !important", fontFamily: "Cairo", opacity: option.eligible ? 1 : 0.6 }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center", fontWeight: 700, fontSize: 13, color: HX.tx }}>
+              <span>عملية {option.operationNumber || "—"}</span>
+              <span style={{ color: HX.tx2, fontWeight: 500 }}>طلب #{option.orderNumber || option.id}</span>
+              <span style={{ marginInlineStart: "auto", color: HX.accent, fontSize: 11 }}>{option.shipmentStatusLabel}</span>
+            </Box>
+            <Box sx={{ fontSize: 12, color: HX.tx2 }}>
+              {option.customerName || "—"} · {option.sku || "—"} · الكمية {option.quantity ?? "—"}
+            </Box>
+            {!option.eligible && <Box sx={{ fontSize: 11, color: HX.red }}>{option.reasonLabel}</Box>}
+          </Box>
+        )}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="رقم العملية الجديدة"
+            required
+            helperText="ابحث برقم العملية أو رقم الطلب واختر من القائمة، أو أدخل الرقم كاملًا. يجب أن يطابق المنتج وSKU والكمية."
+            InputProps={{
+              ...params.InputProps,
+              endAdornment: <>{searching && targetOperationNumber.trim() ? <CircularProgress size={16} /> : null}{params.InputProps.endAdornment}</>,
+            }}
+          />
+        )}
+      />
       <TextField select label="سبب إعادة التخصيص" value={reason} onChange={(event) => setReason(event.target.value)} fullWidth size="small">{REASONS.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField>
       {reason === "سبب آخر" && <TextField label="السبب" value={customReason} onChange={(event) => setCustomReason(event.target.value)} required fullWidth size="small" />}
       <TextField label="ملاحظات إضافية" value={notes} onChange={(event) => setNotes(event.target.value)} multiline minRows={3} fullWidth size="small" />

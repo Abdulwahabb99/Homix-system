@@ -16,6 +16,15 @@ export const STATUS_COLORS: Record<number, { bg: string; color: string; dot: str
   10: { bg: HX.redLight,    color: "#7f1d1d", dot: HX.red },     // فشل في التوصيل
   11: { bg: HX.blueLight,   color: "#1e40af", dot: HX.blue },    // شحنة مجدولة
   12: { bg: HX.tealLight,   color: "#0f766e", dot: HX.teal },    // خرجت للتوصيل
+  13: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي قبل التأكيد للتصنيع
+  14: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)
+  15: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التصنيع (لا يوجد رد من العميل)
+  16: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التصنيع (تغيير رأي)
+  17: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التصنيع (ظروف خاصة)
+  18: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التصنيع (بسبب التأخير)
+  19: { bg: HX.surface3,    color: HX.tx2,    dot: HX.tx3 },     // ملغي بعد التصنيع (طلب وهمي)
+  20: { bg: HX.redLight,    color: "#991b1b", dot: HX.red },     // مرفوض بعد التصنيع (المنتج غير مطابق)
+  21: { bg: HX.redLight,    color: "#991b1b", dot: HX.red },     // مرفوض بعد التصنيع (غير مناسب للعميل)
 };
 
 /** Colors for the "payment status" badge. `2` = مدفوع, otherwise دفع عند الاستلام. */

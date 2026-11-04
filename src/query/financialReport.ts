@@ -23,9 +23,19 @@ export const FINANCIAL_REPORT_EXPORT_PATH = `${FINANCIAL_REPORT_PATH}/export`;
  * معاملات التقرير — مصدر واحد يستخدمه الجلب والتصدير، فلا يُصدَّر ملف بدورة
  * فوترة مختلفة عمّا يراه المستخدم.
  */
-export function buildFinancialReportQuery(billingDay: BillingDay, referenceDate?: string): string {
+/** نطاق مخصّص على تاريخ التسليم (YYYY-MM-DD) — يُرسَل كاملاً أو لا يُرسَل */
+export interface FinancialDateRange {
+  startDate: string;
+  endDate: string;
+}
+
+export function buildFinancialReportQuery(billingDay: BillingDay, referenceDate?: string, range?: FinancialDateRange): string {
   const params = new URLSearchParams({ billingDay: String(billingDay) });
   if (referenceDate) params.set("referenceDate", referenceDate);
+  if (range?.startDate && range?.endDate) {
+    params.set("startDate", range.startDate);
+    params.set("endDate", range.endDate);
+  }
   return params.toString();
 }
 
@@ -208,8 +218,9 @@ export async function fetchFinancialReport(
   billingDay: BillingDay,
   navigate: NavigateFunction,
   referenceDate?: string,
+  range?: FinancialDateRange,
 ): Promise<FinancialReport> {
-  const url = `${FINANCIAL_REPORT_PATH}?${buildFinancialReportQuery(billingDay, referenceDate)}`;
+  const url = `${FINANCIAL_REPORT_PATH}?${buildFinancialReportQuery(billingDay, referenceDate, range)}`;
   const { data } = await axiosRequest.get(url);
 
   const root = data as ApiFinancialReportResponse;
@@ -234,8 +245,8 @@ export async function fetchFinancialReport(
  * تمرير `vendorId` (مثلاً من صف مورّد واحد في تبويب البائع/المخزن/الشاملة)
  * يقصر التصدير على فاتورة هذا المورّد وحده — الـ BE يدعم الفلترة بالفعل.
  */
-export async function exportFinancialReport(billingDay: BillingDay, vendorId?: string | number, referenceDate?: string): Promise<void> {
-  const params = new URLSearchParams(buildFinancialReportQuery(billingDay, referenceDate));
+export async function exportFinancialReport(billingDay: BillingDay, vendorId?: string | number, referenceDate?: string, range?: FinancialDateRange): Promise<void> {
+  const params = new URLSearchParams(buildFinancialReportQuery(billingDay, referenceDate, range));
   if (vendorId !== undefined && vendorId !== null && String(vendorId).trim() !== "") {
     params.set("vendorId", String(vendorId));
   }
@@ -249,12 +260,12 @@ export async function exportFinancialReport(billingDay: BillingDay, vendorId?: s
   downloadBlobResponse(res, fileName);
 }
 
-export function useFinancialReport(billingDay: BillingDay, referenceDate?: string) {
+export function useFinancialReport(billingDay: BillingDay, referenceDate?: string, range?: FinancialDateRange) {
   const navigate = useNavigate();
 
   return useQuery({
-    queryKey: financialKeys.report(billingDay, referenceDate),
-    queryFn: () => fetchFinancialReport(billingDay, navigate, referenceDate),
+    queryKey: financialKeys.report(billingDay, referenceDate, range ? `${range.startDate}_${range.endDate}` : undefined),
+    queryFn: () => fetchFinancialReport(billingDay, navigate, referenceDate, range),
     staleTime: 30_000,
   });
 }

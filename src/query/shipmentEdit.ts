@@ -17,8 +17,8 @@ export interface UpdateShipmentPayload {
   shipmentType?: string;
   governorate?: string;
   deliveryBy?: number;
-  scheduleStatus?: number;
-  shippingCompany?: number | string;
+  scheduleStatus?: number | null;
+  shippingCompany?: number | string | null;
   shippingFees?: number;
   shippingReceiveDate?: string;
   scheduledDeliveryDate?: string | null;
@@ -45,7 +45,9 @@ export interface BulkUpdateShipmentPayload {
   governorate?: string;
   deliveryBy?: number;
   userId?: number;
-  scheduleStatus?: number;
+  /** معرّف شركة الشحن */
+  shippingCompany?: number | null;
+  scheduleStatus?: number | null;
   /** ISO، أو `""` لمسح الموعد من كل الشحنات المحددة. */
   scheduledDeliveryDate?: string | "";
 }
@@ -99,6 +101,28 @@ export function useUpdateShipmentMutation(shipmentId: string | undefined) {
     },
     onError: () => {
       NotificationMeassage("error", "حدث خطأ أثناء حفظ التعديلات");
+    },
+  });
+}
+
+/** تعديل مباشر من الجدول — المعرّف يُمرَّر مع كل استدعاء (بخلاف النسخة أعلاه). */
+export function useInlineUpdateShipmentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { id: number; body: UpdateShipmentPayload }) =>
+      putShipment(String(vars.id), vars.body),
+    onSuccess: async (_d, vars) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(String(vars.id)) }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+      ]);
+      NotificationMeassage("success", "تم تعديل الشحنة");
+    },
+    onError: () => {
+      NotificationMeassage("error", "حدث خطأ أثناء حفظ التعديل");
     },
   });
 }

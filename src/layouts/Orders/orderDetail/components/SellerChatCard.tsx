@@ -1,10 +1,12 @@
 /**
  * "محادثة السيلر مع مسؤول الحساب" — محادثة داخلية منفصلة عن "الملاحظات
  * والتواصل" (OrderNotesCard). ردود سريعة من قائمة قابلة للتعديل (مثل
- * التذاكر): الضغط على رد سريع يملأ حقل النص فقط، ولا يرسله تلقائيًا —
- * نفس سلوك شريحات الردود السريعة في التذاكر.
+ * التذاكر): الضغط على رد سريع يرسله مباشرةً. شكل الفقاعات والصور الرمزية
+ * وعدّاد الرسائل منقول من تصميم homix_order_detail. "رسائلي" تُحدَّد بمعرّف
+ * المستخدم (state.auth.user.id) وليس بمطابقة الاسم.
  */
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   Box,
   Button,
@@ -35,6 +37,18 @@ import {
   useUpdateSellerChatQuickReplies,
   type SellerChatQuickReply,
 } from "query/orderSellerChat";
+
+const AVATAR_COLORS = [OD.amber, OD.accent, OD.green, OD.blue, OD.purple, OD.red];
+
+const avatarColor = (key: number | string) => {
+  const n = typeof key === "number" ? key : Array.from(key).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return AVATAR_COLORS[Math.abs(n) % AVATAR_COLORS.length];
+};
+
+const initialOf = (name: string) => (name.trim() ? Array.from(name.trim())[0].toUpperCase() : "?");
+
+const formatMessageTime = (iso: string) =>
+  new Date(iso).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
 function QuickReplySettingsDialog({
   open,
@@ -129,6 +143,9 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
   const messages = useSellerChatMessages(orderId);
   const quickReplies = useSellerChatQuickReplies();
   const send = useSendSellerChatMessage(orderId);
+  const { user } = useSelector((state: any) => state.auth);
+  const myId = user?.id != null ? Number(user.id) : null;
+  const endRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiles(Array.from(e.target.files ?? []));
@@ -143,7 +160,17 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
     );
   };
 
+  /* الرد السريع يُرسَل مباشرةً (كما في التصميم) بدل وضعه في خانة الكتابة */
+  const handleQuickReply = (label: string) => {
+    if (send.isPending) return;
+    send.mutate({ text: label, files: [] });
+  };
+
   const list = messages.data ?? [];
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: "end" });
+  }, [list.length]);
 
   return (
     <SectionCard
@@ -151,7 +178,8 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
       title="محادثة السيلر مع مسؤول الحساب"
       headerRight={
         <Stack direction="row" spacing={1} alignItems="center">
-          <Chip label="داخلي" size="small" sx={{ fontSize: "0.65rem", height: 20, bgcolor: OD.sur3, color: OD.tx2 }} />
+          <Typography sx={{ fontSize: "0.69rem", color: OD.tx3, fontWeight: 600 }}>{list.length} رسالة</Typography>
+          <Chip label="🔒 داخلي" size="small" sx={{ fontSize: "0.625rem", height: 20, fontWeight: 700, bgcolor: "rgba(201,169,110,0.1)", color: "#8a6d3b" }} />
           {isAdmin && (
             <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: OD.tx3 }}>
               <SettingsOutlinedIcon sx={{ fontSize: 16 }} />
@@ -160,7 +188,7 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
         </Stack>
       }
     >
-      <Box sx={{ maxHeight: 220, overflowY: "auto", px: 2, py: 1.5 }}>
+      <Box dir="rtl" sx={{ maxHeight: 300, overflowY: "auto", p: 2, m: 1.5, borderRadius: "12px", bgcolor: OD.bg }}>
         {messages.isLoading ? (
           <Box sx={{ textAlign: "center", py: 2 }}>
             <CircularProgress size={20} />
@@ -171,27 +199,50 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
           </Typography>
         ) : (
           <Stack spacing={1.25}>
-            {list.map((message) => (
-              <Box key={message.id}>
-                <Box sx={{ bgcolor: OD.sur2, border: `0.5px solid ${OD.brd}`, px: 1.5, py: 1, borderRadius: "10px", fontSize: "0.75rem", color: OD.tx }}>
-                  {message.text}
-                  {message.attachments.map((attachment) => {
-                    const url = resolveAttachmentUrl(attachment.url);
-                    if (!url) return null;
-                    return (
-                      <Box key={attachment.id} mt={0.75}>
-                        <a href={url} target="_blank" rel="noreferrer">
-                          <Box component="img" src={url} alt="" sx={{ maxHeight: 160, borderRadius: "8px", maxWidth: "100%" }} />
-                        </a>
-                      </Box>
-                    );
-                  })}
+            {list.map((message) => {
+              const mine = myId !== null && message.userId != null && Number(message.userId) === myId;
+              const name = message.userName || "—";
+              const avatar = (
+                <Box sx={{ width: 24, height: 24, borderRadius: "50%", bgcolor: avatarColor(message.userId ?? name), color: "#fff", fontSize: "0.6rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, mb: "2px" }}>
+                  {initialOf(name)}
                 </Box>
-                <Typography sx={{ fontSize: "0.625rem", color: OD.tx3, mt: 0.5 }}>
-                  {message.userName} · {new Date(message.createdAt).toLocaleString("en-US")}
-                </Typography>
-              </Box>
-            ))}
+              );
+              const column = (
+                <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <Typography sx={{ fontSize: "0.625rem", color: OD.tx3, fontWeight: 600, mb: 0.5, px: 0.625 }}>
+                    {name} · {formatMessageTime(message.createdAt)}
+                  </Typography>
+                  <Box
+                    sx={{
+                      px: 1.75, py: 1.25, borderRadius: "16px", fontSize: "0.78rem", lineHeight: 1.6, wordBreak: "break-word", whiteSpace: "pre-wrap",
+                      ...(mine
+                        ? { bgcolor: OD.accent, color: "#fff", borderBottomRightRadius: "4px" }
+                        : { bgcolor: OD.sur, color: OD.tx, border: `0.5px solid ${OD.brd}`, borderBottomLeftRadius: "4px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }),
+                    }}
+                  >
+                    {message.text}
+                    {message.attachments.map((attachment) => {
+                      const url = resolveAttachmentUrl(attachment.url);
+                      if (!url) return null;
+                      return (
+                        <Box key={attachment.id} mt={0.75}>
+                          <a href={url} target="_blank" rel="noreferrer">
+                            <Box component="img" src={url} alt="" sx={{ maxHeight: 160, borderRadius: "8px", maxWidth: "100%" }} />
+                          </a>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              );
+              /* RTL: رسائلي على اليمين (الأفاتار أولًا)، ورسائل الآخرين على اليسار */
+              return (
+                <Box key={message.id} sx={{ display: "flex", alignItems: "flex-end", gap: 1, maxWidth: "78%", alignSelf: mine ? "flex-start" : "flex-end" }}>
+                  {mine ? <>{avatar}{column}</> : <>{column}{avatar}</>}
+                </Box>
+              );
+            })}
+            <div ref={endRef} />
           </Stack>
         )}
       </Box>
@@ -203,7 +254,7 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
               key={reply.id}
               label={reply.label}
               size="small"
-              onClick={() => setText(reply.label)}
+              onClick={() => handleQuickReply(reply.label)}
               sx={{ fontSize: "0.7rem", cursor: "pointer" }}
             />
           ))}

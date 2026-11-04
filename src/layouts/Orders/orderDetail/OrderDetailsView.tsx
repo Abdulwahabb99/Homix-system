@@ -210,6 +210,8 @@ export default function OrderDetailsView({
               orderDetails={orderDetails}
               navigate={navigate}
               handleDownloadInvoice={handleDownloadInvoice}
+              changeOrderStatus={changeOrderStatus}
+              isVendor={isVendor}
             />
 
             <OrderTimelineCard timeline={orderDetails.timeline} />

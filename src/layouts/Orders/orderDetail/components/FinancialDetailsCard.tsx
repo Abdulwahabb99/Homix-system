@@ -11,6 +11,7 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { usePermissions } from "shared/permissions/usePermissions";
 import { OD } from "../odTheme";
 import { formatMoney } from "../utils";
 import { useInlineNumberEdit, InlineNumberEdit } from "../hooks/useInlineNumberEdit";
@@ -154,6 +155,10 @@ export default function FinancialDetailsCard({
   changeDiscount,
   changeCostPrice,
 }: FinancialDetailsCardProps) {
+  /* التعديل المالي: صلاحية orders_edit_financials فقط (لا يعتمد على الدور) + ليس بائعاً.
+     الباك إند يرفض التعديل أيضاً (403) لمن لا يملكها. */
+  const { can } = usePermissions();
+  const canEditFinancials = !isVendor && can("orders_edit_financials");
   const sell = Number(orderDetails.subTotalPrice ?? orderTotalPrice ?? 0);
   const ship = Number(orderDetails.shippingFees ?? orderTotalShipping ?? 0);
   /** «سعر التكلفة» — نفس القيمة المعروضة تُستخدم في هامش الربح ليتّسق الحساب المرئي */
@@ -185,7 +190,7 @@ export default function FinancialDetailsCard({
         <EditableMoneyValue
           edit={costEdit}
           value={cost}
-          isVendor={isVendor}
+          isVendor={!canEditFinancials}
           ariaLabel="تعديل سعر التكلفة"
         />
       </FinancialRow>
@@ -199,18 +204,18 @@ export default function FinancialDetailsCard({
         <EditableMoneyValue
           edit={shipEdit}
           value={ship}
-          isVendor={isVendor}
+          isVendor={!canEditFinancials}
           ariaLabel="تعديل تكلفة الشحن"
         />
       </FinancialRow>
       <FinancialRow label="الخصم">
-        <EditableMoneyValue edit={discEdit} value={disc} isVendor={isVendor} ariaLabel="تعديل الخصم" />
+        <EditableMoneyValue edit={discEdit} value={disc} isVendor={!canEditFinancials} ariaLabel="تعديل الخصم" />
       </FinancialRow>
       <FinancialRow label="جدية الشراء">
         <EditableMoneyValue
           edit={downEdit}
           value={down}
-          isVendor={isVendor}
+          isVendor={!canEditFinancials}
           ariaLabel="تعديل جدية الشراء"
         />
       </FinancialRow>

@@ -17,6 +17,9 @@ import ShipmentsKpiRow from "./components/ShipmentsKpiRow";
 import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFiltersBar";
 import ShipmentsTable from "./components/ShipmentsTable";
 import ShipmentsBulkEditModal from "./components/ShipmentsBulkEditModal";
+import ShipmentsBulkBar from "./components/ShipmentsBulkBar";
+import ShipmentTrackingModal from "./components/ShipmentTrackingModal";
+import GroupedShipmentModal from "./components/GroupedShipmentModal";
 import { useBulkUpdateShipmentsMutation, type BulkUpdateShipmentPayload } from "query/shipmentEdit";
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
 import {
@@ -151,6 +154,9 @@ interface ShipmentsTabContentProps {
   onView: (shipment: ShipmentItem) => void;
   onDelete: (shipment: ShipmentItem) => void;
   onReassign: (shipment: ShipmentItem) => void;
+  onTrack: (shipment: ShipmentItem) => void;
+  onGroupedClick: (shipment: ShipmentItem) => void;
+  bulkBar?: React.ReactNode;
   selectionModel: number[];
   onToggleSelect: (id: number) => void;
   onToggleAll: () => void;
@@ -175,6 +181,9 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
   onView,
   onDelete,
   onReassign,
+  onTrack,
+  onGroupedClick,
+  bulkBar,
   selectionModel,
   onToggleSelect,
   onToggleAll,
@@ -189,6 +198,7 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         onApply={onApply}
         onReset={onReset}
       />
+      {bulkBar}
       <ShipmentsTable
         shipments={shipments}
         isVendor={isVendor}
@@ -202,9 +212,12 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         onView={onView}
         onDelete={onDelete}
         onReassign={onReassign}
+        onTrack={onTrack}
+        onGroupedClick={onGroupedClick}
         selectionModel={selectionModel}
         onToggleSelect={onToggleSelect}
         onToggleAll={onToggleAll}
+        meta={meta}
       />
     </>
   );
@@ -222,6 +235,8 @@ export default function Shipments() {
   const [reassignSource, setReassignSource] = useState<ShipmentItem | null>(null);
   const [viewShipment, setViewShipment] = useState<ShipmentItem | null>(null);
   const [editShipment, setEditShipment] = useState<ShipmentItem | null>(null);
+  const [trackShipment, setTrackShipment] = useState<ShipmentItem | null>(null);
+  const [groupedShipment, setGroupedShipment] = useState<ShipmentItem | null>(null);
   const { can } = usePermissions();
 
   /* Tabs the user has no permission for are hidden outright — showing them only
@@ -273,7 +288,7 @@ export default function Shipments() {
   const shippingCompany = searchParams.get("shippingCompany") || "";
   const scheduleStatus = searchParams.get("scheduleStatus") || "";
   const governorate    = searchParams.get("governorate")    || "";
-  const vendorName     = searchParams.get("vendorName")     || "";
+  const vendorId       = searchParams.get("vendorId")       || "";
   const startDateParam = searchParams.get("startDate") || "";
   const endDateParam   = searchParams.get("endDate") || "";
   const startDate      = React.useMemo(() => dateFromUrl(startDateParam), [startDateParam]);
@@ -295,17 +310,18 @@ export default function Shipments() {
   const [returnsExporter, setReturnsExporter] = useState<AccountsPanelExporter | null>(null);
   const [inventoryExporter, setInventoryExporter] = useState<AccountsPanelExporter | null>(null);
   const [reportsExporter, setReportsExporter] = useState<AccountsPanelExporter | null>(null);
+  const [receiptsExporter, setReceiptsExporter] = useState<AccountsPanelExporter | null>(null);
 
   // React Query
   const queryParams = React.useMemo(() => ({
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, governorate, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorId, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, governorate, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorId, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
@@ -339,6 +355,67 @@ export default function Shipments() {
       return [...current, ...toAdd];
     });
   }, [shipments]);
+
+  /* تصدير المحدد: CSV من الصفوف المحمّلة. نحتفظ بنسخة من كل صف حُدِّد حتى لو
+     انتقل المستخدم لصفحة أخرى (الخادم لا يصدّر بقائمة معرّفات). */
+  const selectedItemsRef = React.useRef<Map<number, ShipmentItem>>(new Map());
+  React.useEffect(() => {
+    const map = selectedItemsRef.current;
+    shipments.forEach((s) => { if (shipmentSelectionModel.includes(s.id)) map.set(s.id, s); });
+    [...map.keys()].forEach((id) => { if (!shipmentSelectionModel.includes(id)) map.delete(id); });
+  }, [shipments, shipmentSelectionModel]);
+
+  const handleExportSelected = () => {
+    const list = shipmentSelectionModel
+      .map((id) => selectedItemsRef.current.get(id))
+      .filter(Boolean) as ShipmentItem[];
+    if (list.length === 0) return;
+    const head = ["رقم العملية", "رقم الطلب", "رقم الشحنة", "العميل", "الهاتف", "البائع", "المحافظة", "حالة الشحنة", "نوع الشحنة", "حالة الدفع", "شركة الشحن", "المبلغ المطلوب", "تكلفة الشحن", "تاريخ الاستلام", "تاريخ الجدولة", "حالة الجدولة", "تاريخ التوصيل"];
+    const q = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const d = (v: string | null) => (v ? moment(v).locale("en").format("YYYY-MM-DD") : "");
+    const rows = list.map((s) => [
+      s.operationNumber, s.orderNumber, s.shipmentNumber, s.customerName, s.customerPhone, s.sellerName,
+      s.governorate, s.shipmentStatusLabel, s.shipmentTypeLabel, s.paymentStatusLabel, s.shippingCompanyName,
+      s.amountToCollect, s.shippingCost, d(s.receivedInWarehouseDate), d(s.scheduledDeliveryDate),
+      s.scheduleStatusLabel, d(s.deliveryDate),
+    ].map(q).join(","));
+    const csv = "\ufeff" + [head.map(q).join(",")].concat(rows).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `shipments-selected-${moment().locale("en").format("YYYY-MM-DD")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  /* الشحنات المحددة التي أُعيد تخصيصها: تتغير باقي حقولها لكن لا تتغير «حالة الشحنة». */
+  const reassignedSelectedIds = shipmentSelectionModel.filter(
+    (id) => shipments.find((s) => s.id === id)?.reassignedToOperationNumber != null
+      || selectedItemsRef.current.get(id)?.reassignedToOperationNumber != null
+  );
+
+  const handleBulkApplyFromBar = async (bulkData: BulkUpdateShipmentPayload, onDone: () => void) => {
+    try {
+      if (bulkData.shipmentStatus != null && reassignedSelectedIds.length > 0) {
+        const { shipmentStatus: _skip, ...rest } = bulkData;
+        const others = shipmentSelectionModel.filter((id) => !reassignedSelectedIds.includes(id));
+        if (others.length > 0) {
+          await bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: others });
+        }
+        if (Object.keys(rest).length > 0) {
+          await bulkUpdateShipmentsMutation.mutateAsync({ data: rest, shipmentIds: reassignedSelectedIds });
+        }
+      } else {
+        await bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: shipmentSelectionModel });
+      }
+      onDone();
+      setShipmentSelectionModel([]);
+    } catch {
+      /* الخطأ يُعرض من onError في الـ mutation */
+    }
+  };
 
   const handleBulkEditShipments = (bulkData: BulkUpdateShipmentPayload) => {
     bulkUpdateShipmentsMutation.mutate(
@@ -446,7 +523,7 @@ export default function Shipments() {
     if (values.shippingCompany) urlParams.set("shippingCompany", values.shippingCompany);
     if (values.scheduleStatus) urlParams.set("scheduleStatus", values.scheduleStatus);
     if (values.governorate)    urlParams.set("governorate",    values.governorate);
-    if (values.vendorName)     urlParams.set("vendorName",     values.vendorName);
+    if (values.vendorId)       urlParams.set("vendorId",       values.vendorId);
     if (values.startDate) {
       const m = moment.isMoment(values.startDate)
         ? values.startDate
@@ -493,7 +570,9 @@ export default function Shipments() {
           ? inventoryExporter
           : activeTab === "reports"
             ? reportsExporter
-            : null;
+            : activeTab === "receipts"
+              ? receiptsExporter
+              : null;
     if (activeTab !== "shipments") {
       if (!panelExporter) return;
       setIsExportLoading(true);
@@ -520,7 +599,7 @@ export default function Shipments() {
     if (deliveryBy)     q.set("deliveryBy",     deliveryBy);
     if (shippingCompany) q.set("shippingCompany", shippingCompany);
     if (scheduleStatus) q.set("scheduleStatus", scheduleStatus);
-    if (vendorName)     q.set("vendorName",     vendorName);
+    if (vendorId)       q.set("vendorId",       vendorId);
     if (governorate)    q.set("governorate",    governorate);
     const sIso = toIso(startDate);
     const eIso = toIso(endDate, "end");
@@ -551,7 +630,8 @@ export default function Shipments() {
     || (activeTab === "accounts" && accountsExporter !== null)
     || (activeTab === "returns" && returnsExporter !== null)
     || (activeTab === "inventory" && inventoryExporter !== null)
-    || (activeTab === "reports" && reportsExporter !== null);
+    || (activeTab === "reports" && reportsExporter !== null)
+    || (activeTab === "receipts" && receiptsExporter !== null);
 
   // Mutations
   const deleteShipment = () => {
@@ -570,12 +650,12 @@ export default function Shipments() {
   const filterDefaults: FilterValues = React.useMemo(() => ({
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, governorate, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorId, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   }), [
     operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
-    scheduleStatus, governorate, vendorName, startDate, endDate,
+    scheduleStatus, governorate, vendorId, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
   ]);
 
@@ -822,6 +902,19 @@ export default function Shipments() {
               onView={setViewShipment}
               onDelete={handleDeleteShipment}
               onReassign={setReassignSource}
+              onTrack={setTrackShipment}
+              onGroupedClick={setGroupedShipment}
+              bulkBar={!isVendor ? (
+                <ShipmentsBulkBar
+                  selectedCount={shipmentSelectionModel.length}
+                  meta={metaData}
+                  isSaving={bulkUpdateShipmentsMutation.isPending}
+                  reassignedSelectedCount={reassignedSelectedIds.length}
+                  onApply={handleBulkApplyFromBar}
+                  onExportSelected={handleExportSelected}
+                  onClear={() => setShipmentSelectionModel([])}
+                />
+              ) : null}
               selectionModel={shipmentSelectionModel}
               onToggleSelect={toggleShipmentSelect}
               onToggleAll={toggleShipmentSelectAll}
@@ -833,7 +926,7 @@ export default function Shipments() {
             <MemoizedReturnsPanel onExporterChange={setReturnsExporter} />
           </Box>
         )}
-        {activeTab === "receipts" && isTabVisible("receipts") && <Box id="shipment-tab-panel-receipts" role="tabpanel"><ReceiptsPanel /></Box>}
+        {activeTab === "receipts" && isTabVisible("receipts") && <Box id="shipment-tab-panel-receipts" role="tabpanel"><ReceiptsPanel onExporterChange={setReceiptsExporter} /></Box>}
         {activeTab === "reassignments" && isTabVisible("reassignments") && <Box id="shipment-tab-panel-reassignments" role="tabpanel"><ReassignmentsPanel /></Box>}
         {activeTab === "inventory" && isTabVisible("inventory") && (
           <Box id="shipment-tab-panel-inventory" role="tabpanel">
@@ -879,6 +972,8 @@ export default function Shipments() {
           {editShipment && <ShipmentEdit shipmentId={editShipment.id} embedded onClose={() => setEditShipment(null)} onSaved={() => queryClient.invalidateQueries({ queryKey: shipmentKeys.all() })} />}
         </DialogContent>
       </Dialog>
+      <ShipmentTrackingModal shipment={trackShipment} onClose={() => setTrackShipment(null)} />
+      <GroupedShipmentModal shipment={groupedShipment} onClose={() => setGroupedShipment(null)} />
       <ReassignmentModal source={reassignSource} onClose={() => setReassignSource(null)} onSuccess={() => setActiveTab("reassignments")} />
     </DashboardLayout>
   );

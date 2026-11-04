@@ -42,9 +42,12 @@ export interface AccountsParams {
   accountingStatus?: string;
   orderNumber?: string;
   paymentMethod?: string;
-  settledDate?: string;
-  /** تاريخ التسليم الفعلي للطلب — غير «تاريخ المحاسبة» (settledDate) */
-  deliveryDate?: string;
+  /** نطاق تاريخ المحاسبة (YYYY-MM-DD، شامل الطرفين) */
+  settledDateFrom?: string;
+  settledDateTo?: string;
+  /** نطاق تاريخ التسليم الفعلي (YYYY-MM-DD، شامل الطرفين) — غير «تاريخ المحاسبة» */
+  deliveryDateFrom?: string;
+  deliveryDateTo?: string;
 }
 
 function buildQuery(p: AccountsParams): string {
@@ -55,8 +58,11 @@ function buildQuery(p: AccountsParams): string {
   if (p.accountingStatus) query.set("accountingStatus", p.accountingStatus);
   if (p.orderNumber)      query.set("orderNumber", p.orderNumber);
   if (p.paymentMethod)    query.set("paymentMethod", p.paymentMethod);
-  if (p.settledDate)      query.set("settledDate", new Date(p.settledDate).toISOString());
-  if (p.deliveryDate)     query.set("deliveryDate", new Date(p.deliveryDate).toISOString());
+  // تُرسل كما هي (YYYY-MM-DD) — الباك إند يفسّرها كأيام بتوقيت القاهرة
+  if (p.settledDateFrom)  query.set("settledDateFrom", p.settledDateFrom);
+  if (p.settledDateTo)    query.set("settledDateTo", p.settledDateTo);
+  if (p.deliveryDateFrom) query.set("deliveryDateFrom", p.deliveryDateFrom);
+  if (p.deliveryDateTo)   query.set("deliveryDateTo", p.deliveryDateTo);
   return query.toString();
 }
 

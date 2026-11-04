@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { orderStatusValues, deliveryStatusValues, paymentStatusValues } from "layouts/Orders/utils/constants";
+import { orderStatusValues, deliveryStatusValues, paymentStatusValues, CLOSED_ORDER_STATUS_IDS, REJECTED_ORDER_STATUS_IDS } from "layouts/Orders/utils/constants";
 
 type BadgeSx = {
   bg: string;
@@ -57,9 +57,18 @@ const orderStatusConfig: Record<number, BadgeSx> = {
   8: { bg: HX.tealLight, color: "#0f766e", dot: HX.teal },             // في المخزن
 };
 
+/* الملغي بعد/قبل التصنيع يأخذ لون «ملغي» (4)، والمرفوض يأخذ الأحمر. */
+const cancelVariantConfig: BadgeSx = orderStatusConfig[4];
+const rejectVariantConfig: BadgeSx = { bg: HX.redLight, color: "#991b1b", dot: HX.red };
+
 export function OrderStatusBadge({ status }: { status: number | null | undefined }) {
   const s = Number(status);
-  const cfg = orderStatusConfig[s] ?? { bg: "rgba(100,100,100,0.10)", color: "#374151", dot: "#9ca3af" };
+  const variantCfg = REJECTED_ORDER_STATUS_IDS.includes(s)
+    ? rejectVariantConfig
+    : CLOSED_ORDER_STATUS_IDS.includes(s)
+      ? cancelVariantConfig
+      : undefined;
+  const cfg = orderStatusConfig[s] ?? variantCfg ?? { bg: "rgba(100,100,100,0.10)", color: "#374151", dot: "#9ca3af" };
   const label = (orderStatusValues[s] ?? "—").trim();
   return <Bdg {...cfg} label={label} />;
 }

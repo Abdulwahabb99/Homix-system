@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { normalizeOrderDetailPayload } from "./orderDetailNormalize";
+import { CLOSED_ORDER_STATUS_IDS, orderStatusValues } from "layouts/Orders/utils/constants";
 
 /** يستخرج رسالة الخطأ من رد الـ API إن وُجدت، وإلا الرسالة الافتراضية */
 function getApiErrorMessage(error: any, fallback: string): string {
@@ -13,6 +14,18 @@ function getApiErrorMessage(error: any, fallback: string): string {
     fallback
   );
 }
+
+/* قيم الباك إند: حالة الطلب (statusoptions) وحالة التأكيد (CONFIRMATION_STATUS) */
+const ORDER_STATUS_PENDING = 1;
+const ORDER_STATUS_CONFIRMED = 3;
+const ORDER_STATUS_CANCELLED_BEFORE_MFG = 9; // ملغي قبل التأكيد للتصنيع
+const ORDER_STATUS_CANCELLED_AFTER_MFG_72H = 10; // ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)
+const ORDER_FINAL_STATUSES = [4, 5, 6, 7, ...CLOSED_ORDER_STATUS_IDS];
+/* حالات التصنيع التي لم يبدأ فيها التصنيع فعليًا: مقبول (1) / قيد التصنيع (2) — حسب التصميم */
+const MFG_NOT_PROGRESSED = [1, 2];
+const CONFIRMATION_CONFIRMED = 2;
+const CONFIRMATION_FIRST_CANCEL = 7;
+const CONFIRMATION_LAST_CANCEL = 11;
 
 export function useOrderDetailsPage(orderId?: string | number) {
   const { id: routeId } = useParams();
@@ -89,9 +102,34 @@ export function useOrderDetailsPage(orderId?: string | number) {
   const changeConfirmationStatus = useCallback(
     (confirmationStatus: number | null) => {
       if (confirmationStatus == null) return;
-      updateOrderField({ confirmationStatus });
+      /* مزامنة حالة الطلب مع حالة التأكيد (حسب التصميم): «مؤكد» ينقل الطلب
+         المعلّق إلى «مؤكد»، وأي «ملغي (…)» يلغي الطلب («ملغي قبل/بعد التأكيد للتصنيع» حسب حالة التصنيع) ما لم يكن قد وصل لحالة
+         نهائية (ملغي/تم التسليم/مسترجع/مستبدل). باقي الحالات لا تغيّر حالة الطلب. */
+      const current = Number(orderDetails?.status);
+      const patch: Record<string, any> = { confirmationStatus };
+      if (confirmationStatus === CONFIRMATION_CONFIRMED && current === ORDER_STATUS_PENDING) {
+        patch.status = ORDER_STATUS_CONFIRMED;
+      } else if (
+        confirmationStatus >= CONFIRMATION_FIRST_CANCEL &&
+        confirmationStatus <= CONFIRMATION_LAST_CANCEL &&
+        !ORDER_FINAL_STATUSES.includes(current)
+      ) {
+        /* حسب التصميم: إلغاء قبل بدء التصنيع ← «ملغي قبل التأكيد للتصنيع»،
+           وإلا ← «ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)». */
+        const mfg = manufactureStatus == null ? null : Number(manufactureStatus);
+        patch.status =
+          mfg == null || MFG_NOT_PROGRESSED.includes(mfg)
+            ? ORDER_STATUS_CANCELLED_BEFORE_MFG
+            : ORDER_STATUS_CANCELLED_AFTER_MFG_72H;
+      }
+      updateOrderField(patch);
+      /* تنبيه بأن حالة الطلب تغيّرت تلقائياً بسبب حالة التأكيد (كما في التصميم) */
+      if (patch.status != null) {
+        const label = (orderStatusValues[patch.status] ?? "").trim();
+        NotificationMeassage("info", `حالة الطلب اتحدثت تلقائيًا لـ «${label}»`);
+      }
     },
-    [updateOrderField]
+    [updateOrderField, orderDetails?.status, manufactureStatus]
   );
 
   const changeDeliveryStatus = useCallback(

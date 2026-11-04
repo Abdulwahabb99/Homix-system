@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
@@ -26,8 +27,11 @@ import {
   useReceiptDocument,
   useReceiptDocuments,
   useReceiptList,
+  useReceiptVendors,
+  exportReceipts,
   useReceiveItems,
   useCancelReceipt,
+  useUpdateReceipt,
   ReceiptDocument as DocumentData,
 } from "query/shipmentReceipts";
 import ReceiptDocumentDialog from "./ReceiptDocument";
@@ -121,6 +125,64 @@ function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void 
   );
 }
 
+const INLINE_CTRL: React.CSSProperties = {
+  fontFamily: FONT, fontSize: "11.5px", color: HX.tx, background: HX.surface2,
+  border: `0.5px solid ${HX.border}`, borderRadius: 7, padding: "5px 7px",
+};
+
+/** حقل ملاحظة يُحفظ عند مغادرته فقط إن تغيّرت القيمة. */
+function NoteInput({ value, onCommit, disabled }: { value: string; onCommit: (next: string) => void; disabled?: boolean }) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      aria-label="ملاحظات الاستلام"
+      style={{ ...INLINE_CTRL, width: 180 }}
+      value={text}
+      maxLength={4000}
+      placeholder="اكتب ملاحظة..."
+      disabled={disabled}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => { if (text.trim() !== value.trim()) onCommit(text.trim()); }}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+    />
+  );
+}
+
+/** حقل تاريخ يُحفظ عند مغادرته فقط (تجنباً لمسح التاريخ أثناء التحرير الجزئي). */
+function DateCommitInput({ value, max, onCommit }: { value: string; max?: string; onCommit: (next: string | null) => void }) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      type="date"
+      aria-label="تاريخ التصنيع"
+      style={{ ...INLINE_CTRL, width: 125 }}
+      value={text}
+      max={max}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => { if (text !== value) onCommit(text || null); }}
+    />
+  );
+}
+
+/** مدة التصنيع حتى الاستلام: أخضر ≤7 أيام، كهرماني ≤14، أحمر بعدها، وتحذير إن سبق التصنيعُ الاستلامَ. */
+function DaysBadge({ days }: { days: number | null }) {
+  if (days == null) {
+    return <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT }}>حدد تاريخ التصنيع</Box>;
+  }
+  const tone = days < 0
+    ? { bg: HX.redLight, color: "#991b1b", text: "التصنيع بعد الاستلام" }
+    : days <= 7 ? { bg: HX.greenLight, color: "#065f46", text: `${days} يوم` }
+    : days <= 14 ? { bg: HX.amberLight, color: "#92400e", text: `${days} يوم` }
+    : { bg: HX.redLight, color: "#991b1b", text: `${days} يوم` };
+  return (
+    <Box component="span" sx={{ px: "8px", py: "3px", borderRadius: "100px", fontSize: "11px", fontWeight: 700, fontFamily: FONT, bgcolor: tone.bg, color: tone.color }}>
+      {tone.text}
+    </Box>
+  );
+}
+
 function ItemTable({
   items,
   selected,
@@ -128,6 +190,8 @@ function ItemTable({
   mode,
   onDocument,
   onCancel,
+  onUpdate,
+  onPrint,
 }: {
   items: ReceiptItem[];
   selected: ReceiptItem[];
@@ -135,6 +199,9 @@ function ItemTable({
   mode: "received" | "candidates";
   onDocument?: (number: string) => void;
   onCancel?: (item: ReceiptItem) => void;
+  /** تعديل مباشر لتاريخ التصنيع / الملاحظات (يتطلب ship_edit) */
+  onUpdate?: (item: ReceiptItem, patch: { notes?: string; manufactureDate?: string | null }) => void;
+  onPrint?: (item: ReceiptItem) => void;
 }) {
   const has = (item: ReceiptItem) => selected.some((entry) => entry.orderId === item.orderId);
   const all = items.length > 0 && items.every(has);
@@ -200,23 +267,42 @@ function ItemTable({
                 </td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.vendorName || "—"}</Box></td>
                 <td style={{ ...TD, textAlign: "center" }}>{item.quantity}</td>
-                <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.manufactureDate)}</Box></td>
+                <td style={TD}>
+                  {mode === "received" && onUpdate ? (
+                    <DateCommitInput
+                      value={item.manufactureDate ? moment(item.manufactureDate).tz("Africa/Cairo").format("YYYY-MM-DD") : ""}
+                      max={item.receivedDate ? moment(item.receivedDate).tz("Africa/Cairo").format("YYYY-MM-DD") : undefined}
+                      onCommit={(next) => onUpdate(item, { manufactureDate: next })}
+                    />
+                  ) : (
+                    <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.manufactureDate)}</Box>
+                  )}
+                </td>
                 {mode === "received" && (
                   <>
                     <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.receivedDate)}</Box></td>
-                    <td style={TD}>
-                      <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>
-                        {item.manufactureDays == null ? "—" : `${item.manufactureDays} يوم`}
-                      </Box>
-                    </td>
+                    <td style={TD}><DaysBadge days={item.manufactureDays} /></td>
                     <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.receiverName || "—"}</Box></td>
                     <td style={{ ...TD, maxWidth: 200, whiteSpace: "normal" }}>
-                      <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{item.notes || "—"}</Box>
+                      {onUpdate ? (
+                        <NoteInput value={item.notes ?? ""} onCommit={(next) => onUpdate(item, { notes: next })} />
+                      ) : (
+                        <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx3 }}>{item.notes || "—"}</Box>
+                      )}
                     </td>
                     <td style={TD}>
                       <DocumentBadge number={item.documentNumber} onClick={() => item.documentNumber && onDocument?.(item.documentNumber)} />
                     </td>
-                    {onCancel && <td style={TD}><Button size="small" color="error" onClick={() => onCancel(item)}>إلغاء الاستلام</Button></td>}
+                    {onCancel && (
+                      <td style={TD}>
+                        {onPrint && (
+                          <Button size="small" startIcon={<PrintOutlinedIcon sx={{ fontSize: 15 }} />} onClick={() => onPrint(item)} sx={{ fontFamily: FONT, fontSize: "11.5px" }}>
+                            {item.documentNumber ? "إعادة طباعة السند" : "طباعة سند"}
+                          </Button>
+                        )}
+                        <Button size="small" color="error" onClick={() => onCancel(item)}>إلغاء الاستلام</Button>
+                      </td>
+                    )}
                   </>
                 )}
               </tr>
@@ -228,7 +314,11 @@ function ItemTable({
   );
 }
 
-export default function ReceiptsPanel() {
+type ReceiptsPanelProps = {
+  onExporterChange?: (exporter: { run: () => Promise<void>; successMessage: string } | null) => void;
+};
+
+export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) {
   const { can } = usePermissions();
   const canEdit = can("ship_edit");
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -236,8 +326,17 @@ export default function ReceiptsPanel() {
   const history = useReceiptDocuments(historyPage, "", historyOpen);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [date, setDate] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [documentState, setDocumentState] = useState<"" | "issued" | "none">("");
   const [debounced, setDebounced] = useState("");
+  const [sku, setSku] = useState("");
+  const [operationNumber, setOperationNumber] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [textFilters, setTextFilters] = useState({ sku: "", operationNumber: "", orderNumber: "", documentNumber: "" });
+  const { data: vendorOptions = [] } = useReceiptVendors();
   const [selected, setSelected] = useState<ReceiptItem[]>([]);
   const [open, setOpen] = useState(false);
   const [candidatePage, setCandidatePage] = useState(1);
@@ -261,10 +360,31 @@ export default function ReceiptsPanel() {
     return () => clearTimeout(timer);
   }, [candidateSearch]);
 
-  const list = useReceiptList("received", page, debounced, date);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTextFilters({ sku: sku.trim(), operationNumber: operationNumber.trim(), orderNumber: orderNumber.trim(), documentNumber: documentNumber.trim() });
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [sku, operationNumber, orderNumber, documentNumber]);
+
+  const filters = React.useMemo(
+    () => ({ ...textFilters, vendorId, documentState, dateFrom, dateTo }),
+    [textFilters, vendorId, documentState, dateFrom, dateTo]
+  );
+  const list = useReceiptList("received", page, debounced, "", true, filters);
+  const exportCurrentView = useCallback(
+    () => exportReceipts(debounced, "", filters),
+    [debounced, filters]
+  );
+  useEffect(() => {
+    onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير الاستلامات" });
+    return () => onExporterChange?.(null);
+  }, [exportCurrentView, onExporterChange]);
   const candidates = useReceiptList("candidates", candidatePage, candidateDebounced, "", open);
   const receive = useReceiveItems();
   const cancel = useCancelReceipt();
+  const updateReceipt = useUpdateReceipt();
   const [cancelItem, setCancelItem] = useState<ReceiptItem | null>(null);
   const combined = useReceiptDocument();
 
@@ -290,6 +410,18 @@ export default function ReceiptsPanel() {
     } finally {
       setLoadingDocument(false);
     }
+  };
+
+  /** طباعة سند لصنف واحد: يعيد عرض سنده إن وُجد، وإلا يُصدر له سنداً جديداً. */
+  const printItem = (item: ReceiptItem) => {
+    if (item.documentNumber) { void showDocument(item.documentNumber); return; }
+    setError("");
+    combined.mutate([item.orderId], { onSuccess: setDocument, onError: (failure) => setError(receiptError(failure)) });
+  };
+
+  const editItem = (item: ReceiptItem, patch: { notes?: string; manufactureDate?: string | null }) => {
+    setError("");
+    updateReceipt.mutate({ orderId: item.orderId, ...patch }, { onError: (failure) => setError(receiptError(failure)) });
   };
 
   const start = () => {
@@ -335,15 +467,93 @@ export default function ReceiptsPanel() {
           sx={{ ...filterFieldSx, flex: "1 1 240px" }}
         />
         <TextField
-          type="date"
           size="small"
-          label="تاريخ الاستلام"
-          value={date}
-          onChange={(e) => { setDate(e.target.value); setPage(1); }}
+          label="SKU"
+          placeholder="كود المنتج"
+          value={sku}
+          onChange={(e) => setSku(e.target.value)}
           InputLabelProps={{ shrink: true }}
           sx={filterFieldSx}
         />
-        <Button onClick={() => { setSearch(""); setDate(""); setPage(1); }} sx={{ height: 38, fontFamily: FONT, fontSize: "12px", color: HX.tx2 }}>
+        <TextField
+          size="small"
+          label="رقم العملية"
+          value={operationNumber}
+          onChange={(e) => setOperationNumber(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <TextField
+          size="small"
+          label="رقم الطلب"
+          value={orderNumber}
+          onChange={(e) => setOrderNumber(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <TextField
+          select
+          size="small"
+          label="المصنع"
+          value={vendorId}
+          onChange={(e) => { setVendorId(e.target.value); setPage(1); }}
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{ displayEmpty: true }}
+          sx={filterFieldSx}
+        >
+          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل المصانع</MenuItem>
+          {vendorOptions.map((option) => (
+            <MenuItem key={option.id} value={String(option.id)} sx={{ fontFamily: FONT, fontSize: "12px" }}>
+              {option.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          size="small"
+          label="رقم السند"
+          value={documentNumber}
+          onChange={(e) => setDocumentNumber(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <TextField
+          select
+          size="small"
+          label="السند"
+          value={documentState}
+          onChange={(e) => { setDocumentState(e.target.value as "" | "issued" | "none"); setPage(1); }}
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{ displayEmpty: true }}
+          sx={filterFieldSx}
+        >
+          <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>الكل</MenuItem>
+          <MenuItem value="issued" sx={{ fontFamily: FONT, fontSize: "12px" }}>اتطلعله سند</MenuItem>
+          <MenuItem value="none" sx={{ fontFamily: FONT, fontSize: "12px" }}>لسه ما اتطلعش</MenuItem>
+        </TextField>
+        <TextField
+          type="date"
+          size="small"
+          label="استلام من"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+          inputProps={{ max: dateTo || undefined }}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <TextField
+          type="date"
+          size="small"
+          label="استلام إلى"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+          inputProps={{ min: dateFrom || undefined }}
+          InputLabelProps={{ shrink: true }}
+          sx={filterFieldSx}
+        />
+        <Button onClick={() => {
+          setSearch(""); setDateFrom(""); setDateTo(""); setSku(""); setOperationNumber(""); setOrderNumber("");
+          setVendorId(""); setDocumentNumber(""); setDocumentState(""); setPage(1);
+        }} sx={{ height: 38, fontFamily: FONT, fontSize: "12px", color: HX.tx2 }}>
           إعادة ضبط
         </Button>
         <Button
@@ -421,7 +631,7 @@ export default function ReceiptsPanel() {
       ) : (
         <>
           <Box sx={{ opacity: list.isFetching ? 0.7 : 1, transition: "opacity .2s" }}>
-            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? setCancelItem : undefined} />
+            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? setCancelItem : undefined} onUpdate={canEdit ? editItem : undefined} onPrint={canEdit ? printItem : undefined} />
           </Box>
           {totalPages > 1 && (
             <Box sx={{ ...cardSx, overflow: "hidden" }}>

@@ -27,6 +27,9 @@ function getOrderStatusPalette(status: number | undefined | null): ChipPalette {
       return "warning";
     case 8:
       return "default";
+    /* الملغي/المرفوض بعد أو قبل التصنيع (9-17) — أحمر مثل «ملغي» */
+    case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 17:
+      return "error";
     default:
       return "default";
   }

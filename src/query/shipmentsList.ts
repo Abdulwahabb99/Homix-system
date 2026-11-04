@@ -34,6 +34,8 @@ export interface ShipmentItem {
   deliveryBy: string;
   deliveryByLabel: string;
   shippingCompanyName: string;
+  /** معرّف شركة الشحن (للتحرير المباشر في الجدول) */
+  shippingCompany?: number | null;
   amountToCollect: number;
   shippingCost: number;
   receivedInWarehouseDate: string | null;
@@ -42,6 +44,8 @@ export interface ShipmentItem {
   daysCounter: number;
   /** ملخّص مجموعة التوصيل المجمع — `null` للشحنات المنفصلة */
   groupedShipment: GroupedShipmentInfo | null;
+  /** رقم عملية الطلب الذي نُقل إليه الصنف بإعادة التخصيص؛ `null` إن لم يُعاد تخصيصه */
+  reassignedToOperationNumber?: string | null;
 }
 
 /** حالة اكتمال الطلبات المرتبطة بنفس رقم الأوردر في المخزن */
@@ -71,7 +75,8 @@ export interface ShipmentsListParams {
   shippingCompany?: string;
   scheduleStatus?: string;
   governorate?: string;
-  vendorName?: string;
+  /** معرّفات البائعين مفصولة بفواصل */
+  vendorId?: string;
   startDate?: any;
   endDate?: any;
   deliveryDateFrom?: any;
@@ -103,7 +108,7 @@ function buildQuery(p: ShipmentsListParams): string {
   if (p.shippingCompany) q.set("shippingCompany", p.shippingCompany);
   if (p.scheduleStatus) q.set("scheduleStatus", p.scheduleStatus);
   if (p.governorate)    q.set("governorate",    p.governorate);
-  if (p.vendorName)     q.set("vendorName",     p.vendorName);
+  if (p.vendorId)       q.set("vendorId",       p.vendorId);
   const sd = toDateString(p.startDate);
   const ed = toDateString(p.endDate, "end");
   const df = toDateString(p.deliveryDateFrom);

@@ -39,6 +39,7 @@ export const factoryKeys = {
 
 export const shipmentKeys = {
   receipts: (filtersKey: string) => [...shipmentKeys.all(), "receipts", filtersKey] as const,
+  receiptVendors: () => [...shipmentKeys.all(), "receipt-vendors"] as const,
   all: () => ["shipments"] as const,
   lists: () => [...shipmentKeys.all(), "list"] as const,
   list: (filtersKey: string) => [...shipmentKeys.lists(), filtersKey] as const,
@@ -50,6 +51,8 @@ export const shipmentKeys = {
   inventory: (filtersKey: string) => [...shipmentKeys.all(), "inventory", filtersKey] as const,
   accounts: (tab: string, filtersKey: string) => [...shipmentKeys.all(), "accounts", tab, filtersKey] as const,
   performance: (filtersKey: string) => [...shipmentKeys.all(), "performance", filtersKey] as const,
+  grouped: (shipmentId: number) => [...shipmentKeys.all(), "grouped", shipmentId] as const,
+  reassignmentCandidates: (sourceOrderId: number, q: string) => [...shipmentKeys.all(), "reassignments", "candidates", sourceOrderId, q] as const,
 
   /* بادئات للإبطال الموجّه. الإبطال بالجذر ["shipments"] كان يعيد جلب قائمة
      الشحنات والملخّص والمرتجعات والمخزون والحسابات والتقارير معاً بعد كل تعديل. */
@@ -63,7 +66,14 @@ export const shipmentKeys = {
 export const financialKeys = {
   all: () => ["financial"] as const,
   /** تقرير دورة الفوترة — مفتاح حسب يوم الفوترة (13 / 28) */
-  report: (billingDay: number | string, referenceDate?: string) => [...financialKeys.all(), "report", String(billingDay), referenceDate ?? "current"] as const,
+  report: (billingDay: number | string, referenceDate?: string, range?: string) => [...financialKeys.all(), "report", String(billingDay), referenceDate ?? "current", range ?? "cycle"] as const,
+  /** فواتير الصناع المحفوظة (GET /financial-invoices) */
+  invoices: () => [...financialKeys.all(), "invoices"] as const,
+  invoiceList: (filtersKey: string) => [...financialKeys.invoices(), "list", filtersKey] as const,
+  invoiceDetail: (id: number | string) => [...financialKeys.invoices(), "detail", String(id)] as const,
+  invoicedLines: (filtersKey: string) => [...financialKeys.invoices(), "lines", filtersKey] as const,
+  invoiceActivity: (filtersKey: string) => [...financialKeys.invoices(), "activity", filtersKey] as const,
+  reconciliation: (filtersKey: string) => [...financialKeys.invoices(), "reconciliation", filtersKey] as const,
 };
 
 export const ticketKeys = {
@@ -72,4 +82,14 @@ export const ticketKeys = {
   list: (page: number, pageSize: number, filtersKey: string) =>
     [...ticketKeys.all(), "list", page, pageSize, filtersKey] as const,
   detail: (ticketId: string) => [...ticketKeys.all(), "detail", ticketId] as const,
+};
+
+export const fineKeys = {
+  all: () => ["fines"] as const,
+  rules: () => [...fineKeys.all(), "rules"] as const,
+  summary: () => [...fineKeys.all(), "summary"] as const,
+  /** كل السجلات بدون فلاتر — تغذّي بطاقات الملخّص وفلترة السجل في الواجهة */
+  records: () => [...fineKeys.all(), "records"] as const,
+  /** سجل مفلتر على السيرفر باسم الصانع/رقم العملية */
+  recordsSearch: (vendor: string, operationNumber: string) => [...fineKeys.records(), { vendor, operationNumber }] as const,
 };

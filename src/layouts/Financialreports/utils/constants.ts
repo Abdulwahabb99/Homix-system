@@ -42,11 +42,11 @@ export interface TabMeta {
   label: string;
 }
 export const TABS: TabMeta[] = [
-  { key: "warehouse", label: "تسويات المخزن" },
-  { key: "seller", label: "تسويات البائع" },
+  { key: "warehouse", label: "تسليمات المخزن" },
+  { key: "seller", label: "تسليمات البائع" },
   { key: "comprehensive", label: "الفاتورة الشاملة" },
 ];
 export const DEFAULT_TAB: SettlementTabKey = "warehouse";
 
 /** نص التنويه أسفل الفاتورة الشاملة */
-export const COMPREHENSIVE_NOTE = "ⓘ الفاتورة الشاملة = تسويات المخزن + تسويات البائع";
+export const COMPREHENSIVE_NOTE = "ⓘ الفاتورة الشاملة = تسليمات المخزن + تسليمات البائع";

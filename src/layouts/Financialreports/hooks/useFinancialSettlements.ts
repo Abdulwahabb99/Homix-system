@@ -9,6 +9,7 @@
 import { useMemo } from "react";
 import {
   useFinancialReport,
+  FinancialDateRange,
   FinancialSection,
   FinancialVendorItem,
   FinancialCycle,
@@ -83,8 +84,8 @@ export interface UseFinancialSettlementsResult {
   sections: Record<SettlementTabKey, SettlementSeller[]>;
 }
 
-export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: string): UseFinancialSettlementsResult {
-  const { data, isLoading, isError, isFetching } = useFinancialReport(billingDay, referenceDate);
+export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: string, range?: FinancialDateRange): UseFinancialSettlementsResult {
+  const { data, isLoading, isError, isFetching } = useFinancialReport(billingDay, referenceDate, range);
 
   return useMemo(() => {
     if (!data) {

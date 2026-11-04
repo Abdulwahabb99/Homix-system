@@ -42,7 +42,7 @@ export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
  */
 export type KnownPermissionKey =
   | "dashboard_view"
-  | "orders_view" | "orders_edit" | "orders_create" | "orders_delete"
+  | "orders_view" | "orders_edit" | "orders_edit_financials" | "orders_create" | "orders_delete"
   | "factory_view" | "factory_edit" | "factory_delete"
   | "products_view" | "products_edit" | "products_import"
   | "vendors_view" | "vendors_create" | "vendors_edit" | "vendors_delete"

@@ -23,7 +23,6 @@ const TEXT_FIELDS = [
   "orderNumber",
   "customerName",
   "customerPhone",
-  "vendorName",
 ] as const;
 
 /** حقول القوائم المتعددة — تُجمَّع كمسوّدة وتُطبَّق عند إغلاق القائمة فقط. */
@@ -34,6 +33,7 @@ const SELECT_FIELDS = [
   "shippingCompany",
   "scheduleStatus",
   "governorate",
+  "vendorId",
 ] as const;
 
 /**
@@ -64,7 +64,8 @@ export interface FilterValues {
   shippingCompany: string;
   scheduleStatus: string;
   governorate: string;
-  vendorName: string;
+  /** معرّفات البائعين مفصولة بفواصل */
+  vendorId: string;
   /** تاريخ الاستلام بالمخزون */
   startDate: any;
   endDate: any;
@@ -295,7 +296,7 @@ export default function ShipmentsFiltersBar({
     const empty: FilterValues = {
       operationCode: "", orderNumber: "", customerName: "", customerPhone: "",
       shipmentStatus: "", paymentStatus: "", shipmentType: "",
-      deliveryBy: "", shippingCompany: "", scheduleStatus: "", governorate: "", vendorName: "",
+      deliveryBy: "", shippingCompany: "", scheduleStatus: "", governorate: "", vendorId: "",
       startDate: null, endDate: null,
       deliveryDateFrom: null, deliveryDateTo: null,
       scheduledDateFrom: null, scheduledDateTo: null,
@@ -317,13 +318,14 @@ export default function ShipmentsFiltersBar({
   ];
   const scheduleStatuses  = [BLANK_FILTER_OPTION, ...(meta?.scheduleStatuses ?? [])];
   const governorates      = [BLANK_FILTER_OPTION, ...(meta?.governorates ?? [])];
+  const vendors           = meta?.vendors ?? [];
 
   const selectedCount = (value: string) => value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean).length;
   const activeCount =
-    [vals.operationCode, vals.orderNumber, vals.customerName, vals.customerPhone, vals.vendorName]
+    [vals.operationCode, vals.orderNumber, vals.customerName, vals.customerPhone]
       .filter(Boolean).length
     + selectedCount(vals.shipmentStatus)
     + selectedCount(vals.paymentStatus)
@@ -331,6 +333,7 @@ export default function ShipmentsFiltersBar({
     + selectedCount(vals.shippingCompany)
     + selectedCount(vals.governorate)
     + selectedCount(vals.scheduleStatus)
+    + (isVendor ? 0 : selectedCount(vals.vendorId))
     + (vals.startDate || vals.endDate ? 1 : 0)
     + (vals.deliveryDateFrom || vals.deliveryDateTo ? 1 : 0)
     + (vals.scheduledDateFrom || vals.scheduledDateTo ? 1 : 0);
@@ -491,6 +494,17 @@ export default function ShipmentsFiltersBar({
               onChange={setSelect("governorate")}
               onClose={handleDropdownClose}
             />
+
+            {/* البائع: يُخفى عن مستخدمي البائعين (الخادم يقيّدهم ببائعهم أصلاً). */}
+            {!isVendor && (
+              <FilterSelect
+                label="البائع"
+                value={vals.vendorId}
+                options={vendors}
+                onChange={setSelect("vendorId")}
+                onClose={handleDropdownClose}
+              />
+            )}
           </Box>
 
           {/* Date range filters — each on its own row so the three stay distinguishable */}
