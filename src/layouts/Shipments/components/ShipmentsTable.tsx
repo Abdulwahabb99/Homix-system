@@ -6,6 +6,8 @@ import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
 import { useInlineUpdateShipmentMutation } from "query/shipmentEdit";
 import type { ShipmentsMeta } from "query/shipmentsMeta";
+import ShipmentsListHeader from "./ShipmentsListHeader";
+import ShippingCompanySelect from "./ShipmentEdit/ShippingCompanySelect";
 import {
   SHIPMENTS_LIST_PAGE_SIZE,
   type GroupedShipmentInfo,
@@ -259,6 +261,10 @@ interface ShipmentsTableProps {
   onToggleSelect?: (id: number) => void;
   onToggleAll?: () => void;
   meta?: ShipmentsMeta;
+  sortValue?: string;
+  onSortChange?: (key: string) => void;
+  onExport?: () => void;
+  isExporting?: boolean;
 }
 
 export default function ShipmentsTable({
@@ -280,9 +286,22 @@ export default function ShipmentsTable({
   onToggleSelect,
   onToggleAll,
   meta,
+  sortValue = "newest",
+  onSortChange,
+  onExport,
+  isExporting,
 }: ShipmentsTableProps) {
+  const listHeader = (
+    <ShipmentsListHeader
+      totalCount={totalCount}
+      isFetching={isFetching}
+      sortValue={sortValue}
+      onSortChange={onSortChange}
+      onExport={onExport}
+      isExporting={isExporting}
+    />
+  );
   const inlineMut = useInlineUpdateShipmentMutation();
-  const carriers = meta?.shippingCompanies ?? [];
   const schedStatuses = meta?.scheduleStatuses ?? [];
   const canEditInline = !isVendor;
   const save = (id: number, body: Parameters<typeof inlineMut.mutate>[0]["body"]) =>
@@ -304,6 +323,7 @@ export default function ShipmentsTable({
   if (isLoading || (isFetching && !inlineMut.isPending)) {
     return (
       <Box sx={{ ...cardSx, overflow: "hidden" }}>
+        {listHeader}
         {[...Array(8)].map((_, i) => (
           <Box
             key={i}
@@ -324,7 +344,6 @@ export default function ShipmentsTable({
       <Box
         sx={{
           ...cardSx,
-          py: 5,
           textAlign: "center",
           fontFamily: FONT,
           fontSize: "13px",
@@ -332,13 +351,15 @@ export default function ShipmentsTable({
           opacity: isFetching ? 0.5 : 1,
         }}
       >
-        لا توجد شحنات مطابقة للفلاتر المحددة
+        {listHeader}
+        <Box sx={{ pt: 5, pb: 5 }}>لا توجد شحنات مطابقة للفلاتر المحددة</Box>
       </Box>
     );
   }
 
   return (
     <Box sx={{ ...cardSx, opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s" }}>
+      {listHeader}
       <Box sx={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl", fontSize: 12, minWidth: 2000 }}>
           <thead>
@@ -354,6 +375,7 @@ export default function ShipmentsTable({
               )}
               <th style={TH}>رقم العملية</th>
               <th style={TH}>رقم الشحنة</th>
+              <th style={TH}>كود المنتج</th>
               <th style={TH}>اسم العميل</th>
               <th style={TH}>البائع</th>
               <th style={TH}>المحافظة</th>
@@ -427,6 +449,22 @@ export default function ShipmentsTable({
                   />
                 </td>
 
+                {/* كود المنتج (SKU) — .prod-code */}
+                <td style={TD} title={s.productSku || undefined}>
+                  {s.productSku ? (
+                    <Box
+                      component="span"
+                      sx={{
+                        fontFamily: "monospace", fontSize: "11px", bgcolor: HX.surface2,
+                        px: "7px", py: "1px", borderRadius: "5px", color: HX.tx2,
+                        border: `0.5px solid ${HX.border}`,
+                      }}
+                    >
+                      {s.productSku}
+                    </Box>
+                  ) : <span style={{ color: HX.tx3 }}>—</span>}
+                </td>
+
                 {/* اسم العميل + الهاتف */}
                 <td style={TD}>
                   <div style={{ fontWeight: 700 }}>{s.customerName || "—"}</div>
@@ -467,19 +505,29 @@ export default function ShipmentsTable({
                 {/* التوصيل بواسطة — شركة الشحن الفعلية، وليس هوميكس/البائع */}
                 <td style={TD}>
                   {canEditInline ? (
-                    <select
-                      aria-label="التوصيل بواسطة"
-                      style={{ ...INLINE_CTRL, width: 150, appearance: "auto" }}
+                    <ShippingCompanySelect
                       value={s.shippingCompany != null ? String(s.shippingCompany) : ""}
-                      disabled={inlineMut.isPending}
-                      onChange={(e) => save(s.id, { shippingCompany: e.target.value === "" ? null : Number(e.target.value) })}
-                    >
-                      <option value="">— اختر مندوب —</option>
-                      {s.shippingCompany != null && !carriers.some((c) => String(c.value) === String(s.shippingCompany)) && (
-                        <option value={String(s.shippingCompany)}>{s.shippingCompanyName}</option>
-                      )}
-                      {carriers.map((c) => <option key={c.value} value={String(c.value)}>{c.label}</option>)}
-                    </select>
+                      onChange={(id) => {
+                        const next = id === "" ? null : Number(id);
+                        // الـ select يطبّع القيمة بعد تحميل القائمة؛ لا نحفظ إلا عند تغيير حقيقي.
+                        if (next === (s.shippingCompany ?? null)) return;
+                        save(s.id, { shippingCompany: next });
+                      }}
+                      label={null}
+                      placeholder="— اختر شركة الشحن —"
+                      /* نفس قائمة الفلتر (إضافة / تعديل / حذف شركة) بمقاس خلايا الجدول. */
+                      sx={{
+                        width: 190,
+                        "& .MuiOutlinedInput-root": {
+                          minHeight: "30px",
+                          py: "0 !important",
+                          borderRadius: "7px",
+                          fontSize: "11.5px",
+                          bgcolor: HX.surface2,
+                        },
+                        "& .MuiInputBase-input": { fontSize: "11.5px", py: "4px !important" },
+                      }}
+                    />
                   ) : (
                     s.shippingCompanyName || DASH
                   )}

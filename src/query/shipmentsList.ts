@@ -83,6 +83,9 @@ export interface ShipmentsListParams {
   deliveryDateTo?: any;
   scheduledDateFrom?: any;
   scheduledDateTo?: any;
+  /** ترتيب من الخادم: sort[sortField]=sortDir (-1 تنازلي، 1 تصاعدي) — للقائمة فقط */
+  sortField?: string;
+  sortDir?: number;
 }
 
 function toDateString(v: any, boundary: "start" | "end" = "start"): string | undefined {
@@ -92,7 +95,7 @@ function toDateString(v: any, boundary: "start" | "end" = "start"): string | und
   return (boundary === "end" ? m.clone().endOf("day") : m.clone().startOf("day")).toISOString();
 }
 
-function buildQuery(p: ShipmentsListParams): string {
+function buildQuery(p: ShipmentsListParams, withSort = false): string {
   const q = new URLSearchParams({
     page: String(p.page),
     size: String(SHIPMENTS_LIST_PAGE_SIZE),
@@ -121,13 +124,14 @@ function buildQuery(p: ShipmentsListParams): string {
   if (dt) q.set("deliveryDateTo",   dt);
   if (sfd) q.set("scheduledDateFrom", sfd);
   if (std) q.set("scheduledDateTo",   std);
+  if (withSort && p.sortField && p.sortDir) q.set(`sort[${p.sortField}]`, String(p.sortDir));
   return q.toString();
 }
 
 export async function fetchShipmentsList(
   params: ShipmentsListParams
 ): Promise<ShipmentsListResponse> {
-  const { data } = await axiosRequest.get(`/shipments?${buildQuery(params)}`);
+  const { data } = await axiosRequest.get(`/shipments?${buildQuery(params, true)}`);
   return data.data;
 }
 

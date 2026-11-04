@@ -15,6 +15,7 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import ShipmentsKpiRow from "./components/ShipmentsKpiRow";
 import ShipmentsFiltersBar, { type FilterValues } from "./components/ShipmentsFiltersBar";
+import { SHIPMENTS_SORT_OPTIONS, DEFAULT_SHIPMENTS_SORT_KEY } from "./constants";
 import ShipmentsTable from "./components/ShipmentsTable";
 import ShipmentsBulkEditModal from "./components/ShipmentsBulkEditModal";
 import ShipmentsBulkBar from "./components/ShipmentsBulkBar";
@@ -160,6 +161,10 @@ interface ShipmentsTabContentProps {
   selectionModel: number[];
   onToggleSelect: (id: number) => void;
   onToggleAll: () => void;
+  sortValue: string;
+  onSortChange: (key: string) => void;
+  onExport: () => void;
+  isExporting: boolean;
 }
 
 const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
@@ -187,6 +192,10 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
   selectionModel,
   onToggleSelect,
   onToggleAll,
+  sortValue,
+  onSortChange,
+  onExport,
+  isExporting,
 }: ShipmentsTabContentProps) {
   return (
     <>
@@ -218,6 +227,10 @@ const ShipmentsTabContent = React.memo(function ShipmentsTabContent({
         onToggleSelect={onToggleSelect}
         onToggleAll={onToggleAll}
         meta={meta}
+        sortValue={sortValue}
+        onSortChange={onSortChange}
+        onExport={onExport}
+        isExporting={isExporting}
       />
     </>
   );
@@ -299,6 +312,11 @@ export default function Shipments() {
   const deliveryDateTo        = React.useMemo(() => dateFromUrl(deliveryDateToParam), [deliveryDateToParam]);
   const scheduledDateFromParam = searchParams.get("scheduledDateFrom") || "";
   const scheduledDateToParam   = searchParams.get("scheduledDateTo") || "";
+  const sortKey = searchParams.get("sort") || DEFAULT_SHIPMENTS_SORT_KEY;
+  const sortConfig = React.useMemo(
+    () => SHIPMENTS_SORT_OPTIONS.find((o) => o.key === sortKey) ?? SHIPMENTS_SORT_OPTIONS[0],
+    [sortKey],
+  );
   const scheduledDateFrom      = React.useMemo(() => dateFromUrl(scheduledDateFromParam), [scheduledDateFromParam]);
   const scheduledDateTo        = React.useMemo(() => dateFromUrl(scheduledDateToParam), [scheduledDateToParam]);
 
@@ -318,16 +336,23 @@ export default function Shipments() {
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, governorate, vendorId, startDate, endDate,
     deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
+    sortField: sortConfig.field, sortDir: sortConfig.dir,
   }), [
     page, operationCode, orderNumber, customerName, customerPhone,
     shipmentStatus, paymentStatus, shipmentType, deliveryBy, shippingCompany,
     scheduleStatus, governorate, vendorId, startDate, endDate,
-    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo,
+    deliveryDateFrom, deliveryDateTo, scheduledDateFrom, scheduledDateTo, sortConfig,
   ]);
+
+  // KPI لا تتأثر بالترتيب: نُخرج sort من المفتاح حتى لا يُعاد جلبها بلا داعٍ.
+  const summaryParams = React.useMemo(() => {
+    const { sortField, sortDir, ...rest } = queryParams;
+    return { ...rest, page: 1 };
+  }, [queryParams]);
 
   const isShipmentsTab = activeTab === "shipments";
   const { data, isLoading, isFetching }                       = useShipmentsListQuery(queryParams, isShipmentsTab);
-  const { data: summaryData, isLoading: isSummaryLoading }    = useShipmentsSummaryQuery({ ...queryParams, page: 1 }, isShipmentsTab);
+  const { data: summaryData, isLoading: isSummaryLoading }    = useShipmentsSummaryQuery(summaryParams, isShipmentsTab);
   const { data: metaData }                                    = useShipmentsMetaQuery();
 
   const shipments  = data?.items      ?? [];
@@ -546,13 +571,27 @@ export default function Shipments() {
     setDateParam("scheduledDateFrom", values.scheduledDateFrom);
     setDateParam("scheduledDateTo", values.scheduledDateTo);
     urlParams.set("page", "1");
+    // الترتيب ليس فلتراً: يبقى كما اختاره المستخدم عند تغيير الفلاتر (كما في الطلبات).
+    const currentSort = new URLSearchParams(window.location.search).get("sort");
+    if (currentSort) urlParams.set("sort", currentSort);
     /* الفلاتر تُطبَّق تلقائياً الآن، فلو دفعنا مدخلاً في سجل التنقّل مع كل تغيير
        لتحوّل زر الرجوع إلى تنقّل بين حالات الفلترة. replace يُبقي السجل نظيفاً
        ويترك الرابط قابلاً للمشاركة كما هو. */
     navigate(`?${urlParams.toString()}`, { replace: true });
   }, [navigate]);
 
-  const handleReset = React.useCallback(() => navigate("?", { replace: true }), [navigate]);
+  const handleReset = React.useCallback(() => {
+    // إعادة ضبط الفلاتر تُبقي الترتيب (الطلبات تفعل المثل).
+    const currentSort = new URLSearchParams(window.location.search).get("sort");
+    navigate(currentSort ? `?sort=${encodeURIComponent(currentSort)}` : "?", { replace: true });
+  }, [navigate]);
+
+  const handleSortChange = React.useCallback((key: string) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("sort", key);
+    urlParams.set("page", "1");
+    navigate(`?${urlParams.toString()}`, { replace: true });
+  }, [navigate]);
 
   const updatePageParam = React.useCallback((value: number) => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -613,6 +652,7 @@ export default function Shipments() {
     const schtIso = toIso(scheduledDateTo, "end");
     if (schIso)  q.set("scheduledDateFrom", schIso);
     if (schtIso) q.set("scheduledDateTo",   schtIso);
+    q.set(`sort[${sortConfig.field}]`, String(sortConfig.dir));
 
     setIsExportLoading(true);
     // طلب GET واحد موثّق بالتوكن، ثم يُحفظ الملف من نفس الاستجابة — بلا تنقّل
@@ -918,6 +958,10 @@ export default function Shipments() {
               selectionModel={shipmentSelectionModel}
               onToggleSelect={toggleShipmentSelect}
               onToggleAll={toggleShipmentSelectAll}
+              sortValue={sortKey}
+              onSortChange={handleSortChange}
+              onExport={() => void handleExport()}
+              isExporting={isExportLoading}
             />}
         </Box>
 

@@ -11,7 +11,7 @@ import BulkEditDeliveryAccountModal from "./BulkEditDeliveryAccountModal";
 import EditExpenseModal from "./EditExpenseModal";
 import BulkEditExpenseModal from "./BulkEditExpenseModal";
 import AddExpenseForm from "./AddExpenseForm";
-import moment from "moment";
+import { fmtCairoDate, fromPickerDate, toPickerDate } from "./accountsDates";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import {
@@ -60,10 +60,7 @@ const TD: React.CSSProperties = {
   borderBottom: `0.5px solid ${HX.border}`, verticalAlign: "middle",
 };
 
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return "—";
-  return moment(d).format("DD/MM/YY");
-}
+const fmtDate = fmtCairoDate;
 
 function MoneyCell({ amount }: { amount: number | null }) {
   if (amount == null) return <span style={{ color: HX.tx3 }}>—</span>;
@@ -160,14 +157,6 @@ const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
   settledDateTo: "",
   deliveryDateFrom: "",
   deliveryDateTo: "",
-};
-
-/** المنتقي المشترك يتعامل بصيغة DD-MM-YYYY؛ الحالة والطلبات تبقى YYYY-MM-DD خام. */
-const toPickerDate = (iso: string) => (iso ? moment(iso, "YYYY-MM-DD").format("DD-MM-YYYY") : "");
-const fromPickerDate = (v: unknown) => {
-  if (!v) return "";
-  const m = moment.isMoment(v) ? v : moment(String(v), "DD-MM-YYYY");
-  return m.isValid() ? m.locale("en").format("YYYY-MM-DD") : "";
 };
 
 function DateRangeFilter({ label, from, to, onChange }: {

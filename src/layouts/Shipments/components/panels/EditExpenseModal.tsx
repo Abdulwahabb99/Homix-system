@@ -16,6 +16,7 @@ import {
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useUpdateExpenseMutation, type ExpenseItem } from "query/shipmentsAccounts";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
+import { toCairoYmd } from "./accountsDates";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -25,11 +26,8 @@ const fieldSx = {
   "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "12px" },
 } as const;
 
-function toYmd(value: string | null | undefined): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
-}
+/** اليوم المصري لقيمة محفوظة (UTC.slice كان يُرجع اليوم السابق للّحظات بعد 21:00/22:00 UTC). */
+const toYmd = toCairoYmd;
 
 interface Props {
   open: boolean;

@@ -54,6 +54,11 @@ const filterQuery = (query: URLSearchParams, date: string, filters: ReceiptFilte
   return query;
 };
 
+/** The candidates endpoint only understands these four filters. */
+const pickCandidateFilters = ({ sku, operationNumber, orderNumber, vendorId }: ReceiptFilters): ReceiptFilters => ({
+  sku, operationNumber, orderNumber, vendorId,
+});
+
 export function useReceiptList(
   mode: "received" | "candidates",
   page: number,
@@ -64,6 +69,7 @@ export function useReceiptList(
 ) {
   const query = new URLSearchParams({ page: String(page), search });
   if (mode === "received") filterQuery(query, date, filters);
+  else filterQuery(query, "", pickCandidateFilters(filters));
   return useQuery<ReceiptList>({
     queryKey: shipmentKeys.receipts(`${mode}:${query}`),
     queryFn: async () =>
@@ -160,7 +166,7 @@ export interface ReceiptVendor {
   id: number;
   name: string;
 }
-/** Factories with received items — gated by receipts permission only (not `vendors_view`). */
+/** All factories for the receipts filters — gated by receipts permission only (not `vendors_view`). */
 export function useReceiptVendors() {
   return useQuery<ReceiptVendor[]>({
     queryKey: shipmentKeys.receiptVendors(),

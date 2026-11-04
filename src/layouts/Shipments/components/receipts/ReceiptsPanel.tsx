@@ -340,8 +340,11 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const [selected, setSelected] = useState<ReceiptItem[]>([]);
   const [open, setOpen] = useState(false);
   const [candidatePage, setCandidatePage] = useState(1);
-  const [candidateSearch, setCandidateSearch] = useState("");
-  const [candidateDebounced, setCandidateDebounced] = useState("");
+  const [candSku, setCandSku] = useState("");
+  const [candOperation, setCandOperation] = useState("");
+  const [candOrder, setCandOrder] = useState("");
+  const [candVendorId, setCandVendorId] = useState("");
+  const [candText, setCandText] = useState({ sku: "", operationNumber: "", orderNumber: "" });
   const [chosen, setChosen] = useState<ReceiptItem[]>([]);
   const [receivedDate, setReceivedDate] = useState(today);
   const [senderName, setSenderName] = useState("");
@@ -356,9 +359,13 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
     return () => clearTimeout(timer);
   }, [search]);
   useEffect(() => {
-    const timer = setTimeout(() => { setCandidateDebounced(candidateSearch); setCandidatePage(1); }, 300);
+    const timer = setTimeout(() => {
+      setCandText({ sku: candSku.trim(), operationNumber: candOperation.trim(), orderNumber: candOrder.trim() });
+      setCandidatePage(1);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [candidateSearch]);
+  }, [candSku, candOperation, candOrder]);
+  const candidateFilters = React.useMemo(() => ({ ...candText, vendorId: candVendorId }), [candText, candVendorId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -381,7 +388,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
     onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير الاستلامات" });
     return () => onExporterChange?.(null);
   }, [exportCurrentView, onExporterChange]);
-  const candidates = useReceiptList("candidates", candidatePage, candidateDebounced, "", open);
+  const candidates = useReceiptList("candidates", candidatePage, "", "", open, candidateFilters);
   const receive = useReceiveItems();
   const cancel = useCancelReceipt();
   const updateReceipt = useUpdateReceipt();
@@ -427,8 +434,8 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const start = () => {
     setChosen([]);
     setCandidatePage(1);
-    setCandidateSearch("");
-    setCandidateDebounced("");
+    setCandSku(""); setCandOperation(""); setCandOrder(""); setCandVendorId("");
+    setCandText({ sku: "", operationNumber: "", orderNumber: "" });
     setReceivedDate(today());
     setSenderName("");
     setNotes("");
@@ -461,7 +468,9 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
       <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
         <TextField
           size="small"
-          placeholder="بحث بالعملية، الطلب، SKU أو المصنع..."
+          label="اسم المنتج / بحث عام"
+          placeholder="اسم المنتج أو أي نص..."
+          InputLabelProps={{ shrink: true }}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ ...filterFieldSx, flex: "1 1 240px" }}
@@ -655,14 +664,28 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
             واطبع سندها من القائمة الرئيسية أو زر "سند واحد للأصناف المحددة".
           </Alert>
           {formError && <Alert severity="error" sx={{ mb: 2, fontFamily: FONT, fontSize: "12.5px" }}>{formError}</Alert>}
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="ابحث برقم العملية، الطلب، SKU أو المصنع"
-            value={candidateSearch}
-            onChange={(e) => setCandidateSearch(e.target.value)}
-            sx={{ ...filterFieldSx, mb: 2, width: "100%" }}
-          />
+          <Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", mb: 2 }}>
+            <TextField size="small" label="SKU" placeholder="كود المنتج" value={candSku}
+              onChange={(e) => setCandSku(e.target.value)} InputLabelProps={{ shrink: true }} sx={filterFieldSx} />
+            <TextField size="small" label="رقم العملية" value={candOperation}
+              onChange={(e) => setCandOperation(e.target.value)} InputLabelProps={{ shrink: true }} sx={filterFieldSx} />
+            <TextField size="small" label="رقم الطلب" value={candOrder}
+              onChange={(e) => setCandOrder(e.target.value)} InputLabelProps={{ shrink: true }} sx={filterFieldSx} />
+            <TextField select size="small" label="المصنع" value={candVendorId}
+              onChange={(e) => { setCandVendorId(e.target.value); setCandidatePage(1); }}
+              InputLabelProps={{ shrink: true }} SelectProps={{ displayEmpty: true }} sx={filterFieldSx}>
+              <MenuItem value="" sx={{ fontFamily: FONT, fontSize: "12px" }}>كل المصانع</MenuItem>
+              {vendorOptions.map((option) => (
+                <MenuItem key={option.id} value={String(option.id)} sx={{ fontFamily: FONT, fontSize: "12px" }}>
+                  {option.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button onClick={() => { setCandSku(""); setCandOperation(""); setCandOrder(""); setCandVendorId(""); setCandidatePage(1); }}
+              sx={{ height: 38, fontFamily: FONT, fontSize: "12px", color: HX.tx2 }}>
+              إعادة ضبط
+            </Button>
+          </Box>
           <Box sx={{ pointerEvents: receive.isPending ? "none" : "auto", opacity: receive.isPending ? 0.6 : 1 }}>
             {candidates.isError ? (
               <ErrorBox message={receiptError(candidates.error)} />

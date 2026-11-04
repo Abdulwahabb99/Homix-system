@@ -1,7 +1,7 @@
 import moment from "moment";
 import "shared/functions/momentLocale";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { DateRangePicker } from "react-dates";
 import { OPEN_DOWN, OPEN_UP } from "react-dates/constants";
 import "react-dates/initialize";
@@ -133,6 +133,8 @@ const DateRangePickerWrapper = ({
   onReset?: () => void;
 }) => {
   const [focusedInput, setFocusedInput] = useState(null);
+  /* معرّفات فريدة لكل منتقٍ: عدة منتقيات في صفحة واحدة كانت تتشارك id="startDate"/"endDate". */
+  const uid = useId();
   const [openDirection, setOpenDirection] = useState(OPEN_DOWN);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [startDate, setStartDate] = useState(
@@ -164,30 +166,32 @@ const DateRangePickerWrapper = ({
     return spaceBelow >= spaceAbove ? OPEN_DOWN : OPEN_UP;
   }, [isDesktopTwoMonths]);
 
+  /* القيم القادمة من الأب هي المرجع؛ نزامن معها أيضاً لقطة cancel()، وإلا بعد «إعادة ضبط» من الأب
+     يُرجِع الإلغاء النطاق القديم إلى الحقل بينما الفلتر فارغ. */
   useEffect(() => {
-    setStartDate(initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("ar") : null);
-    setEndDate(initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("ar") : null);
+    const nextStart = initialStartDate ? moment(initialStartDate, "DD-MM-YYYY").locale("ar") : null;
+    const nextEnd = initialEndDate ? moment(initialEndDate, "DD-MM-YYYY").locale("ar") : null;
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+    setPrevStartDate(nextStart);
+    setPrevEndDate(nextEnd);
   }, [initialStartDate, initialEndDate]);
 
-  /* عند استخدام appendToBody تُعرض النافذة خارج الشجرة؛ نضيف homix-drp للعنصر المنبثق حتى تبقى ستايلات التقويم (:root + .homix-drp). */
+  /* عند استخدام appendToBody تُعرض النافذة خارج الشجرة؛ نضيف homix-drp للعنصر المنبثق حتى تبقى ستايلات التقويم (:root + .homix-drp).
+     لا نُزيل الـ class أبداً: العنصر يُفكَّك من DOM عند الإغلاق، وكان الإزالة العامة هنا تعمل عند إغلاق منتقٍ
+     وفتح منتقٍ آخر في نفس النقرة فتُجرِّد النافذة الجديدة من الـ class (اتجاه LTR وعرض الشهرين) فيظهر
+     التقويم بترويستين وشهر فارغ. */
   useLayoutEffect(() => {
-    const syncHomixClassOnPortaledPicker = () => {
+    if (!focusedInput) return undefined;
+    const addHomixClassToPortaledPicker = () => {
       document.querySelectorAll(".DateRangePicker_picker").forEach((node) => {
         const el = node as HTMLElement;
-        const insideWrapper = el.closest(".custom-date-picker");
-        if (focusedInput) {
-          if (!insideWrapper) el.classList.add("homix-drp");
-        } else if (!insideWrapper) {
-          el.classList.remove("homix-drp");
-        }
+        if (!el.closest(".custom-date-picker")) el.classList.add("homix-drp");
       });
     };
-    syncHomixClassOnPortaledPicker();
-    if (focusedInput) {
-      const id = requestAnimationFrame(syncHomixClassOnPortaledPicker);
-      return () => cancelAnimationFrame(id);
-    }
-    return undefined;
+    addHomixClassToPortaledPicker();
+    const id = requestAnimationFrame(addHomixClassToPortaledPicker);
+    return () => cancelAnimationFrame(id);
   }, [focusedInput]);
 
   useLayoutEffect(() => {
@@ -373,8 +377,8 @@ const DateRangePickerWrapper = ({
         onDatesChange={onDatesChange}
         focusedInput={focusedInput}
         onFocusChange={onFocusChange}
-        startDateId="startDate"
-        endDateId="endDate"
+        startDateId={`${uid}-start`}
+        endDateId={`${uid}-end`}
         /* isRTL=false: مع firstDayOfWeek=6 الـ true يفرض DateRangePicker_picker__rtl + تعارض مع عزل LTR ويكسر أعمدة الأيام */
         isRTL={false}
         anchorDirection={isDirectionRTL ? "right" : "left"}
