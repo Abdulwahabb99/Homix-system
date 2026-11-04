@@ -35,7 +35,7 @@ const TYPE_CFG: Record<number, { label: string; bg: string; color: string }> = {
   2: { label: "شحنة محافظات", bg: HX.blueLight,   color: "#1e40af" },
 };
 
-function PillBadge({ label, bg, color }: { label: string; bg: string; color: string }) {
+function PillBadge({ label, bg, color, dot = true }: { label: string; bg: string; color: string; dot?: boolean }) {
   return (
     <Box
       component="span"
@@ -43,22 +43,23 @@ function PillBadge({ label, bg, color }: { label: string; bg: string; color: str
         display: "inline-flex",
         alignItems: "center",
         gap: "4px",
-        px: "8px",
-        py: "2px",
-        borderRadius: "100px",
+        px: "11px",
+        py: "3px",
+        borderRadius: "20px",
         fontSize: "10.5px",
         fontWeight: 700,
         fontFamily: FONT,
         bgcolor: bg,
         color,
         whiteSpace: "nowrap",
-        lineHeight: 1.6,
       }}
     >
-      <Box
-        component="span"
-        sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: color, flexShrink: 0, opacity: 0.8 }}
-      />
+      {dot && (
+        <Box
+          component="span"
+          sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: color, flexShrink: 0, opacity: 0.8 }}
+        />
+      )}
       {label}
     </Box>
   );
@@ -81,7 +82,7 @@ export function PaymentStatusBadge({ status, label }: { status: number; label?: 
   const bg = isPaid ? HX.greenLight : HX.amberLight;
   const color = isPaid ? "#065f46" : "#92400e";
   const text = label ?? (isPaid ? "مدفوع" : "الدفع عند الاستلام");
-  return <PillBadge label={text} bg={bg} color={color} />;
+  return <PillBadge label={text} bg={bg} color={color} dot={false} />;
 }
 
 export function DaysInTransitBadge({ days }: { days: number | null }) {

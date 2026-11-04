@@ -48,22 +48,34 @@ const TRIGGER_HINTS: Record<string, string> = {
 };
 const basisLabel = (basis: string) => (option.basis.find(([id]) => id === basis)?.[1] ?? basis);
 const font = "'Cairo', sans-serif";
-const num = (value: number | string) => (Number(value) || 0).toLocaleString("ar-EG", { maximumFractionDigits: 2 });
+/** أرقام لاتينية كباقي التطبيق (الشحنات/الطلبات)؛ الأرقام الهندية الصغيرة كانت تظهر كنقطة حمراء عند الصفر */
+const num = (value: number | string) => (Number(value) || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
 const dayOf = (value: string) => value.slice(0, 10);
-const dateText = (value: string) => new Date(value).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+const dateText = (value: string) => new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { year: "numeric", month: "short", day: "numeric" });
 
+/** المظهر الافتراضي لثيم Material Dashboard يصفّر padding الـ .MuiSelect-select ويُخفي السهم، فتنهار الـ select إلى ~20px؛ نعيد المقاسات محليًا */
+const selectBoxSx = {
+  "& .MuiSelect-select.MuiSelect-select": { display: "flex", alignItems: "center", minHeight: "1.4375em", boxSizing: "content-box", padding: "12px 14px !important", paddingInlineEnd: "34px !important" },
+  "& .MuiSelect-icon": { display: "block", color: HX.tx3 },
+} as const;
 const fieldSx = {
-  "& .MuiInputLabel-root": { fontFamily: font, fontSize: 12, bgcolor: HX.surface, px: "4px" },
+  "& .MuiInputLabel-root": { fontFamily: font, fontSize: 13, lineHeight: 1.4375, bgcolor: HX.surface, px: "4px", "&.MuiInputLabel-shrink": { fontSize: 15, lineHeight: 1.4 } },
   "& .MuiOutlinedInput-root": { bgcolor: HX.surface2, borderRadius: "9px", fontFamily: font, fontSize: 13 },
   "& .MuiOutlinedInput-input": { fontFamily: font },
+  "& .MuiFormHelperText-root": { fontFamily: font, fontSize: 11, mx: "4px", mt: "6px" },
+  ...selectBoxSx,
 } as const;
 const filterFieldSx = {
-  "& .MuiOutlinedInput-root": { bgcolor: HX.surface, borderRadius: "8px", fontFamily: font, fontSize: 12, height: 32 },
-  "& .MuiOutlinedInput-input": { py: 0, px: "10px", height: 32, boxSizing: "border-box", fontFamily: font },
-  "& .MuiSelect-select": { display: "flex", alignItems: "center" },
+  "& .MuiOutlinedInput-root": { bgcolor: HX.surface, borderRadius: "8px", fontFamily: font, fontSize: 12, height: 36 },
+  "& .MuiOutlinedInput-input": { py: 0, px: "10px", height: 36, boxSizing: "border-box", fontFamily: font },
+  "& .MuiSelect-select.MuiSelect-select": { display: "flex", alignItems: "center", padding: "0 10px !important", paddingInlineEnd: "30px !important" },
+  "& .MuiSelect-icon": { display: "block", color: HX.tx3 },
 } as const;
-const outlineBtnSx = { minHeight: 34, px: 1.75, borderColor: HX.border, color: `${HX.tx2} !important`, bgcolor: HX.surface2, borderRadius: "9px", fontFamily: font, fontSize: 12, fontWeight: 700, "&:hover": { borderColor: HX.accent, bgcolor: HX.accentLight, color: `${HX.accent} !important` } } as const;
+const outlineBtnSx = { minHeight: 36, px: 1.75, borderColor: HX.border, color: `${HX.tx2} !important`, bgcolor: HX.surface2, borderRadius: "9px", fontFamily: font, fontSize: 12, fontWeight: 700, "&:hover": { borderColor: HX.accent, bgcolor: HX.accentLight, color: `${HX.accent} !important` } } as const;
 const chipSx = (bg: string, color: string) => ({ display: "inline-block", fontSize: 10.5, fontWeight: 700, px: "9px", py: "2px", borderRadius: "20px", bgcolor: bg, color, whiteSpace: "nowrap" });
+const primaryBtnSx = { minHeight: 36, px: 2.25, borderRadius: "9px", color: "#fff", fontFamily: font, fontSize: 12.5, fontWeight: 700 } as const;
+const actionsSx = { px: 2.25, py: 1.75, gap: 1, justifyContent: "flex-start", "& > :not(:first-of-type)": { ml: 0 }, "& > button": { minHeight: 40, flex: { xs: 1, sm: "0 0 auto" }, minWidth: 96 } } as const;
+const paperSx = { borderRadius: "16px", overflow: "hidden", fontFamily: font, m: { xs: "12px", sm: 4 }, width: { xs: "calc(100% - 24px)", sm: "calc(100% - 64px)" }, maxHeight: { xs: "calc(100% - 24px)", sm: "calc(100% - 64px)" } } as const;
 const LOG_COLUMNS = "110px 150px minmax(160px, 1fr) 120px 110px 110px 90px 90px";
 
 function ruleValue(rule: FineRule, method: Method) {
@@ -183,19 +195,19 @@ export default function Fines() {
 
   return <DashboardLayout pageTitle="الغرامات وقواعد الحساب" pageSubtitle="القواعد اللي بيتحسب على أساسها أي غرامة على الصانع، وسجل كل غرامة اتطبقت فعليًا" pageActions={<Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
     {can("finance_export") && <Button variant="outlined" onClick={exportCsv} startIcon={<FileDownloadOutlinedIcon />} sx={outlineBtnSx}>تصدير سجل الغرامات</Button>}
-    {canSettle && <Button variant="contained" onClick={() => openEditor(emptyForm())} startIcon={<AddIcon />} sx={{ minHeight: 34, px: 2, borderRadius: "9px", color: "#fff", fontFamily: font, fontSize: 12.5, fontWeight: 700 }}>قاعدة جديدة</Button>}
+    {canSettle && <Button variant="contained" onClick={() => openEditor(emptyForm())} startIcon={<AddIcon />} sx={primaryBtnSx}>قاعدة جديدة</Button>}
   </Box>}>
     <ToastContainer rtl position="top-center" />
     <Box sx={{ mt: 2, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 1.5, fontFamily: font }}>
-      {kpis.map((kpi) => <Box key={kpi.label} sx={{ ...cardSx, p: "16px 18px", transition: ".2s", "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,.06)", transform: "translateY(-1px)" } }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: kpi.bg, color: kpi.tone, "& svg": { fontSize: 18 } }}>{kpi.icon}</Box>
-          <Typography sx={{ fontFamily: font, fontSize: 11, color: HX.tx3 }}>{kpi.side}</Typography>
+      {kpis.map((kpi) => { const empty = kpi.value === "—"; return <Box key={kpi.label} sx={{ ...cardSx, p: "16px 18px", display: "flex", flexDirection: "column", gap: 0.75, minWidth: 0, transition: ".2s", "&:hover": { boxShadow: "0 4px 16px rgba(0,0,0,.06)", transform: "translateY(-1px)" } }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 0.5 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, bgcolor: kpi.bg, color: kpi.tone, "& svg": { fontSize: 18 } }}>{kpi.icon}</Box>
+          <Typography sx={{ fontFamily: font, fontSize: 12, fontWeight: 600, color: HX.tx3, textAlign: "end" }}>{kpi.side}</Typography>
         </Box>
-        <Typography sx={{ fontFamily: font, fontSize: kpi.valueSize, fontWeight: 800, color: kpi.valueColor, lineHeight: 1.2, mb: "3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{kpi.value}</Typography>
-        <Typography sx={{ fontFamily: font, fontSize: 11.5, color: HX.tx2, fontWeight: 500 }}>{kpi.label}</Typography>
-        {kpi.badge && <Box component="span" sx={{ ...chipSx(kpi.badgeBg, kpi.badgeColor), mt: 1, fontFamily: font }}>{kpi.badge}</Box>}
-      </Box>)}
+        <Typography title={kpi.value} sx={{ fontFamily: font, fontSize: kpi.valueSize, fontWeight: 800, color: empty ? HX.tx3 : kpi.valueColor, lineHeight: 1.35, minHeight: 30, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{kpi.value}</Typography>
+        <Typography sx={{ fontFamily: font, fontSize: 12.5, color: HX.tx2, fontWeight: 600, lineHeight: 1.5 }}>{kpi.label}</Typography>
+        <Box sx={{ minHeight: 24, display: "flex", alignItems: "center" }}>{kpi.badge ? <Box component="span" sx={{ ...chipSx(kpi.badgeBg, kpi.badgeColor), fontFamily: font, fontSize: 11 }}>{kpi.badge}</Box> : <Typography sx={{ fontFamily: font, fontSize: 11, color: HX.tx3 }}>لا توجد بيانات هذا الشهر</Typography>}</Box>
+      </Box>; })}
     </Box>
 
     <Box sx={{ ...cardSx, mt: 2, fontFamily: font, overflow: "hidden" }}>
@@ -209,28 +221,38 @@ export default function Fines() {
         {rules.isLoading ? <Empty text="جارٍ التحميل…" /> : rules.isError ? <Empty text="تعذر تحميل القواعد، من فضلك حاول مرة أخرى" onRetry={() => rules.refetch()} /> : !ruleList.length ? <Empty text={'لسه مفيش قواعد. دوس "قاعدة جديدة" عشان تضيف أول قاعدة غرامة.'} /> : ruleList.map((rule) => {
           const kind = METHODS.find((item) => item.value === methodOf(rule)) ?? METHODS[0];
           const [value, unit] = ruleValue(rule, kind.value);
-          return <Box key={rule.id} sx={{ border: `1px solid ${HX.border}`, borderRadius: "12px", p: "14px 16px", display: "flex", alignItems: "center", gap: 1.75, flexWrap: { xs: "wrap", md: "nowrap" }, bgcolor: HX.surface, opacity: rule.active ? 1 : 0.55, transition: ".15s", "&:hover": { boxShadow: "0 2px 10px rgba(0,0,0,.05)" } }}>
-            <Box sx={{ width: 40, height: 40, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, bgcolor: kind.bg }}>{kind.icon}</Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", fontSize: 13.5, fontWeight: 800, color: HX.tx }}>{rule.name}<Box component="span" sx={chipSx(kind.badgeBg, kind.badgeColor)}>{kind.badge}</Box><Box component="span" sx={chipSx(HX.surface2, HX.tx2)}>{option.trigger.find(([id]) => id === rule.trigger)?.[1] ?? rule.trigger}</Box></Box>
-              <Box sx={{ fontSize: 11.5, color: HX.tx2, mt: "2px" }}>{rule.description}{Number(rule.graceHours) > 0 && rule.trigger !== "manual" ? ` · فترة سماح ${Number(rule.graceHours)} ساعة` : ""}</Box>
+          const triggerText = option.trigger.find(([id]) => id === rule.trigger)?.[1] ?? rule.trigger;
+          const grace = Number(rule.graceHours) > 0 && rule.trigger !== "manual" ? `فترة سماح ${Number(rule.graceHours)} ساعة` : "";
+          const iconBtnSx = { width: { xs: 44, md: 36 }, height: { xs: 44, md: 36 }, borderRadius: "10px", border: `1px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2 } as const;
+          return <Box key={rule.id} sx={{ border: `1px solid ${HX.border}`, borderRadius: "12px", p: "16px 18px", display: "flex", alignItems: "center", gap: { xs: 1.5, md: 2 }, flexWrap: { xs: "wrap", md: "nowrap" }, bgcolor: HX.surface, transition: ".15s", "&:hover": { boxShadow: "0 2px 10px rgba(0,0,0,.05)" } }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, flex: "1 1 260px", minWidth: 0, opacity: rule.active ? 1 : 0.55 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, bgcolor: kind.bg }}>{kind.icon}</Box>
+              <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 0.75 }}>
+                <Typography sx={{ fontFamily: font, fontSize: 15, fontWeight: 800, color: HX.tx, lineHeight: 1.4, overflowWrap: "anywhere" }}>{rule.name}</Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}><Box component="span" sx={chipSx(kind.badgeBg, kind.badgeColor)}>{kind.badge}</Box><Box component="span" sx={chipSx(HX.surface2, HX.tx2)}>{triggerText}</Box>{!rule.active && <Box component="span" sx={chipSx(HX.amberLight, HX.amber)}>معطّلة</Box>}</Box>
+                {(rule.description || grace) && <Typography sx={{ fontFamily: font, fontSize: 12, color: HX.tx2, lineHeight: 1.6, overflowWrap: "anywhere" }}>{rule.description}{rule.description && grace ? " · " : ""}{grace}</Typography>}
+              </Box>
             </Box>
-            <Box sx={{ minWidth: 110, textAlign: "left", fontSize: 15, fontWeight: 900, color: HX.tx }}>{value}<Box component="small" sx={{ display: "block", fontSize: 10, fontWeight: 500, color: HX.tx3 }}>{unit}</Box></Box>
-            {canSettle && <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {rule.active && rule.trigger === "manual" && <Button size="small" onClick={() => setManualRule(rule)} sx={{ ...outlineBtnSx, minHeight: 30, px: 1.25 }}>تطبيق</Button>}
-              <Switch size="small" color="success" aria-label={`تفعيل ${rule.name}`} checked={rule.active} disabled={save.isPending} onChange={(_, active) => save.mutate({ id: rule.id, payload: rulePayload(rule, { active }) })} />
-              <Tooltip title="تعديل"><IconButton aria-label="تعديل" size="small" onClick={() => openEditor(toForm(rule))} sx={{ width: 30, height: 30, borderRadius: "8px", border: `1px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2, "&:hover": { borderColor: HX.accent, color: HX.accent } }}><EditOutlinedIcon sx={{ fontSize: 15 }} /></IconButton></Tooltip><Tooltip title="حذف"><IconButton aria-label="حذف" size="small" onClick={() => setDeleting(rule)} sx={{ width: 30, height: 30, borderRadius: "8px", border: `1px solid ${HX.border}`, bgcolor: HX.surface2, color: HX.tx2, "&:hover": { borderColor: HX.red, color: HX.red } }}><DeleteOutlineIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+            <Box sx={{ minWidth: 120, textAlign: "center", opacity: rule.active ? 1 : 0.55, flexShrink: 0 }}>
+              <Typography component="div" sx={{ fontFamily: font, fontSize: 22, fontWeight: 800, color: HX.tx, lineHeight: 1.3 }}>{value}</Typography>
+              <Typography component="div" sx={{ fontFamily: font, fontSize: 11.5, fontWeight: 500, color: HX.tx3, lineHeight: 1.5 }}>{unit}</Typography>
+            </Box>
+            {canSettle && <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, marginInlineStart: { xs: "auto", md: 0 } }}>
+              {rule.active && rule.trigger === "manual" && <Button size="small" onClick={() => setManualRule(rule)} sx={{ ...outlineBtnSx, minHeight: 36, px: 1.5 }}>تطبيق</Button>}
+              <Switch color="success" aria-label={`تفعيل ${rule.name}`} checked={rule.active} disabled={save.isPending} onChange={(_, active) => save.mutate({ id: rule.id, payload: rulePayload(rule, { active }) })} />
+              <Tooltip title="تعديل"><IconButton aria-label="تعديل" onClick={() => openEditor(toForm(rule))} sx={{ ...iconBtnSx, "&:hover": { borderColor: HX.accent, color: HX.accent } }}><EditOutlinedIcon sx={{ fontSize: 18 }} /></IconButton></Tooltip>
+              <Tooltip title="حذف"><IconButton aria-label="حذف" onClick={() => setDeleting(rule)} sx={{ ...iconBtnSx, "&:hover": { borderColor: HX.red, color: HX.red } }}><DeleteOutlineIcon sx={{ fontSize: 18 }} /></IconButton></Tooltip>
             </Box>}
           </Box>;
         })}
       </Box> : <Box>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center", p: "12px 18px", borderBottom: `1px solid ${HX.border}`, bgcolor: HX.surface2 }}>
-          <TextField size="small" placeholder="اسم الصانع" value={filters.vendor} onChange={setFilter("vendor")} inputProps={{ "aria-label": "بحث باسم الصانع", maxLength: 100 }} sx={{ ...filterFieldSx, minWidth: 160 }} InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: HX.tx3, ml: 0.75 }} /> }} />
-          <TextField size="small" placeholder="رقم العملية" value={filters.operationNumber} onChange={setFilter("operationNumber")} inputProps={{ "aria-label": "بحث برقم العملية", maxLength: 50 }} sx={{ ...filterFieldSx, minWidth: 130 }} />
-          <TextField select size="small" value={filters.ruleId} onChange={setFilter("ruleId")} SelectProps={{ displayEmpty: true }} sx={{ ...filterFieldSx, minWidth: 140 }}><MenuItem value="">كل القواعد</MenuItem>{ruleList.map((rule) => <MenuItem key={rule.id} value={String(rule.id)}>{rule.name}</MenuItem>)}</TextField>
-          <TextField select size="small" value={filters.status} onChange={setFilter("status")} SelectProps={{ displayEmpty: true }} sx={{ ...filterFieldSx, minWidth: 120 }}><MenuItem value="">كل الحالات</MenuItem><MenuItem value="active">مطبقة</MenuItem><MenuItem value="waived">ملغاة</MenuItem></TextField>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Typography sx={{ fontFamily: font, fontSize: 11, fontWeight: 700, color: HX.tx2 }}>التاريخ</Typography>
+          <TextField size="small" placeholder="اسم الصانع" value={filters.vendor} onChange={setFilter("vendor")} inputProps={{ "aria-label": "بحث باسم الصانع", maxLength: 100 }} sx={{ ...filterFieldSx, minWidth: { xs: "100%", sm: 160 } }} InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 16, color: HX.tx3, ml: 0.75 }} /> }} />
+          <TextField size="small" placeholder="رقم العملية" value={filters.operationNumber} onChange={setFilter("operationNumber")} inputProps={{ "aria-label": "بحث برقم العملية", maxLength: 50 }} sx={{ ...filterFieldSx, minWidth: { xs: "100%", sm: 130 } }} />
+          <TextField select size="small" value={filters.ruleId} onChange={setFilter("ruleId")} SelectProps={{ displayEmpty: true }} sx={{ ...filterFieldSx, minWidth: { xs: "100%", sm: 150 } }}><MenuItem value="">كل القواعد</MenuItem>{ruleList.map((rule) => <MenuItem key={rule.id} value={String(rule.id)}>{rule.name}</MenuItem>)}</TextField>
+          <TextField select size="small" value={filters.status} onChange={setFilter("status")} SelectProps={{ displayEmpty: true }} sx={{ ...filterFieldSx, minWidth: { xs: "100%", sm: 130 } }}><MenuItem value="">كل الحالات</MenuItem><MenuItem value="active">مطبقة</MenuItem><MenuItem value="waived">ملغاة</MenuItem></TextField>
+          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75 }}>
+            <Typography sx={{ fontFamily: font, fontSize: 12, fontWeight: 700, color: HX.tx2 }}>التاريخ</Typography>
             <TextField size="small" type="date" value={filters.from} onChange={setFilter("from")} sx={filterFieldSx} />
             <Typography sx={{ fontFamily: font, fontSize: 11.5, color: HX.tx3 }}>إلى</Typography>
             <TextField size="small" type="date" value={filters.to} onChange={setFilter("to")} sx={filterFieldSx} />
@@ -260,52 +282,54 @@ export default function Fines() {
       </Box>}
     </Box>
 
-    <Dialog open={Boolean(editing)} onClose={() => !save.isPending && openEditor(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "16px", overflow: "hidden", fontFamily: font } }}>
+    <Dialog open={Boolean(editing)} onClose={() => !save.isPending && openEditor(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: paperSx }}>
       <ModalTitle onClose={() => !save.isPending && openEditor(null)}>{editing?.id ? "تعديل قاعدة" : "قاعدة غرامة جديدة"}</ModalTitle>
       <DialogContent dividers sx={{ p: "16px 18px !important", display: "flex", flexDirection: "column", gap: 2, maxHeight: "min(720px, calc(100vh - 170px))" }}>
         {editing && <>
           <TextField label="اسم القاعدة" placeholder="مثال: تأخير التسليم عن الموعد" value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} error={Boolean(err("name"))} helperText={err("name")} inputProps={{ maxLength: 150 }} sx={{ ...fieldSx, mt: 0.5 }} required />
           <TextField label="سبب الغرامة (وصف)" placeholder="اشرح إمتى القاعدة دي بتتفعّل بالظبط" value={editing.description} onChange={(event) => setEditing({ ...editing, description: event.target.value })} error={Boolean(err("description"))} helperText={err("description")} multiline minRows={2} sx={fieldSx} />
-          <TextField select label="سبب تطبيق الغرامة" value={editing.trigger} onChange={(event) => setEditing(applyTrigger(editing, event.target.value as RuleForm["trigger"]))} sx={fieldSx}>{option.trigger.map(([value, title]) => <MenuItem key={value} value={value}>{title}</MenuItem>)}</TextField>
-          <Hint>{TRIGGER_HINTS[editing.trigger]}</Hint>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <TextField select label="سبب تطبيق الغرامة" value={editing.trigger} onChange={(event) => setEditing(applyTrigger(editing, event.target.value as RuleForm["trigger"]))} sx={fieldSx}>{option.trigger.map(([value, title]) => <MenuItem key={value} value={value}>{title}</MenuItem>)}</TextField>
+            <Hint>{TRIGGER_HINTS[editing.trigger]}</Hint>
+          </Box>
           <TextField select label="طريقة الحساب" value={method} onChange={(event) => setEditing(applyMethod(editing, event.target.value as Method))} sx={fieldSx}>{METHODS.filter((item) => !isManual || MANUAL_METHODS.includes(item.value)).map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</TextField>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: method === "percentage_daily" || method === "tiered_daily" ? "1fr 1fr" : "1fr" }, gap: 1.25, alignItems: "start" }}>
             <TextField label={method === "tiered_daily" ? "مبلغ اليوم الواحد (ج.م)" : method === "percentage_daily" ? "النسبة عن كل يوم تأخير (%)" : method === "commission_percent" ? "نسبة من عمولة الشركة (%)" : isPercent ? "النسبة من الأساس (%)" : "قيمة الغرامة (ج.م)"} type="number" inputProps={{ min: 0, max: isPercent ? 100 : undefined, step: "any", inputMode: "decimal" }} value={editing.amount} onChange={(event) => setEditing({ ...editing, amount: event.target.value })} error={Boolean(err("amount"))} helperText={err("amount")} sx={fieldSx} required />
             {(method === "percentage_daily" || method === "tiered_daily") && <TextField label="الحد الأقصى (ج.م — اختياري)" type="number" inputProps={{ min: 0, step: "any", inputMode: "decimal" }} placeholder="مفيش حد" value={editing.maxAmount} onChange={(event) => setEditing({ ...editing, maxAmount: event.target.value })} error={Boolean(err("maxAmount"))} helperText={err("maxAmount")} sx={fieldSx} />}
           </Box>
-          {methodHint && <Hint>{methodHint}</Hint>}
+          {methodHint && <Hint sx={{ mt: -0.5 }}>{methodHint}</Hint>}
           {showBasis && <TextField select label="أساس الحساب" value={editing.basis} onChange={(event) => setEditing({ ...editing, basis: event.target.value as RuleForm["basis"] })} sx={fieldSx}>{option.basis.map(([value, title]) => <MenuItem key={value} value={value}>{title}</MenuItem>)}</TextField>}
           {(method === "fixed" || method === "commission_percent" || method === "percentage") && <TextField label="الحد الأقصى (ج.م — اختياري)" type="number" inputProps={{ min: 0, step: "any", inputMode: "decimal" }} placeholder="مفيش حد" value={editing.maxAmount} onChange={(event) => setEditing({ ...editing, maxAmount: event.target.value })} error={Boolean(err("maxAmount"))} helperText={err("maxAmount")} sx={fieldSx} />}
           {!isManual && <TextField label="فترة سماح قبل ما القاعدة تتفعّل (بالساعات)" type="number" inputProps={{ min: 0, step: 1, inputMode: "numeric" }} value={editing.graceHours} onChange={(event) => setEditing({ ...editing, graceHours: event.target.value })} error={Boolean(err("graceHours"))} helperText={err("graceHours")} sx={fieldSx} />}
           <TextField label="تاريخ السريان" type="datetime-local" value={editing.effectiveFrom} onChange={(event) => setEditing({ ...editing, effectiveFrom: event.target.value })} error={Boolean(err("effectiveFrom"))} helperText={err("effectiveFrom") ?? (isManual ? undefined : "القاعدة تُطبَّق فقط على التأخير/الإلغاء/الرفض بعد هذا التاريخ")} InputLabelProps={{ shrink: true }} sx={fieldSx} required />
-          <Box component="label" sx={{ display: "flex", alignItems: "center", gap: 1, fontFamily: font, fontSize: 12.5, fontWeight: 700, color: HX.tx2, cursor: "pointer" }}><input type="checkbox" checked={editing.active} onChange={(event) => setEditing({ ...editing, active: event.target.checked })} style={{ width: 16, height: 16 }} />تفعيل القاعدة فورًا</Box>
+          <Box component="label" sx={{ display: "flex", alignItems: "center", gap: 1.25, minHeight: 44, px: 1.5, border: `1px solid ${HX.border}`, borderRadius: "9px", bgcolor: HX.surface2, fontFamily: font, fontSize: 13, fontWeight: 700, color: HX.tx, cursor: "pointer" }}><input type="checkbox" checked={editing.active} onChange={(event) => setEditing({ ...editing, active: event.target.checked })} style={{ width: 18, height: 18, margin: 0, accentColor: HX.accent, flexShrink: 0 }} />تفعيل القاعدة فورًا</Box>
         </>}
       </DialogContent>
-      <DialogActions sx={{ px: 2.25, py: 1.75, gap: 1 }}><Button onClick={() => openEditor(null)} disabled={save.isPending} sx={{ ...outlineBtnSx, px: 2.25 }}>إلغاء</Button><Button variant="contained" disabled={save.isPending} onClick={submitRule} sx={{ minHeight: 34, px: 2.25, borderRadius: "9px", color: "#fff", fontFamily: font, fontWeight: 700 }}>{save.isPending ? "جارٍ الحفظ…" : "حفظ القاعدة"}</Button></DialogActions>
+      <DialogActions sx={actionsSx}><Button variant="contained" disabled={save.isPending} onClick={submitRule} sx={primaryBtnSx}>{save.isPending ? "جارٍ الحفظ…" : "حفظ القاعدة"}</Button><Button onClick={() => openEditor(null)} disabled={save.isPending} sx={outlineBtnSx}>إلغاء</Button></DialogActions>
     </Dialog>
 
-    <Dialog open={Boolean(deleting)} onClose={() => setDeleting(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "16px", overflow: "hidden", fontFamily: font } }}>
+    <Dialog open={Boolean(deleting)} onClose={() => setDeleting(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: paperSx }}>
       <ModalTitle onClose={() => setDeleting(null)}>حذف قاعدة</ModalTitle>
       <DialogContent dividers sx={{ p: "16px 18px !important", display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography sx={{ fontFamily: font, fontSize: 13, color: HX.tx }}>هتحذف قاعدة "{deleting?.name}"؟</Typography>
-        <Hint size={12}>القاعدة هتختفي من القائمة ومش هتتطبق على أي طلب بعد كده، لكن الغرامات اللي اتطبقت بيها قبل كده هتفضل ظاهرة في السجل.</Hint>
+        <Hint size={12.5}>القاعدة هتختفي من القائمة ومش هتتطبق على أي طلب بعد كده، لكن الغرامات اللي اتطبقت بيها قبل كده هتفضل ظاهرة في السجل.</Hint>
       </DialogContent>
-      <DialogActions sx={{ px: 2.25, py: 1.75, gap: 1 }}><Button onClick={() => setDeleting(null)} disabled={deleteMutation.isPending} sx={{ ...outlineBtnSx, px: 2.25 }}>تراجع</Button><Button variant="contained" color="error" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()} sx={{ minHeight: 34, px: 2.25, borderRadius: "9px", color: "#fff", fontFamily: font, fontSize: 12.5, fontWeight: 700 }}>{deleteMutation.isPending ? "جارٍ الحذف…" : "حذف القاعدة"}</Button></DialogActions>
+      <DialogActions sx={actionsSx}><Button variant="contained" color="error" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()} sx={primaryBtnSx}>{deleteMutation.isPending ? "جارٍ الحذف…" : "حذف القاعدة"}</Button><Button onClick={() => setDeleting(null)} disabled={deleteMutation.isPending} sx={outlineBtnSx}>تراجع</Button></DialogActions>
     </Dialog>
 
-    <Dialog open={Boolean(waive)} onClose={() => setWaive(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "16px", overflow: "hidden", fontFamily: font } }}>
+    <Dialog open={Boolean(waive)} onClose={() => setWaive(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: paperSx }}>
       <ModalTitle onClose={() => setWaive(null)}>إلغاء غرامة</ModalTitle>
       <DialogContent dividers sx={{ p: "16px 18px !important", display: "flex", flexDirection: "column", gap: 2 }}>
-        {waive && <Hint size={12}>غرامة {num(waive.amount)} ج.م على "{waive.vendorName || `طلب #${waive.orderNumber || waive.orderId}`}" — {waive.ruleName} ({waive.operationNumber || `#${waive.orderNumber || waive.orderId}`})</Hint>}
+        {waive && <Hint size={12.5}>غرامة {num(waive.amount)} ج.م على "{waive.vendorName || `طلب #${waive.orderNumber || waive.orderId}`}" — {waive.ruleName} ({waive.operationNumber || `#${waive.orderNumber || waive.orderId}`})</Hint>}
         <TextField autoFocus fullWidth multiline minRows={3} label="سبب الإلغاء" placeholder="مثال: الصانع أثبت إن التأخير كان بسبب شركة الشحن" value={waiveReason} onChange={(event) => setWaiveReason(event.target.value)} inputProps={{ maxLength: 1000 }} error={waiveReason.length > 0 && waiveReason.trim().length < 3} helperText={waiveReason.length > 0 && waiveReason.trim().length < 3 ? "من فضلك اكتب سببًا من 3 أحرف على الأقل" : undefined} sx={{ ...fieldSx, mt: 0.5 }} required />
       </DialogContent>
-      <DialogActions sx={{ px: 2.25, py: 1.75, gap: 1 }}><Button onClick={() => setWaive(null)} disabled={waiveMutation.isPending} sx={{ ...outlineBtnSx, px: 2.25 }}>تراجع</Button><Button variant="contained" disabled={waiveReason.trim().length < 3 || waiveMutation.isPending} onClick={() => waiveMutation.mutate()} sx={{ minHeight: 34, px: 2.25, borderRadius: "9px", color: "#fff", fontFamily: font, fontWeight: 700 }}>{waiveMutation.isPending ? "جارٍ الإلغاء…" : "تأكيد إلغاء الغرامة"}</Button></DialogActions>
+      <DialogActions sx={actionsSx}><Button variant="contained" disabled={waiveReason.trim().length < 3 || waiveMutation.isPending} onClick={() => waiveMutation.mutate()} sx={primaryBtnSx}>{waiveMutation.isPending ? "جارٍ الإلغاء…" : "تأكيد إلغاء الغرامة"}</Button><Button onClick={() => setWaive(null)} disabled={waiveMutation.isPending} sx={outlineBtnSx}>تراجع</Button></DialogActions>
     </Dialog>
 
-    <Dialog open={Boolean(manualRule)} onClose={() => setManualRule(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "16px", overflow: "hidden", fontFamily: font } }}>
+    <Dialog open={Boolean(manualRule)} onClose={() => setManualRule(null)} dir="rtl" fullWidth maxWidth="xs" PaperProps={{ sx: paperSx }}>
       <ModalTitle onClose={() => setManualRule(null)}>تطبيق {manualRule?.name}</ModalTitle>
       <DialogContent dividers sx={{ p: "16px 18px !important" }}><TextField autoFocus fullWidth label="رقم العملية" value={manualOrderId} onChange={(event) => setManualOrderId(event.target.value)} error={Boolean(manualOrderError)} helperText={manualOrderError ?? "اكتب رقم العملية للطلب الذي تريد تطبيق الغرامة عليه (كما يظهر في سجل الغرامات)"} inputProps={{ maxLength: 50 }} sx={{ ...fieldSx, mt: 0.5 }} required /></DialogContent>
-      <DialogActions sx={{ px: 2.25, py: 1.75, gap: 1 }}><Button onClick={() => setManualRule(null)} disabled={manualMutation.isPending} sx={{ ...outlineBtnSx, px: 2.25 }}>إلغاء</Button><Button variant="contained" disabled={!manualOrderId.trim() || Boolean(manualOrderError) || manualMutation.isPending} onClick={() => manualMutation.mutate()} sx={{ minHeight: 34, px: 2.25, borderRadius: "9px", color: "#fff", fontFamily: font, fontWeight: 700 }}>{manualMutation.isPending ? "جارٍ التطبيق…" : "تطبيق الغرامة"}</Button></DialogActions>
+      <DialogActions sx={actionsSx}><Button variant="contained" disabled={!manualOrderId.trim() || Boolean(manualOrderError) || manualMutation.isPending} onClick={() => manualMutation.mutate()} sx={primaryBtnSx}>{manualMutation.isPending ? "جارٍ التطبيق…" : "تطبيق الغرامة"}</Button><Button onClick={() => setManualRule(null)} disabled={manualMutation.isPending} sx={outlineBtnSx}>إلغاء</Button></DialogActions>
     </Dialog>
   </DashboardLayout>;
 }
@@ -313,8 +337,8 @@ export default function Fines() {
 function Empty({ text, onRetry }: { text: string; onRetry?: () => void }) {
   return <Box sx={{ py: 6, px: 2.5, textAlign: "center", color: HX.tx3, fontSize: 13, fontFamily: font }}>{text}{onRetry && <Box sx={{ mt: 1.5 }}><Button onClick={onRetry} sx={outlineBtnSx}>إعادة المحاولة</Button></Box>}</Box>;
 }
-function Hint({ children, size = 10.5 }: { children: React.ReactNode; size?: number }) {
-  return <Typography sx={{ fontFamily: font, fontSize: size, color: HX.tx3, mt: -0.75 }}>{children}</Typography>;
+function Hint({ children, size = 11.5, sx }: { children: React.ReactNode; size?: number; sx?: Record<string, unknown> }) {
+  return <Typography sx={{ fontFamily: font, fontSize: size, color: HX.tx3, lineHeight: 1.7, px: "4px", ...sx }}>{children}</Typography>;
 }
 function ModalTitle({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2.25, py: 1.75, fontFamily: font, fontSize: 14, fontWeight: 800 }}>
