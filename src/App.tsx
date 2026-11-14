@@ -27,7 +27,7 @@ import { logisticsRoutes } from "routes";
 import useSocket from "./hooks/useSocket";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { addNotification } from "store/slices/notificationsSlice";
-import { setNotifications } from "store/slices/notificationsSlice";
+import { fetchNotifications } from "shared/notifications/notificationsApi";
 import axiosRequest from "shared/functions/axiosRequest";
 import { useQueryClient } from "@tanstack/react-query";
 import { navigationCountKeys } from "query/navigationCounts";
@@ -121,10 +121,10 @@ export default function App() {
       if (isUserInteracted) {
         playNotificationSound();
       }
+      // Shows up in the right tab/count immediately, then the list is re-fetched
+      // so the item gets its real id (needed to mark it read).
       reduxDispatch(addNotification(data));
-      const current = JSON.parse(localStorage.getItem("notifications")) || [];
-      const updated = [data, ...current];
-      localStorage.setItem("notifications", JSON.stringify(updated));
+      fetchNotifications(reduxDispatch).catch(() => {});
       NotificationMeassage("info", "لديك إشعار جديد");
     },
     () => {
@@ -224,23 +224,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const getNotifications = () => {
-      axiosRequest
-        .get(`${process.env.REACT_APP_API_URL}/notifications`)
-        .then(({ data: { notifications } }) => {
-          const newsNotifications = notifications?.map((notification) => ({
-            ...notification,
-            // Redux state must stay serializable; keep API dates as ISO strings.
-            readAt: notification.readAt || null,
-            orderId: notification.entityId,
-          }));
-
-          reduxDispatch(setNotifications(newsNotifications));
-          localStorage.setItem("notifications", JSON.stringify(notifications));
-        });
-    };
     if (user && sessionOk) {
-      getNotifications();
+      fetchNotifications(reduxDispatch).catch(() => {});
     }
   }, [user, sessionOk, reduxDispatch]);
 

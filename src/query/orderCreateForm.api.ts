@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { orderKeys } from "query/keys";
+import { customerKeys, orderKeys } from "query/keys";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
 
@@ -53,6 +53,8 @@ export function useCreateOrderFormMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       await queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+      /* قد يُنشئ الطلب عميلاً جديداً ويغيّر ordersCount/totalSpend لعميل قائم. */
+      await queryClient.invalidateQueries({ queryKey: customerKeys.all() });
       NotificationMeassage("success", "تم إنشاء الطلب بنجاح");
     },
     onError: () => {

@@ -70,7 +70,9 @@ export interface ShipmentDetailInfo {
   shipmentType: string;
   shipmentTypeLabel: string;
   shippingCost: number;
-  shippingCompany: string;
+  /** معرّف شركة الشحن (للتعديل) — الاسم في shippingCompanyName. */
+  shippingCompany: number | null;
+  shippingCompanyName: string;
 }
 
 export interface ShipmentDetailTimelineEvent {

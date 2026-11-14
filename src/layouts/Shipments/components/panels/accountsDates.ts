@@ -33,3 +33,15 @@ export function toCairoYmd(d: string | null | undefined): string {
   const m = moment(d).tz(CAIRO_TZ);
   return m.isValid() ? m.locale("en").format("YYYY-MM-DD") : "";
 }
+
+/** "YYYY-MM-DD" (يوم مصري) → لحظة ISO لبداية ذلك اليوم بتوقيت القاهرة؛ "" إن كان فارغاً/غير صالح. */
+export function cairoDayStartIso(ymd: string | null | undefined): string {
+  if (!ymd) return "";
+  const m = moment.tz(ymd, "YYYY-MM-DD", true, CAIRO_TZ);
+  return m.isValid() ? m.startOf("day").toISOString() : "";
+}
+
+/** رقم الشهر الحالي "YYYY-MM" بتوقيت القاهرة (لا UTC ولا توقيت المتصفح). */
+export function cairoMonthKey(now: Date | string = new Date()): string {
+  return moment(now).tz(CAIRO_TZ).locale("en").format("YYYY-MM");
+}

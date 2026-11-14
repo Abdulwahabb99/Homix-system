@@ -1,7 +1,7 @@
+import { cairoDayStartIso, toCairoYmd } from "./panels/accountsDates";
 import React from "react";
 import { Box } from "@mui/material";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
-import moment from "moment";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
 import { useInlineUpdateShipmentMutation } from "query/shipmentEdit";
@@ -232,7 +232,7 @@ const canReassign = (s: ShipmentItem) =>
 /** التاريخ كما في التصميم: YYYY-MM-DD بأرقام لاتينية أو «—» رمادية */
 function fmtDate(d: string | null | undefined): React.ReactNode {
   if (!d) return DASH;
-  return moment(d).format("YYYY-MM-DD");
+  return toCairoYmd(d);
 }
 
 /** مبلغ بأرقام عربية-هندية وفواصل عربية + «ج.م» (لهذا الجدول فقط)؛ الصفر يُعرض 0 كالتصميم */
@@ -307,7 +307,7 @@ export default function ShipmentsTable({
   const save = (id: number, body: Parameters<typeof inlineMut.mutate>[0]["body"]) =>
     inlineMut.mutate({ id, body });
   const onSchedDateChange = (s: ShipmentItem, v: string) => {
-    const body: Parameters<typeof inlineMut.mutate>[0]["body"] = { scheduledDeliveryDate: v || null };
+    const body: Parameters<typeof inlineMut.mutate>[0]["body"] = { scheduledDeliveryDate: v ? cairoDayStartIso(v) : null };
     // كما في التصميم: تحديد موعد بدون حالة يضبط الحالة «مجدول» إن وُجدت.
     if (v && s.scheduleStatus == null) {
       const sched = schedStatuses.find((o) => /^مجدول/.test(o.label));
@@ -553,7 +553,7 @@ export default function ShipmentsTable({
                       type="date"
                       aria-label="موعد الجدولة"
                       style={{ ...INLINE_CTRL, width: 120 }}
-                      value={s.scheduledDeliveryDate ? moment(s.scheduledDeliveryDate).format("YYYY-MM-DD") : ""}
+                      value={toCairoYmd(s.scheduledDeliveryDate)}
                       disabled={inlineMut.isPending}
                       onChange={(e) => onSchedDateChange(s, e.target.value)}
                     />

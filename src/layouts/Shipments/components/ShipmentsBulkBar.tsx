@@ -3,6 +3,7 @@
  * كل حقل اختياري ويُرسل فقط ما اختاره المستخدم عبر PUT /shipments/bulk-update.
  * خيارات القوائم تأتي من الـ meta فتظهر أي حالة جديدة تلقائياً.
  */
+import { cairoDayStartIso } from "./panels/accountsDates";
 import React, { useState } from "react";
 import { Box } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
@@ -56,7 +57,7 @@ export default function ShipmentsBulkBar({
   const handleApply = () => {
     const data: BulkUpdateShipmentPayload = {};
     if (sched) data.scheduleStatus = sched === CLEAR ? null : Number(sched);
-    if (date) data.scheduledDeliveryDate = new Date(`${date}T00:00:00`).toISOString();
+    if (date) data.scheduledDeliveryDate = cairoDayStartIso(date);
     if (carrier) data.shippingCompany = carrier === CLEAR ? null : Number(carrier);
     if (status) data.shipmentStatus = Number(status);
     if (Object.keys(data).length === 0) {

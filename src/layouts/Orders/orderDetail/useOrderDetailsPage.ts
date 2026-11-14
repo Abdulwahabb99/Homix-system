@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { customerKeys, financialKeys, orderKeys, shipmentKeys } from "query/keys";
 import { useParams } from "react-router-dom";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { normalizeOrderDetailPayload } from "./orderDetailNormalize";
-import { CLOSED_ORDER_STATUS_IDS, orderStatusValues } from "layouts/Orders/utils/constants";
+import { getDerivedStatusChanges } from "./derivedStatusChanges";
 
 /** يستخرج رسالة الخطأ من رد الـ API إن وُجدت، وإلا الرسالة الافتراضية */
 function getApiErrorMessage(error: any, fallback: string): string {
@@ -15,21 +17,10 @@ function getApiErrorMessage(error: any, fallback: string): string {
   );
 }
 
-/* قيم الباك إند: حالة الطلب (statusoptions) وحالة التأكيد (CONFIRMATION_STATUS) */
-const ORDER_STATUS_PENDING = 1;
-const ORDER_STATUS_CONFIRMED = 3;
-const ORDER_STATUS_CANCELLED_BEFORE_MFG = 9; // ملغي قبل التأكيد للتصنيع
-const ORDER_STATUS_CANCELLED_AFTER_MFG_72H = 10; // ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)
-const ORDER_FINAL_STATUSES = [4, 5, 6, 7, ...CLOSED_ORDER_STATUS_IDS];
-/* حالات التصنيع التي لم يبدأ فيها التصنيع فعليًا: مقبول (1) / قيد التصنيع (2) — حسب التصميم */
-const MFG_NOT_PROGRESSED = [1, 2];
-const CONFIRMATION_CONFIRMED = 2;
-const CONFIRMATION_FIRST_CANCEL = 7;
-const CONFIRMATION_LAST_CANCEL = 11;
-
 export function useOrderDetailsPage(orderId?: string | number) {
   const { id: routeId } = useParams();
   const id = orderId == null ? routeId : String(orderId);
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [manufactureStatus, setManufactureStatus] = useState<number | null>(null);
@@ -65,16 +56,21 @@ export function useOrderDetailsPage(orderId?: string | number) {
         .then(() => {
           NotificationMeassage("success", "تم التعديل بنجاح");
           setManufactureStatus(status);
+          /* حالة التصنيع تحرّك حالتي الطلب/التأكيد (وتؤثر على القوائم والتقارير). */
+          queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+          queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         })
         .catch(() => {
           NotificationMeassage("error", "حدث خطأ");
         });
     },
-    [orderDetails?.id]
+    [orderDetails?.id, queryClient]
   );
 
   /* تحديث متفائل لحقل واحد من الطلب (حالة الطلب/التسليم/المسؤول/مكان التسليم…):
-     نُحدّث الواجهة فوراً ونرجع للحالة السابقة عند فشل الـ API مع رسالة الخطأ. */
+     نُحدّث الواجهة فوراً ونرجع للحالة السابقة عند فشل الـ API مع رسالة الخطأ.
+     حالة الطلب/الشحنة/التأكيد مرتبطة في الباك إند: نقرأ نتيجتها من رد الخادم،
+     فنطبّق الحقول المشتقة ونُنبّه المستخدم بما تغيّر تلقائياً. */
   const updateOrderField = useCallback(
     (patch: Record<string, any>) => {
       if (orderDetails?.id == null) return;
@@ -82,13 +78,26 @@ export function useOrderDetailsPage(orderId?: string | number) {
       setOrderDetails((o: any) => ({ ...o, ...patch }));
       axiosRequest
         .put(`/orders/${orderDetails.id}`, patch)
-        .then(() => NotificationMeassage("success", "تم التعديل بنجاح"))
+        .then((response) => {
+          NotificationMeassage("success", "تم التعديل بنجاح");
+          /* القوائم والملخصات تعرض حالات قد يكون الباك إند حرّكها تلقائياً. */
+          queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+          queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+          const saved = response?.data?.data;
+          const derived = getDerivedStatusChanges(prev, saved, Object.keys(patch));
+          if (derived.length === 0) return;
+          setOrderDetails((o: any) => ({
+            ...o,
+            ...Object.fromEntries(derived.map((change) => [change.field, change.to])),
+          }));
+          derived.forEach((change) => NotificationMeassage("info", change.message));
+        })
         .catch((error) => {
           setOrderDetails(prev);
           NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
         });
     },
-    [orderDetails]
+    [orderDetails, queryClient]
   );
 
   const changeOrderStatus = useCallback(
@@ -99,37 +108,14 @@ export function useOrderDetailsPage(orderId?: string | number) {
     [updateOrderField]
   );
 
+  /* الباك إند يزامن حالة الطلب والشحنة مع حالة التأكيد (order-status-sync) —
+     نرسل حالة التأكيد فقط ونعرض ما تغيّر تلقائياً من رد الخادم. */
   const changeConfirmationStatus = useCallback(
     (confirmationStatus: number | null) => {
       if (confirmationStatus == null) return;
-      /* مزامنة حالة الطلب مع حالة التأكيد (حسب التصميم): «مؤكد» ينقل الطلب
-         المعلّق إلى «مؤكد»، وأي «ملغي (…)» يلغي الطلب («ملغي قبل/بعد التأكيد للتصنيع» حسب حالة التصنيع) ما لم يكن قد وصل لحالة
-         نهائية (ملغي/تم التسليم/مسترجع/مستبدل). باقي الحالات لا تغيّر حالة الطلب. */
-      const current = Number(orderDetails?.status);
-      const patch: Record<string, any> = { confirmationStatus };
-      if (confirmationStatus === CONFIRMATION_CONFIRMED && current === ORDER_STATUS_PENDING) {
-        patch.status = ORDER_STATUS_CONFIRMED;
-      } else if (
-        confirmationStatus >= CONFIRMATION_FIRST_CANCEL &&
-        confirmationStatus <= CONFIRMATION_LAST_CANCEL &&
-        !ORDER_FINAL_STATUSES.includes(current)
-      ) {
-        /* حسب التصميم: إلغاء قبل بدء التصنيع ← «ملغي قبل التأكيد للتصنيع»،
-           وإلا ← «ملغي بعد التأكيد للتصنيع (خلال أول 72 ساعة)». */
-        const mfg = manufactureStatus == null ? null : Number(manufactureStatus);
-        patch.status =
-          mfg == null || MFG_NOT_PROGRESSED.includes(mfg)
-            ? ORDER_STATUS_CANCELLED_BEFORE_MFG
-            : ORDER_STATUS_CANCELLED_AFTER_MFG_72H;
-      }
-      updateOrderField(patch);
-      /* تنبيه بأن حالة الطلب تغيّرت تلقائياً بسبب حالة التأكيد (كما في التصميم) */
-      if (patch.status != null) {
-        const label = (orderStatusValues[patch.status] ?? "").trim();
-        NotificationMeassage("info", `حالة الطلب اتحدثت تلقائيًا لـ «${label}»`);
-      }
+      updateOrderField({ confirmationStatus });
     },
-    [updateOrderField, orderDetails?.status, manufactureStatus]
+    [updateOrderField]
   );
 
   const changeDeliveryStatus = useCallback(
@@ -199,6 +185,10 @@ export function useOrderDetailsPage(orderId?: string | number) {
             setOrderTotalShipping(normalized.shippingFees ?? null);
             setOrderTotalToBeCollected(normalized.toBeCollected ?? null);
           }
+          /* الشحن/الخصم/التكلفة تغيّر أرقام القوائم والتقرير المالي. */
+          queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+          queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
+          queryClient.invalidateQueries({ queryKey: financialKeys.all() });
           NotificationMeassage("success", "تم التعديل بنجاح");
         })
         .catch((error) => {
@@ -206,7 +196,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
           NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
         });
     },
-    [orderDetails]
+    [orderDetails, queryClient]
   );
 
   const changeShippingFees = useCallback(
@@ -261,6 +251,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
       return axiosRequest
         .put(`/customers/${customerId}`, values)
         .then(() => {
+          queryClient.invalidateQueries({ queryKey: customerKeys.all() });
           NotificationMeassage("success", "تم تحديث بيانات العميل");
         })
         .catch((error) => {
@@ -270,7 +261,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
         })
         .finally(() => setIsUpdatingCustomer(false));
     },
-    [orderDetails]
+    [orderDetails, queryClient]
   );
 
   const onEdit = useCallback(

@@ -19,7 +19,8 @@ import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { usePermissions } from "shared/permissions";
 import { getStatusValue } from "shared/utils/constants";
-import { fineKeys } from "query/keys";
+import { financialKeys, fineKeys } from "query/keys";
+import { cairoMonthKey, toCairoYmd } from "layouts/Shipments/components/panels/accountsDates";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import {
   MANUAL_METHODS, apiErrorMessage, applyMethod, applyTrigger, buildPayload, emptyForm, methodOf, rulePayload, toForm, validateRuleForm,
@@ -50,7 +51,7 @@ const basisLabel = (basis: string) => (option.basis.find(([id]) => id === basis)
 const font = "'Cairo', sans-serif";
 /** أرقام لاتينية كباقي التطبيق (الشحنات/الطلبات)؛ الأرقام الهندية الصغيرة كانت تظهر كنقطة حمراء عند الصفر */
 const num = (value: number | string) => (Number(value) || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
-const dayOf = (value: string) => value.slice(0, 10);
+const dayOf = (value: string) => toCairoYmd(value);
 const dateText = (value: string) => new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { year: "numeric", month: "short", day: "numeric" });
 
 /** المظهر الافتراضي لثيم Material Dashboard يصفّر padding الـ .MuiSelect-select ويُخفي السهم، فتنهار الـ select إلى ~20px؛ نعيد المقاسات محليًا */
@@ -119,7 +120,11 @@ export default function Fines() {
     queryFn: async () => (await axiosRequest.get("/fines/records", { params: { vendor: searchTerms.vendor || undefined, operationNumber: searchTerms.operationNumber || undefined } })).data.data,
   });
 
-  const invalidate = () => client.invalidateQueries({ queryKey: fineKeys.all() });
+  /* القواعد والغرامات اليدوية/الملغاة تغيّر order.fine الذي يغذّي التقرير المالي وبنود الفواتير. */
+  const invalidate = () => Promise.all([
+    client.invalidateQueries({ queryKey: fineKeys.all() }),
+    client.invalidateQueries({ queryKey: financialKeys.all() }),
+  ]);
   const failed = (fallback: string) => (error: unknown) => { NotificationMeassage("error", apiErrorMessage(error, fallback)); void invalidate(); };
   const save = useMutation({
     mutationFn: async ({ id, payload }: { id?: number; payload: RulePayload }) => (id ? axiosRequest.put(`/fines/rules/${id}`, payload) : axiosRequest.post("/fines/rules", payload)),
@@ -148,8 +153,8 @@ export default function Fines() {
   }, [all, found.data, searching, filters.ruleId, filters.status, filters.from, filters.to]);
 
   const activeCount = ruleList.filter((rule) => rule.active).length;
-  const month = new Date().toISOString().slice(0, 7);
-  const monthApplied = all.filter((record) => !record.waivedAt && record.appliedAt.slice(0, 7) === month);
+  const month = cairoMonthKey();
+  const monthApplied = all.filter((record) => !record.waivedAt && cairoMonthKey(record.appliedAt) === month);
   const topRule = useMemo(() => {
     const counts = new Map<string, number>();
     monthApplied.forEach((record) => counts.set(record.ruleName, (counts.get(record.ruleName) ?? 0) + 1));

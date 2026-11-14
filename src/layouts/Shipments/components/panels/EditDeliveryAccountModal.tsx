@@ -3,6 +3,7 @@
  * التعديل داخل نافذة وليس داخل الجدول حتى لا يتغيّر شيء بضغطة واحدة بالخطأ.
  */
 import React, { useEffect, useRef, useState } from "react";
+import { usePermissions } from "shared/permissions/usePermissions";
 import {
   Box,
   Button,
@@ -53,6 +54,9 @@ interface Props {
 }
 
 export default function EditDeliveryAccountModal({ open, onClose, item, statusOptions, isAdmin }: Props) {
+  /* سعر التكلفة يُعيد كتابة بنود الطلب: صلاحية orders_edit_financials فقط. المبلغ المستلم يبقى قابلاً للتعديل. */
+  const { can } = usePermissions();
+  const canEditFinancials = can("orders_edit_financials");
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
   const [receivedAmount, setReceivedAmount] = useState("");
   const [costPrice, setCostPrice] = useState("");
@@ -104,7 +108,7 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
           ...(parsedReceivedAmount !== null && parsedReceivedAmount !== item.receivedAmount
             ? { receivedAmount: parsedReceivedAmount }
             : {}),
-          ...(parsedCostPrice !== null && parsedCostPrice !== item.costPrice
+          ...(canEditFinancials && parsedCostPrice !== null && parsedCostPrice !== item.costPrice
             ? { costPrice: parsedCostPrice }
             : {}),
         },
@@ -183,16 +187,18 @@ export default function EditDeliveryAccountModal({ open, onClose, item, statusOp
               helperText={`المطلوب تحصيله ${Number(item?.amountToCollect ?? 0).toLocaleString("en-US")} ج.م`}
               sx={fieldSx}
             />
-            <TextField
-              label="سعر التكلفة"
-              size="small"
-              fullWidth
-              type="number"
-              inputProps={{ min: 0, step: "0.01" }}
-              value={costPrice}
-              onChange={(e) => setCostPrice(e.target.value)}
-              sx={fieldSx}
-            />
+            {canEditFinancials && (
+              <TextField
+                label="سعر التكلفة"
+                size="small"
+                fullWidth
+                type="number"
+                inputProps={{ min: 0, step: "0.01" }}
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                sx={fieldSx}
+              />
+            )}
           </Box>
         )}
 

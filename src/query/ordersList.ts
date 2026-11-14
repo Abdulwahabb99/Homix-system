@@ -58,7 +58,7 @@ function buildQueryString(p) {
 }
 
 /** صف قائمة الطلبات الجديد (سطر منتج داخل `data.items`) */
-function mapListItemRow(row) {
+export function mapListItemRow(row) {
   const rowId = row.id;
   /** معرّف الطلب الأب لمسارات التفاصيل والتعديل — يُفضّل أن يُرجع الـ API حقل `orderId` صراحةً */
   const orderId = row.orderId ?? row.homixOrderId ?? row.parentOrderId ?? row.id;
@@ -71,12 +71,10 @@ function mapListItemRow(row) {
     orderNumber: row.orderNumber,
     customerName: row.customerName,
     status: row.status,
-    deliveryStatus:
-      row.manufactureStatus != null && row.manufactureStatus !== ""
-        ? Number(row.manufactureStatus)
-        : row.deliveryStatus != null
-          ? Number(row.deliveryStatus)
-          : undefined,
+    /** «حالة التأخير» (1 في المدة / 2 أوشك / 3 متأخر) من حقل deliveryStatus — وليس حالة التصنيع. */
+    deliveryStatus: row.deliveryStatus != null && row.deliveryStatus !== "" ? Number(row.deliveryStatus) : undefined,
+    manufactureStatus:
+      row.manufactureStatus != null && row.manufactureStatus !== "" ? Number(row.manufactureStatus) : undefined,
     totalPrice: row.totalPrice,
     totalCost: row.totalCost,
     /** اسم المحافظة كما يرسله الـ API — يُستنتج من عنوان العميل عند إنشاء الطلب */

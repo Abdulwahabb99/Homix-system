@@ -1,3 +1,4 @@
+import { cairoDayStartIso } from "../panels/accountsDates";
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import moment from "moment";
@@ -27,6 +28,7 @@ import {
   SHIPMENT_TYPE_VALUES,
   GOVERNORATES_VALUES,
 } from "shared/utils/constants";
+import { usePermissions } from "shared/permissions/usePermissions";
 import { useShipmentDetailQuery } from "query/shipmentDetail";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
 import {
@@ -54,9 +56,8 @@ function toYmd(raw: unknown): string {
 
 /** "YYYY-MM-DD" -> ISO string, or undefined when empty/invalid. */
 function toIso(ymd: string): string | undefined {
-  if (!ymd) return undefined;
-  const m = moment(ymd, "YYYY-MM-DD");
-  return m.isValid() ? m.toISOString() : undefined;
+  /* يوم مصري → بداية اليوم بتوقيت القاهرة (لا توقيت المتصفح). */
+  return cairoDayStartIso(ymd) || undefined;
 }
 
 /** Ensure the currently-selected value is always present as a selectable option. */
@@ -142,6 +143,9 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
   const [scheduleStatus, setScheduleStatus] = useState<number | "">("");
   const [deliveryBy, setDeliveryBy] = useState<number | "">("");
   const [shippingCompany, setShippingCompany] = useState("");
+  /* تكلفة الشحن وسعر التكلفة والدفعة المقدمة: صلاحية orders_edit_financials فقط (نفس قاعدة الباك إند وبطاقة الطلب). */
+  const { can } = usePermissions();
+  const canEditFinancials = can("orders_edit_financials");
   const [shippingFees, setShippingFees] = useState("");
   const [costPrice, setCostPrice] = useState("");
 
@@ -246,12 +250,13 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
       const asNum = Number(shippingCompany);
       body.shippingCompany = Number.isFinite(asNum) ? asNum : shippingCompany.trim();
     }
-    if (shippingFees.trim() !== "" && Number.isFinite(Number(shippingFees))) {
+    if (canEditFinancials && shippingFees.trim() !== "" && Number.isFinite(Number(shippingFees))) {
       body.shippingFees = Number(shippingFees);
     }
     /* تُرسل فقط عند تغيّرها — الباك إند يعيد كتابة بنود الطلب لكل قيمة تصله. */
     if (
-      costPrice.trim() !== ""
+      canEditFinancials
+      && costPrice.trim() !== ""
       && Number.isFinite(Number(costPrice))
       && Number(costPrice) >= 0
       && Number(costPrice) !== Number(data?.financial?.costPrice ?? NaN)
@@ -282,7 +287,7 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
     }
 
     if (paymentStatus !== "") body.paymentStatus = Number(paymentStatus);
-    if (downPayment.trim() !== "" && Number.isFinite(Number(downPayment))) {
+    if (canEditFinancials && downPayment.trim() !== "" && Number.isFinite(Number(downPayment))) {
       body.downPayment = Number(downPayment);
     }
     /* Only send this field after the user interacts with it. Its initial zero
@@ -389,7 +394,8 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
 
   const form = (
     <>
-      <ToastContainer />
+      {/* عند التضمين تعرض صفحة الشحنات الإشعارات — حاوية ثانية تكرّرها. */}
+      {!embedded && <ToastContainer />}
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: 920, mx: "auto", pb: "24px" }}>
         {embedded && <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>{actions}</Box>}
         {/* Back + read-only identity */}
@@ -481,19 +487,21 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField {...fieldBaseProps} type="number" label="تكلفة الشحن" value={shippingFees} onChange={(e) => setShippingFees(e.target.value)} inputProps={{ min: 0 }} />
+              <TextField {...fieldBaseProps} type="number" label="تكلفة الشحن" value={shippingFees} onChange={(e) => setShippingFees(e.target.value)} inputProps={{ min: 0 }} disabled={!canEditFinancials} />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                {...fieldBaseProps}
-                type="number"
-                label="سعر التكلفة"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-                inputProps={{ min: 0, step: "0.01" }}
-                helperText="يُوزَّع على بنود الطلب ويُحدِّث إجمالي التكلفة"
-              />
-            </Grid>
+            {canEditFinancials && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  {...fieldBaseProps}
+                  type="number"
+                  label="سعر التكلفة"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(e.target.value)}
+                  inputProps={{ min: 0, step: "0.01" }}
+                  helperText="يُوزَّع على بنود الطلب ويُحدِّث إجمالي التكلفة"
+                />
+              </Grid>
+            )}
           </Grid>
         </DetailCard>
 
@@ -547,7 +555,7 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
               <TextField {...fieldBaseProps} type="number" label="المبلغ المطلوب تحصيله" value={toBeCollected} onChange={(e) => setToBeCollected(e.target.value)} inputProps={{ min: 0 }} />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField {...fieldBaseProps} type="number" label="الدفعة المقدمة" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} inputProps={{ min: 0 }} />
+              <TextField {...fieldBaseProps} type="number" label="الدفعة المقدمة" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} inputProps={{ min: 0 }} disabled={!canEditFinancials} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField

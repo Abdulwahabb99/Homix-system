@@ -45,7 +45,7 @@ export default function ShipmentTrackingModal({
       steps.push({
         key: "scheduled",
         title: "موعد التوصيل المجدول",
-        note: info.shippingCompany ? `مع ${info.shippingCompany}` : "",
+        note: info.shippingCompanyName ? `مع ${info.shippingCompanyName}` : "",
         date: info.scheduledDeliveryDate,
         done: false,
       });

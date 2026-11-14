@@ -27,3 +27,24 @@ describe("accounts date helpers", () => {
     expect(fmtCairoDate(null)).toBe("—");
   });
 });
+
+describe("Cairo day helpers for the bulk bar / inline editors / fines", () => {
+  const { cairoDayStartIso, cairoMonthKey, toCairoYmd } = require("./accountsDates");
+
+  it("turns a picked day into Cairo midnight (winter UTC+2, summer UTC+3), whatever the browser zone", () => {
+    expect(cairoDayStartIso("2026-11-14")).toBe("2026-11-13T22:00:00.000Z");
+    expect(cairoDayStartIso("2026-07-01")).toBe("2026-06-30T21:00:00.000Z");
+    expect(cairoDayStartIso("")).toBe("");
+    expect(cairoDayStartIso("not-a-date")).toBe("");
+  });
+
+  it("round-trips: the day a user picked is the day shown back", () => {
+    expect(toCairoYmd(cairoDayStartIso("2026-11-14"))).toBe("2026-11-14");
+  });
+
+  it("the month key flips at Cairo midnight, not UTC midnight", () => {
+    // 2026-10-31T22:30Z is already 1 Nov 00:30 in Cairo (UTC+2)
+    expect(cairoMonthKey("2026-10-31T22:30:00.000Z")).toBe("2026-11");
+    expect(cairoMonthKey("2026-10-31T21:30:00.000Z")).toBe("2026-10");
+  });
+});

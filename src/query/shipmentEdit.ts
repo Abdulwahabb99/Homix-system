@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { shipmentKeys } from "./keys";
+import { orderKeys, shipmentKeys } from "./keys";
 
 /** PUT /shipments/{shipmentId} — partial update of the editable shipment fields. */
 export interface UpdateShipmentCustomer {
@@ -70,6 +70,8 @@ export function useBulkUpdateShipmentsMutation() {
         queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+        /* حالة الشحنة تحرّك حالة الطلب (والتأكيد) في الباك إند — حدّث قوائم الطلبات أيضاً. */
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنات المحددة");
     },
@@ -96,6 +98,8 @@ export function useUpdateShipmentMutation(shipmentId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+        /* حالة الشحنة تحرّك حالة الطلب (والتأكيد) في الباك إند — حدّث قوائم الطلبات أيضاً. */
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنة");
     },
@@ -118,6 +122,7 @@ export function useInlineUpdateShipmentMutation() {
         queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنة");
     },

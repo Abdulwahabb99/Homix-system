@@ -63,6 +63,10 @@ export const shipmentKeys = {
   summariesRoot: () => [...shipmentKeys.all(), "summary"] as const,
 };
 
+export const customerKeys = {
+  all: () => ["customers"] as const,
+};
+
 export const financialKeys = {
   all: () => ["financial"] as const,
   /** تقرير دورة الفوترة — مفتاح حسب يوم الفوترة (13 / 28) */

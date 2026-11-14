@@ -1,6 +1,7 @@
 /**
  * حالة تعديل رقمي inline قابلة لإعادة الاستخدام: يبدّل بين العرض والإدخال،
  * يتحقق من صحّة القيمة، ولا يستدعي onSave إلا عند تغيّر القيمة فعلاً.
+ * الإدخال الفارغ يُعامل كإلغاء (لا يُحفظ صفر).
  * يُستخدم في «المبلغ المطلوب تحصيله» ببطاقة التفاصيل المالية.
  */
 import { useState } from "react";
@@ -15,6 +16,14 @@ export interface InlineNumberEdit {
   save: (current: number) => void;
 }
 
+/** blank = cancel (no change), never 0; otherwise a finite non-negative number or "invalid". */
+export function parseInlineAmount(draft: string): { kind: "cancel" } | { kind: "invalid" } | { kind: "value"; value: number } {
+  if (draft.trim() === "") return { kind: "cancel" };
+  const n = Number(draft);
+  if (!Number.isFinite(n) || n < 0) return { kind: "invalid" };
+  return { kind: "value", value: n };
+}
+
 export function useInlineNumberEdit(onSave: (value: number) => void): InlineNumberEdit {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -27,12 +36,13 @@ export function useInlineNumberEdit(onSave: (value: number) => void): InlineNumb
   const cancel = () => setEditing(false);
 
   const save = (current: number) => {
-    const n = Number(draft);
-    if (!Number.isFinite(n) || n < 0) {
+    /* مربع فارغ = لا تغيير (إلغاء)، وليس صفراً: Number("") === 0 كان يحفظ 0 بصمت. */
+    const parsed = parseInlineAmount(draft);
+    if (parsed.kind === "invalid") {
       NotificationMeassage("error", "أدخل رقماً صحيحاً");
       return;
     }
-    if (n !== current) onSave(n);
+    if (parsed.kind === "value" && parsed.value !== current) onSave(parsed.value);
     setEditing(false);
   };
 

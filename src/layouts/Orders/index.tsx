@@ -17,7 +17,7 @@ import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
 import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
-import { orderKeys, userKeys, vendorKeys } from "query/keys";
+import { orderKeys, shipmentKeys, userKeys, vendorKeys } from "query/keys";
 import { ORDERS_LIST_PAGE_SIZE, fetchOrdersList, buildOrdersFilterQuery } from "query/ordersList";
 import { mergeHomixVendorOptions, useOrdersMeta } from "query/ordersMeta.api";
 import { ORDERS_SORT_OPTIONS } from "layouts/Orders/utils/constants";
@@ -412,6 +412,8 @@ function Orders() {
       })
       .then(() => {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+        /* حالة الطلب/التأكيد تحرّك حالة الشحنة في الباك إند — حدّث قوائم الشحنات أيضاً. */
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch(() => NotificationMeassage("error", "حدث خطأ"))
@@ -522,6 +524,8 @@ function Orders() {
       })
       .then(() => {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
+        /* حالة الطلب/التأكيد تحرّك حالة الشحنة في الباك إند — حدّث قوائم الشحنات أيضاً. */
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
       .catch(() => NotificationMeassage("error", "حدث خطأ"));

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
+import { customerKeys } from "./keys";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 
 export interface CustomerListItem {
@@ -44,7 +45,7 @@ export interface CreateCustomerPayload {
 }
 
 const keys = {
-  all: () => ["customers"] as const,
+  all: () => customerKeys.all(),
   list: (filtersKey: string) => [...keys.all(), "list", filtersKey] as const,
   summary: () => [...keys.all(), "summary"] as const,
 };

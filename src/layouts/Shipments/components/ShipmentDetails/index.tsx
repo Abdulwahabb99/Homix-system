@@ -97,7 +97,8 @@ function LoadedShipmentDetails({
 
   const details = (
     <>
-      <ToastContainer />
+      {/* الحاوية الأم (صفحة الشحنات) تعرض الإشعارات عند التضمين — حاوية ثانية تكرّرها. */}
+      {!embedded && <ToastContainer />}
       <div
         aria-hidden
         style={{ position: "fixed", left: "-10000px", top: 0, width: 800, zIndex: -1, pointerEvents: "none", overflow: "hidden", background: "#fff" }}

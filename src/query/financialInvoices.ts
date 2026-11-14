@@ -215,6 +215,8 @@ function useInvoiceMutation<TVars, TData = unknown>(
     mutationFn,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: financialKeys.invoices() });
+      /* التقرير الحي يعرض أي البنود مفوتَرة — حدّثه أيضاً بعد الإصدار/التعديل. */
+      queryClient.invalidateQueries({ queryKey: financialKeys.all() });
       if (successMessage) NotificationMeassage("success", successMessage);
     },
     onError: (error) => NotificationMeassage("error", apiErrorMessage(error)),

@@ -12,7 +12,7 @@ import { setUser } from "store/slices/authSlice";
 import { EmailOutlined, LockOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
 import axiosRequest from "shared/functions/axiosRequest";
 import { AUTH_STORAGE_CHANGED } from "shared/functions/sessionGuard";
-import { setNotifications } from "store/slices/notificationsSlice";
+import { fetchNotifications } from "shared/notifications/notificationsApi";
 import { Button, Input } from "components/ui";
 
 const signInFieldBaseSx = {
@@ -92,7 +92,7 @@ function Basic() {
         dispatch(
           setUser({ user: { ...response.data.data.user }, token: response.data.data.token })
         );
-        getNotifications();
+        fetchNotifications(dispatch).catch(() => {});
 
         navigate("/");
       })
@@ -101,20 +101,6 @@ function Basic() {
       })
       .finally(() => {
         setIsLoading(false);
-      });
-  };
-
-  const getNotifications = () => {
-    axiosRequest
-      .get("/notifications")
-      .then(({ data: { notifications } }) => {
-        const newsNotifications = notifications.map((notification) => ({
-          ...notification,
-          readAt: notification.readAt || null,
-          orderId: notification.entityId,
-        }));
-        dispatch(setNotifications(newsNotifications));
-        localStorage.setItem("notifications", JSON.stringify(notifications));
       });
   };
 

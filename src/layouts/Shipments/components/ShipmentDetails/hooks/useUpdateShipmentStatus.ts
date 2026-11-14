@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
-import { shipmentKeys } from "query/keys";
+import { orderKeys, shipmentKeys } from "query/keys";
 import type { ShipmentDetailInfo } from "query/shipmentDetail";
 
 /**
@@ -22,7 +22,8 @@ export function useUpdateShipmentStatus(shipmentDetailId: string, shipment: Ship
       shipmentStatus: currentStatus,
       shipmentType: shipment.shipmentType,
       governorate: shipment.governorate,
-      shippingCompany: shipment.shippingCompany,
+      /* المعرّف فقط، وبلا null: القيمة الفارغة تمسح الشركة (قد تكون اسماً قديماً بلا معرّف). */
+      ...(shipment.shippingCompany != null ? { shippingCompany: shipment.shippingCompany } : {}),
       shippingFees: shipment.shippingCost,
       shippingReceiveDate: shipment.receivedInWarehouseDate,
       deliveryDate: shipment.deliveryDate,
@@ -34,6 +35,9 @@ export function useUpdateShipmentStatus(shipmentDetailId: string, shipment: Ship
         setSaved(true);
         queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(shipmentDetailId) });
         queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.summariesRoot() });
+        /* حالة الشحنة تحرّك حالة الطلب في الباك إند. */
+        queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         setTimeout(() => setSaved(false), 2000);
       })
       .catch(() => toast.error("تعذّر حفظ التغييرات"))

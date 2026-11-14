@@ -1,3 +1,4 @@
+import { toCairoYmd } from "./components/panels/accountsDates";
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -397,7 +398,7 @@ export default function Shipments() {
     if (list.length === 0) return;
     const head = ["رقم العملية", "رقم الطلب", "رقم الشحنة", "العميل", "الهاتف", "البائع", "المحافظة", "حالة الشحنة", "نوع الشحنة", "حالة الدفع", "شركة الشحن", "المبلغ المطلوب", "تكلفة الشحن", "تاريخ الاستلام", "تاريخ الجدولة", "حالة الجدولة", "تاريخ التوصيل"];
     const q = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const d = (v: string | null) => (v ? moment(v).locale("en").format("YYYY-MM-DD") : "");
+    const d = (v: string | null) => toCairoYmd(v);
     const rows = list.map((s) => [
       s.operationNumber, s.orderNumber, s.shipmentNumber, s.customerName, s.customerPhone, s.sellerName,
       s.governorate, s.shipmentStatusLabel, s.shipmentTypeLabel, s.paymentStatusLabel, s.shippingCompanyName,

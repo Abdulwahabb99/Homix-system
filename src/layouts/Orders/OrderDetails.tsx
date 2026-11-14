@@ -120,7 +120,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
       )}
       {embedded ? (
         <Box sx={{ width: "100%", fontFamily: "'Cairo', sans-serif" }}>
-          <ToastContainer />
+          {/* embedded: the host page already mounts a ToastContainer. */}
           <ConfirmDeleteModal
             open={pendingDeleteNoteId != null}
             onClose={() => setPendingDeleteNoteId(null)}

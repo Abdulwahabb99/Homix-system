@@ -35,8 +35,10 @@ import {
   useSellerChatQuickReplies,
   useSendSellerChatMessage,
   useUpdateSellerChatQuickReplies,
+  SellerChatUploadError,
   type SellerChatQuickReply,
 } from "query/orderSellerChat";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 
 const AVATAR_COLORS = [OD.amber, OD.accent, OD.green, OD.blue, OD.purple, OD.red];
 
@@ -156,14 +158,25 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
     if (!text.trim() && files.length === 0) return;
     send.mutate(
       { text: text.trim(), files },
-      { onSuccess: () => { setText(""); setFiles([]); } },
+      {
+        onSuccess: () => { setText(""); setFiles([]); },
+        /* المسودة (النص والملفات) تبقى كما هي ليعيد المستخدم المحاولة. */
+        onError: (error) => {
+          NotificationMeassage(
+            "error",
+            error instanceof SellerChatUploadError
+              ? "اتبعت الرسالة لكن رفع المرفق فشل — اضغط إرسال لإعادة رفع المرفق فقط"
+              : "تعذّر إرسال الرسالة — حاول مرة أخرى"
+          );
+        },
+      },
     );
   };
 
   /* الرد السريع يُرسَل مباشرةً (كما في التصميم) بدل وضعه في خانة الكتابة */
   const handleQuickReply = (label: string) => {
     if (send.isPending) return;
-    send.mutate({ text: label, files: [] });
+    send.mutate({ text: label, files: [] }, { onError: () => NotificationMeassage("error", "تعذّر إرسال الرد — حاول مرة أخرى") });
   };
 
   const list = messages.data ?? [];

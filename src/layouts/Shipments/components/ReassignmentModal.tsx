@@ -6,6 +6,7 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import { ShipmentItem } from "query/shipmentsList";
 import { ReassignmentCandidate, useReassignmentCandidates } from "query/reassignmentCandidates";
 import { HX } from "layouts/Orders/ordersHomixTheme";
+import { orderKeys, shipmentKeys } from "query/keys";
 import { reassignmentKey } from "./panels/ReassignmentsPanel";
 
 const REASONS = [
@@ -42,7 +43,9 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
     }),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: reassignmentKey });
-      await client.invalidateQueries({ queryKey: ["shipments"] });
+      await client.invalidateQueries({ queryKey: shipmentKeys.all() });
+      /* إعادة التخصيص تغيّر حالة الطلب والتأكيد — حدّث قوائم/تفاصيل الطلبات أيضاً. */
+      await client.invalidateQueries({ queryKey: orderKeys.all() });
       NotificationMeassage("success", "تمت إعادة تخصيص الصنف");
       onSuccess();
       onClose();

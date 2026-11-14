@@ -4,7 +4,7 @@
  *
  * كود المنتج والمنتج نفسه ليسا هنا عمداً: كلاهما يخصّ صنفاً بعينه.
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Dialog,
@@ -53,12 +53,22 @@ export default function InventoryBulkEditModal({
   const [size, setSize] = useState("");
   const [color, setColor] = useState("");
 
-  const handleClose = () => {
+  const reset = () => {
     setQuantity("");
     setCostPrice("");
     setStatus("");
     setSize("");
     setColor("");
+  };
+
+  /* النافذة تبقى مركّبة؛ الأب يغلقها مباشرة بعد الحفظ الناجح (دون handleClose)،
+     فتُصفَّر الحقول كلما أُغلقت — وإلا فتحت المرة التالية بقيم الحفظ السابق. */
+  useEffect(() => {
+    if (!open) reset();
+  }, [open]);
+
+  const handleClose = () => {
+    reset();
     onClose();
   };
 

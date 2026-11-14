@@ -3,6 +3,7 @@
  * التوصيل بواسطة، المسؤول، وموعد الجدولة وحالتها.
  * كل حقل اختياري — يُرسل فقط ما تم اختياره فعلاً.
  */
+import { cairoDayStartIso } from "./panels/accountsDates";
 import React, { useState } from "react";
 import {
   Autocomplete,
@@ -22,7 +23,6 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import moment from "moment";
 import { useShipmentsMetaQuery, type ShipmentsMetaOption } from "query/shipmentsMeta";
 import type { BulkUpdateShipmentPayload } from "query/shipmentEdit";
 
@@ -94,7 +94,7 @@ export default function ShipmentsBulkEditModal({
 
   const handleSave = () => {
     const scheduledIso = scheduledDeliveryDate
-      ? moment(scheduledDeliveryDate, "YYYY-MM-DD").toISOString()
+      ? cairoDayStartIso(scheduledDeliveryDate)
       : undefined;
 
     const data: BulkUpdateShipmentPayload = {
