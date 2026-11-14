@@ -17,6 +17,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import moment from "moment-timezone";
+import { toast } from "react-toastify";
 import { usePermissions } from "shared/permissions";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
@@ -351,7 +352,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
-  const [document, setDocument] = useState<DocumentData | null>(null);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loadingDocument, setLoadingDocument] = useState(false);
 
   useEffect(() => {
@@ -393,6 +394,22 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const cancel = useCancelReceipt();
   const updateReceipt = useUpdateReceipt();
   const [cancelItem, setCancelItem] = useState<ReceiptItem | null>(null);
+  const [cancelError, setCancelError] = useState("");
+  const openCancel = (item: ReceiptItem) => { setCancelError(""); setCancelItem(item); };
+  const closeCancel = () => { setCancelItem(null); setCancelError(""); };
+  /** Errors (e.g. a server-side refusal) keep the dialog open with the Arabic message. */
+  const confirmCancel = () => {
+    if (!cancelItem) return;
+    setCancelError("");
+    cancel.mutate(cancelItem.orderId, {
+      onSuccess: () => {
+        closeCancel();
+        setSelected((current) => current.filter((entry) => entry.orderId !== cancelItem.orderId));
+        toast.success("تم إلغاء الاستلام وإرجاع الحالة السابقة والكمية للمخزن");
+      },
+      onError: (failure) => setCancelError(receiptError(failure)),
+    });
+  };
   const combined = useReceiptDocument();
 
   const items = list.data?.items ?? [];
@@ -411,7 +428,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
     setLoadingDocument(true);
     setError("");
     try {
-      setDocument(await fetchReceiptDocument(number));
+      setDocuments([await fetchReceiptDocument(number)]);
     } catch (failure) {
       setError(receiptError(failure));
     } finally {
@@ -423,7 +440,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const printItem = (item: ReceiptItem) => {
     if (item.documentNumber) { void showDocument(item.documentNumber); return; }
     setError("");
-    combined.mutate([item.orderId], { onSuccess: setDocument, onError: (failure) => setError(receiptError(failure)) });
+    combined.mutate([item.orderId], { onSuccess: setDocuments, onError: (failure) => setError(receiptError(failure)) });
   };
 
   const editItem = (item: ReceiptItem, patch: { notes?: string; manufactureDate?: string | null }) => {
@@ -617,12 +634,12 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
                 setError("");
                 combined.mutate(
                   selected.map((item) => item.orderId),
-                  { onSuccess: setDocument, onError: (failure) => setError(receiptError(failure)) }
+                  { onSuccess: setDocuments, onError: (failure) => setError(receiptError(failure)) }
                 );
               }}
               sx={{ color: "#fff", height: 30, fontFamily: FONT, fontSize: "11.5px" }}
             >
-              {combined.isPending ? "جارٍ إصدار السند…" : "سند واحد للأصناف المحددة"}
+              {combined.isPending ? "جارٍ إصدار السند…" : "سند لكل مصنع للأصناف المحددة"}
             </Button>
             {selected.length > 0 && (
               <Button size="small" variant="text" onClick={() => setSelected([])} sx={{ height: 30, fontFamily: FONT, fontSize: "11.5px", color: HX.tx2 }}>
@@ -640,7 +657,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
       ) : (
         <>
           <Box sx={{ opacity: list.isFetching ? 0.7 : 1, transition: "opacity .2s" }}>
-            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? setCancelItem : undefined} onUpdate={canEdit ? editItem : undefined} onPrint={canEdit ? printItem : undefined} />
+            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? openCancel : undefined} onUpdate={canEdit ? editItem : undefined} onPrint={canEdit ? printItem : undefined} />
           </Box>
           {totalPages > 1 && (
             <Box sx={{ ...cardSx, overflow: "hidden" }}>
@@ -651,17 +668,35 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
       )}
 
       {/* نافذة تسجيل استلام جديد */}
-      <Dialog open={Boolean(cancelItem)} onClose={() => setCancelItem(null)} dir="rtl" fullWidth maxWidth="xs">
+      <Dialog open={Boolean(cancelItem)} onClose={cancel.isPending ? undefined : closeCancel} dir="rtl" fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontFamily: FONT }}>إلغاء استلام الصنف</DialogTitle>
-        <DialogContent sx={{ fontFamily: FONT, fontSize: 13 }}>سيتم إرجاع حالة الطلب والشحنة وسحب الكمية المضافة للمخزون. الاستلامات القديمة التي لم تُحفظ حالتها السابقة تحتاج مراجعة يدوية.</DialogContent>
-        <DialogActions><Button onClick={() => setCancelItem(null)}>رجوع</Button><Button color="error" disabled={cancel.isPending} onClick={() => cancelItem && cancel.mutate(cancelItem.orderId, { onSuccess: () => { setCancelItem(null); setSelected([]); }, onError: (failure) => setError(receiptError(failure)) })}>تأكيد الإلغاء</Button></DialogActions>
+        <DialogContent sx={{ fontFamily: FONT, fontSize: 13 }}>
+          {cancelItem && (
+            <Box sx={{ mb: 1, fontWeight: 700 }}>
+              {cancelItem.productName} — عملية {cancelItem.operationNumber} (طلب #{cancelItem.orderNumber})
+            </Box>
+          )}
+          سيتم إلغاء الاستلام وإرجاع الحالة السابقة وإرجاع الكمية للمخزن.
+          {cancelItem?.documentNumber && (
+            <Alert severity="warning" sx={{ mt: 1.5, fontFamily: FONT, fontSize: "12.5px" }}>
+              هذا الصنف مدرج في سند الاستلام {cancelItem.documentNumber}؛ سيتم فك ارتباطه بالسند عند الإلغاء.
+            </Alert>
+          )}
+          {cancelError && <Alert severity="error" sx={{ mt: 1.5, fontFamily: FONT, fontSize: "12.5px" }}>{cancelError}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeCancel} disabled={cancel.isPending}>رجوع</Button>
+          <Button color="error" disabled={cancel.isPending} onClick={confirmCancel}>
+            {cancel.isPending ? "جارٍ الإلغاء…" : "تأكيد الإلغاء"}
+          </Button>
+        </DialogActions>
       </Dialog>
       <Dialog open={open} onClose={receive.isPending ? undefined : () => setOpen(false)} maxWidth="lg" fullWidth dir="rtl">
         <DialogTitle sx={{ fontFamily: FONT, fontSize: "15px", fontWeight: 700 }}>تسجيل استلام من المصنع</DialogTitle>
         <DialogContent dividers>
           <Alert severity="info" sx={{ mb: 2, fontFamily: FONT, fontSize: "12.5px" }}>
             اختر البنود التي وصلت فعليًا. لا يصدر سند الاستلام تلقائيًا — بعد التسجيل اختر الأصناف
-            واطبع سندها من القائمة الرئيسية أو زر "سند واحد للأصناف المحددة".
+            واطبع سندها من القائمة الرئيسية أو زر "سند لكل مصنع للأصناف المحددة" (يصدر سند منفصل لكل مصنع).
           </Alert>
           {formError && <Alert severity="error" sx={{ mb: 2, fontFamily: FONT, fontSize: "12.5px" }}>{formError}</Alert>}
           <Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", mb: 2 }}>
@@ -821,7 +856,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
         </DialogActions>
       </Dialog>
 
-      <ReceiptDocumentDialog document={document} onClose={() => setDocument(null)} />
+      <ReceiptDocumentDialog documents={documents} onClose={() => setDocuments([])} />
     </Box>
   );
 }

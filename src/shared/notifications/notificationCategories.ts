@@ -83,7 +83,18 @@ const TITLE_PREFIXES = [
   "تم اضافة ملاحظة جديدة",
   "تم اضافة طلب جديد",
   "تم إضافة بائع جديد",
+  // shipments (backend: src/modules/shipments/shipment.notifications.ts)
+  "تم تغيير حالة الشحنة",
+  "تم جدولة الشحنة",
+  // tickets (backend: src/modules/tickets/ticket.notifications.ts)
+  "تم إنشاء تذكرة جديدة",
+  "تم إسناد التذكرة",
+  "تم تغيير حالة التذكرة",
+  "تم إضافة رد جديد على التذكرة",
 ];
+
+// Aggregated bulk text: "تم تغيير حالة 5 شحنة إلى …" (the count is part of the leading phrase).
+const TITLE_PATTERNS = [/^تم تغيير حالة \d+ شحنة/];
 
 const FALLBACK_TITLES: Record<NotificationCategory, string> = {
   orders: "إشعار طلب",
@@ -95,7 +106,9 @@ const FALLBACK_TITLES: Record<NotificationCategory, string> = {
 export function getNotificationTitle(n: NotificationItem): string {
   const text = String(n?.text ?? "");
   const prefix = TITLE_PREFIXES.find((p) => text.startsWith(p));
-  return prefix ?? FALLBACK_TITLES[getNotificationCategory(n)];
+  if (prefix) return prefix;
+  const pattern = TITLE_PATTERNS.map((re) => re.exec(text)?.[0]).find(Boolean);
+  return pattern ?? FALLBACK_TITLES[getNotificationCategory(n)];
 }
 
 /** Relative time in Arabic, same buckets as the reference design. */

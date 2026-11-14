@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { orderKeys, shipmentKeys } from "./keys";
+import { normalizePrintedDocuments } from "layouts/Shipments/components/receipts/receiptDocuments";
 
 export interface ReceiptItem {
   orderId: number;
@@ -24,6 +25,14 @@ export interface ReceiptDocument {
   number: string;
   issuedAt: string | null;
   items: ReceiptItem[];
+  /** يملأها الخادم عند الإصدار؛ بدون مصنع => vendorId = null واسم فارغ */
+  vendorId?: number | null;
+  vendorName?: string;
+  itemCount?: number;
+}
+/** استجابة إصدار السندات: سند لكل مصنع. الحقول العلوية (number/items…) تظهر فقط عند مصنع واحد. */
+export interface PrintedDocuments extends Partial<ReceiptDocument> {
+  documents?: ReceiptDocument[];
 }
 export interface ReceiptList {
   items: ReceiptItem[];
@@ -135,8 +144,10 @@ export function useCancelReceipt() {
 export function useReceiptDocument() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (orderIds: number[]): Promise<ReceiptDocument> =>
-      (await axiosRequest.post("/shipments/receipts/documents", { orderIds })).data.data,
+    mutationFn: async (orderIds: number[]): Promise<ReceiptDocument[]> =>
+      normalizePrintedDocuments(
+        (await axiosRequest.post("/shipments/receipts/documents", { orderIds })).data.data
+      ),
     onSuccess: async () => {
       // Printing re-stamps the document number/date on these orders, which the
       // "received" list and the documents history both display.

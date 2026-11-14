@@ -1,9 +1,13 @@
 import React, { useRef, useState } from "react";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import {
+  Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+  Table, TableBody, TableCell, TableHead, TableRow,
+} from "@mui/material";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import moment from "moment-timezone";
 import logo from "assets/images/homix.png";
 import type { ReceiptDocument as DocumentData } from "query/shipmentReceipts";
+import { documentItemCount, documentVendorLabel } from "./receiptDocuments";
 import "./receipts.css";
 
 const fmt = (date: string | null) => (date ? moment(date).tz("Africa/Cairo").locale("ar").format("D MMMM YYYY") : "—");
@@ -128,17 +132,20 @@ export function ReceiptPaper({ document }: { document: DocumentData }) {
 }
 
 export default function ReceiptDocumentDialog({
-  document,
+  documents,
   onClose,
 }: {
-  document: DocumentData | null;
+  documents: DocumentData[];
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState("");
-  const print = async () => {
-    if (!ref.current) return;
+  const multiple = documents.length > 1;
+  /** Prints the given vouchers (indexes into `documents`), each on its own page, in one print job. */
+  const print = async (indexes: number[]) => {
+    const papers = indexes.map((index) => ref.current?.children[index]).filter(Boolean) as Element[];
+    if (!papers.length) return;
     setPrinting(true);
     setError("");
     const iframe = window.document.createElement("iframe");
@@ -154,14 +161,18 @@ export default function ReceiptDocumentDialog({
         "<!doctype html><html lang='ar' dir='rtl'><head><meta charset='utf-8'></head><body></body></html>"
       );
       target.close();
-      target.title = document.number;
+      target.title = indexes.map((index) => documents[index]?.number).join(" ");
       const base = target.createElement("base");
       base.href = window.document.baseURI;
       target.head.appendChild(base);
       window.document
         .querySelectorAll("style, link[rel='stylesheet']")
         .forEach((style) => target.head.appendChild(style.cloneNode(true)));
-      target.body.appendChild(ref.current.firstElementChild.cloneNode(true));
+      papers.forEach((paper, position) => {
+        const clone = paper.firstElementChild!.cloneNode(true) as HTMLElement;
+        if (position < papers.length - 1) clone.style.breakAfter = "page";
+        target.body.appendChild(clone);
+      });
       await Promise.all(
         Array.from(target.querySelectorAll("link[rel='stylesheet']")).map((link: HTMLLinkElement) =>
           link.sheet
@@ -189,22 +200,58 @@ export default function ReceiptDocumentDialog({
     }
   };
   return (
-    <Dialog open={Boolean(document)} onClose={onClose} maxWidth="lg" fullWidth dir="rtl">
-      <DialogTitle>سند الاستلام — {document?.number}</DialogTitle>
+    <Dialog open={documents.length > 0} onClose={onClose} maxWidth="lg" fullWidth dir="rtl">
+      <DialogTitle>
+        {multiple ? `سندات الاستلام — ${documents.length} سندات (سند لكل مصنع)` : `سند الاستلام — ${documents[0]?.number ?? ""}`}
+      </DialogTitle>
+      {multiple && (
+        <DialogContent sx={{ pb: 0 }}>
+          <Table size="small" aria-label="السندات الصادرة">
+            <TableHead>
+              <TableRow>
+                <TableCell>المصنع</TableCell>
+                <TableCell>رقم السند</TableCell>
+                <TableCell>عدد الأصناف</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {documents.map((document, index) => (
+                <TableRow key={document.number}>
+                  <TableCell>{documentVendorLabel(document)}</TableCell>
+                  <TableCell dir="ltr" sx={{ textAlign: "right" }}>{document.number}</TableCell>
+                  <TableCell>{documentItemCount(document)}</TableCell>
+                  <TableCell>
+                    <Button size="small" startIcon={<PrintOutlinedIcon />} disabled={printing} onClick={() => print([index])}>
+                      طباعة
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      )}
       <DialogActions>
         <Button
           variant="contained"
           startIcon={<PrintOutlinedIcon />}
-          onClick={print}
+          onClick={() => print(documents.map((_, index) => index))}
           disabled={printing}
         >
-          {printing ? "جارٍ تجهيز الطباعة…" : "طباعة السند"}
+          {printing ? "جارٍ تجهيز الطباعة…" : multiple ? "طباعة الكل" : "طباعة السند"}
         </Button>
         <Button onClick={onClose}>إغلاق</Button>
       </DialogActions>
       <DialogContent sx={{ bgcolor: "#e8edf1", p: { xs: 1, sm: 3 } }}>
         {error && <Alert severity="error">{error}</Alert>}
-        <div ref={ref}>{document && <ReceiptPaper document={document} />}</div>
+        <div ref={ref}>
+          {documents.map((document) => (
+            <div key={document.number} style={{ marginBottom: multiple ? 24 : 0 }}>
+              <ReceiptPaper document={document} />
+            </div>
+          ))}
+        </div>
       </DialogContent>
     </Dialog>
   );
