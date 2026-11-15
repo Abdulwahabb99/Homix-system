@@ -95,7 +95,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
         await downloadOrderInvoicePdf(docRef.current, `فاتورة-${invoice?.code ?? invoiceId}`);
       } catch {
         NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
-        if (docRef.current) printElementNatively(docRef.current);
+        if (docRef.current) printElementNatively(docRef.current, { fitToOnePage: true });
       } finally { setPrinting(false); }
     }, 80);
     return () => window.clearTimeout(timer);

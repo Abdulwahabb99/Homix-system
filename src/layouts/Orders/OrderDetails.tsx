@@ -93,7 +93,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
       // الموبايل قد يعجز عن رسم canvas بحجم الفاتورة — نرجع لطباعة المتصفح
       // الأصلية (لا تستخدم canvas) بدل أن يخرج المستخدم بلا فاتورة.
       NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
-      printElementNatively(componentRef.current);
+      printElementNatively(componentRef.current, { fitToOnePage: true });
     } finally {
       setInvoicePdfLoading(false);
     }

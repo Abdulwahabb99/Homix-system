@@ -45,7 +45,7 @@ export default function ShipmentTrackingModal({
     }
     setPrinting(true);
     try {
-      await printElementWhenReady(invoiceRef.current);
+      await printElementWhenReady(invoiceRef.current, { fitToOnePage: true });
     } catch (e) {
       console.error(e);
       NotificationMeassage("error", "تعذر تجهيز الفاتورة للطباعة");
