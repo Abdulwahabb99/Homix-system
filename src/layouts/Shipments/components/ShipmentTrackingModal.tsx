@@ -4,12 +4,13 @@
  * التوصيل المجدول إن وُجد ولم تُسلَّم الشحنة بعد.
  * الطباعة تعيد استخدام مستند فاتورة الشحنة الموجود (لا يوجد مستند بوليصة مستقل).
  */
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Box, CircularProgress, Dialog } from "@mui/material";
 import moment from "moment";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import OrderInvoiceDocument from "layouts/Orders/orderInvoice/OrderInvoiceDocument";
-import { printElementNatively } from "layouts/Orders/utils/invoicePdf";
+import { printElementWhenReady } from "layouts/Orders/utils/invoicePdf";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useShipmentDetailQuery } from "query/shipmentDetail";
 import type { ShipmentItem } from "query/shipmentsList";
 import { buildShipmentInvoiceModel } from "./ShipmentDetails/shipmentInvoiceAdapter";
@@ -34,6 +35,24 @@ export default function ShipmentTrackingModal({
 }) {
   const { data, isLoading, isError } = useShipmentDetailQuery(shipment ? String(shipment.id) : "");
   const invoiceRef = useRef<HTMLDivElement | null>(null);
+  const [printing, setPrinting] = useState(false);
+  const canPrint = Boolean(data) && !isLoading && !isError && !printing;
+
+  const handlePrint = async () => {
+    if (!invoiceRef.current) {
+      NotificationMeassage("error", "تعذر تجهيز الفاتورة");
+      return;
+    }
+    setPrinting(true);
+    try {
+      await printElementWhenReady(invoiceRef.current);
+    } catch (e) {
+      console.error(e);
+      NotificationMeassage("error", "تعذر تجهيز الفاتورة للطباعة");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const steps: Step[] = [];
   if (data) {
@@ -141,16 +160,16 @@ export default function ShipmentTrackingModal({
         <Box
           component="button"
           type="button"
-          disabled={!data}
-          onClick={() => invoiceRef.current && printElementNatively(invoiceRef.current)}
+          disabled={!canPrint}
+          onClick={handlePrint}
           sx={{
             display: "inline-flex", alignItems: "center", gap: "6px", height: 36, px: "14px",
             borderRadius: "9px", border: `1px solid ${HX.border2}`, bgcolor: HX.surface, color: HX.tx2,
-            fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, cursor: data ? "pointer" : "default",
-            opacity: data ? 1 : 0.5, "&:hover": { bgcolor: HX.surface3 },
+            fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, cursor: canPrint ? "pointer" : "default",
+            opacity: canPrint ? 1 : 0.5, "&:hover": { bgcolor: HX.surface3 },
           }}
         >
-          طباعة بوليصة الشحن
+          {isLoading || printing ? "جارٍ التحضير…" : "طباعة بوليصة الشحن"}
         </Box>
         <Box
           component="button"

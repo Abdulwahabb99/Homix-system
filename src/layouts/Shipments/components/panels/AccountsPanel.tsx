@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Button, Checkbox, IconButton, MenuItem, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, IconButton, MenuItem, Select, Typography } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -142,13 +145,6 @@ interface DeliveryFilterState {
   deliveryDateTo: string;
 }
 
-const filterFieldSx = {
-  minWidth: 150,
-  fontFamily: FONT,
-  "& .MuiOutlinedInput-root": { borderRadius: "10px", fontSize: "12px", fontFamily: FONT, height: 38 },
-  "& .MuiInputLabel-root": { fontFamily: FONT, fontSize: "12px" },
-} as const;
-
 const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
   accountingStatus: "",
   orderNumber: "",
@@ -159,6 +155,124 @@ const EMPTY_DELIVERY_FILTERS: DeliveryFilterState = {
   deliveryDateTo: "",
 };
 
+const FILTER_H = 38;
+
+/** نفس غلاف «تسمية فوق الحقل» في ShipmentsFiltersBar. */
+function FilterField({ label, grow = "1 1 170px", maxWidth = 280, children }: {
+  label: string;
+  grow?: string;
+  maxWidth?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ flex: grow, minWidth: 0, maxWidth: { xs: "none", sm: maxWidth } }}>
+      <Typography component="label" sx={{
+        display: "block", mb: "4px", color: HX.tx2,
+        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
+      }}>
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+/**
+ * ثيم Material Dashboard يضبط .MuiSelect-select على display:grid و padding 0 12px !important
+ * ويُخفي السهم (.MuiSelect-icon)، فتظهر الـ select فارغة بلا سهم. نعيد المقاسات محلياً
+ * (نفس أسلوب selectBoxSx في صفحة الغرامات) بارتفاع موحّد 38px.
+ */
+const selectSx = {
+  width: "100%",
+  height: FILTER_H,
+  bgcolor: HX.surface,
+  borderRadius: "10px",
+  fontFamily: FONT,
+  fontSize: "12px",
+  "& .MuiSelect-select.MuiSelect-select": {
+    display: "flex",
+    alignItems: "center",
+    height: `${FILTER_H}px`,
+    minHeight: 0,
+    boxSizing: "border-box",
+    padding: "0 11px !important",
+    paddingInlineEnd: "32px !important",
+    fontFamily: FONT,
+    fontSize: "12px",
+  },
+  "& .MuiSelect-icon": { display: "block", color: HX.tx3 },
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: HX.border },
+  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: HX.border2 },
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: HX.accent, borderWidth: 1 },
+} as const;
+
+function FilterSelect({ label, value, options, onChange }: {
+  label: string;
+  value: string;
+  options: { label: string; value: string | number }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <FilterField label={label}>
+      <Select
+        size="small"
+        displayEmpty
+        value={value}
+        onChange={(e) => onChange(String(e.target.value))}
+        renderValue={(selected) => {
+          const key = String(selected ?? "");
+          if (!key) return <Box component="span" sx={{ color: HX.tx3 }}>الكل</Box>;
+          return options.find((o) => String(o.value) === key)?.label ?? key;
+        }}
+        sx={selectSx}
+        MenuProps={{ PaperProps: { sx: { direction: "rtl" } } }}
+      >
+        <MenuItem value="" sx={{ fontSize: "12px", fontFamily: FONT }}>الكل</MenuItem>
+        {options.map((option) => (
+          <MenuItem key={option.value} value={String(option.value)} sx={{ fontSize: "12px", fontFamily: FONT }}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FilterField>
+  );
+}
+
+function FilterSearchInput({ label, placeholder, value, onChange, onEnter }: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onEnter: () => void;
+}) {
+  return (
+    <FilterField label={label}>
+      <Box sx={{
+        display: "flex", alignItems: "center", gap: "6px",
+        bgcolor: HX.surface, border: `1px solid ${HX.border}`, borderRadius: "10px",
+        px: "11px", height: FILTER_H, width: "100%", minWidth: 0, boxSizing: "border-box",
+        "&:hover": { borderColor: HX.border2 },
+        "&:focus-within": { borderColor: HX.accent, boxShadow: `0 0 0 2px ${HX.accentLight}` },
+      }}>
+        <SearchIcon sx={{ fontSize: 15, color: HX.tx3, flexShrink: 0 }} />
+        <Box
+          component="input"
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter(); }}
+          sx={{
+            border: "none", outline: "none", flex: 1, minWidth: 0,
+            fontSize: "12px", fontFamily: FONT, color: "#000", bgcolor: "transparent",
+            "&::placeholder": { color: HX.tx3, fontSize: "12px" },
+          }}
+        />
+      </Box>
+    </FilterField>
+  );
+}
+
 function DateRangeFilter({ label, from, to, onChange }: {
   label: string;
   from: string;
@@ -166,22 +280,79 @@ function DateRangeFilter({ label, from, to, onChange }: {
   onChange: (from: string, to: string) => void;
 }) {
   return (
-    <Box sx={{ minWidth: 220 }}>
-      <Typography component="label" sx={{
-        display: "block", mb: "4px", color: HX.tx2,
-        fontFamily: FONT, fontSize: "11px", fontWeight: 600,
-      }}>
-        {label}
-      </Typography>
-      <DateRangePickerWrapper
-        startDate={toPickerDate(from)}
-        endDate={toPickerDate(to)}
-        allowPastDays={true}
-        allowFutureDays={false}
-        useDefaultPresets={true}
-        handleDatesChange={(start, end) => onChange(fromPickerDate(start), fromPickerDate(end))}
-        onReset={() => onChange("", "")}
-      />
+    <FilterField label={label} grow="1 1 240px" maxWidth={340}>
+      {/* الـ picker يأخذ ارتفاعه من --dp-input-h (40px افتراضياً)؛ نوحّده مع بقية الحقول بدون لمس منطقه */}
+      <Box sx={{ "& .homix-drp": { "--dp-input-h": `${FILTER_H}px` } }}>
+        <DateRangePickerWrapper
+          startDate={toPickerDate(from)}
+          endDate={toPickerDate(to)}
+          allowPastDays={true}
+          allowFutureDays={false}
+          useDefaultPresets={true}
+          handleDatesChange={(start, end) => onChange(fromPickerDate(start), fromPickerDate(end))}
+          onReset={() => onChange("", "")}
+        />
+      </Box>
+    </FilterField>
+  );
+}
+
+/** شريط فلاتر موحّد: عنوان + عدّاد الفلاتر النشطة، الحقول في صف مرن، وأزرار التطبيق/الضبط معاً في نهاية الصف. */
+function AccountsFilterBar({ activeCount, onApply, onReset, children }: {
+  activeCount: number;
+  onApply: () => void;
+  onReset: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <FilterAltIcon sx={{ fontSize: 15, color: HX.accent }} />
+        <Box component="span" sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT }}>
+          الفلاتر
+        </Box>
+        {activeCount > 0 && (
+          <Box component="span" sx={{
+            fontSize: "10.5px", bgcolor: HX.accent, color: "#fff",
+            px: "9px", py: "2px", borderRadius: "10px", fontWeight: 700, fontFamily: FONT,
+          }}>
+            {activeCount} فلتر نشط
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", columnGap: "10px", rowGap: "12px" }}>
+        {children}
+        <Box sx={{ display: "flex", gap: "8px", flex: "0 0 auto", marginInlineStart: "auto" }}>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={onApply}
+            startIcon={<FilterAltIcon sx={{ fontSize: "14px !important" }} />}
+            sx={{
+              px: "16px", height: FILTER_H, borderRadius: "10px",
+              bgcolor: HX.accent, color: "#fff", fontSize: "12.5px",
+              fontFamily: FONT, fontWeight: 600, textTransform: "none", whiteSpace: "nowrap",
+              "&:hover": { bgcolor: "#5254e0" },
+            }}
+          >
+            تطبيق
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={onReset}
+            startIcon={<RestartAltIcon sx={{ fontSize: "14px !important" }} />}
+            sx={{
+              px: "14px", height: FILTER_H, borderRadius: "10px",
+              border: `1px solid ${HX.border2}`, bgcolor: HX.surface,
+              color: HX.tx2, fontSize: "12.5px", textTransform: "none",
+              fontFamily: FONT, fontWeight: 600, whiteSpace: "nowrap",
+              "&:hover": { bgcolor: HX.surface3, borderColor: HX.accent, color: HX.accent },
+            }}
+          >
+            إعادة ضبط
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -232,6 +403,15 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const setFilter = (field: keyof DeliveryFilterState) => (value: string) =>
     setFilters((current) => ({ ...current, [field]: value }));
 
+  const applyFilters = () => { setPage(1); setAppliedFilters(filters); };
+  const deliveryActiveCount = [
+    appliedFilters.orderNumber.trim(),
+    appliedFilters.accountingStatus,
+    appliedFilters.paymentMethod,
+    appliedFilters.settledDateFrom || appliedFilters.settledDateTo,
+    appliedFilters.deliveryDateFrom || appliedFilters.deliveryDateTo,
+  ].filter(Boolean).length;
+
   const exportCurrentView = useCallback(
     () => exportDeliveryAccounts(appliedFilters),
     [appliedFilters],
@@ -245,46 +425,30 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {/* شريط الفلاتر — يُطبَّق عند الضغط حتى لا يُعاد الجلب مع كل حرف */}
-      <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-        <TextField
-          size="small"
+      <AccountsFilterBar
+        activeCount={deliveryActiveCount}
+        onApply={applyFilters}
+        onReset={() => { setPage(1); setFilters(EMPTY_DELIVERY_FILTERS); setAppliedFilters(EMPTY_DELIVERY_FILTERS); }}
+      >
+        <FilterSearchInput
+          label="رقم الطلب"
           placeholder="بحث برقم الطلب..."
           value={filters.orderNumber}
-          onChange={(e) => setFilter("orderNumber")(e.target.value)}
-          sx={filterFieldSx}
+          onChange={setFilter("orderNumber")}
+          onEnter={applyFilters}
         />
-        <TextField
-          select
-          size="small"
+        <FilterSelect
           label="حالة المحاسبة"
           value={filters.accountingStatus}
-          onChange={(e) => setFilter("accountingStatus")(e.target.value)}
-          sx={filterFieldSx}
-          InputLabelProps={{ shrink: true }}
-        >
-          <MenuItem value="" sx={{ fontSize: "12px" }}>الكل</MenuItem>
-          {(meta?.accountingStatuses ?? []).map((option) => (
-            <MenuItem key={option.value} value={String(option.value)} sx={{ fontSize: "12px" }}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
+          options={meta?.accountingStatuses ?? []}
+          onChange={setFilter("accountingStatus")}
+        />
+        <FilterSelect
           label="طريقة الدفع"
           value={filters.paymentMethod}
-          onChange={(e) => setFilter("paymentMethod")(e.target.value)}
-          sx={filterFieldSx}
-          InputLabelProps={{ shrink: true }}
-        >
-          <MenuItem value="" sx={{ fontSize: "12px" }}>الكل</MenuItem>
-          {(meta?.paymentStatuses ?? []).map((option) => (
-            <MenuItem key={option.value} value={String(option.value)} sx={{ fontSize: "12px" }}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </TextField>
+          options={meta?.paymentStatuses ?? []}
+          onChange={setFilter("paymentMethod")}
+        />
         <DateRangeFilter
           label="تاريخ المحاسبة"
           from={filters.settledDateFrom}
@@ -297,29 +461,17 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
           to={filters.deliveryDateTo}
           onChange={(from, to) => setFilters((c) => ({ ...c, deliveryDateFrom: from, deliveryDateTo: to }))}
         />
-        <Button
-          variant="contained"
-          onClick={() => { setPage(1); setAppliedFilters(filters); }}
-          sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px" }}
-        >
-          تطبيق
-        </Button>
-        <Button
-          onClick={() => { setPage(1); setFilters(EMPTY_DELIVERY_FILTERS); setAppliedFilters(EMPTY_DELIVERY_FILTERS); }}
-          sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
-        >
-          إعادة ضبط
-        </Button>
-        {isAdmin && selectionModel.length > 0 && (
+      </AccountsFilterBar>
+
+      {isAdmin && selectionModel.length > 0 && (
+        <Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           <Button
             variant="contained"
             onClick={() => setIsBulkEditOpen(true)}
-            sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px", mr: "auto" }}
+            sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px" }}
           >
             تعديل المحدد ({selectionModel.length})
           </Button>
-        )}
-        {isAdmin && selectionModel.length > 0 && (
           <Button
             variant="outlined"
             disabled={bulkHideMutation.isPending}
@@ -336,8 +488,8 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
           >
             إخفاء المحدد ({selectionModel.length})
           </Button>
-        )}
-      </Box>
+        </Box>
+      )}
 
       <BulkEditDeliveryAccountModal
         open={isBulkEditOpen}
@@ -504,30 +656,21 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
         <AddExpenseForm />
       </Box>
 
-      <Box sx={{ display: "flex", gap: "8px", alignItems: "flex-end", flexWrap: "wrap" }}>
+      <AccountsFilterBar
+        activeCount={appliedDates.settledDateFrom || appliedDates.settledDateTo ? 1 : 0}
+        onApply={() => { setPage(1); setAppliedDates(dates); }}
+        onReset={() => {
+          const empty = { settledDateFrom: "", settledDateTo: "" };
+          setPage(1); setDates(empty); setAppliedDates(empty);
+        }}
+      >
         <DateRangeFilter
           label="تاريخ المحاسبة"
           from={dates.settledDateFrom}
           to={dates.settledDateTo}
           onChange={(from, to) => setDates({ settledDateFrom: from, settledDateTo: to })}
         />
-        <Button
-          variant="contained"
-          onClick={() => { setPage(1); setAppliedDates(dates); }}
-          sx={{ color: "#fff", height: 38, fontFamily: FONT, fontSize: "12px" }}
-        >
-          تطبيق
-        </Button>
-        <Button
-          onClick={() => {
-            const empty = { settledDateFrom: "", settledDateTo: "" };
-            setPage(1); setDates(empty); setAppliedDates(empty);
-          }}
-          sx={{ height: 38, fontFamily: FONT, fontSize: "12px" }}
-        >
-          إعادة ضبط
-        </Button>
-      </Box>
+      </AccountsFilterBar>
 
       {selectionModel.length > 0 && (
         <Box sx={{ display: "flex", justifyContent: "flex-start" }}>

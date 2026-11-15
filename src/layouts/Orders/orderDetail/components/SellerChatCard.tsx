@@ -2,7 +2,8 @@
  * "محادثة السيلر مع مسؤول الحساب" — محادثة داخلية منفصلة عن "الملاحظات
  * والتواصل" (OrderNotesCard). ردود سريعة من قائمة قابلة للتعديل (مثل
  * التذاكر): الضغط على رد سريع يرسله مباشرةً. شكل الفقاعات والصور الرمزية
- * وعدّاد الرسائل منقول من تصميم homix_order_detail. "رسائلي" تُحدَّد بمعرّف
+ * وعدّاد الرسائل والمُؤلِّف (pill) والردود السريعة فوقه منقولة من تصميم
+ * homix_order_detail (chat-list / bubble / chat-chip / chat-compose). "رسائلي" تُحدَّد بمعرّف
  * المستخدم (state.auth.user.id) وليس بمطابقة الاسم.
  */
 import React, { useEffect, useRef, useState } from "react";
@@ -10,6 +11,7 @@ import { useSelector } from "react-redux";
 import {
   Box,
   Button,
+  ButtonBase,
   Chip,
   CircularProgress,
   Dialog,
@@ -21,6 +23,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -29,7 +32,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { OD } from "../odTheme";
 import { resolveAttachmentUrl } from "../utils";
 import { COMMENT_IMAGE_ACCEPT } from "../constants";
-import SectionCard from "./SectionCard";
+import { cardSx } from "../styles";
 import {
   useSellerChatMessages,
   useSellerChatQuickReplies,
@@ -147,7 +150,7 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
   const send = useSendSellerChatMessage(orderId);
   const { user } = useSelector((state: any) => state.auth);
   const myId = user?.id != null ? Number(user.id) : null;
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiles(Array.from(e.target.files ?? []));
@@ -180,110 +183,152 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
   };
 
   const list = messages.data ?? [];
+  const replies = quickReplies.data ?? [];
+  const canSend = (text.trim().length > 0 || files.length > 0) && !send.isPending;
 
+  /* التمرير لآخر رسالة داخل صندوق المحادثة فقط (لا يحرّك الصفحة) */
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: "end" });
-  }, [list.length]);
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [list.length, messages.isLoading]);
+
+  const emptyState = (icon: React.ReactNode, label: string, action?: React.ReactNode) => (
+    <Box sx={{ m: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, color: OD.tx3, textAlign: "center", py: 3 }}>
+      {icon}
+      <Typography sx={{ fontSize: "0.72rem", color: OD.tx3, fontWeight: 600 }}>{label}</Typography>
+      {action}
+    </Box>
+  );
 
   return (
-    <SectionCard
-      icon={<ForumOutlinedIcon sx={{ fontSize: 18, color: OD.tx2 }} />}
-      title="محادثة السيلر مع مسؤول الحساب"
-      headerRight={
-        <Stack direction="row" spacing={1} alignItems="center">
+    <Box dir="rtl" sx={{ ...cardSx, p: "18px", mb: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "7px" }}>
+          <ForumOutlinedIcon sx={{ fontSize: 18, color: OD.tx2 }} />
+          <Typography sx={{ fontSize: "0.84rem", fontWeight: 800, color: OD.tx }}>محادثة السيلر مع مسؤول الحساب</Typography>
+          <Box component="span" sx={{ fontSize: "0.625rem", fontWeight: 700, bgcolor: "rgba(201,169,110,0.1)", color: "#8a6d3b", px: "9px", py: "2px", borderRadius: "20px", display: "flex", alignItems: "center", gap: 0.5, mr: 1 }}>
+            🔒 داخلي
+          </Box>
+        </Box>
+        <Stack direction="row" spacing={0.5} alignItems="center">
           <Typography sx={{ fontSize: "0.69rem", color: OD.tx3, fontWeight: 600 }}>{list.length} رسالة</Typography>
-          <Chip label="🔒 داخلي" size="small" sx={{ fontSize: "0.625rem", height: 20, fontWeight: 700, bgcolor: "rgba(201,169,110,0.1)", color: "#8a6d3b" }} />
           {isAdmin && (
-            <IconButton size="small" onClick={() => setSettingsOpen(true)} sx={{ color: OD.tx3 }}>
+            <IconButton size="small" aria-label="تعديل الردود السريعة" onClick={() => setSettingsOpen(true)} sx={{ color: OD.tx3, "&:hover": { color: OD.accent } }}>
               <SettingsOutlinedIcon sx={{ fontSize: 16 }} />
             </IconButton>
           )}
         </Stack>
-      }
-    >
-      <Box dir="rtl" sx={{ maxHeight: 300, overflowY: "auto", p: 2, m: 1.5, borderRadius: "12px", bgcolor: OD.bg }}>
+      </Box>
+
+      <Box
+        ref={listRef}
+        sx={{
+          height: 300, overflowY: "auto", p: 2, borderRadius: "12px", bgcolor: OD.bg, mb: "14px",
+          display: "flex", flexDirection: "column", gap: "10px",
+          scrollbarWidth: "thin", scrollbarColor: `${OD.brd2} transparent`,
+          "&::-webkit-scrollbar": { width: 6 },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": { background: OD.brd2, borderRadius: "6px" },
+          "&::-webkit-scrollbar-thumb:hover": { background: OD.tx3 },
+        }}
+      >
         {messages.isLoading ? (
-          <Box sx={{ textAlign: "center", py: 2 }}>
-            <CircularProgress size={20} />
+          <Box sx={{ m: "auto" }}>
+            <CircularProgress size={22} sx={{ color: OD.accent }} />
           </Box>
+        ) : messages.isError ? (
+          emptyState(
+            <ErrorOutlineIcon sx={{ fontSize: 28, color: OD.red }} />,
+            "تعذّر تحميل المحادثة",
+            <Button size="small" onClick={() => messages.refetch()} sx={{ fontSize: "0.72rem", fontWeight: 700, color: OD.accent }}>
+              إعادة المحاولة
+            </Button>,
+          )
         ) : list.length === 0 ? (
-          <Typography align="center" sx={{ py: 3, color: OD.tx3, fontSize: "0.78rem" }}>
-            لا توجد رسائل بعد
-          </Typography>
+          emptyState(<ForumOutlinedIcon sx={{ fontSize: 30, color: OD.brd2 }} />, "لا توجد رسائل بعد — ابدأ المحادثة من هنا")
         ) : (
-          <Stack spacing={1.25}>
-            {list.map((message) => {
-              const mine = myId !== null && message.userId != null && Number(message.userId) === myId;
-              const name = message.userName || "—";
-              const avatar = (
-                <Box sx={{ width: 24, height: 24, borderRadius: "50%", bgcolor: avatarColor(message.userId ?? name), color: "#fff", fontSize: "0.6rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, mb: "2px" }}>
-                  {initialOf(name)}
+          list.map((message) => {
+            const mine = myId !== null && message.userId != null && Number(message.userId) === myId;
+            const name = message.userName || "—";
+            const avatar = (
+              <Box sx={{ width: 24, height: 24, borderRadius: "50%", bgcolor: avatarColor(message.userId ?? name), color: "#fff", fontSize: "0.6rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, mb: "2px" }}>
+                {initialOf(name)}
+              </Box>
+            );
+            const column = (
+              <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <Typography sx={{ fontSize: "0.625rem", color: OD.tx3, fontWeight: 600, mb: 0.5, px: 0.625 }}>
+                  {name} · {formatMessageTime(message.createdAt)}
+                </Typography>
+                <Box
+                  sx={{
+                    px: 1.75, py: 1.25, borderRadius: "16px", fontSize: "0.78rem", lineHeight: 1.6, wordBreak: "break-word", whiteSpace: "pre-wrap",
+                    ...(mine
+                      ? { bgcolor: OD.accent, color: "#fff", borderBottomRightRadius: "4px" }
+                      : { bgcolor: OD.sur, color: OD.tx, border: `0.5px solid ${OD.brd}`, borderBottomLeftRadius: "4px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }),
+                  }}
+                >
+                  {message.text}
+                  {message.attachments.map((attachment) => {
+                    const url = resolveAttachmentUrl(attachment.url);
+                    if (!url) return null;
+                    return (
+                      <Box key={attachment.id} mt={message.text ? 0.75 : 0}>
+                        <a href={url} target="_blank" rel="noreferrer">
+                          <Box component="img" src={url} alt="" sx={{ display: "block", maxHeight: 160, borderRadius: "10px", maxWidth: "100%" }} />
+                        </a>
+                      </Box>
+                    );
+                  })}
                 </Box>
-              );
-              const column = (
-                <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "0.625rem", color: OD.tx3, fontWeight: 600, mb: 0.5, px: 0.625 }}>
-                    {name} · {formatMessageTime(message.createdAt)}
-                  </Typography>
-                  <Box
-                    sx={{
-                      px: 1.75, py: 1.25, borderRadius: "16px", fontSize: "0.78rem", lineHeight: 1.6, wordBreak: "break-word", whiteSpace: "pre-wrap",
-                      ...(mine
-                        ? { bgcolor: OD.accent, color: "#fff", borderBottomRightRadius: "4px" }
-                        : { bgcolor: OD.sur, color: OD.tx, border: `0.5px solid ${OD.brd}`, borderBottomLeftRadius: "4px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }),
-                    }}
-                  >
-                    {message.text}
-                    {message.attachments.map((attachment) => {
-                      const url = resolveAttachmentUrl(attachment.url);
-                      if (!url) return null;
-                      return (
-                        <Box key={attachment.id} mt={0.75}>
-                          <a href={url} target="_blank" rel="noreferrer">
-                            <Box component="img" src={url} alt="" sx={{ maxHeight: 160, borderRadius: "8px", maxWidth: "100%" }} />
-                          </a>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              );
-              /* RTL: رسائلي على اليمين (الأفاتار أولًا)، ورسائل الآخرين على اليسار */
-              return (
-                <Box key={message.id} sx={{ display: "flex", alignItems: "flex-end", gap: 1, maxWidth: "78%", alignSelf: mine ? "flex-start" : "flex-end" }}>
-                  {mine ? <>{avatar}{column}</> : <>{column}{avatar}</>}
-                </Box>
-              );
-            })}
-            <div ref={endRef} />
-          </Stack>
+              </Box>
+            );
+            /* RTL: رسائلي على اليمين (الأفاتار أولًا)، ورسائل الآخرين على اليسار */
+            return (
+              <Box key={message.id} sx={{ display: "flex", alignItems: "flex-end", gap: 1, maxWidth: "78%", alignSelf: mine ? "flex-start" : "flex-end" }}>
+                {mine ? <>{avatar}{column}</> : <>{column}{avatar}</>}
+              </Box>
+            );
+          })
         )}
       </Box>
 
-      {(quickReplies.data ?? []).length > 0 && (
-        <Box sx={{ px: 2, pb: 1, display: "flex", gap: 0.75, flexWrap: "wrap" }}>
-          {(quickReplies.data ?? []).map((reply) => (
-            <Chip
-              key={reply.id}
-              label={reply.label}
-              size="small"
-              onClick={() => handleQuickReply(reply.label)}
-              sx={{ fontSize: "0.7rem", cursor: "pointer" }}
-            />
-          ))}
-        </Box>
+      {replies.length > 0 && (
+        <>
+          <Typography sx={{ fontSize: "0.72rem", color: OD.tx2, fontWeight: 700, mx: "2px", mb: 1 }}>ردود سريعة:</Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: "14px", px: "2px" }}>
+            {replies.map((reply) => (
+              <ButtonBase
+                key={reply.id}
+                disabled={send.isPending}
+                onClick={() => handleQuickReply(reply.label)}
+                sx={{
+                  fontFamily: "inherit", fontSize: "0.656rem", fontWeight: 600, px: "11px", py: "5px", borderRadius: "20px",
+                  border: `0.5px solid ${OD.brd2}`, bgcolor: OD.sur2, color: OD.tx2, transition: "0.15s",
+                  "&:hover": { borderColor: OD.accent, color: OD.accent, bgcolor: OD.al },
+                  "&.Mui-disabled": { opacity: 0.55 },
+                }}
+              >
+                {reply.label}
+              </ButtonBase>
+            ))}
+          </Box>
+        </>
       )}
 
-      <Box sx={{ borderTop: `0.5px solid ${OD.brd}`, px: 2, py: 1.5, display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-        <label htmlFor="seller-chat-attachment">
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <label htmlFor="seller-chat-attachment" style={{ display: "flex" }}>
           <input id="seller-chat-attachment" type="file" hidden multiple onChange={handleFileChange} accept={COMMENT_IMAGE_ACCEPT} />
-          <IconButton component="span" size="small" sx={{ width: 36, height: 36, border: `0.5px solid ${OD.brd}`, borderRadius: "9px", color: OD.tx3, "&:hover": { borderColor: OD.accent, color: OD.accent } }}>
-            <AttachFileIcon sx={{ fontSize: 18 }} />
+          <IconButton
+            component="span"
+            aria-label="إرفاق صورة"
+            sx={{ width: 44, height: 44, border: `0.5px solid ${files.length ? OD.accent : OD.brd}`, bgcolor: OD.sur2, borderRadius: "50%", color: files.length ? OD.accent : OD.tx3, "&:hover": { borderColor: OD.accent, color: OD.accent, bgcolor: OD.al } }}
+          >
+            <AttachFileIcon sx={{ fontSize: 19 }} />
           </IconButton>
         </label>
         <TextField
           fullWidth
-          size="small"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -292,8 +337,18 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
               if (!send.isPending) handleSend();
             }
           }}
-          placeholder="اكتب رسالتك هنا..."
-          sx={{ flex: 1, minWidth: 120, "& .MuiOutlinedInput-root": { borderRadius: "9px", fontSize: "0.81rem", bgcolor: OD.sur } }}
+          placeholder="اكتب ردك..."
+          sx={{
+            flex: 1, minWidth: 0,
+            "& .MuiOutlinedInput-root": {
+              height: 44, borderRadius: "20px", fontFamily: "inherit", fontSize: "0.78rem", bgcolor: OD.sur2, px: 2,
+              "& fieldset": { borderColor: OD.brd, borderWidth: "0.5px" },
+              "&:hover fieldset": { borderColor: OD.brd2 },
+              "&.Mui-focused fieldset": { borderColor: OD.accent, borderWidth: "0.5px" },
+              "&.Mui-focused": { boxShadow: `0 0 0 3px ${OD.ab}` },
+            },
+            "& .MuiOutlinedInput-input": { p: 0 },
+          }}
           InputProps={{
             endAdornment: files.length > 0 ? (
               <Chip label={`${files.length} مرفق`} size="small" onDelete={() => setFiles([])} sx={{ fontSize: "0.65rem", height: 22 }} />
@@ -303,15 +358,28 @@ export default function SellerChatCard({ orderId, isAdmin }: { orderId: number; 
         <Button
           variant="contained"
           disableElevation
-          disabled={(!text.trim() && files.length === 0) || send.isPending}
+          aria-label="إرسال"
+          disabled={!canSend}
           onClick={handleSend}
-          sx={{ px: 2.25, height: 36, minWidth: 76, borderRadius: "9px", textTransform: "none", fontWeight: 700, fontSize: "0.78rem", bgcolor: OD.accent, "&:hover": { bgcolor: OD.accentHover } }}
+          sx={{
+            height: 44, minWidth: 0, px: 2.5, flexShrink: 0, gap: 0.875, borderRadius: "20px", textTransform: "none", fontFamily: "inherit", fontWeight: 700, fontSize: "0.81rem",
+            bgcolor: OD.accent, color: "#fff", "&:hover": { bgcolor: OD.accentHover },
+            "&.Mui-disabled": { bgcolor: OD.sur3, color: OD.tx3 },
+          }}
         >
-          {send.isPending ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "إرسال"}
+          {send.isPending ? (
+            <CircularProgress size={16} sx={{ color: OD.tx3 }} />
+          ) : (
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.3" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          )}
+          إرسال
         </Button>
       </Box>
 
-      <QuickReplySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} quickReplies={quickReplies.data ?? []} />
-    </SectionCard>
+      <QuickReplySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} quickReplies={replies} />
+    </Box>
   );
 }

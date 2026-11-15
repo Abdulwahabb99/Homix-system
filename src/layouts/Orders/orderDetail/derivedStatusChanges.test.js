@@ -24,6 +24,20 @@ describe("getDerivedStatusChanges", () => {
     expect(changes.map((c) => c.field)).toEqual(["shipmentStatus", "confirmationStatus"]);
   });
 
+  it("reports the reopened order and shipment when confirmation goes back to confirmed", () => {
+    const changes = getDerivedStatusChanges(
+      { status: 10, shipmentStatus: 14, confirmationStatus: 9 },
+      { status: 3, shipmentStatus: 1, confirmationStatus: 2 },
+      ["confirmationStatus"]
+    );
+    expect(changes.map((c) => [c.field, c.to])).toEqual([
+      ["status", 3],
+      ["shipmentStatus", 1],
+    ]);
+    expect(changes[0].message).toContain("مؤكد");
+    expect(changes[1].message).toContain("معلقة");
+  });
+
   it("returns nothing when nothing besides the edit changed or data is missing", () => {
     expect(
       getDerivedStatusChanges({ status: 1, confirmationStatus: 1 }, { status: 1, confirmationStatus: 6 }, ["confirmationStatus"])

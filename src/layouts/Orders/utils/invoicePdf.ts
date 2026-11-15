@@ -3,28 +3,45 @@ import html2pdf from "html2pdf.js";
 const NATIVE_PRINT_CLASS = "invoice-native-print-target";
 const NATIVE_PRINT_STYLE_ID = "invoice-native-print-style";
 
-/**
- * احتياطي عند فشل توليد الـ PDF: طباعة المتصفح الأصلية (Ctrl/Cmd+P) — لا تستخدم
- * canvas فلا تصطدم بحدوده. تُخفي كل شيء في الصفحة أثناء الطباعة إلا العنصر
- * الممرَّر (الفاتورة أو حاوية الفواتير المجمّعة)، وتُعيده كما كان بعد الإغلاق.
- */
-export function printElementNatively(element: HTMLElement): void {
-  document
-    .querySelectorAll(`.${NATIVE_PRINT_CLASS}`)
-    .forEach((el) => el.classList.remove(NATIVE_PRINT_CLASS));
-  element.classList.add(NATIVE_PRINT_CLASS);
+const NATIVE_PRINT_ANCESTOR_CLASS = "invoice-native-print-ancestor";
 
-  let styleTag = document.getElementById(NATIVE_PRINT_STYLE_ID) as HTMLStyleElement | null;
-  if (!styleTag) {
-    styleTag = document.createElement("style");
-    styleTag.id = NATIVE_PRINT_STYLE_ID;
-    document.head.appendChild(styleTag);
-  }
-  styleTag.textContent = `
+/**
+ * CSS الطباعة الأصلية. الفاتورة تُرسم دائماً داخل حاوية خارج الشاشة
+ * (position: fixed; left: -10000px; overflow: hidden) — تحييد العنصر نفسه لا
+ * يكفي لأن الحاوية الأم ما زالت خارج الصفحة فتخرج الورقة بيضاء. لذلك نحيّد
+ * أيضاً كل أجداد العنصر (حاوية الفاتورة، ومحتوى الـ Dialog، وجذر MUI Modal).
+ */
+export function buildNativePrintCss(
+  targetClass: string = NATIVE_PRINT_CLASS,
+  ancestorClass: string = NATIVE_PRINT_ANCESTOR_CLASS
+): string {
+  return `
     @media print {
+      html, body { height: auto !important; overflow: visible !important; }
       body * { visibility: hidden !important; }
-      .${NATIVE_PRINT_CLASS}, .${NATIVE_PRINT_CLASS} * { visibility: visible !important; }
-      .${NATIVE_PRINT_CLASS} {
+      .${ancestorClass} {
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-width: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        transform: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        z-index: auto !important;
+        display: block !important;
+      }
+      .${targetClass}, .${targetClass} * { visibility: visible !important; }
+      .${targetClass} {
         position: static !important;
         left: auto !important;
         top: auto !important;
@@ -34,14 +51,50 @@ export function printElementNatively(element: HTMLElement): void {
       }
     }
   `;
+}
+
+/**
+ * احتياطي عند فشل توليد الـ PDF: طباعة المتصفح الأصلية (Ctrl/Cmd+P) — لا تستخدم
+ * canvas فلا تصطدم بحدوده. تُخفي كل شيء في الصفحة أثناء الطباعة إلا العنصر
+ * الممرَّر (الفاتورة أو حاوية الفواتير المجمّعة)، وتُعيده كما كان بعد الإغلاق.
+ */
+export function printElementNatively(element: HTMLElement): void {
+  document
+    .querySelectorAll(`.${NATIVE_PRINT_CLASS}`)
+    .forEach((el) => el.classList.remove(NATIVE_PRINT_CLASS));
+  document
+    .querySelectorAll(`.${NATIVE_PRINT_ANCESTOR_CLASS}`)
+    .forEach((el) => el.classList.remove(NATIVE_PRINT_ANCESTOR_CLASS));
+  element.classList.add(NATIVE_PRINT_CLASS);
+  const ancestors: HTMLElement[] = [];
+  for (let el = element.parentElement; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+    el.classList.add(NATIVE_PRINT_ANCESTOR_CLASS);
+    ancestors.push(el);
+  }
+
+  let styleTag = document.getElementById(NATIVE_PRINT_STYLE_ID) as HTMLStyleElement | null;
+  if (!styleTag) {
+    styleTag = document.createElement("style");
+    styleTag.id = NATIVE_PRINT_STYLE_ID;
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = buildNativePrintCss();
 
   const cleanup = () => {
     element.classList.remove(NATIVE_PRINT_CLASS);
+    ancestors.forEach((el) => el.classList.remove(NATIVE_PRINT_ANCESTOR_CLASS));
     window.removeEventListener("afterprint", cleanup);
   };
   window.addEventListener("afterprint", cleanup);
 
   window.print();
+}
+
+/** نفس الطباعة الأصلية بعد انتظار الخط العربي والصور (نفس مسار تنزيل الـ PDF). */
+export async function printElementWhenReady(element: HTMLElement): Promise<void> {
+  await waitForInvoiceFonts();
+  await waitForImages(element);
+  printElementNatively(element);
 }
 
 function sanitizeFileBaseName(name: string): string {
