@@ -38,10 +38,10 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
     fine,
     dueSeller,
     dueComp,
+    homixMargin: Number(r.homixMargin) || 0,
+    vendorOwes: Number(r.vendorOwes) || 0,
     vendorShippingCost,
     // Σ لكل طلب max(0، التكلفة − الغرامة) = نفس مستحق الصانع في الفاتورة (يأتي من الـ BE بنفس الصيغة)
     netRequired: dueSeller,
-    // الإجمالي الكلي = المستحق للبائع − المستحق للشركة − الغرامات
-    totalCombined: dueSeller - dueComp - fine,
   };
 }

@@ -88,7 +88,7 @@ export function EmptyState({ text }: { text: string }) {
 }
 
 /** صيغة الاستحقاق — تظهر للمستخدم تحت الجدول وفي المستند المطبوع */
-export const FORMULA_NOTE = "مستحق الصانع = سعر التكلفة − الغرامة (لا يقل عن صفر) • مستحق الشركة = التحصيل − سعر التكلفة • أي رقم معدّل يدوياً يتقدّم على الحساب التلقائي";
+export const FORMULA_NOTE = "مستحق الصانع = سعر التكلفة − الغرامة (لا يقل عن صفر) • هامش هوميكس (تسليمات المخزن) = التحصيل − سعر التكلفة • مستحق على الصانع = ما يسدّده الصانع في تسليمات البائع • لا يدخل أيٌّ منهما في الصافي • أي رقم معدّل يدوياً يتقدّم على الحساب التلقائي";
 
 export const RECEIPT_ACCEPT = "image/jpeg,image/png,image/gif,application/pdf";
 export const RECEIPT_MAX_BYTES = 16 * 1024 * 1024;
@@ -106,7 +106,7 @@ export function validateReceiptFile(file: { name: string; type: string; size: nu
 
 export const OVERRIDE_FIELD_LABELS: Record<string, string> = {
   collectionOverride: "التحصيل",
-  companyDueOverride: "مستحق الشركة",
+  companyDueOverride: "هامش هوميكس / مستحق على الصانع",
   finesOverride: "الغرامة",
   vendorDueOverride: "مستحق البائع",
   warehouseCostOverride: "سعر التكلفة",

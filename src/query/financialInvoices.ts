@@ -72,6 +72,8 @@ export interface InvoiceLine {
   companyDueOverride?: number | null;
   warehouseCostOverride?: number | null;
   collectionOverride?: number | null;
+  /** هامش هوميكس أم مستحق على الصانع (الحساب نفسه، الاختلاف في المعنى فقط) */
+  companyDueKind?: "margin" | "vendorOwes";
   /** القيم الأصلية قبل التعديل — لا تصل إلى البائع */
   originalWarehouseCost?: number;
   originalCollection?: number;

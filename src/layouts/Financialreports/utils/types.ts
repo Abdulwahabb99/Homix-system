@@ -25,14 +25,19 @@ export interface VendorRow {
   fines: number;
   /** المستحق للبائع */
   vendorDue: number;
-  /** المستحق للشركة */
+  /** إجمالي الجانب الدائن لهوميكس = هامش هوميكس + مستحق على الصانع */
   companyDue: number;
+  /** Σ هامش هوميكس من تسليمات المخزن = التحصيل − التكلفة */
+  homixMargin: number;
+  /** Σ ما يسدّده الصانع لهوميكس في تسليمات البائع */
+  vendorOwes: number;
   orders: SettlementOrder[];
 }
 
 export interface SettlementOrder {
   collectionTotal: number;
   companyDue: number;
+  companyDueKind?: "margin" | "vendorOwes";
   fines: number;
   id: number;
   operationNumber: string;
@@ -100,12 +105,14 @@ export interface SellerTotals {
   fine: number;
   dueSeller: number;
   dueComp: number;
+  /** هامش هوميكس (تسليمات المخزن) */
+  homixMargin: number;
+  /** مستحق على الصانع (تسليمات البائع) */
+  vendorOwes: number;
   /** إجمالي قيمة الشحن المحفوظة على المورد لطلبات تسليم البائع */
   vendorShippingCost: number;
   /** الصافي المطلوب (تسويات المخزن) = Σ max(0، التكلفة − الغرامة) لكل طلب */
   netRequired: number;
-  /** الإجمالي الكلي (الفاتورة الشاملة) = مستحق البائع − مستحق الشركة − الغرامات */
-  totalCombined: number;
 }
 
 /** مؤشرات أعلى الصفحة (KPIs) — تُشتق من الملخّص العام للـ BE */
@@ -114,13 +121,17 @@ export interface FinancialKpis {
   totalSales: number;
   totalDueSeller: number;
   totalDueComp: number;
+  /** هامش هوميكس من تسليمات المخزن */
+  totalHomixMargin: number;
+  /** مستحق على الصانع (تسليمات البائع) */
+  totalVendorOwes: number;
   totalFine: number;
   /** إجمالي عدد الطلبات في الدورة (من الفاتورة الشاملة) */
   ordersCount: number;
   lateSellersCount: number;
   /** نسبة مستحق البائعين من الإجمالي (%) */
   dueSellerPct: number;
-  /** نسبة مستحق الشركة من الإجمالي (%) */
+  /** نسبة هامش هوميكس من الإجمالي (%) */
   dueCompPct: number;
 }
 

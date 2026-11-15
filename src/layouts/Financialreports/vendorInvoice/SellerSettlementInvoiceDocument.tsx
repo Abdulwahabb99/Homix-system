@@ -3,6 +3,7 @@
  * فاتورة تسوية البائع — يُلتقط إلى PDF عبر html2pdf.
  * تُملأ من بيانات تبويب «تسويات البائع»؛ بيانات هوميكس/البنك من `vendorInvoiceConstants`.
  */
+import { OWES_LABEL } from "../utils/companyDue";
 import React from "react";
 import logo from "../../../assets/images/homix.png";
 import { money } from "../utils/calc";
@@ -102,7 +103,7 @@ const SellerSettlementInvoiceDocument = React.forwardRef<
               <th className={styles.th}>كود المنتج</th>
               <th className={styles.th}>شحن البائع</th>
               <th className={styles.th}>المستحق للبائع</th>
-              <th className={`${styles.th} ${styles.c}`}>المستحق للشركة</th>
+              <th className={`${styles.th} ${styles.c}`}>{OWES_LABEL}</th>
               <th className={`${styles.th} ${styles.c} ${styles.thLast}`}>الغرامات</th>
             </tr>
           </thead>
@@ -142,8 +143,8 @@ const SellerSettlementInvoiceDocument = React.forwardRef<
               <span className={styles.tVal}>{money(totals.vendorShippingCost)}</span>
             </div>
             <div className={styles.tRow}>
-              <span className={styles.tLbl}>المستحق للشركة</span>
-              <span className={`${styles.tVal} ${styles.tValBlue}`}>{money(totals.dueComp)}</span>
+              <span className={styles.tLbl}>{OWES_LABEL}</span>
+              <span className={`${styles.tVal} ${styles.tValBlue}`}>{money(totals.vendorOwes)}</span>
             </div>
             <div className={`${styles.tRow} ${styles.tRowLast}`}>
               <span className={styles.tLbl}>الغرامات</span>

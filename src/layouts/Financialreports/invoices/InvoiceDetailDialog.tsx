@@ -14,6 +14,7 @@ import {
   useTransitionInvoice, useUploadReceipt,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
+import { MARGIN_LABEL, MARGIN_TIP, OWES_LABEL, OWES_TIP, kindTip, splitCompanyDue } from "../utils/companyDue";
 import { FONT } from "../utils/styles";
 import { CostWarning } from "../components/LiveAmountCell";
 import EditableAmountCell from "./EditableAmountCell";
@@ -164,6 +165,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
 
   const liveAdjustments = (data?.adjustments ?? []).filter((a) => !a.removedAt);
   const lines = data?.lines ?? [];
+  const split = splitCompanyDue(lines);
 
   return (
     <ModalShell
@@ -235,10 +237,10 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
             <Box sx={{ overflowX: "auto" }}>
               <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr>
-                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : ["المستحق للشركة"]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} sx={thSx}>{h}</Box>)}
+                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : [MARGIN_LABEL, OWES_LABEL]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} sx={thSx}>{h}</Box>)}
                 </tr></thead>
                 <tbody>
-                  {lines.length === 0 && <tr><Box component="td" colSpan={10} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
+                  {lines.length === 0 && <tr><Box component="td" colSpan={11} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
                   {lines.map((line) => {
                     const tag = STATE_TAGS[line.state];
                     const muted = line.state !== "included";
@@ -254,7 +256,13 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
                         {!isVendor && <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>{editableCell(line, "collectionOverride", line.collectionTotal, line.collectionOverride != null)}</Box>}
                         <Box component="td" sx={{ ...tdSx, color: line.fines > 0 ? HX.red : HX.tx3 }}>{editableCell(line, "finesOverride", line.fines, line.finesOverride != null)}</Box>
                         <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{editableCell(line, "vendorDueOverride", line.vendorDue, line.vendorDueOverride != null)}</Box>
-                        {!isVendor && <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride != null)}</Box>}
+                        {!isVendor && (["margin", "vendorOwes"] as const).map((kind) => (
+                          <Box component="td" key={kind} title={kindTip(kind)} sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>
+                            {(line.companyDueKind ?? (line.isWarehouseDelivery ? "margin" : "vendorOwes")) === kind
+                              ? editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride != null)
+                              : <span style={{ color: HX.tx3, fontWeight: 400 }}>—</span>}
+                          </Box>
+                        ))}
                         {(editable || staff) && (
                           <Box component="td" sx={tdSx}>
                             {tag && <Box component="span" sx={{ color: tag.color, fontSize: "11px", fontWeight: 700 }}>{tag.label}</Box>}
@@ -318,7 +326,8 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
           <Box sx={{ ...cardBoxSx, p: "12px 16px", display: "flex", gap: "22px", flexWrap: "wrap", alignItems: "center", bgcolor: HX.accentLight }}>
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>عدد الطلبات</Box><b>{invoice.ordersCount}</b></Box>
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>مستحق البائع</Box><b style={{ color: HX.green }}>{money(invoice.vendorDueTotal)}</b></Box>
-            {!isVendor && <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>مستحق الشركة</Box><b style={{ color: HX.accent }}>{money(invoice.companyDueTotal)}</b></Box>}
+            {!isVendor && <Box title={MARGIN_TIP}><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>{MARGIN_LABEL}</Box><b style={{ color: HX.accent }}>{money(split.homixMargin)}</b></Box>}
+            {!isVendor && <Box title={OWES_TIP}><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>{OWES_LABEL}</Box><b style={{ color: HX.accent }}>{money(split.vendorOwes)}</b></Box>}
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>الغرامات</Box><b style={{ color: HX.red }}>{money(invoice.finesTotal)}</b></Box>
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>التعديلات</Box><b>{money(invoice.adjustmentsTotal)}</b></Box>
             <Box sx={{ marginInlineStart: "auto", textAlign: "end" }}>

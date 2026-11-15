@@ -49,6 +49,8 @@ function toSeller(item: FinancialVendorItem, index: number): SettlementSeller {
       fines: item.fines,
       vendorDue: item.vendorDue,
       companyDue: item.companyDue,
+      homixMargin: item.homixMargin,
+      vendorOwes: item.vendorOwes,
       orders: item.orders,
     },
   };
@@ -67,6 +69,8 @@ const EMPTY_KPIS: FinancialKpis = {
   totalSales: 0,
   totalDueSeller: 0,
   totalDueComp: 0,
+  totalHomixMargin: 0,
+  totalVendorOwes: 0,
   totalFine: 0,
   ordersCount: 0,
   lateSellersCount: 0,
@@ -99,11 +103,13 @@ export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: 
       totalSales: summary.totalSales,
       totalDueSeller: summary.vendorDue,
       totalDueComp: summary.companyDue,
+      totalHomixMargin: summary.homixMargin,
+      totalVendorOwes: summary.vendorOwes,
       totalFine: summary.fines,
       ordersCount: fullInvoice.summary.ordersCount,
       lateSellersCount: fullInvoice.items.filter((i) => i.fines > 0).length,
       dueSellerPct: pct(summary.vendorDue, summary.totalSales),
-      dueCompPct: pct(summary.companyDue, summary.totalSales),
+      dueCompPct: pct(summary.homixMargin, summary.totalSales),
     };
 
     const sections: Record<SettlementTabKey, SettlementSeller[]> = {

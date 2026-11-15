@@ -12,6 +12,8 @@ import SellerSettlementRow from "./SellerSettlementRow";
 export interface HeaderCell {
   label: string;
   align?: "start" | "end";
+  /** تلميح يشرح معنى العمود */
+  tip?: string;
 }
 
 interface SettlementSectionProps {
@@ -31,7 +33,7 @@ export default function SettlementSection({
     <Box>
       <Box sx={sellersHeaderSx(gridTemplate)}>
         {header.map((h, i) => (
-          <Box key={i} component="span" sx={{ ...headerCellSx, textAlign: h.align ?? "start" }}>
+          <Box key={i} component="span" title={h.tip} sx={{ ...headerCellSx, textAlign: h.align ?? "start" }}>
             {h.label}
           </Box>
         ))}

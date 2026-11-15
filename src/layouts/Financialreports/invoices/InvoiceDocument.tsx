@@ -7,7 +7,10 @@ import React from "react";
 import logo from "../../../assets/images/homix.png";
 import type { InvoiceDetail } from "query/financialInvoices";
 import { money } from "../utils/calc";
+import { MARGIN_LABEL, OWES_LABEL, splitCompanyDue } from "../utils/companyDue";
 import { FORMULA_NOTE, fmtDate } from "./shared";
+
+const companyDueKindOfLine = (l: Parameters<typeof splitCompanyDue>[0][number]) => l.companyDueKind ?? (l.isWarehouseDelivery ? "margin" : "vendorOwes");
 
 const cell = { padding: "7px 8px", borderBottom: "1px solid #e5e7eb", textAlign: "start" as const, fontSize: 12 };
 const head = { ...cell, background: "#f3f4f6", fontWeight: 700, color: "#374151" };
@@ -15,6 +18,7 @@ const head = { ...cell, background: "#f3f4f6", fontWeight: 700, color: "#374151"
 const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail }>(({ detail }, ref) => {
   const { invoice, lines, adjustments } = detail;
   const counted = lines.filter((l) => l.state === "included");
+  const split = splitCompanyDue(counted);
   const liveAdjustments = adjustments.filter((a) => !a.removedAt);
   return (
     <div ref={ref} dir="rtl" lang="ar" style={{ width: 794, padding: 32, background: "#fff", color: "#111827", fontFamily: "'Cairo', sans-serif" }}>
@@ -33,7 +37,7 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
         <thead>
-          <tr>{["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", "التحصيل", "الغرامات", "المستحق للبائع", "المستحق للشركة"].map((h) => <th key={h} style={head}>{h}</th>)}</tr>
+          <tr>{["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", "التحصيل", "الغرامات", "المستحق للبائع", MARGIN_LABEL, OWES_LABEL].map((h) => <th key={h} style={head}>{h}</th>)}</tr>
         </thead>
         <tbody>
           {counted.map((l) => (
@@ -45,7 +49,8 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
               <td style={cell}>{money(l.collectionTotal)}</td>
               <td style={cell}>{l.fines > 0 ? money(l.fines) : "—"}</td>
               <td style={cell}>{money(l.vendorDue)}</td>
-              <td style={cell}>{money(l.companyDue)}</td>
+              <td style={cell}>{companyDueKindOfLine(l) === "margin" ? money(l.companyDue) : "—"}</td>
+              <td style={cell}>{companyDueKindOfLine(l) === "vendorOwes" ? money(l.companyDue) : "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -64,6 +69,8 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
       <div style={{ borderTop: "2px solid #111827", paddingTop: 10, display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}><span>عدد الطلبات</span><b>{invoice.ordersCount}</b></div>
         <div style={{ display: "flex", justifyContent: "space-between" }}><span>إجمالي مستحق البائع</span><b>{money(invoice.vendorDueTotal)}</b></div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}><span>{MARGIN_LABEL}</span><b>{money(split.homixMargin)}</b></div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}><span>{OWES_LABEL}</span><b>{money(split.vendorOwes)}</b></div>
         <div style={{ display: "flex", justifyContent: "space-between" }}><span>صافي التعديلات اليدوية</span><b>{money(invoice.adjustmentsTotal)}</b></div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, marginTop: 4 }}>
           <span>{invoice.dueParty === "vendor" ? "الصافي المستحق للصانع" : "الصافي المستحق لهوميكس"}</span>

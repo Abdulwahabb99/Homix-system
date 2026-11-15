@@ -8,6 +8,7 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useInvoicedLines, useVendorOptions } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import { arNum } from "../utils/format";
+import { MARGIN_LABEL, OWES_LABEL } from "../utils/companyDue";
 import { FONT } from "../utils/styles";
 import { EmptyState, StatusPill, btnGhostSx, cardBoxSx, fmtDate, tdSx, thSx } from "./shared";
 import { DebouncedTextField, VendorSelect } from "./FilterFields";
@@ -56,7 +57,7 @@ export default function InvoicedOrdersView({ onOpenInvoice, isVendor = false }: 
         ) : (
           <Box sx={{ overflowX: "auto" }}>
             <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["الصانع", "الفاتورة", "تاريخ الفاتورة", "رقم العملية", "رقم الطلب", "كود المنتج", "المستحق للبائع", "المستحق للشركة", "الغرامات", "الحالة"].map((h) => <Box component="th" key={h} sx={thSx}>{h}</Box>)}</tr></thead>
+              <thead><tr>{["الصانع", "الفاتورة", "تاريخ الفاتورة", "رقم العملية", "رقم الطلب", "كود المنتج", "المستحق للبائع", MARGIN_LABEL, OWES_LABEL, "الغرامات", "الحالة"].map((h) => <Box component="th" key={h} sx={thSx}>{h}</Box>)}</tr></thead>
               <tbody>
                 {items.map((row) => (
                   <tr key={`${row.invoiceCode}-${row.id}`}>
@@ -69,7 +70,11 @@ export default function InvoicedOrdersView({ onOpenInvoice, isVendor = false }: 
                     <Box component="td" sx={{ ...tdSx, color: HX.tx2 }}>#{row.orderNumber}</Box>
                     <Box component="td" sx={tdSx}>{row.productCode || "—"}</Box>
                     <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{money(row.vendorDue)}</Box>
-                    <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{money(row.companyDue)}</Box>
+                    {(["margin", "vendorOwes"] as const).map((kind) => (
+                      <Box component="td" key={kind} sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>
+                        {(row.companyDueKind ?? (row.isWarehouseDelivery ? "margin" : "vendorOwes")) === kind ? money(row.companyDue) : "—"}
+                      </Box>
+                    ))}
                     <Box component="td" sx={{ ...tdSx, color: row.fines > 0 ? HX.red : HX.tx3 }}>{row.fines > 0 ? money(row.fines) : "لا يوجد"}</Box>
                     <Box component="td" sx={tdSx}><StatusPill status={row.invoiceStatus} /></Box>
                   </tr>

@@ -54,6 +54,10 @@ export interface FinancialTopSummary {
   vendorDue: number;
   companyDue: number;
   fines: number;
+  /** Σ هامش هوميكس (تسليمات المخزن) */
+  homixMargin: number;
+  /** Σ مستحق على الصانع (تسليمات البائع) */
+  vendorOwes: number;
   vendorsCount: number;
 }
 
@@ -67,12 +71,16 @@ export interface FinancialVendorItem {
   fines: number;
   vendorDue: number;
   companyDue: number;
+  homixMargin: number;
+  vendorOwes: number;
   orders: FinancialOrderItem[];
 }
 
 export interface FinancialOrderItem {
   collectionTotal: number;
   companyDue: number;
+  /** margin = هامش هوميكس (تسليم المخزن) · vendorOwes = مستحق على الصانع (تسليم البائع) */
+  companyDueKind?: "margin" | "vendorOwes";
   fines: number;
   id: number;
   operationNumber: string;
@@ -93,6 +101,8 @@ export interface FinancialSectionSummary {
   collectionTotal: number;
   companyDue: number;
   fines: number;
+  homixMargin: number;
+  vendorOwes: number;
   ordersCount: number;
   vendorDue: number;
   warehouseCost: number;
@@ -139,6 +149,8 @@ function normalizeVendorItem(raw: any): FinancialVendorItem {
     fines: num(raw?.fines),
     vendorDue: num(raw?.vendorDue),
     companyDue: num(raw?.companyDue),
+    homixMargin: num(raw?.homixMargin),
+    vendorOwes: num(raw?.vendorOwes),
     orders: Array.isArray(raw?.orders) ? raw.orders.map(normalizeOrderItem) : [],
   };
 }
@@ -147,6 +159,7 @@ function normalizeOrderItem(raw: any): FinancialOrderItem {
   return {
     collectionTotal: num(raw?.collectionTotal),
     companyDue: num(raw?.companyDue),
+    companyDueKind: raw?.companyDueKind === "margin" || raw?.companyDueKind === "vendorOwes" ? raw.companyDueKind : undefined,
     fines: num(raw?.fines),
     id: num(raw?.id),
     operationNumber: String(raw?.operationNumber ?? ""),
@@ -168,6 +181,8 @@ function normalizeSectionSummary(raw: any): FinancialSectionSummary {
     collectionTotal: num(raw?.collectionTotal),
     companyDue: num(raw?.companyDue),
     fines: num(raw?.fines),
+    homixMargin: num(raw?.homixMargin),
+    vendorOwes: num(raw?.vendorOwes),
     ordersCount: num(raw?.ordersCount),
     vendorDue: num(raw?.vendorDue),
     warehouseCost: num(raw?.warehouseCost),
@@ -197,18 +212,20 @@ function normalizeTopSummary(raw: any): FinancialTopSummary {
     vendorDue: num(raw?.vendorDue),
     companyDue: num(raw?.companyDue),
     fines: num(raw?.fines),
+    homixMargin: num(raw?.homixMargin),
+    vendorOwes: num(raw?.vendorOwes),
     vendorsCount: num(raw?.vendorsCount),
   };
 }
 
 export const EMPTY_SECTION: FinancialSection = {
-  summary: { collectionTotal: 0, companyDue: 0, fines: 0, ordersCount: 0, vendorDue: 0, warehouseCost: 0 },
+  summary: { collectionTotal: 0, companyDue: 0, fines: 0, homixMargin: 0, ordersCount: 0, vendorDue: 0, vendorOwes: 0, warehouseCost: 0 },
   items: [],
 };
 
 export const EMPTY_REPORT: FinancialReport = {
   cycle: { billingDay: 0, startDate: null, endDate: null, referenceDate: null, mode: null },
-  summary: { totalSales: 0, vendorDue: 0, companyDue: 0, fines: 0, vendorsCount: 0 },
+  summary: { totalSales: 0, vendorDue: 0, companyDue: 0, fines: 0, homixMargin: 0, vendorOwes: 0, vendorsCount: 0 },
   fullInvoice: EMPTY_SECTION,
   vendorDeliveries: EMPTY_SECTION,
   warehouseDeliveries: EMPTY_SECTION,

@@ -9,6 +9,7 @@
 import type { CycleOverlayLine, CycleOverview } from "query/financialInvoices";
 import type { FinancialKpis, LiveLineInfo, LiveLineState, SettlementOrder, SettlementSeller, SettlementTabKey, VendorRow } from "./types";
 import { pct } from "./calc";
+import { companyDueKindOf } from "./companyDue";
 
 /** billing = دورة فوترة (مغلقة أو جارية — لكليهما مسودات)، custom = فترة مخصصة بلا فواتير */
 export type LiveCycleState = "billing" | "custom";
@@ -47,6 +48,7 @@ function orderFromLine(line: CycleOverlayLine): SettlementOrder {
   return {
     collectionTotal: line.collectionTotal,
     companyDue: line.companyDue,
+    companyDueKind: line.companyDueKind,
     fines: line.fines,
     id: line.orderId,
     invoiceLine: infoOf(line),
@@ -72,6 +74,8 @@ export function recomputeRow(row: VendorRow, orders: SettlementOrder[]): VendorR
     ...row,
     collectionTotal: sum((o) => o.collectionTotal),
     companyDue: sum((o) => o.companyDue),
+    homixMargin: sum((o) => (companyDueKindOf(o) === "margin" ? o.companyDue : 0)),
+    vendorOwes: sum((o) => (companyDueKindOf(o) === "vendorOwes" ? o.companyDue : 0)),
     fines: sum((o) => o.fines),
     orders,
     ordersCount: counted.length,
@@ -163,13 +167,17 @@ export function overlayKpis(
   const totalSales = round2(kpis.totalSales + delta((r) => r.collectionTotal));
   const totalDueSeller = round2(kpis.totalDueSeller + delta((r) => r.vendorDue));
   const totalDueComp = round2(kpis.totalDueComp + delta((r) => r.companyDue));
+  const totalHomixMargin = round2(kpis.totalHomixMargin + delta((r) => r.homixMargin));
+  const totalVendorOwes = round2(kpis.totalVendorOwes + delta((r) => r.vendorOwes));
   return {
     ...kpis,
-    dueCompPct: pct(totalDueComp, totalSales),
+    dueCompPct: pct(totalHomixMargin, totalSales),
     dueSellerPct: pct(totalDueSeller, totalSales),
     lateSellersCount: after.filter((seller) => seller.row.fines > 0).length,
     ordersCount: kpis.ordersCount + delta((r) => r.ordersCount),
     totalDueComp,
+    totalHomixMargin,
+    totalVendorOwes,
     totalDueSeller,
     totalFine: round2(kpis.totalFine + delta((r) => r.fines)),
     totalSales,

@@ -8,6 +8,8 @@ import { detailTableSx, toneColor, Tone } from "../utils/styles";
 
 export interface DetailColumn {
   label: string;
+  /** تلميح يشرح معنى العمود */
+  tip?: string;
   /** لون اختياري لترويسة العمود (مثل الأخضر/الأزرق في الفاتورة الشاملة) */
   tone?: Tone;
 }
@@ -26,7 +28,7 @@ export default function DetailTable({ columns, rows, mutedRows }: DetailTablePro
       <thead>
         <tr>
           {columns.map((c, i) => (
-            <th key={i} style={c.tone ? { color: toneColor(c.tone) } : undefined}>{c.label}</th>
+            <th key={i} title={c.tip} style={c.tone ? { color: toneColor(c.tone) } : undefined}>{c.label}</th>
           ))}
         </tr>
       </thead>
