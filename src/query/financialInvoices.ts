@@ -66,10 +66,15 @@ export interface InvoiceLine {
   fines: number;
   vendorDue: number;
   companyDue: number;
-  finesOverride: number | null;
-  vendorDueOverride: number | null;
-  companyDueOverride: number | null;
+  /** حقول التعديل لا تصل إلى البائع إطلاقاً (undefined) — اختبرها بـ `!= null` */
+  finesOverride?: number | null;
+  vendorDueOverride?: number | null;
+  companyDueOverride?: number | null;
+  warehouseCostOverride?: number | null;
+  collectionOverride?: number | null;
   /** القيم الأصلية قبل التعديل — لا تصل إلى البائع */
+  originalWarehouseCost?: number;
+  originalCollection?: number;
   originalFines?: number;
   originalVendorDue?: number;
   originalCompanyDue?: number;
@@ -97,6 +102,7 @@ export interface InvoiceListParams {
   status?: InvoiceStatus[];
   vendorId?: number;
   search?: string;
+  invoiceCode?: string;
   billingDay?: number;
   invoiceFrom?: string;
   invoiceTo?: string;
@@ -127,6 +133,31 @@ export interface InvoicedLine extends InvoiceLine {
   vendorId: number;
   vendorName: string;
   hasReceipt: boolean;
+}
+
+/** فاتورة صانع داخل دورة واحدة (بدون الأرقام التفصيلية) */
+export interface CycleInvoiceRef {
+  id: number;
+  vendorId: number;
+  code: string | null;
+  status: InvoiceStatus;
+  statusLabel: string;
+  adjustmentsTotal: number;
+  netAmount: number;
+}
+
+/** بند فاتورة لا يستطيع التقرير الحي إعادة إنتاجه وحده (معدّل / غير محسوب / خارج نافذة الدورة) */
+export interface CycleOverlayLine extends InvoiceLine {
+  invoiceId: number;
+  vendorId: number;
+  outsideCycle: boolean;
+}
+
+export interface CycleOverview {
+  invoices: CycleInvoiceRef[];
+  lines: CycleOverlayLine[];
+  /** invoiceId → أرقام الطلبات المحسوبة في الفاتورة */
+  includedOrderIds: Record<string, number[]>;
 }
 
 export interface ActivityEvent {
@@ -169,6 +200,15 @@ export function useInvoicesList(params: InvoiceListParams, enabled = true) {
   });
 }
 
+/** طلب واحد لكل دورة: حالة فاتورة كل صانع + البنود المعدّلة (يُستخدم في التقرير الحي). */
+export function useCycleInvoices(periodEnd: string | null, enabled = true) {
+  return useQuery({
+    queryKey: financialKeys.invoiceCycle(periodEnd ?? ""),
+    queryFn: async () => unwrap<CycleOverview>(await axiosRequest.get(`${INVOICES_PATH}/cycle?${serializeParams({ periodEnd })}`)),
+    enabled: enabled && Boolean(periodEnd),
+  });
+}
+
 export function useInvoiceDetail(id: number | null) {
   return useQuery({
     queryKey: financialKeys.invoiceDetail(id ?? 0),
@@ -177,8 +217,29 @@ export function useInvoiceDetail(id: number | null) {
   });
 }
 
-export function useInvoicedLines(params: { q?: string; vendorId?: number; page?: number; size?: number }, enabled = true) {
-  const key = serializeParams(params);
+export interface InvoicedLinesParams {
+  operationNumber?: string;
+  orderNumber?: string;
+  productCode?: string;
+  invoiceCode?: string;
+  /** رقم أو قائمة أرقام مفصولة بفاصلة (الـ BE يتجاهلها للبائع) */
+  vendorId?: string;
+  page?: number;
+  size?: number;
+}
+
+/** خيارات فلتر الصانع (للموظفين فقط) */
+export function useVendorOptions(enabled: boolean) {
+  return useQuery({
+    queryKey: financialKeys.vendorOptions(),
+    queryFn: async () => unwrap<Array<{ id: number; name: string }>>(await axiosRequest.get(`${INVOICES_PATH}/vendors`)),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInvoicedLines(params: InvoicedLinesParams, enabled = true) {
+  const key = serializeParams({ ...params });
   return useQuery({
     queryKey: financialKeys.invoicedLines(key),
     queryFn: async () => unwrap<{ items: InvoicedLine[]; total: number; page: number; size: number }>(await axiosRequest.get(`${INVOICES_PATH}/lines?${key}`)),
@@ -250,6 +311,8 @@ export const useRemoveAdjustment = () =>
     unwrap(await axiosRequest.delete(`${INVOICES_PATH}/${vars.id}/adjustments/${vars.adjustmentId}`)));
 
 export interface LineOverridePatch {
+  warehouseCostOverride?: number | null;
+  collectionOverride?: number | null;
   finesOverride?: number | null;
   vendorDueOverride?: number | null;
   companyDueOverride?: number | null;
@@ -258,6 +321,53 @@ export interface LineOverridePatch {
 export const useSetLineOverride = () =>
   useInvoiceMutation(async (vars: { id: number; lineId: number; patch: LineOverridePatch }) =>
     unwrap(await axiosRequest.patch(`${INVOICES_PATH}/${vars.id}/lines/${vars.lineId}`, vars.patch)));
+
+export interface LiveLineEditVars {
+  /** فاتورة الصانع في هذه الدورة إن وُجدت — وإلا تُصدر تلقائياً عند أول تعديل */
+  invoiceId: number | null;
+  vendorId: number;
+  billingDay: 13 | 28;
+  /** يوم نهاية الدورة (YYYY-MM-DD بتوقيت القاهرة) */
+  cycleEndDay: string;
+  orderId: number;
+  patch: LineOverridePatch;
+}
+
+const liveEditError = (message: string) => Object.assign(new Error(message), { response: { data: { message } } });
+
+/**
+ * تعديل رقم طلب من التقرير الحي: (1) يُصدر مسودة فاتورة الصانع للدورة المغلقة إن لم توجد،
+ * (2) يجد بند الطلب في الفاتورة (ويزامنها مرة واحدة إن لم يكن موجوداً)، (3) يطبّق التعديل.
+ * الخادم هو الحَكَم: يرفض غير المسودات (409) ومن لا يملك finance_settle (403).
+ */
+export const useLiveLineEdit = () =>
+  useInvoiceMutation(async (vars: LiveLineEditVars) => {
+    let invoiceId = vars.invoiceId;
+    if (invoiceId === null) {
+      const generated = await unwrap<{ invoices: Array<{ vendorId: number; invoiceId: number }> }>(
+        await axiosRequest.post(`${INVOICES_PATH}/generate`, { billingDay: vars.billingDay, referenceDate: vars.cycleEndDay, vendorId: vars.vendorId }));
+      invoiceId = generated.invoices.find((item) => Number(item.vendorId) === vars.vendorId)?.invoiceId ?? null;
+      if (invoiceId === null) throw liveEditError("تعذّر إصدار فاتورة الصانع لهذه الدورة");
+    }
+    const fetchDetail = async () => unwrap<InvoiceDetail>(await axiosRequest.get(`${INVOICES_PATH}/${invoiceId}`));
+    let detail = await fetchDetail();
+    if (detail.invoice.status !== "draft") throw liveEditError("الفاتورة مقفلة — أرجعها إلى «معلّقة» أولاً لتعديلها");
+    let line = detail.lines.find((item) => Number(item.orderId) === vars.orderId);
+    if (!line) {
+      // طلب سُلّم بعد إصدار المسودة: زامن الفاتورة مرة واحدة ثم أعد البحث
+      await axiosRequest.post(`${INVOICES_PATH}/${invoiceId}/sync`);
+      detail = await fetchDetail();
+      line = detail.lines.find((item) => Number(item.orderId) === vars.orderId);
+    }
+    if (!line) throw liveEditError("هذا الطلب غير مضمّن في فاتورة الدورة (مفوتَر في فاتورة أخرى أو محذوف)");
+    if (line.state !== "included") throw liveEditError("هذا الطلب غير محسوب في الفاتورة — أعده إليها أولاً من الأرشيف");
+    return unwrap(await axiosRequest.patch(`${INVOICES_PATH}/${invoiceId}/lines/${line.id}`, vars.patch));
+  });
+
+/** تحديث المسودة: يعيد حساب أرقام النظام للبنود الحالية ويحتفظ بكل التعديلات اليدوية */
+export const useRefreshDraft = () =>
+  useInvoiceMutation(async (id: number) =>
+    unwrap<{ refreshed: number }>(await axiosRequest.post(`${INVOICES_PATH}/${id}/refresh`)));
 
 export const useLineAction = () =>
   useInvoiceMutation(async (vars: { id: number; lineId: number; action: LineAction; reason?: string }) =>

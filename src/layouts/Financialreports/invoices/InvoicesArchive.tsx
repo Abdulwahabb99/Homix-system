@@ -2,21 +2,25 @@
  * أرشيف فواتير الصناع (جدول) — فلاتر الحالة/الإيصال/المستحق/التواريخ + إجراءات جماعية.
  * البائع يرى فواتيره فقط (reviewed/transferred) والـ BE يفرض ذلك؛ الإجراءات الجماعية للمالية فقط.
  */
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Box } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import {
-  InvoiceListParams, InvoiceStatus, downloadReceipt, useBulkTransition, useInvoicesList,
+  InvoiceListParams, InvoiceStatus, downloadReceipt, useBulkTransition, useInvoicesList, useVendorOptions,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
+import { arNum } from "../utils/format";
 import { FONT } from "../utils/styles";
 import {
   EmptyState, StatusPill, STATUS_META, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDate, inputSx, tdSx, thSx,
 } from "./shared";
+import { DebouncedTextField, VendorSelect } from "./FilterFields";
 
 const PAGE_SIZE = 25;
-const STATUS_ORDER: InvoiceStatus[] = ["draft", "reviewed", "frozen", "transferred"];
+/** الأرشيف لا يعرض المسودات — تظهر في «الفواتير الجارية» فقط */
+export const ARCHIVE_STATUSES: InvoiceStatus[] = ["reviewed", "frozen", "transferred"];
+const STATUS_ORDER = ARCHIVE_STATUSES;
 
 interface Props {
   isVendor: boolean;
@@ -26,7 +30,9 @@ interface Props {
 
 export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) {
   const [status, setStatus] = useState<InvoiceStatus | "all">("all");
-  const [search, setSearch] = useState("");
+  const [invoiceCode, setInvoiceCode] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const vendors = useVendorOptions(!isVendor);
   const [receipt, setReceipt] = useState<"" | "uploaded" | "missing">("");
   const [dueParty, setDueParty] = useState<"" | "vendor" | "homix">("");
   const [invoiceFrom, setInvoiceFrom] = useState("");
@@ -39,8 +45,9 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
   const bulk = useBulkTransition();
 
   const params: InvoiceListParams = {
-    status: status === "all" ? undefined : [status],
-    search: search.trim() || undefined,
+    status: status === "all" ? ARCHIVE_STATUSES : [status],
+    invoiceCode: invoiceCode.trim() || undefined,
+    vendorId: !isVendor && vendorId ? Number(vendorId) : undefined,
     receipt: receipt || undefined,
     dueParty: dueParty || undefined,
     invoiceFrom: invoiceFrom || undefined,
@@ -54,10 +61,12 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
   const { data, isLoading, isError } = useInvoicesList(params);
   const items = data?.items ?? [];
   const counts: Record<string, number> = { ...(data?.counts ?? {}) } as Record<string, number>;
-  const totalCount = Object.keys(counts).reduce((total, key) => total + (counts[key] ?? 0), 0);
+  const totalCount = ARCHIVE_STATUSES.reduce((total, key) => total + (counts[key] ?? 0), 0);
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
   const visibleStatuses = isVendor ? STATUS_ORDER.filter((s) => s === "reviewed" || s === "transferred") : STATUS_ORDER;
 
+  const onInvoiceCode = useCallback((value: string) => { setInvoiceCode(value); setPage(1); setSelected(new Set()); }, []);
+  const onVendorId = useCallback((value: string) => { setVendorId(value); setPage(1); setSelected(new Set()); }, []);
   const resetPage = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); setSelected(new Set()); };
   const toggle = (id: number) => setSelected((prev) => {
     const next = new Set(prev);
@@ -86,7 +95,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
     return (
       <Box key={key} component="button" type="button" onClick={() => resetPage(setStatus)(key)}
         sx={{ ...btnGhostSx, height: 30, borderRadius: "20px", bgcolor: active ? HX.accent : HX.surface2, color: active ? "#fff" : HX.tx2, borderColor: active ? HX.accent : HX.border }}>
-        {label}{count !== undefined ? ` (${count})` : ""}
+        {label}{count !== undefined ? ` (${arNum(count)})` : ""}
       </Box>
     );
   };
@@ -97,9 +106,10 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
         <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
           {chip("all", "الكل", totalCount)}
           {visibleStatuses.map((s) => chip(s, STATUS_META[s].label, counts[s] ?? 0))}
-          <Box component="input" placeholder="بحث باسم الصانع أو رقم الفاتورة" value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetPage(setSearch)(e.target.value)}
-            sx={{ ...inputSx, marginInlineStart: "auto", minWidth: 220 }} />
+        </Box>
+        <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <DebouncedTextField label="رقم الفاتورة" value={invoiceCode} onChange={onInvoiceCode} />
+          {!isVendor && <VendorSelect value={vendorId} onChange={onVendorId} options={vendors.data ?? []} />}
         </Box>
         <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: HX.tx2 }}>
           <Box component="select" value={dueParty} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetPage(setDueParty)(e.target.value as "" | "vendor" | "homix")} sx={inputSx}>

@@ -12,6 +12,8 @@ export interface GroupedShipmentItem {
   sellerName: string;
   shipmentStatusLabel: string;
   inWarehouse: boolean;
+  /** ملغي/مرفوض: لا يُحتسب في اكتمال المجموعة */
+  excluded: boolean;
   current: boolean;
 }
 

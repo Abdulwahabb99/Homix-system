@@ -10,17 +10,27 @@ import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/ut
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import {
   InvoiceLine, LineAction, downloadReceipt, useAddAdjustment, useAddOrderToInvoice, useInvoiceActivity, useInvoiceDetail,
-  useLineAction, useOrderCandidates, useRemoveAdjustment, useRemoveReceipt, useSetLineOverride, useSyncInvoice,
+  useLineAction, useOrderCandidates, useRefreshDraft, useRemoveAdjustment, useRemoveReceipt, useSetLineOverride, useSyncInvoice,
   useTransitionInvoice, useUploadReceipt,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import { FONT } from "../utils/styles";
+import { CostWarning } from "../components/LiveAmountCell";
+import EditableAmountCell from "./EditableAmountCell";
 import InvoiceDocument from "./InvoiceDocument";
 import {
-  ACTION_LABELS, EmptyState, ModalShell, StatusPill, btnDangerSx, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDateTime, inputSx, tdSx, thSx,
+  ACTION_LABELS, EmptyState, FORMULA_NOTE, RECEIPT_ACCEPT, validateReceiptFile, ModalShell, describeEventDetail, StatusPill, btnDangerSx, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDateTime, inputSx, tdSx, thSx,
 } from "./shared";
 
-type OverrideField = "finesOverride" | "vendorDueOverride" | "companyDueOverride";
+type OverrideField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride";
+
+const ORIGINAL_KEY: Record<OverrideField, keyof InvoiceLine> = {
+  collectionOverride: "originalCollection",
+  companyDueOverride: "originalCompanyDue",
+  finesOverride: "originalFines",
+  vendorDueOverride: "originalVendorDue",
+  warehouseCostOverride: "originalWarehouseCost",
+};
 
 const LINE_ACTIONS_BY_STATE: Record<string, Array<{ action: LineAction; label: string; danger?: boolean }>> = {
   included: [{ action: "defer", label: "تحويل للفاتورة الجاية" }, { action: "freeze", label: "تجميد (مش محسوب)" }, { action: "delete", label: "حذف نهائي", danger: true }],
@@ -45,6 +55,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
   const { data, isLoading, isError } = useInvoiceDetail(invoiceId);
   const transition = useTransitionInvoice();
   const sync = useSyncInvoice();
+  const refresh = useRefreshDraft();
   const override = useSetLineOverride();
   const lineAction = useLineAction();
   const addAdjustment = useAddAdjustment();
@@ -55,8 +66,6 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
 
   const [vendorPreview, setVendorPreview] = useState(false);
   const [menuLine, setMenuLine] = useState<number | null>(null);
-  const [editing, setEditing] = useState<{ lineId: number; field: OverrideField } | null>(null);
-  const [editValue, setEditValue] = useState("");
   const [adjLabel, setAdjLabel] = useState("");
   const [adjKind, setAdjKind] = useState<"addition" | "deduction">("deduction");
   const [adjAmount, setAdjAmount] = useState("");
@@ -74,7 +83,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
   const activity = useInvoiceActivity({ invoiceId: invoiceId ?? undefined, size: 50 }, Boolean(staff && showActivity && invoiceId));
 
   useEffect(() => {
-    setVendorPreview(false); setEditing(null); setMenuLine(null); setShowAddOrder(false); setShowActivity(false);
+    setVendorPreview(false); setMenuLine(null); setShowAddOrder(false); setShowActivity(false);
   }, [invoiceId]);
 
   useEffect(() => {
@@ -107,15 +116,6 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
     transition.mutate({ id: invoice.id, to: "transferred", transferAmount: amount });
   };
 
-  const commitEdit = () => {
-    if (!editing || !invoice) return;
-    const { lineId, field } = editing;
-    setEditing(null);
-    const value = Number(editValue);
-    if (editValue.trim() === "" || !Number.isFinite(value) || value < 0) { NotificationMeassage("error", "قيمة غير صالحة"); return; }
-    override.mutate({ id: invoice.id, lineId, patch: { [field]: value } });
-  };
-
   const resetOverride = (line: InvoiceLine, field: OverrideField) => {
     if (!invoice) return;
     override.mutate({ id: invoice.id, lineId: line.id, patch: { [field]: null } });
@@ -136,31 +136,23 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
     lineAction.mutate({ id: invoice.id, lineId: line.id, action, reason });
   };
 
-  const editableCell = (line: InvoiceLine, field: OverrideField, value: number, overridden: boolean) => {
-    const isEditing = editing?.lineId === line.id && editing.field === field;
-    if (isEditing) {
-      return (
-        <Box component="input" autoFocus type="number" min={0} value={editValue}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditValue(e.target.value)}
-          onBlur={commitEdit}
-          onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditing(null); }}
-          sx={{ ...inputSx, width: 90, height: 28 }} />
-      );
-    }
-    if (!editable || line.state === "deferred") return <span>{money(value)}</span>;
-    return (
-      <span>
-        <Box component="span" title="اضغط للتعديل" onClick={() => { setEditing({ lineId: line.id, field }); setEditValue(String(value)); }}
-          sx={{ cursor: "pointer", borderBottom: `1px dotted ${overridden ? HX.amber : HX.tx3}`, color: overridden ? HX.amber : "inherit", fontWeight: overridden ? 700 : 400 }}>
-          {money(value)}
-        </Box>
-        {overridden && (
-          <Box component="button" type="button" title="رجوع للحساب التلقائي" onClick={() => resetOverride(line, field)}
-            sx={{ all: "unset", cursor: "pointer", marginInlineStart: "6px", color: HX.tx3, fontSize: "11px", "&:hover": { color: HX.red } }}>↺</Box>
-        )}
-      </span>
-    );
+  const overriddenTitleOf = (line: InvoiceLine, field: OverrideField) => {
+    const original = line[ORIGINAL_KEY[field]];
+    return ["معدّل يدوياً", typeof original === "number" ? `الأصل ${money(original)}` : null, line.overrideReason ? `السبب: ${line.overrideReason}` : null].filter(Boolean).join(" — ");
   };
+
+  const editableCell = (line: InvoiceLine, field: OverrideField, value: number, overridden: boolean) => (
+    <EditableAmountCell
+      value={value}
+      display={<span>{money(value)}</span>}
+      editable={editable && line.state !== "deferred"}
+      overridden={overridden}
+      overriddenTitle={overriddenTitleOf(line, field)}
+      busy={override.isPending}
+      onCommit={(next) => { if (invoice) override.mutate({ id: invoice.id, lineId: line.id, patch: { [field]: next } }); }}
+      onReset={editable ? () => resetOverride(line, field) : undefined}
+    />
+  );
 
   const submitAdjustment = () => {
     const amount = Number(adjAmount);
@@ -192,6 +184,9 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
             {staff && invoice.status === "draft" && (<>
               <Box component="button" type="button" disabled={sync.isPending} onClick={() => sync.mutate(invoice.id, { onSuccess: (r) => NotificationMeassage("success", r.added ? `اتضافت ${r.added} طلبات` : "لا توجد طلبات جديدة") })} sx={btnGhostSx}>مزامنة الطلبات</Box>
               <Box component="button" type="button" onClick={() => setShowAddOrder((v) => !v)} sx={btnGhostSx}>إضافة طلب</Box>
+              <Box component="button" type="button" disabled={refresh.isPending} title="يعيد حساب أرقام النظام ويحتفظ بتعديلاتك اليدوية"
+                onClick={() => { if (window.confirm("تحديث المسودة بأحدث أرقام النظام؟ تعديلاتك اليدوية وحالات الطلبات والتعديلات على الفاتورة ستبقى كما هي.")) refresh.mutate(invoice.id, { onSuccess: (r) => NotificationMeassage("success", r.refreshed ? `تم تحديث ${r.refreshed} طلب` : "الأرقام محدّثة بالفعل") }); }}
+                sx={btnGhostSx}>تحديث المسودة</Box>
               <Box component="button" type="button" disabled={transition.isPending} onClick={() => doTransition("reviewed", "تأكيد المراجعة؟ الأرقام هتتقفل من التعديل.")} sx={btnPrimarySx}>تمت المراجعة</Box>
             </>)}
             {staff && invoice.status === "reviewed" && (<>
@@ -240,10 +235,10 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
             <Box sx={{ overflowX: "auto" }}>
               <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr>
-                  {["رقم العملية", "رقم الطلب", "كود المنتج", "الغرامات", "المستحق للبائع", ...(isVendor ? [] : ["المستحق للشركة"]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} sx={thSx}>{h}</Box>)}
+                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : ["المستحق للشركة"]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} sx={thSx}>{h}</Box>)}
                 </tr></thead>
                 <tbody>
-                  {lines.length === 0 && <tr><Box component="td" colSpan={8} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
+                  {lines.length === 0 && <tr><Box component="td" colSpan={10} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
                   {lines.map((line) => {
                     const tag = STATE_TAGS[line.state];
                     const muted = line.state !== "included";
@@ -252,9 +247,14 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
                         <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{line.operationNumber || `OP-${line.orderId}`}</Box>
                         <Box component="td" sx={{ ...tdSx, color: HX.tx2 }}>#{line.orderNumber}</Box>
                         <Box component="td" sx={tdSx}>{line.productCode || "—"}</Box>
-                        <Box component="td" sx={{ ...tdSx, color: line.fines > 0 ? HX.red : HX.tx3 }}>{editableCell(line, "finesOverride", line.fines, line.finesOverride !== null)}</Box>
-                        <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{editableCell(line, "vendorDueOverride", line.vendorDue, line.vendorDueOverride !== null)}</Box>
-                        {!isVendor && <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride !== null)}</Box>}
+                        <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>
+                          {editableCell(line, "warehouseCostOverride", line.warehouseCost, line.warehouseCostOverride != null)}
+                          {!(line.warehouseCost > 0) && line.warehouseCostOverride == null && <CostWarning />}
+                        </Box>
+                        {!isVendor && <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>{editableCell(line, "collectionOverride", line.collectionTotal, line.collectionOverride != null)}</Box>}
+                        <Box component="td" sx={{ ...tdSx, color: line.fines > 0 ? HX.red : HX.tx3 }}>{editableCell(line, "finesOverride", line.fines, line.finesOverride != null)}</Box>
+                        <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{editableCell(line, "vendorDueOverride", line.vendorDue, line.vendorDueOverride != null)}</Box>
+                        {!isVendor && <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride != null)}</Box>}
                         {(editable || staff) && (
                           <Box component="td" sx={tdSx}>
                             {tag && <Box component="span" sx={{ color: tag.color, fontSize: "11px", fontWeight: 700 }}>{tag.label}</Box>}
@@ -285,6 +285,8 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
               </Box>
             </Box>
           </Box>
+
+          <Box sx={{ fontSize: "11.5px", color: HX.tx2 }}>{FORMULA_NOTE}</Box>
 
           {/* التعديلات اليدوية */}
           <Box sx={{ ...cardBoxSx, p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
@@ -339,11 +341,12 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
               {staff && (
                 <Box component="label" sx={{ ...btnPrimarySx, cursor: "pointer" }}>
                   {invoice.hasReceipt ? "استبدال الإيصال" : "رفع إيصال التحويل"}
-                  <input type="file" accept="image/*,application/pdf" hidden onChange={(e) => {
+                  <input type="file" accept={RECEIPT_ACCEPT} hidden onChange={(e) => {
                     const file = e.target.files?.[0];
                     e.target.value = "";
                     if (!file) return;
-                    if (file.size > 16 * 1024 * 1024) { NotificationMeassage("error", "الملف أكبر من 16MB"); return; }
+                    const problem = validateReceiptFile(file);
+                    if (problem) { NotificationMeassage("error", problem); return; }
                     upload.mutate({ id: invoice.id, file });
                   }} />
                 </Box>
@@ -356,7 +359,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
               <Box sx={{ fontSize: "12.5px", fontWeight: 800 }}>سجل نشاط الفاتورة</Box>
               {(activity.data?.rows ?? []).map((e) => (
                 <Box key={e.id} sx={{ fontSize: "12px", display: "flex", justifyContent: "space-between", gap: 1, borderBottom: `0.5px solid ${HX.border}`, pb: "4px" }}>
-                  <span><b>{ACTION_LABELS[e.action] ?? e.action}</b> — {e.actorName ?? "—"}</span>
+                  <span><b>{ACTION_LABELS[e.action] ?? e.action}</b> — {e.actorName ?? "—"}{describeEventDetail(e.detail ?? {}) ? ` — ${describeEventDetail(e.detail ?? {})}` : ""}</span>
                   <span style={{ color: HX.tx3 }}>{fmtDateTime(e.createdAt)}</span>
                 </Box>
               ))}

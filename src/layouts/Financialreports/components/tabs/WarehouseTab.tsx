@@ -1,18 +1,22 @@
 /**
- * تبويب «تسويات المخزن» — تكلفة المخزن والغرامات لكل مورّد.
+ * تبويب «تسويات المخزن» — سعر التكلفة والغرامات لكل مورّد.
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React, { useEffect, useRef, useState } from "react";
 import { money } from "../../utils/calc";
+import { arNum } from "../../utils/format";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
+import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
+import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
+import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, FineCell, Money, Muted, OpId, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Muted, OpId, ProdCode } from "../SettlementCells";
 import WarehouseSettlementInvoiceDocument from "../../vendorInvoice/WarehouseSettlementInvoiceDocument";
 
 const GRID = "34px 1fr 120px 120px 120px 40px";
@@ -36,7 +40,7 @@ export default function WarehouseTab({
   const handlePrintInvoice = (seller: SettlementSeller, totals: SellerTotals) => {
     if (isPrintingInvoice) return;
     setIsPrintingInvoice(true);
-    setPrintSeller({ seller, totals });
+    setPrintSeller({ seller: forPrint(seller), totals });
   };
 
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function WarehouseTab({
   }, [printSeller]);
 
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
-    <Amount key="orders">{t.orders} طلبات</Amount>,
+    <Amount key="orders">{arNum(t.orders)} طلبات</Amount>,
     <Amount key="cost">{money(t.cost)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
   ];
@@ -68,11 +72,13 @@ export default function WarehouseTab({
     <>
       <DetailHeaderBar
         title={`تفاصيل تسليمات المخزن — ${s.name}`}
+        status={<LiveInvoiceHeaderStatus seller={s} />}
         onPrint={() => handlePrintInvoice(s, t)}
         onExport={() => handleExport(s.id)}
         exporting={exportingId === s.id}
       />
       <DetailTable
+        mutedRows={new Set(s.row.orders.flatMap((order, index) => (isCounted(order) ? [] : [index])))}
         columns={[
           { label: "رقم العملية" },
           { label: "رقم الطلب" },
@@ -84,13 +90,13 @@ export default function WarehouseTab({
           <OpId key="operation" to={`/shipments/${order.shipmentId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
           <Muted key="order" to={`/shipments/${order.shipmentId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
-          <Money key="cost" value={order.warehouseCost} bold />,
-          <FineCell key="fine" value={order.fines} />,
+          <LiveAmountCell key="cost" seller={s} order={order} field="warehouseCostOverride" bold />,
+          <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
         ])}
       />
       <DetailTotalsRow
         items={[
-          { label: "عدد الطلبات", value: String(t.orders) },
+          { label: "عدد الطلبات", value: arNum(t.orders) },
           { label: "إجمالي التكلفة", value: money(t.cost) },
           { label: "إجمالي الغرامات", value: money(t.fine), tone: "red" },
           { label: "الصافي المطلوب", value: money(t.netRequired), tone: "accent" },
@@ -106,7 +112,7 @@ export default function WarehouseTab({
         gridTemplate={GRID}
         header={[
           { label: "" }, { label: "الصانع" },
-          { label: "عدد الطلبات", align: "end" }, { label: "تكلفة المخزن", align: "end" },
+          { label: "عدد الطلبات", align: "end" }, { label: "سعر التكلفة", align: "end" },
           { label: "الغرامات", align: "end" }, { label: "" },
         ]}
         renderCells={renderCells}

@@ -2,13 +2,13 @@
  * دوال حسابية نقية لصفحة التقارير المالية — لا حالة ولا تأثيرات جانبية.
  * تُستخدم من الـ hook والمكوّنات على السواء.
  */
-import { formatMoneyEgpInteger } from "shared/formatMoney";
+import { arNum } from "./format";
 import { CURRENCY } from "./constants";
 import { SellerTotals, SettlementSeller } from "./types";
 
 /** مبلغ منسّق بأرقام لاتينية + لاحقة العملة — «12,999 ج.م» */
 export function money(value: unknown): string {
-  return `${formatMoneyEgpInteger(value)} ${CURRENCY}`;
+  return `${arNum(value)} ${CURRENCY}`;
 }
 
 /** نسبة مئوية بخانة عشرية واحدة (part من whole) */
@@ -39,7 +39,8 @@ export function sellerTotals(seller: SettlementSeller): SellerTotals {
     dueSeller,
     dueComp,
     vendorShippingCost,
-    netRequired: cost - fine,
+    // Σ لكل طلب max(0، التكلفة − الغرامة) = نفس مستحق الصانع في الفاتورة (يأتي من الـ BE بنفس الصيغة)
+    netRequired: dueSeller,
     // الإجمالي الكلي = المستحق للبائع − المستحق للشركة − الغرامات
     totalCombined: dueSeller - dueComp - fine,
   };

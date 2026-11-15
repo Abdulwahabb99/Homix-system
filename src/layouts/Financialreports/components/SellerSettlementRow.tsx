@@ -8,6 +8,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { sellerRowSx, sellerAvSx, expandIconSx, detailWrapSx, FONT } from "../utils/styles";
 import { SettlementSeller } from "../utils/types";
+import LiveInvoiceChip from "./LiveInvoice";
 
 interface SellerSettlementRowProps {
   seller: SettlementSeller;
@@ -29,7 +30,10 @@ export default function SellerSettlementRow({
         <Box sx={{ ...(sellerAvSx as object), background: seller.color }}>{seller.initials}</Box>
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ fontSize: "13px", fontWeight: 700, color: HX.tx, fontFamily: FONT }}>{seller.name}</Box>
-          <Box sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT }}>{seller.cat}</Box>
+          <Box sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            {seller.cat}
+            <LiveInvoiceChip seller={seller} />
+          </Box>
         </Box>
         {cells.map((c, i) => (
           <React.Fragment key={i}>{c}</React.Fragment>

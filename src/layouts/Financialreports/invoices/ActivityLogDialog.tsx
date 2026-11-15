@@ -6,21 +6,9 @@ import { Box } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useInvoiceActivity } from "query/financialInvoices";
 import { FONT } from "../utils/styles";
-import { ACTION_LABELS, EmptyState, ModalShell, btnGhostSx, fmtDateTime } from "./shared";
+import { ACTION_LABELS, EmptyState, describeEventDetail, ModalShell, btnGhostSx, fmtDateTime } from "./shared";
 
 const PAGE_SIZE = 50;
-
-const describe = (detail: Record<string, unknown>): string => {
-  const parts: string[] = [];
-  if (typeof detail.label === "string") parts.push(detail.label);
-  if (detail.orderNumber) parts.push(`طلب #${detail.orderNumber}`);
-  if (typeof detail.amount === "number") parts.push(`${detail.amount} ج.م`);
-  if (typeof detail.transferAmount === "number") parts.push(`مبلغ التحويل ${detail.transferAmount} ج.م`);
-  if (typeof detail.difference === "number" && detail.difference !== 0) parts.push(`الفرق ${detail.difference} ج.م`);
-  if (typeof detail.bankTotal === "number") parts.push(`البنك ${detail.bankTotal} / النظام ${String(detail.systemTotal)} / الفرق ${String(detail.difference)}`);
-  if (typeof detail.reason === "string" && detail.reason) parts.push(detail.reason);
-  return parts.join(" — ");
-};
 
 export default function ActivityLogDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [page, setPage] = useState(1);
@@ -36,7 +24,7 @@ export default function ActivityLogDialog({ open, onClose }: { open: boolean; on
               <b>{ACTION_LABELS[e.action] ?? e.action}</b>
               <span style={{ color: HX.tx3, fontSize: 11.5 }}>{fmtDateTime(e.createdAt)}</span>
             </Box>
-            <Box sx={{ color: HX.tx2, mt: "2px" }}>{[e.vendorName, e.invoiceCode, describe(e.detail ?? {})].filter(Boolean).join(" — ")}</Box>
+            <Box sx={{ color: HX.tx2, mt: "2px" }}>{[e.vendorName, e.invoiceCode, describeEventDetail(e.detail ?? {})].filter(Boolean).join(" — ")}</Box>
             <Box sx={{ color: HX.tx3, fontSize: "11px", mt: "2px" }}>بواسطة: {e.actorName ?? "—"}</Box>
           </Box>
         ))}

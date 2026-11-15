@@ -7,20 +7,11 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import type { InvoiceStatus } from "query/financialInvoices";
 import { FONT } from "../utils/styles";
+import { arDate } from "../utils/format";
 
-export const fmtDate = (iso: string | null | undefined): string => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Africa/Cairo" }).format(d);
-};
+export const fmtDate = (iso: string | null | undefined): string => arDate(iso);
 
-export const fmtDateTime = (iso: string | null | undefined): string => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Cairo" }).format(d);
-};
+export const fmtDateTime = (iso: string | null | undefined): string => arDate(iso, true);
 
 /** اليوم بتوقيت القاهرة بصيغة YYYY-MM-DD (لنهاية الدورة المرسَلة كمرجع للإصدار) */
 export const cairoDay = (iso: string): string =>
@@ -96,10 +87,59 @@ export function EmptyState({ text }: { text: string }) {
   return <Box sx={{ py: 5, px: 2.5, textAlign: "center", color: HX.tx3, fontSize: 13, fontFamily: FONT }}>{text}</Box>;
 }
 
+/** صيغة الاستحقاق — تظهر للمستخدم تحت الجدول وفي المستند المطبوع */
+export const FORMULA_NOTE = "مستحق الصانع = سعر التكلفة − الغرامة (لا يقل عن صفر) • مستحق الشركة = التحصيل − سعر التكلفة • أي رقم معدّل يدوياً يتقدّم على الحساب التلقائي";
+
+export const RECEIPT_ACCEPT = "image/jpeg,image/png,image/gif,application/pdf";
+export const RECEIPT_MAX_BYTES = 16 * 1024 * 1024;
+export const RECEIPT_TYPE_ERROR = "الملف لازم يكون صورة (JPG/PNG/GIF) أو PDF";
+export const RECEIPT_SIZE_ERROR = "حجم الملف أكبر من 16 ميجا";
+
+/** نفس قواعد الخادم (الامتداد والنوع معاً، 16MB) قبل الإرسال — يرجع رسالة الخطأ أو null */
+export function validateReceiptFile(file: { name: string; type: string; size: number }): string | null {
+  const extensionOk = /\.(jpe?g|png|gif|pdf)$/i.test(file.name);
+  const typeOk = /^(image\/(jpeg|jpg|pjpeg|png|x-png|gif)|application\/pdf)$/i.test(file.type);
+  if (!extensionOk || !typeOk) return RECEIPT_TYPE_ERROR;
+  if (file.size > RECEIPT_MAX_BYTES) return RECEIPT_SIZE_ERROR;
+  return null;
+}
+
+export const OVERRIDE_FIELD_LABELS: Record<string, string> = {
+  collectionOverride: "التحصيل",
+  companyDueOverride: "مستحق الشركة",
+  finesOverride: "الغرامة",
+  vendorDueOverride: "مستحق البائع",
+  warehouseCostOverride: "سعر التكلفة",
+};
+
+const showValue = (value: unknown): string => (value === null || value === undefined ? "تلقائي" : `${value} ج.م`);
+
+/** سطر وصف حدث سجل النشاط — لتعديل رقم: «العملية — الحقل: قديم ← جديد» كما في النموذج */
+export const describeEventDetail = (detail: Record<string, unknown>): string => {
+  const parts: string[] = [];
+  if (typeof detail.label === "string") parts.push(detail.label);
+  if (detail.operationNumber) parts.push(String(detail.operationNumber));
+  if (detail.orderNumber) parts.push(`طلب #${detail.orderNumber}`);
+  const changes = detail.changes as Record<string, { from: unknown; to: unknown }> | undefined;
+  if (changes && typeof changes === "object") {
+    Object.entries(changes).forEach(([field, change]) => {
+      parts.push(`${OVERRIDE_FIELD_LABELS[field] ?? field}: ${showValue(change?.from)} ← ${showValue(change?.to)}`);
+    });
+  }
+  if (typeof detail.refreshed === "number") parts.push(`${detail.refreshed} طلب`);
+  if (typeof detail.amount === "number") parts.push(`${detail.amount} ج.م`);
+  if (typeof detail.transferAmount === "number") parts.push(`مبلغ التحويل ${detail.transferAmount} ج.م`);
+  if (typeof detail.difference === "number" && detail.difference !== 0) parts.push(`الفرق ${detail.difference} ج.م`);
+  if (typeof detail.bankTotal === "number") parts.push(`البنك ${detail.bankTotal} / النظام ${String(detail.systemTotal)} / الفرق ${String(detail.difference)}`);
+  if (typeof detail.reason === "string" && detail.reason) parts.push(detail.reason);
+  return parts.join(" — ");
+};
+
 /** أسماء أحداث سجل النشاط بالعربية */
 export const ACTION_LABELS: Record<string, string> = {
   "invoice.generated": "إصدار فاتورة",
   "invoice.synced": "إضافة طلبات للفاتورة",
+  "invoice.refreshed": "تحديث المسودة",
   "invoice.reviewed": "تمت المراجعة",
   "invoice.reverted_to_draft": "رجوع لمعلّقة",
   "invoice.frozen": "تجميد فاتورة",
@@ -108,7 +148,7 @@ export const ACTION_LABELS: Record<string, string> = {
   "invoice.transfer_reverted": "تراجع عن التحويل",
   "adjustment.added": "إضافة تعديل يدوي",
   "adjustment.removed": "حذف تعديل يدوي",
-  "line.overridden": "تعديل رقم طلب",
+  "line.overridden": "تعديل رقم",
   "line.added": "إضافة طلب للفاتورة",
   "line.defer": "تحويل طلب للفاتورة الجاية",
   "line.freeze": "تجميد طلب",

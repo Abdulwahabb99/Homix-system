@@ -4,15 +4,19 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { money } from "../../utils/calc";
+import { arNum } from "../../utils/format";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
+import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
+import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
+import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, FineCell, Money, Muted, OpId, PayBadge, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Money, Muted, OpId, PayBadge, ProdCode } from "../SettlementCells";
 import SellerSettlementInvoiceDocument from "../../vendorInvoice/SellerSettlementInvoiceDocument";
 
 const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 40px";
@@ -36,7 +40,7 @@ export default function SellerTab({
   const handlePrintInvoice = (seller: SettlementSeller, totals: SellerTotals) => {
     if (isPrintingInvoice) return;
     setIsPrintingInvoice(true);
-    setPrintSeller({ seller, totals });
+    setPrintSeller({ seller: forPrint(seller), totals });
   };
 
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function SellerTab({
   }, [printSeller]);
 
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
-    <Amount key="orders">{t.orders} طلبات</Amount>,
+    <Amount key="orders">{arNum(t.orders)} طلبات</Amount>,
     <Amount key="collect">{money(t.collect)}</Amount>,
     <Amount key="shipping">{money(t.vendorShippingCost)}</Amount>,
     <Amount key="due" tone="green">{money(t.dueSeller)}</Amount>,
@@ -71,11 +75,13 @@ export default function SellerTab({
     <>
       <DetailHeaderBar
         title={`تفاصيل تسليمات البائع — ${s.name}`}
+        status={<LiveInvoiceHeaderStatus seller={s} />}
         onPrint={() => handlePrintInvoice(s, t)}
         onExport={() => handleExport(s.id)}
         exporting={exportingId === s.id}
       />
       <DetailTable
+        mutedRows={new Set(s.row.orders.flatMap((order, index) => (isCounted(order) ? [] : [index])))}
         columns={[
           { label: "رقم العملية" },
           { label: "رقم الطلب" },
@@ -92,13 +98,13 @@ export default function SellerTab({
           <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
           <Muted key="order" to={`/orders/${order.orderId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
-          <Money key="cost" value={order.warehouseCost} />,
+          <LiveAmountCell key="cost" seller={s} order={order} field="warehouseCostOverride" />,
           <Money key="shipping" value={order.vendorShippingCost} />,
-          <Money key="collection" value={order.collectionTotal} bold />,
+          <LiveAmountCell key="collection" seller={s} order={order} field="collectionOverride" bold />,
           <PayBadge key="payment" pay={order.paymentStatus === 1 ? "cod" : "online"} />,
-          <Money key="vendorDue" value={order.vendorDue} tone="green" bold />,
-          <Money key="companyDue" value={order.companyDue} tone="accent" bold />,
-          <FineCell key="fine" value={order.fines} />,
+          <LiveAmountCell key="vendorDue" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
+          <LiveAmountCell key="companyDue" seller={s} order={order} field="companyDueOverride" tone="accent" bold />,
+          <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
         ])}
       />
       <DetailTotalsRow

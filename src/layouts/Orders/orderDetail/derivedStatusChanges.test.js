@@ -38,6 +38,20 @@ describe("getDerivedStatusChanges", () => {
     expect(changes[1].message).toContain("معلقة");
   });
 
+  it("reports order 'معلق' and shipment 'معلقة' when confirmation goes back to 'لا رد' on a cancelled order", () => {
+    const changes = getDerivedStatusChanges(
+      { status: 10, shipmentStatus: 14, confirmationStatus: 7 },
+      { status: 1, shipmentStatus: 1, confirmationStatus: 3 },
+      ["confirmationStatus"]
+    );
+    expect(changes.map((c) => [c.field, c.to])).toEqual([
+      ["status", 1],
+      ["shipmentStatus", 1],
+    ]);
+    expect(changes[0].message).toContain("معلق");
+    expect(changes[1].message).toContain("معلقة");
+  });
+
   it("returns nothing when nothing besides the edit changed or data is missing", () => {
     expect(
       getDerivedStatusChanges({ status: 1, confirmationStatus: 1 }, { status: 1, confirmationStatus: 6 }, ["confirmationStatus"])

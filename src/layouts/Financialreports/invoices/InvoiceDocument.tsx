@@ -7,7 +7,7 @@ import React from "react";
 import logo from "../../../assets/images/homix.png";
 import type { InvoiceDetail } from "query/financialInvoices";
 import { money } from "../utils/calc";
-import { fmtDate } from "./shared";
+import { FORMULA_NOTE, fmtDate } from "./shared";
 
 const cell = { padding: "7px 8px", borderBottom: "1px solid #e5e7eb", textAlign: "start" as const, fontSize: 12 };
 const head = { ...cell, background: "#f3f4f6", fontWeight: 700, color: "#374151" };
@@ -33,7 +33,7 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
         <thead>
-          <tr>{["رقم العملية", "رقم الطلب", "كود المنتج", "الغرامات", "المستحق للبائع", "المستحق للشركة"].map((h) => <th key={h} style={head}>{h}</th>)}</tr>
+          <tr>{["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", "التحصيل", "الغرامات", "المستحق للبائع", "المستحق للشركة"].map((h) => <th key={h} style={head}>{h}</th>)}</tr>
         </thead>
         <tbody>
           {counted.map((l) => (
@@ -41,6 +41,8 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
               <td style={cell}>{l.operationNumber || `OP-${l.orderId}`}</td>
               <td style={cell}>#{l.orderNumber}</td>
               <td style={cell}>{l.productCode || "—"}</td>
+              <td style={cell}>{money(l.warehouseCost)}{l.warehouseCost > 0 ? "" : " ⚠ التكلفة غير مسجلة"}</td>
+              <td style={cell}>{money(l.collectionTotal)}</td>
               <td style={cell}>{l.fines > 0 ? money(l.fines) : "—"}</td>
               <td style={cell}>{money(l.vendorDue)}</td>
               <td style={cell}>{money(l.companyDue)}</td>
@@ -48,6 +50,7 @@ const InvoiceDocument = React.forwardRef<HTMLDivElement, { detail: InvoiceDetail
           ))}
         </tbody>
       </table>
+      <div style={{ fontSize: 10.5, color: "#6b7280", marginBottom: 12 }}>{FORMULA_NOTE}</div>
       {liveAdjustments.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
           <thead><tr><th style={head}>تعديلات يدوية</th><th style={head}>النوع</th><th style={head}>المبلغ</th></tr></thead>

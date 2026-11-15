@@ -8,6 +8,7 @@ import { Box, CircularProgress, Dialog } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useGroupedItems } from "query/shipmentGrouped";
 import type { ShipmentItem } from "query/shipmentsList";
+import { splitGroupedItems } from "../groupedItems";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -19,9 +20,7 @@ export default function GroupedShipmentModal({
   onClose: () => void;
 }) {
   const { data, isLoading, isError } = useGroupedItems(shipment?.id);
-  const items = data ?? [];
-  const arrived = items.filter((i) => i.inWarehouse).length;
-  const complete = items.length > 0 && arrived === items.length;
+  const { counted: items, excluded, arrived, complete } = splitGroupedItems(data ?? []);
 
   return (
     <Dialog
@@ -84,6 +83,32 @@ export default function GroupedShipmentModal({
                 </Box>
               </Box>
             ))}
+            {excluded.length > 0 && (
+              <>
+                <Box sx={{ fontSize: "11.5px", fontWeight: 700, color: HX.tx3, fontFamily: FONT, mt: "4px" }}>
+                  ملغي / مرفوض ({excluded.length}) — غير محتسب
+                </Box>
+                {excluded.map((i) => (
+                  <Box
+                    key={i.id}
+                    sx={{
+                      display: "flex", alignItems: "center", gap: "10px", p: "9px 12px", opacity: 0.6,
+                      border: `0.5px solid ${HX.border}`, bgcolor: HX.surface2, borderRadius: "10px",
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ fontSize: "12.5px", fontWeight: 700, color: HX.tx2, fontFamily: FONT }}>{i.productName || "—"}</Box>
+                      <Box sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT }}>
+                        عملية #{i.operationNumber || i.id} — {i.sellerName || "—"} — {i.productSku || "—"}
+                      </Box>
+                    </Box>
+                    <Box sx={{ px: "9px", py: "3px", borderRadius: "100px", fontSize: "11px", fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap", bgcolor: HX.surface3, color: HX.tx2 }}>
+                      {i.shipmentStatusLabel || "ملغي / مرفوض"}
+                    </Box>
+                  </Box>
+                ))}
+              </>
+            )}
           </>
         )}
       </Box>

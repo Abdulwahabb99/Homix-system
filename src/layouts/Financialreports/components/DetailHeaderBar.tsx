@@ -13,12 +13,17 @@ interface DetailHeaderBarProps {
   onPrint?: () => void;
   onExport?: () => void;
   exporting?: boolean;
+  /** شارة حالة الفاتورة بجانب العنوان */
+  status?: React.ReactNode;
 }
 
-export default function DetailHeaderBar({ title, onPrint, onExport, exporting }: DetailHeaderBarProps) {
+export default function DetailHeaderBar({ title, onPrint, onExport, exporting, status }: DetailHeaderBarProps) {
   return (
     <Box sx={detailHeaderBarSx}>
-      <Box sx={detailTitleSx}>{title}</Box>
+      <Box sx={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <Box sx={detailTitleSx}>{title}</Box>
+        {status}
+      </Box>
       <Box sx={{ display: "flex", gap: "6px" }}>
         {onPrint && (
           <Box component="button" type="button" onClick={onPrint} sx={dactBtnSx}>

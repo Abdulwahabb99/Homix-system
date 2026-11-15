@@ -20,7 +20,7 @@ function formatDate(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
+  return new Intl.DateTimeFormat("ar-EG", {
     day: "numeric",
     month: "long",
     year: "numeric",

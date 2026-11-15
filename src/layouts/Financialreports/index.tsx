@@ -3,17 +3,16 @@
  * الصفحة رفيعة: تُنسّق الحالة (يوم الفوترة/التبويب) وتوزّع بيانات الـ BE على
  * المكوّنات المقسّمة عبر `useFinancialSettlements` (GET /orders/financialReport).
  */
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import moment from "moment-timezone";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { exportFinancialReport, type FinancialDateRange } from "query/financialReport";
-import { useGenerateInvoices } from "query/financialInvoices";
+import { useCycleInvoices, useGenerateInvoices, useLiveLineEdit } from "query/financialInvoices";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { usePermissions } from "shared/permissions";
 
@@ -21,6 +20,10 @@ import { useFinancialSettlements } from "./hooks/useFinancialSettlements";
 import { PAGE_TITLE, PAGE_SUBTITLE, DEFAULT_BILLING_DAY, DEFAULT_TAB } from "./utils/constants";
 import { tabsWrapSx, FONT } from "./utils/styles";
 import { BillingDay, SettlementTabKey } from "./utils/types";
+import { currentMonthCairo, cycleRange, formatCycleRange, getCycleLabel, monthPickerValue, pastMonthFromPicker } from "./utils/cycle";
+import { arNum } from "./utils/format";
+import { overlayKpis, overlaySections, type LiveCycleState } from "./utils/liveOverlay";
+import { LiveInvoiceProvider, type LiveInvoiceContextValue } from "./components/LiveInvoice";
 
 import FinancialPeriodBar from "./components/FinancialPeriodBar";
 import FinancialKpiRow from "./components/FinancialKpiRow";
@@ -65,7 +68,8 @@ export default function Financialreports() {
   /** شهر دورة سابقة للتقرير الحي ("" = الدورة الأحدث) */
   const [pastMonth, setPastMonth] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
-  const [rangeDraft, setRangeDraft] = useState<FinancialDateRange>({ startDate: "", endDate: "" });
+  /** null = لم يعدّل المستخدم شيئاً بعد: الحقول تعرض حدود الدورة النشطة */
+  const [rangeDraftEdit, setRangeDraftEdit] = useState<FinancialDateRange | null>(null);
   const [range, setRange] = useState<FinancialDateRange | undefined>(undefined);
   const [isExporting, setIsExporting] = useState(false);
   const [openInvoiceId, setOpenInvoiceId] = useState<number | null>(null);
@@ -79,8 +83,44 @@ export default function Financialreports() {
   const canSettle = can("finance_settle") && !isVendor;
   const generate = useGenerateInvoices();
 
+  const currentMonth = currentMonthCairo();
+  const shownMonth = monthPickerValue(pastMonth);
+  /** حدود الدورة النشطة (نفس حساب الـ BE) = القيمة الافتراضية للفترة المخصصة */
+  const activeCycleDates = cycleRange(billingDay, shownMonth);
+  const rangeDraft = rangeDraftEdit ?? activeCycleDates;
+  const setRangeDraft = (updater: (draft: FinancialDateRange) => FinancialDateRange) => setRangeDraftEdit(updater(rangeDraft));
+
   const referenceDate = pastMonth ? `${pastMonth}-${billingDay}` : undefined;
-  const { sections, kpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay, referenceDate, range);
+  const { sections: reportSections, kpis: reportKpis, cycle, isLoading, isError } = useFinancialSettlements(billingDay, referenceDate, range);
+
+  const cycleClosed = Boolean(cycle?.endDate && new Date(cycle.endDate).getTime() < Date.now());
+  /** فترة مخصصة أو غير دورة فوترة = لا فواتير؛ دورة لم تُغلق = مفتوحة؛ وإلا مغلقة (لها فواتير) */
+  const cycleState: LiveCycleState = range || cycle?.mode !== "billingCycle" ? "custom" : "billing";
+  const cycleEndDay = cycle?.endDate ? cairoDay(cycle.endDate) : null;
+  const cycleInvoices = useCycleInvoices(cycleEndDay, cycleState === "billing" && view === "current");
+  const { mutate: mutateLine, isPending: savingLine } = useLiveLineEdit();
+
+  /** نركّب لقطة الفاتورة (تعديلات/بنود غير محسوبة) فوق التقرير الحي ونعيد حساب المجاميع والمؤشرات */
+  const { sections, kpis } = useMemo(() => {
+    const overlaid = overlaySections(reportSections, cycleState === "billing" ? cycleInvoices.data : undefined, isVendor);
+    return { kpis: overlayKpis(reportKpis, reportSections.comprehensive, overlaid.comprehensive), sections: overlaid };
+  }, [reportSections, reportKpis, cycleInvoices.data, cycleState, isVendor]);
+
+  const liveContext = useMemo<LiveInvoiceContextValue>(() => ({
+    billingDay,
+    canSettle,
+    cycleEndDay,
+    cycleOpen: !cycleClosed,
+    cycleState,
+    invoicesState: cycleState !== "billing" ? "idle" : cycleInvoices.isError ? "error" : cycleInvoices.data ? "ready" : "loading",
+    isVendor,
+    openInvoice: setOpenInvoiceId,
+    saveLine: (vars) => {
+      if (!cycleEndDay || savingLine) return;
+      mutateLine({ ...vars, billingDay, cycleEndDay });
+    },
+    saving: savingLine,
+  }), [billingDay, canSettle, cycleClosed, cycleEndDay, cycleState, cycleInvoices.isError, cycleInvoices.data, isVendor, mutateLine, savingLine]);
 
   const activeSellers = sections[tab];
   const counts: Record<SettlementTabKey, number> = {
@@ -101,17 +141,15 @@ export default function Financialreports() {
   /** تصدير PDF = حفظ الصفحة كـ PDF من مربع طباعة المتصفح (لا يوجد PDF من الخادم) */
   const handlePrintPage = () => window.print();
 
-  const cycleClosed = Boolean(cycle?.endDate && new Date(cycle.endDate).getTime() < Date.now());
-  const canGenerate = canSettle && !range && cycle?.mode === "billingCycle" && cycleClosed;
+  const canGenerate = canSettle && !range && cycle?.mode === "billingCycle";
   const handleGenerate = () => {
     if (!cycle?.endDate || generate.isPending) return;
-    if (!window.confirm("إصدار فواتير هذه الدورة كمسودّات لكل الصنّاع؟ (العملية آمنة للتكرار ولن تكرّر طلبًا مفوترًا)")) return;
+    if (!window.confirm("إصدار فواتير هذه الدورة كمسودّات لكل الصنّاع؟ (تعمل أيضاً على الدورة الجارية؛ العملية آمنة للتكرار ولن تكرّر طلبًا مفوترًا)")) return;
     generate.mutate({ billingDay, referenceDate: cairoDay(cycle.endDate) }, {
       onSuccess: (res) => {
         const created = res.invoices.filter((i) => i.created).length;
         const added = res.invoices.reduce((total, i) => total + i.added, 0);
-        NotificationMeassage("success", `تم إصدار ${created} فاتورة جديدة (${added} طلب) — راجعها من الأرشيف`);
-        setView("archive");
+        NotificationMeassage("success", `تم إصدار ${created} فاتورة جديدة (${added} طلب) — المسودات تظهر هنا في الفواتير الجارية`);
       },
     });
   };
@@ -180,10 +218,14 @@ export default function Financialreports() {
   const periodControls = (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", p: "12px 16px", bgcolor: HX.surface, border: `1px solid ${HX.border}`, borderRadius: "12px" }}>
       <Box component="label" htmlFor="financial-past-month" sx={{ color: HX.tx, fontSize: "13px", fontWeight: 700 }}>دورة سابقة</Box>
-      <Box component="input" id="financial-past-month" type="month" value={pastMonth}
-        max={moment().tz("Africa/Cairo").format("YYYY-MM")}
+      <Box component="input" id="financial-past-month" type="month" value={shownMonth}
+        max={currentMonth}
         disabled={Boolean(range)}
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPastMonth(event.target.value)}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          // مسح الحقل أو اختيار الشهر الحالي = الدورة الحية الأحدث
+          setPastMonth(event.target.value ? pastMonthFromPicker(event.target.value) : "");
+          setRangeDraftEdit(null);
+        }}
         sx={{ ...inputSx, minHeight: 36 }} />
       {pastMonth && !range && (
         <Box component="button" type="button" onClick={() => setPastMonth("")} sx={ghostBtnSx}>الدورة الأحدث</Box>
@@ -206,13 +248,13 @@ export default function Financialreports() {
               setRange({ ...rangeDraft });
             }}>تطبيق</Box>
           {range && (
-            <Box component="button" type="button" sx={ghostBtnSx} onClick={() => { setRange(undefined); setCustomOpen(false); }}>إلغاء الفترة</Box>
+            <Box component="button" type="button" sx={ghostBtnSx} onClick={() => { setRange(undefined); setRangeDraftEdit(null); setCustomOpen(false); }}>إلغاء الفترة</Box>
           )}
         </>
       )}
       <Box component="span" sx={{ color: HX.tx2, fontSize: "12px" }}>
         {range ? "الفترة المخصصة للعرض والتصدير فقط (على تاريخ التسليم) — لا تُصدر فواتير منها."
-          : "اختر شهرًا ويوم 13 أو 28 لعرض دورة سابقة، أو حدّد فترة مخصصة."}
+          : `${getCycleLabel(billingDay)}: ${formatCycleRange(activeCycleDates)} — اختر شهرًا ويوم 13 أو 28 لعرض دورة أخرى، أو حدّد فترة مخصصة.`}
       </Box>
     </Box>
   );
@@ -231,7 +273,7 @@ export default function Financialreports() {
                 sx={{ display: "flex", alignItems: "center", gap: "8px", px: "18px", py: "8px", border: "none", borderRadius: "9px", bgcolor: active ? HX.surface : "transparent", color: active ? HX.accent : HX.tx2, boxShadow: active ? "0 1px 3px rgba(0,0,0,.08)" : "none", fontFamily: FONT, fontSize: "12.5px", fontWeight: 700, cursor: "pointer", transition: ".15s", "&:hover": { color: active ? HX.accent : HX.tx }, "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 } }}>
                 {item.label}
                 {item.count !== null && (
-                  <Box component="span" sx={{ bgcolor: active ? HX.accent : HX.border2, color: active ? "#fff" : HX.tx2, fontSize: "10px", px: "7px", py: "1px", borderRadius: "8px", fontWeight: 700 }}>{item.count}</Box>
+                  <Box component="span" sx={{ bgcolor: active ? HX.accent : HX.border2, color: active ? "#fff" : HX.tx2, fontSize: "10px", px: "7px", py: "1px", borderRadius: "8px", fontWeight: 700 }}>{arNum(item.count)}</Box>
                 )}
               </Box>
             );
@@ -241,7 +283,7 @@ export default function Financialreports() {
         {view === "archive" && (
           <InvoicesArchive isVendor={isVendor} canSettle={canSettle} onOpen={setOpenInvoiceId} />
         )}
-        {view === "invoiced" && <InvoicedOrdersView onOpenInvoice={setOpenInvoiceId} />}
+        {view === "invoiced" && <InvoicedOrdersView isVendor={isVendor} onOpenInvoice={setOpenInvoiceId} />}
 
         {view === "current" && (
           <>
@@ -253,9 +295,14 @@ export default function Financialreports() {
                 <FinancialPeriodBar billingDay={billingDay} onChange={setBillingDay} cycle={cycle} />
                 <FinancialKpiRow kpis={kpis} archive={Boolean(pastMonth) || Boolean(range)} />
 
+                {canSettle && cycleState === "billing" && (
+                  <Box sx={{ fontSize: "11.5px", color: HX.tx2, px: "4px" }}>
+                    ✎ الأرقام ذات الخط المنقّط قابلة للتعديل (سعر التكلفة، التحصيل، الغرامة، المستحقات) — اضغط الرقم، Enter أو الخروج من الحقل يحفظ، Escape يلغي. تُصدر مسودة الفاتورة تلقائياً عند أول تعديل، وبعد المراجعة تُقفل الأرقام.
+                  </Box>
+                )}
                 <Box sx={tabsWrapSx}>
                   <FinancialTabs active={tab} onChange={setTab} counts={counts} />
-                  {tabContent}
+                  <LiveInvoiceProvider value={liveContext}>{tabContent}</LiveInvoiceProvider>
                 </Box>
               </>
             )}

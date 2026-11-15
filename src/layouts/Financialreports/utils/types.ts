@@ -6,6 +6,8 @@
 /** طريقة الدفع لكل طلب (تبقى للخلايا العامة القابلة لإعادة الاستخدام) */
 export type PayMethod = "cod" | "online";
 
+import type { CycleInvoiceRef } from "query/financialInvoices";
+
 /** يوم الفوترة المتاح من الـ BE */
 export type BillingDay = 13 | 28;
 
@@ -15,7 +17,7 @@ export interface VendorRow {
   vendorName: string;
   /** عدد الطلبات ضمن الدورة */
   ordersCount: number;
-  /** تكلفة المخزن */
+  /** سعر التكلفة (مجموع تكلفة منتجات الطلبات) */
   warehouseCost: number;
   /** إجمالي المبلغ المُحصّل */
   collectionTotal: number;
@@ -44,6 +46,34 @@ export interface SettlementOrder {
   vendorDue: number;
   vendorShippingCost: number;
   warehouseCost: number;
+  /** وضع هذا الطلب في فاتورة الدورة (يُضاف من التراكب `liveOverlay` فقط إن وُجدت فاتورة) */
+  invoiceLine?: LiveLineInfo;
+}
+
+/**
+ * included = محسوب في الفاتورة، frozen/deferred/removed = غير محسوب،
+ * missing = الفاتورة موجودة ولا يوجد بند لهذا الطلب (سُلّم بعد الإصدار أو مفوتَر في فاتورة أخرى)
+ */
+export type LiveLineState = "included" | "frozen" | "deferred" | "removed" | "missing";
+
+export interface LiveLineInfo {
+  /** null = البند محسوب ولم يُعدَّل (لا حاجة لمعرّفه حتى لحظة التعديل) */
+  lineId: number | null;
+  invoiceId: number;
+  state: LiveLineState;
+  finesOverride: number | null;
+  vendorDueOverride: number | null;
+  companyDueOverride: number | null;
+  warehouseCostOverride: number | null;
+  collectionOverride: number | null;
+  /** سبب التعديل / سبب حالة البند — للموظفين فقط */
+  reason?: string | null;
+  /** القيم قبل التعديل (للموظفين) — تظهر في تلميح الخلية */
+  originalFines?: number;
+  originalWarehouseCost?: number;
+  originalCollection?: number;
+  originalVendorDue?: number;
+  originalCompanyDue?: number;
 }
 
 /** صانع/مورّد للعرض في الجدول — هوية العرض + مجاميعه */
@@ -58,6 +88,8 @@ export interface SettlementSeller {
   initials: string;
   /** مجاميع المورّد (تُشتق منها SellerTotals) */
   row: VendorRow;
+  /** فاتورة الصانع في الدورة المعروضة (null = لم تُصدر / غير مرئية له) — تُملأ من التراكب */
+  invoice?: CycleInvoiceRef | null;
 }
 
 /** إجماليات صانع واحد — تُحسب في `utils/calc` */
@@ -70,7 +102,7 @@ export interface SellerTotals {
   dueComp: number;
   /** إجمالي قيمة الشحن المحفوظة على المورد لطلبات تسليم البائع */
   vendorShippingCost: number;
-  /** الصافي المطلوب (تسويات المخزن) = التكلفة − الغرامات */
+  /** الصافي المطلوب (تسويات المخزن) = Σ max(0، التكلفة − الغرامة) لكل طلب */
   netRequired: number;
   /** الإجمالي الكلي (الفاتورة الشاملة) = مستحق البائع − مستحق الشركة − الغرامات */
   totalCombined: number;

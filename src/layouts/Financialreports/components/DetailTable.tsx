@@ -16,9 +16,11 @@ interface DetailTableProps {
   columns: DetailColumn[];
   /** كل صف = مصفوفة خلايا بعدد الأعمدة */
   rows: React.ReactNode[][];
+  /** صفوف باهتة (طلبات غير محسوبة في الفاتورة) — فهرس الصف */
+  mutedRows?: ReadonlySet<number>;
 }
 
-export default function DetailTable({ columns, rows }: DetailTableProps) {
+export default function DetailTable({ columns, rows, mutedRows }: DetailTableProps) {
   return (
     <Box component="table" sx={detailTableSx}>
       <thead>
@@ -30,7 +32,7 @@ export default function DetailTable({ columns, rows }: DetailTableProps) {
       </thead>
       <tbody>
         {rows.map((cells, ri) => (
-          <tr key={ri}>
+          <tr key={ri} style={mutedRows?.has(ri) ? { opacity: 0.55 } : undefined}>
             {cells.map((cell, ci) => (
               <td key={ci}>{cell}</td>
             ))}

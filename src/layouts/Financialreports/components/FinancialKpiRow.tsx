@@ -8,7 +8,7 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { money } from "../utils/calc";
+import { arNum } from "../utils/format";
 import { FinancialKpis } from "../utils/types";
 import FinancialKpiCard, { FinancialKpiCardProps } from "./FinancialKpiCard";
 
@@ -16,31 +16,31 @@ export default function FinancialKpiRow({ kpis, archive = false }: { kpis: Finan
   const cards: FinancialKpiCardProps[] = [
     {
       icon: <Inventory2OutlinedIcon />, iconBg: HX.accentLight, iconColor: HX.accent,
-      topRight: `${kpis.sellersCount} صُنّاع`,
-      value: money(kpis.totalSales), valueColor: HX.tx,
+      topRight: `${arNum(kpis.sellersCount)} صُنّاع`,
+      value: arNum(kpis.totalSales), valueColor: HX.tx,
       label: "إجمالي مبيعات الدورة (ج.م)",
       badge: archive ? "إجمالي الفواتير في الأرشيف" : "الدورة الحالية", badgeBg: HX.accentLight, badgeColor: HX.accent,
     },
     {
       icon: <PaymentsOutlinedIcon />, iconBg: HX.greenLight, iconColor: HX.green,
       topRight: "مستحق للصُنّاع",
-      value: money(kpis.totalDueSeller), valueColor: HX.green,
+      value: arNum(kpis.totalDueSeller), valueColor: HX.green,
       label: "إجمالي المستحق للبائعين (ج.م)",
-      badge: kpis.totalSales > 0 ? `${Math.round(kpis.dueSellerPct)}% من الإجمالي` : "—", badgeBg: HX.greenLight, badgeColor: HX.green,
+      badge: kpis.totalSales > 0 ? `${arNum(kpis.dueSellerPct)}٪ من الإجمالي` : "—", badgeBg: HX.greenLight, badgeColor: HX.green,
     },
     {
       icon: <AccountBalanceOutlinedIcon />, iconBg: HX.accentLight, iconColor: HX.accent,
       topRight: "عمولة الشركة",
-      value: money(kpis.totalDueComp), valueColor: HX.accent,
+      value: arNum(kpis.totalDueComp), valueColor: HX.accent,
       label: "إجمالي المستحق للشركة (ج.م)",
-      badge: kpis.totalSales > 0 ? `${Math.round(kpis.dueCompPct)}% من الإجمالي` : "—", badgeBg: HX.accentLight, badgeColor: HX.accent,
+      badge: kpis.totalSales > 0 ? `${arNum(kpis.dueCompPct)}٪ من الإجمالي` : "—", badgeBg: HX.accentLight, badgeColor: HX.accent,
     },
     {
       icon: <WarningAmberOutlinedIcon />, iconBg: HX.redLight, iconColor: HX.red,
       topRight: "إجمالي الغرامات",
-      value: money(kpis.totalFine), valueColor: HX.red,
+      value: arNum(kpis.totalFine), valueColor: HX.red,
       label: "غرامات التأخير هذه الدورة (ج.م)",
-      badge: kpis.lateSellersCount > 0 ? `${kpis.lateSellersCount} صُنّاع عليهم غرامات` : "مفيش غرامات", badgeBg: HX.redLight, badgeColor: HX.red,
+      badge: kpis.lateSellersCount > 0 ? `${arNum(kpis.lateSellersCount)} صُنّاع عليهم غرامات` : "مفيش غرامات", badgeBg: HX.redLight, badgeColor: HX.red,
     },
   ];
 

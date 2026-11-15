@@ -1,30 +1,54 @@
 /**
  * «الطلبات المفوترة» — الطلبات المحسوبة داخل فواتير مُراجَعة/مجمّدة/محوّلة (للبائع: فواتيره فقط).
  */
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Box } from "@mui/material";
 import { Link } from "react-router-dom";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { useInvoicedLines } from "query/financialInvoices";
+import { useInvoicedLines, useVendorOptions } from "query/financialInvoices";
 import { money } from "../utils/calc";
+import { arNum } from "../utils/format";
 import { FONT } from "../utils/styles";
-import { EmptyState, StatusPill, btnGhostSx, cardBoxSx, fmtDate, inputSx, tdSx, thSx } from "./shared";
+import { EmptyState, StatusPill, btnGhostSx, cardBoxSx, fmtDate, tdSx, thSx } from "./shared";
+import { DebouncedTextField, VendorSelect } from "./FilterFields";
 
 const PAGE_SIZE = 50;
+const EMPTY = { invoiceCode: "", operationNumber: "", orderNumber: "", productCode: "", vendorId: "" };
 
-export default function InvoicedOrdersView({ onOpenInvoice }: { onOpenInvoice: (id: number) => void }) {
-  const [q, setQ] = useState("");
+export default function InvoicedOrdersView({ onOpenInvoice, isVendor = false }: { onOpenInvoice: (id: number) => void; isVendor?: boolean }) {
+  const [filters, setFilters] = useState(EMPTY);
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useInvoicedLines({ q: q.trim() || undefined, page, size: PAGE_SIZE });
+  const vendors = useVendorOptions(!isVendor);
+  const setKey = useCallback((key: keyof typeof EMPTY) => (value: string) => { setFilters((prev) => ({ ...prev, [key]: value })); setPage(1); }, []);
+  const onOperation = useMemo(() => setKey("operationNumber"), [setKey]);
+  const onOrder = useMemo(() => setKey("orderNumber"), [setKey]);
+  const onProduct = useMemo(() => setKey("productCode"), [setKey]);
+  const onVendor = useMemo(() => setKey("vendorId"), [setKey]);
+  const onInvoice = useMemo(() => setKey("invoiceCode"), [setKey]);
+  const { data, isLoading, isError } = useInvoicedLines({
+    invoiceCode: filters.invoiceCode.trim() || undefined,
+    operationNumber: filters.operationNumber.trim() || undefined,
+    orderNumber: filters.orderNumber.trim() || undefined,
+    page,
+    productCode: filters.productCode.trim() || undefined,
+    size: PAGE_SIZE,
+    vendorId: isVendor ? undefined : filters.vendorId || undefined,
+  });
   const items = data?.items ?? [];
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const hasFilters = Object.values(filters).some(Boolean);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px", fontFamily: FONT }}>
-      <Box sx={{ ...cardBoxSx, p: "12px 14px", display: "flex", gap: "10px", alignItems: "center" }}>
-        <Box component="input" placeholder="رقم العملية / رقم الطلب / كود المنتج / رقم الفاتورة" value={q}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setQ(e.target.value); setPage(1); }} sx={{ ...inputSx, flex: 1, maxWidth: 420 }} />
-        <Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{data?.total ?? 0} طلب</Box>
+      <Box sx={{ ...cardBoxSx, p: "12px 14px", display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+        <DebouncedTextField label="رقم العملية" value={filters.operationNumber} onChange={onOperation} />
+        <DebouncedTextField label="رقم الطلب" value={filters.orderNumber} onChange={onOrder} />
+        <DebouncedTextField label="كود المنتج" value={filters.productCode} onChange={onProduct} />
+        <DebouncedTextField label="رقم الفاتورة" value={filters.invoiceCode} onChange={onInvoice} />
+        {!isVendor && <VendorSelect value={filters.vendorId} onChange={onVendor} options={vendors.data ?? []} />}
+        <Box component="button" type="button" disabled={!hasFilters} onClick={() => { setFilters(EMPTY); setPage(1); }}
+          sx={{ ...btnGhostSx, height: 38 }}>إعادة ضبط</Box>
+        <Box component="span" sx={{ fontSize: "12px", color: HX.tx2, alignSelf: "center" }}>{arNum(data?.total ?? 0)} طلب</Box>
       </Box>
       <Box sx={cardBoxSx}>
         {isError ? <EmptyState text="تعذّر تحميل الطلبات المفوترة." /> : isLoading ? <EmptyState text="جارٍ التحميل..." /> : items.length === 0 ? (
@@ -57,7 +81,7 @@ export default function InvoicedOrdersView({ onOpenInvoice }: { onOpenInvoice: (
         {pages > 1 && (
           <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", p: "10px", borderTop: `0.5px solid ${HX.border}`, fontSize: "12px" }}>
             <Box component="button" type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} sx={btnGhostSx}>السابق</Box>
-            <span>{page} / {pages}</span>
+            <span>{arNum(page)} / {arNum(pages)}</span>
             <Box component="button" type="button" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} sx={btnGhostSx}>التالي</Box>
           </Box>
         )}

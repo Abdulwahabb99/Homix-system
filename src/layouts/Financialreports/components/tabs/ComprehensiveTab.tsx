@@ -4,16 +4,20 @@
  */
 import React, { useEffect, useRef, useState } from "react";
 import { money } from "../../utils/calc";
+import { arNum } from "../../utils/format";
 import { COMPREHENSIVE_NOTE } from "../../utils/constants";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
+import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
+import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
+import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import ComprehensiveSummary from "../ComprehensiveSummary";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, FineCell, Money, Muted, OpId, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Muted, OpId, ProdCode } from "../SettlementCells";
 import VendorSettlementInvoiceDocument from "../../vendorInvoice/VendorSettlementInvoiceDocument";
 
 const GRID = "34px 1fr 120px 120px 120px 120px 40px";
@@ -37,7 +41,7 @@ export default function ComprehensiveTab({
   const handlePrintInvoice = (seller: SettlementSeller, totals: SellerTotals) => {
     if (isPrintingInvoice) return;
     setIsPrintingInvoice(true);
-    setPrintSeller({ seller, totals });
+    setPrintSeller({ seller: forPrint(seller), totals });
   };
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export default function ComprehensiveTab({
   }, [printSeller]);
 
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
-    <Amount key="orders">{t.orders} طلبات</Amount>,
+    <Amount key="orders">{arNum(t.orders)} طلبات</Amount>,
     <Amount key="seller" tone="green">{money(t.dueSeller)}</Amount>,
     <Amount key="comp" tone="accent">{money(t.dueComp)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
@@ -70,11 +74,13 @@ export default function ComprehensiveTab({
     <>
       <DetailHeaderBar
         title={`الفاتورة الشاملة — ${s.name}`}
+        status={<LiveInvoiceHeaderStatus seller={s} />}
         onPrint={() => handlePrintInvoice(s, t)}
         onExport={() => handleExport(s.id)}
         exporting={exportingId === s.id}
       />
       <DetailTable
+        mutedRows={new Set(s.row.orders.flatMap((order, index) => (isCounted(order) ? [] : [index])))}
         columns={[
           { label: "رقم العملية" },
           { label: "رقم الطلب" },
@@ -87,18 +93,25 @@ export default function ComprehensiveTab({
           <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
           <Muted key="order" to={`/orders/${order.orderId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
-          <Money key="vendor" value={order.vendorDue} tone="green" bold />,
-          <Money key="company" value={order.companyDue} tone="accent" bold />,
-          <FineCell key="fine" value={order.fines} />,
+          <LiveAmountCell key="vendor" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
+          <LiveAmountCell key="company" seller={s} order={order} field="companyDueOverride" tone="accent" bold />,
+          <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
         ])}
       />
       <ComprehensiveSummary
         items={[
-          { label: "عدد الطلبات", value: String(t.orders) },
+          { label: "عدد الطلبات", value: arNum(t.orders) },
           { label: "إجمالي مستحق البائع", value: money(t.dueSeller), tone: "green" },
           { label: "إجمالي مستحق الشركة", value: money(t.dueComp), tone: "accent" },
           { label: "إجمالي الغرامات", value: money(t.fine), tone: "red" },
           { label: "الإجمالي الكلي", value: money(t.totalCombined) },
+          // تعديلات الفاتورة اليدوية موجودة في الأرشيف — نعرضها هنا كي لا يختلف الصافي بين العرضين
+          ...(s.invoice && s.invoice.adjustmentsTotal !== 0
+            ? [
+              { label: "تعديلات يدوية على الفاتورة", value: money(s.invoice.adjustmentsTotal) },
+              { label: "صافي مستحق الصانع بعد التعديلات", value: money(t.dueSeller + s.invoice.adjustmentsTotal), tone: "green" as const },
+            ]
+            : []),
         ]}
         note={COMPREHENSIVE_NOTE}
       />

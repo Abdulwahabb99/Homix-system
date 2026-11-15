@@ -2,6 +2,7 @@
  * ترويسة تبويبات جدول التسويات (المخزن / البائع / الشاملة) مع عدّاد لكل تبويب.
  */
 import React from "react";
+import { arNum } from "../utils/format";
 import { Box } from "@mui/material";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -32,7 +33,7 @@ export default function FinancialTabs({ active, onChange, counts }: FinancialTab
           <Box key={t.key} onClick={() => onChange(t.key)} sx={tabSx(isActive)}>
             {TAB_ICON[t.key]}
             {t.label}
-            <Box component="span" sx={tabCountSx(isActive)}>{counts[t.key]}</Box>
+            <Box component="span" sx={tabCountSx(isActive)}>{arNum(counts[t.key])}</Box>
           </Box>
         );
       })}
