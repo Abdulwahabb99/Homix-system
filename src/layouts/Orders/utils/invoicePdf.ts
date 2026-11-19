@@ -3,6 +3,7 @@ import html2pdf from "html2pdf.js";
 import {
   applyPrintLayout,
   buildNativePrintCss,
+  type NativePrintOptions,
 } from "./nativePrint";
 
 export { buildNativePrintCss };
@@ -16,7 +17,7 @@ const NATIVE_PRINT_STYLE_ID = "invoice-native-print-style";
  */
 export function printElementNatively(
   element: HTMLElement,
-  options: { fitToOnePage?: boolean } = {}
+  options: NativePrintOptions = {}
 ): void {
   let styleTag = document.getElementById(NATIVE_PRINT_STYLE_ID) as HTMLStyleElement | null;
   if (!styleTag) {
@@ -24,7 +25,7 @@ export function printElementNatively(
     styleTag.id = NATIVE_PRINT_STYLE_ID;
     document.head.appendChild(styleTag);
   }
-  styleTag.textContent = buildNativePrintCss();
+  styleTag.textContent = buildNativePrintCss(undefined, undefined, undefined, Boolean(options.fullBleed));
 
   const restore = applyPrintLayout(element, options);
   const cleanup = () => {
@@ -39,7 +40,7 @@ export function printElementNatively(
 /** نفس الطباعة الأصلية بعد انتظار الخط العربي والصور (نفس مسار تنزيل الـ PDF). */
 export async function printElementWhenReady(
   element: HTMLElement,
-  options: { fitToOnePage?: boolean } = {}
+  options: NativePrintOptions = {}
 ): Promise<void> {
   await waitForInvoiceFonts();
   await waitForImages(element);
@@ -58,7 +59,7 @@ function sanitizeFileBaseName(name: string): string {
 async function waitForInvoiceFonts(): Promise<void> {
   if (typeof document === "undefined" || !document.fonts) return;
   const families = ["Cairo", "Noto Sans Arabic"];
-  const weights = ["400", "600", "700", "800"] as const;
+  const weights = ["400", "600", "700", "800", "900"] as const;
   try {
     await Promise.all(
       families.flatMap((f) => weights.map((w) => document.fonts.load(`${w} 16px ${f}`)))
@@ -71,6 +72,8 @@ async function waitForInvoiceFonts(): Promise<void> {
   } catch {
     /* ignore */
   }
+  // أحداث loadingdone (إعادة رسم الأختام على canvas) تُرسَل كمهمة منفصلة — نتيح لها الدور.
+  await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
 }
 
 /** انتظار تحميل كل الصور (شعار الفاتورة) داخل عنصر قبل التقاطه إلى canvas */
@@ -125,9 +128,9 @@ function isCanvasLimitedDevice(): boolean {
  * تماماً لما يُنتجه الآن. على الموبايل نُنزلها لأعلى قيمة تفي بالميزانية — نفس
  * المستند ونفس الصفحات والمقاسات (‏.paper بعرض 700px ثابت)، فرقٌ في دقّة الرسم فقط.
  */
-function resolveCanvasScale(element: HTMLElement): number {
+function resolveCanvasScale(element: HTMLElement, fixedScale?: number): number {
   const dpr = typeof window === "undefined" ? 1.5 : window.devicePixelRatio || 1;
-  const desired = Math.max(3, dpr * 2);
+  const desired = fixedScale ?? Math.max(3, dpr * 2);
   if (!isCanvasLimitedDevice()) return desired;
 
   const width = element.scrollWidth || element.offsetWidth || 700;
@@ -157,13 +160,31 @@ function isBlankCanvas(canvas: HTMLCanvasElement): boolean {
 
 class BlankCanvasError extends Error {}
 
-function buildOptions(filename: string, scale: number) {
+/**
+ * خيارات التوليد لكل مستند. الافتراضي (فواتير الطلبات) PNG بهامش 5mm؛ كشف التسوية
+ * كامل الصفحة بهامش صفر وJPEG بدقّة معتدلة (ملف ~0.3MB بدل 20-65MB).
+ */
+export interface InvoicePdfOptions {
+  /** هامش الصفحة بالمليمتر (الافتراضي 5) */
+  marginMm?: number;
+  imageType?: "png" | "jpeg";
+  /** جودة JPEG (0-1) — تُتجاهل مع PNG */
+  quality?: number;
+  /** دقّة ثابتة بدل المحسوبة من الجهاز (الموبايل يبقى محدوداً بميزانيته) */
+  scale?: number;
+}
+
+export const STATEMENT_PDF_OPTIONS: InvoicePdfOptions = { marginMm: 0, imageType: "jpeg", quality: 0.92, scale: 2.5 };
+
+function buildOptions(filename: string, scale: number, options: InvoicePdfOptions = {}) {
+  const margin = options.marginMm ?? 5;
+  const imageType = options.imageType ?? "png";
   return {
-    margin: [5, 5, 5, 5] as [number, number, number, number],
+    margin: [margin, margin, margin, margin] as [number, number, number, number],
     filename,
     // PNG is lossless, so Arabic glyphs and thin table rules stay crisp; JPEG at
-    // 0.92 was visibly smearing them.
-    image: { type: "png", quality: 1 },
+    // 0.92 was visibly smearing them (so it is opt-in, see STATEMENT_PDF_OPTIONS).
+    image: { type: imageType, quality: imageType === "png" ? 1 : options.quality ?? 0.92 },
     html2canvas: {
       scale,
       useCORS: true,
@@ -183,12 +204,13 @@ function buildOptions(filename: string, scale: number) {
 async function renderInvoiceBlob(
   element: HTMLElement,
   filename: string,
-  scale: number
+  scale: number,
+  options: InvoicePdfOptions = {}
 ): Promise<Blob> {
   // نمرّ على toCanvas أولاً للتحقّق أن الرسم نجح — الفشل على الموبايل صامت
   // (canvas شفاف)، ورفع الخطأ داخل السلسلة يمنع بناء PDF فارغ من الأصل.
   const blob = await html2pdf()
-    .set(buildOptions(filename, scale))
+    .set(buildOptions(filename, scale, options))
     .from(element)
     .toCanvas()
     .get("canvas")
@@ -221,7 +243,7 @@ function toDeliverableBlob(blob: Blob): Blob {
 }
 
 /** تنزيل Blob باسم ملف — مسار واحد لكل المتصفحات بعد توحيد النوع أعلاه. */
-function saveBlob(blob: Blob, filename: string): void {
+export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(toDeliverableBlob(blob));
   const link = document.createElement("a");
   link.href = url;
@@ -235,25 +257,33 @@ function saveBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export async function downloadOrderInvoicePdf(
+/** يرسم العنصر إلى PDF Blob (بلا حفظ) — مع انتظار الخطوط وإعادة المحاولة بدقّة أقل على الأجهزة المحدودة. */
+export async function renderInvoicePdfBlob(
   element: HTMLElement,
-  fileBaseName: string
-): Promise<void> {
+  fileBaseName: string,
+  options: InvoicePdfOptions = {}
+): Promise<Blob> {
   await waitForInvoiceFonts();
   await waitForImages(element);
 
   const safe = sanitizeFileBaseName(fileBaseName) || "invoice";
   const filename = `${safe}.pdf`;
-  const scale = resolveCanvasScale(element);
+  const scale = resolveCanvasScale(element, options.scale);
 
-  let blob: Blob;
   try {
-    blob = await renderInvoiceBlob(element, filename, scale);
+    return await renderInvoiceBlob(element, filename, scale, options);
   } catch (error) {
     // canvas فارغ يعني أننا فوق حدّ الجهاز — محاولة واحدة بدقّة أقل قبل الاستسلام.
     if (!(error instanceof BlankCanvasError)) throw error;
-    blob = await renderInvoiceBlob(element, filename, Math.max(0.5, scale * 0.6));
+    return renderInvoiceBlob(element, filename, Math.max(0.5, scale * 0.6), options);
   }
+}
 
-  saveBlob(blob, filename);
+export async function downloadOrderInvoicePdf(
+  element: HTMLElement,
+  fileBaseName: string,
+  options: InvoicePdfOptions = {}
+): Promise<void> {
+  const blob = await renderInvoicePdfBlob(element, fileBaseName, options);
+  saveBlob(blob, `${sanitizeFileBaseName(fileBaseName) || "invoice"}.pdf`);
 }

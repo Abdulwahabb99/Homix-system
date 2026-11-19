@@ -403,7 +403,12 @@ export const useRecordReconciliation = () =>
     unwrap<{ count: number; systemTotal: number; bankTotal: number; difference: number }>(
       await axiosRequest.post(`${INVOICES_PATH}/reconciliation`, vars)));
 
-/** الإيصال يُقدَّم عبر endpoint موثّق فقط — نحمّله كـ blob ثم نحفظه/نعرضه */
+/** الإيصال يُقدَّم عبر endpoint موثّق فقط — نجلبه كـ blob (للتنزيل أو للدمج في PDF) */
+export async function fetchReceiptBlob(id: number): Promise<Blob> {
+  const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipt`, { responseType: "blob" });
+  return response.data as Blob;
+}
+
 export async function downloadReceipt(id: number, fileName: string | null): Promise<void> {
   const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipt`, { responseType: "blob" });
   downloadBlobResponse(response, fileName || `receipt-${id}`);

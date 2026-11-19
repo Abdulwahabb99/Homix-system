@@ -6,10 +6,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
+import { STATEMENT_PDF_OPTIONS, downloadOrderInvoicePdf, printElementNatively, renderInvoicePdfBlob, saveBlob } from "layouts/Orders/utils/invoicePdf";
+import { appendReceiptToPdf } from "layouts/Orders/utils/pdfMerge";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import {
-  InvoiceLine, LineAction, downloadReceipt, useAddAdjustment, useAddOrderToInvoice, useInvoiceActivity, useInvoiceDetail,
+  InvoiceLine, LineAction, downloadReceipt, fetchReceiptBlob, useAddAdjustment, useAddOrderToInvoice, useInvoiceActivity, useInvoiceDetail,
   useLineAction, useOrderCandidates, useRefreshDraft, useRemoveAdjustment, useRemoveReceipt, useSetLineOverride, useSyncInvoice,
   useTransitionInvoice, useUploadReceipt,
 } from "query/financialInvoices";
@@ -74,6 +75,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [mergeMode, setMergeMode] = useState(false);
   const docRef = useRef<HTMLDivElement | null>(null);
 
   const invoice = data?.invoice;
@@ -90,16 +92,28 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
   useEffect(() => {
     if (!printing) return undefined;
     const timer = window.setTimeout(async () => {
+      const baseName = `فاتورة-${invoice?.code ?? invoiceId}`;
       try {
         if (!docRef.current) throw new Error("missing document");
-        await downloadOrderInvoicePdf(docRef.current, `فاتورة-${invoice?.code ?? invoiceId}`);
+        if (!mergeMode) {
+          await downloadOrderInvoicePdf(docRef.current, baseName, STATEMENT_PDF_OPTIONS);
+        } else {
+          const invoicePdf = await renderInvoicePdfBlob(docRef.current, baseName, STATEMENT_PDF_OPTIONS);
+          try {
+            const merged = await appendReceiptToPdf(invoicePdf, await fetchReceiptBlob(invoiceId as number));
+            saveBlob(merged, `${baseName}-مع-الإيصال.pdf`);
+          } catch {
+            NotificationMeassage("error", "تعذّر دمج الإيصال — نزّلنا الفاتورة وحدها");
+            saveBlob(invoicePdf, `${baseName}.pdf`);
+          }
+        }
       } catch {
         NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
-        if (docRef.current) printElementNatively(docRef.current, { fitToOnePage: true });
-      } finally { setPrinting(false); }
+        if (docRef.current) printElementNatively(docRef.current, { fullBleed: true });
+      } finally { setPrinting(false); setMergeMode(false); }
     }, 80);
     return () => window.clearTimeout(timer);
-  }, [printing, invoice?.code, invoiceId]);
+  }, [printing, mergeMode, invoice?.code, invoiceId]);
 
   if (invoiceId === null) return null;
 
@@ -337,6 +351,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
                 <>
                   <span style={{ fontSize: 12 }}>{invoice.receiptName} — {fmtDateTime(invoice.receiptUploadedAt)}</span>
                   <Box component="button" type="button" onClick={() => downloadReceipt(invoice.id, invoice.receiptName).catch(() => NotificationMeassage("error", "تعذّر تحميل الإيصال"))} sx={btnGhostSx}>عرض / تحميل</Box>
+                  <Box component="button" type="button" disabled={printing} onClick={() => { setMergeMode(true); setPrinting(true); }} sx={btnGhostSx}>تنزيل الفاتورة + الإيصال (PDF واحد)</Box>
                   {staff && <Box component="button" type="button" onClick={() => { if (window.confirm("إزالة الإيصال؟")) removeReceipt.mutate(invoice.id); }} sx={btnDangerSx}>إزالة</Box>}
                 </>
               ) : <span style={{ fontSize: 12, color: HX.amber }}>لسه مفيش إيصال مرفوع</span>}

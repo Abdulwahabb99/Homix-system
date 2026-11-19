@@ -9,7 +9,7 @@ import { COMPREHENSIVE_NOTE } from "../../utils/constants";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
-import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
+import { STATEMENT_PDF_OPTIONS, downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/utils/invoicePdf";
 import SettlementSection from "../SettlementSection";
 import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import { LineStateTag } from "../LiveAmountCell";
@@ -51,12 +51,12 @@ export default function ComprehensiveTab({
     const timer = window.setTimeout(async () => {
       try {
         if (!printContainerRef.current) throw new Error("missing invoice element");
-        await downloadOrderInvoicePdf(printContainerRef.current, `فاتورة-مورد-${printSeller.seller.name}`);
+        await downloadOrderInvoicePdf(printContainerRef.current, `فاتورة-مورد-${printSeller.seller.name}`, STATEMENT_PDF_OPTIONS);
         NotificationMeassage("success", "تم تحميل الفاتورة");
       } catch (e) {
         console.error(e);
         NotificationMeassage("error", "تعذر تصدير الفاتورة — سيُفتح مربع الطباعة");
-        if (printContainerRef.current) printElementNatively(printContainerRef.current);
+        if (printContainerRef.current) printElementNatively(printContainerRef.current, { fullBleed: true });
       } finally {
         setIsPrintingInvoice(false);
         setPrintSeller(null);

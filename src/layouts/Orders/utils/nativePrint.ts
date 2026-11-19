@@ -11,6 +11,12 @@ const MM_TO_PX = 96 / 25.4;
 const FIT_SAFETY = 0.95;
 const MIN_FIT_SCALE = 0.72;
 
+export interface NativePrintOptions {
+  fitToOnePage?: boolean;
+  /** مستند كامل الصفحة بخلفيات ملوّنة (كشف التسوية): بلا حشوة للصفحة + إجبار طباعة الألوان */
+  fullBleed?: boolean;
+}
+
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "LINK", "META", "NOSCRIPT", "TEMPLATE"]);
 
 /**
@@ -23,8 +29,20 @@ const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "LINK", "META", "NOSCRIPT", "TEMPL
 export function buildNativePrintCss(
   targetClass: string = NATIVE_PRINT_CLASS,
   ancestorClass: string = NATIVE_PRINT_ANCESTOR_CLASS,
-  hiddenClass: string = NATIVE_PRINT_HIDDEN_CLASS
+  hiddenClass: string = NATIVE_PRINT_HIDDEN_CLASS,
+  fullBleed: boolean = false
 ): string {
+  const pagePadding = fullBleed ? 0 : PRINT_PAGE_PADDING_MM;
+  /* بدون exact يطبع كروم الخلفيات بيضاء فيختفي النص الأبيض على الترويسة الكحلية. وmin-height أقل
+     بقليل من 297mm كي لا تتولّد صفحة ثانية فارغة. */
+  const fullBleedCss = fullBleed
+    ? `
+      .${targetClass}, .${targetClass} * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .${targetClass} { min-height: 296mm !important; }`
+    : "";
   return `
     @media print {
       @page { size: A4; margin: 0; }
@@ -34,7 +52,7 @@ export function buildNativePrintCss(
         overflow: visible !important;
         background: #fff !important;
         margin: 0 !important;
-        padding: ${PRINT_PAGE_PADDING_MM}mm !important;
+        padding: ${pagePadding}mm !important;
         position: static !important;
         display: block !important;
       }
@@ -80,7 +98,7 @@ export function buildNativePrintCss(
         transform: none !important;
         box-shadow: none !important;
       }
-      .${targetClass} table, .${targetClass} tr, .${targetClass} img { break-inside: avoid; }
+      .${targetClass} table, .${targetClass} tr, .${targetClass} img { break-inside: avoid; }${fullBleedCss}
     }
   `;
 }
@@ -96,7 +114,7 @@ function isElement(node: Node | null): node is HTMLElement {
  */
 export function applyPrintLayout(
   element: HTMLElement,
-  options: { fitToOnePage?: boolean } = {}
+  options: NativePrintOptions = {}
 ): () => void {
   const doc = element.ownerDocument;
   const added: Array<[HTMLElement, string]> = [];
@@ -131,7 +149,7 @@ export function applyPrintLayout(
 
   let zoomApplied = false;
   if (options.fitToOnePage && naturalHeight > 0) {
-    const availablePx = (A4_HEIGHT_MM - 2 * PRINT_PAGE_PADDING_MM) * MM_TO_PX * FIT_SAFETY;
+    const availablePx = (A4_HEIGHT_MM - 2 * (options.fullBleed ? 0 : PRINT_PAGE_PADDING_MM)) * MM_TO_PX * FIT_SAFETY;
     const scale = availablePx / naturalHeight;
     if (scale < 1 && scale >= MIN_FIT_SCALE) {
       (element.style as any).zoom = String(scale);

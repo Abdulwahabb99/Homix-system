@@ -1,0 +1,181 @@
+/* «كشف تسوية مورد» — 794×1122 كامل الصفحة (A4 عند 96dpi) بهوامش صفر.
+   بدون letter-spacing في هذا الملف: html2canvas يفكّك الحروف العربية معه.
+   print-color-adjust: exact ضروري للطباعة الأصلية وإلا تُطبع الترويسة الكحلية بيضاء. */
+
+.page {
+  --gold-bar: #b7873b;
+  --navy: #013247;
+  --gold-label: #7a5c1e;
+  --green: #2b7653;
+  --red: #a7412b;
+  --muted: #6d767b;
+  --muted-2: #8b9396;
+  --text-2: #5b646a;
+  --ink: #121d22;
+  --hairline: #e5e9ec;
+
+  width: 794px;
+  min-height: 1122px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  direction: rtl;
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+.green { color: var(--green); }
+.navy { color: var(--navy); }
+.red { color: var(--red); }
+.gold { color: var(--gold-label); }
+.dash { color: #e5e7eb; }
+
+/* ── الترويسة ── */
+.goldBar { height: 4px; background: var(--gold-bar); flex: none; }
+.header {
+  position: relative;
+  height: 225px;
+  flex: none;
+  background: var(--navy);
+  color: #fff;
+}
+.brand { position: absolute; top: 30px; right: 46px; }
+.brand svg { display: block; }
+.subtitle { margin-top: 8px; font-size: 13px; font-weight: 400; color: #b8cddb; line-height: 1.4; }
+.numBlock { position: absolute; top: 28px; left: 46px; text-align: left; }
+.numLabel { font-size: 11px; color: #bad6e2; line-height: 1.4; text-align: left; }
+.number { margin-top: 2px; font-size: 32px; font-weight: 900; line-height: 1.2; direction: ltr; unicode-bidi: isolate; text-align: left; }
+.meta { position: absolute; top: 115px; right: 46px; display: flex; height: 38px; }
+.metaCell { padding: 0 18px; border-left: 1px solid rgba(255, 255, 255, 0.15); text-align: right; }
+.metaFirst { padding-right: 0; }
+.metaLast { border-left: 0; }
+.metaLabel { font-size: 10.5px; color: #94b5c5; line-height: 1.3; }
+.metaValue { margin-top: 4px; font-size: 13px; font-weight: 600; line-height: 1.3; color: #fff; }
+.pill {
+  display: inline-block;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 19.6px;
+  height: 19.6px;
+}
+
+/* ── البطاقات (تتراكب على الترويسة 45px) ── */
+.cards {
+  position: relative;
+  z-index: 1;
+  margin: -45px 46px 0;
+  height: 78px;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.3fr;
+  background: #fff;
+  border: 1px solid #e4e8eb;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.card { padding: 14px 18px 0; border-left: 1px solid #f1f2f6; }
+.card:last-child { border-left: 0; }
+.cardNet { background: #f9f3e7; }
+.cardLabel { font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+.money { display: inline-flex; align-items: baseline; direction: rtl; }
+.cur { margin-right: 0; margin-left: 0; padding-right: 5px; font-size: 11px; font-weight: 400; color: var(--muted-2); }
+.cardNum { font-size: 16px; font-weight: 800; line-height: 1.5; }
+.cardNumNet { font-size: 19px; font-weight: 800; line-height: 1.4; }
+.netNote { font-size: 9px; color: var(--gold-label); line-height: 1.2; }
+
+/* ── المورد / الجهة المُصدِرة / ملخص الدورة ── */
+.parties {
+  margin: 22px 46px 0;
+  padding-bottom: 16px;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  column-gap: 20px;
+  border-bottom: 1px solid #e2e7eb;
+}
+.pTag { font-size: 10.5px; color: var(--gold-label); line-height: 1.4; }
+.pMain { margin-top: 3px; font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.4; }
+.pSub { margin-top: 2px; font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
+
+/* ── الجدول ── */
+.table {
+  margin: 27px 46px 0;
+  width: 702px;
+  flex: none;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.table th {
+  padding: 0 8px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+  border-bottom: 2px solid var(--navy);
+  line-height: 1.5;
+}
+.table td { padding: 0 8px; height: 40px; text-align: right; font-size: 11px; vertical-align: middle; border-bottom: 1px solid #e9edf0; }
+.row { break-inside: avoid; page-break-inside: avoid; }
+.emptyRow td { height: 67px; text-align: center; font-size: 12.5px; color: var(--muted-2); }
+.op { font-weight: 800; color: var(--navy); }
+.onum { color: var(--muted); font-weight: 600; }
+.pcode { display: inline-block; padding: 1px 8px; border-radius: 6px; background: #f1f3f4; font-size: 10.5px; color: var(--text-2); direction: ltr; unicode-bidi: isolate; }
+.chip { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 10.5px; font-weight: 700; }
+.chipHomix { background: #e3edf2; color: var(--navy); }
+.chipVendor { background: #f5eddc; color: var(--gold-label); }
+.dueH { font-weight: 800; color: var(--navy); }
+.dueV { font-weight: 800; color: var(--green); }
+.fine { font-weight: 700; color: var(--red); }
+
+/* ── الأسفل: بيانات البنك + الإجماليات + الختم ── */
+.bottom {
+  margin: 24px 46px 24px;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 30px;
+  align-items: start;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.bank { margin-top: -1px; height: 140px; padding: 14px 18px 0; border: 1px solid var(--hairline); border-radius: 14px; background: #fff; }
+.bankTitle { font-size: 10.5px; font-weight: 600; color: var(--gold-label); line-height: 1.5; margin-bottom: 6px; }
+.bankRow { display: flex; justify-content: space-between; align-items: center; height: 22px; }
+.bankLabel { font-size: 12px; color: var(--muted); }
+.bankValue { font-size: 11.5px; font-weight: 700; color: var(--ink); direction: ltr; unicode-bidi: isolate; }
+.totalsCol { display: flex; flex-direction: column; }
+.tRow { display: flex; justify-content: space-between; align-items: center; height: 33.3px; border-bottom: 1px solid var(--hairline); }
+.tLabel { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.tNum { font-size: 13px; font-weight: 800; }
+.netRule { height: 0; border-top: 2px solid var(--navy); margin-top: 2px; }
+.netRow { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 10px 0 4px; border-bottom: 1px solid var(--hairline); }
+.netLabel { font-size: 13.5px; font-weight: 800; color: var(--navy); line-height: 1.2; }
+.netSub { display: block; font-size: 9.5px; font-weight: 600; color: var(--gold-label); }
+.netNum { font-size: 20px; font-weight: 900; color: var(--navy); line-height: 1.2; }
+.stampWrap { display: flex; justify-content: center; margin-top: 10px; height: 170px; }
+.stampWrap canvas { display: block; }
+
+/* ── التذييل ── */
+.footer {
+  margin-top: auto;
+  flex: none;
+  height: 49px;
+  padding: 0 46px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+  font-size: 10.5px;
+  color: var(--muted-2);
+}
+.footBrand strong { font-size: 11px; font-weight: 700; color: var(--navy); }

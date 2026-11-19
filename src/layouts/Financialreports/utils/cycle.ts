@@ -28,7 +28,7 @@ export function cycleRange(billingDay: BillingDay, month: string): CycleDates {
 
 export const getCycleLabel = (billingDay: BillingDay): string => (billingDay === 13 ? "دورة 13" : "دورة 28");
 
-const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+export const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
 /** «14 نوفمبر — 28 نوفمبر 2026» */
 export function formatCycleRange({ startDate, endDate }: CycleDates): string {

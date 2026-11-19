@@ -97,7 +97,13 @@ describe("no combined total anywhere in the Financial Reports sources", () => {
   });
 
   it("seller tab, archive dialog, prints and invoiced orders use the same single column", () => {
-    ["components/tabs/SellerTab.tsx", "invoices/InvoiceDetailDialog.tsx", "invoices/InvoicedOrdersView.tsx", "invoices/InvoiceDocument.tsx", "vendorInvoice/VendorSettlementInvoiceDocument.tsx", "vendorInvoice/SellerSettlementInvoiceDocument.tsx"]
+    ["components/tabs/SellerTab.tsx", "invoices/InvoiceDetailDialog.tsx", "invoices/InvoicedOrdersView.tsx", "vendorInvoice/SellerSettlementInvoiceDocument.tsx"]
       .forEach((file) => expect(`${file}:${read(file).includes("COMPANY_DUE_LABEL")}`).toBe(`${file}:true`));
+  });
+
+  it("the vendor settlement statement (live + saved adapters) prints the agreed literal «مستحق هوميكس»", () => {
+    expect(read("vendorInvoice/SettlementStatement.tsx")).toContain("مستحق هوميكس");
+    ["invoices/InvoiceDocument.tsx", "vendorInvoice/VendorSettlementInvoiceDocument.tsx"]
+      .forEach((file) => expect(`${file}:${read(file).includes("SettlementStatement")}`).toBe(`${file}:true`));
   });
 });

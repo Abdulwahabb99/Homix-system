@@ -99,4 +99,11 @@ describe("native invoice print", () => {
       expect(t.style.zoom).toBeFalsy();
     }
   });
+
+  it("fullBleed CSS drops the page padding and forces colour printing", () => {
+    const css = buildNativePrintCss(undefined, undefined, undefined, true);
+    expect(css).toMatch(/padding: 0mm !important/);
+    expect(css).toMatch(/print-color-adjust: exact/);
+    expect(buildNativePrintCss()).not.toMatch(/print-color-adjust/);
+  });
 });
