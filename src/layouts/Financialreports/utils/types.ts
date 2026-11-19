@@ -25,9 +25,9 @@ export interface VendorRow {
   fines: number;
   /** المستحق للبائع */
   vendorDue: number;
-  /** إجمالي الجانب الدائن لهوميكس = هامش هوميكس + مستحق على الصانع */
+  /** المستحق لهوميكس (الإجمالي) */
   companyDue: number;
-  /** Σ هامش هوميكس من تسليمات المخزن = التحصيل − التكلفة */
+  /** Σ حصة هوميكس من تسليمات المخزن = التحصيل − التكلفة (للحسابات الداخلية) */
   homixMargin: number;
   /** Σ ما يسدّده الصانع لهوميكس في تسليمات البائع */
   vendorOwes: number;
@@ -105,9 +105,9 @@ export interface SellerTotals {
   fine: number;
   dueSeller: number;
   dueComp: number;
-  /** هامش هوميكس (تسليمات المخزن) */
+  /** حصة هوميكس (تسليمات المخزن) */
   homixMargin: number;
-  /** مستحق على الصانع (تسليمات البائع) */
+  /** ما يسدّده الصانع لهوميكس (تسليمات البائع) */
   vendorOwes: number;
   /** إجمالي قيمة الشحن المحفوظة على المورد لطلبات تسليم البائع */
   vendorShippingCost: number;
@@ -121,9 +121,9 @@ export interface FinancialKpis {
   totalSales: number;
   totalDueSeller: number;
   totalDueComp: number;
-  /** هامش هوميكس من تسليمات المخزن */
+  /** حصة هوميكس من تسليمات المخزن */
   totalHomixMargin: number;
-  /** مستحق على الصانع (تسليمات البائع) */
+  /** ما يسدّده الصانع لهوميكس (تسليمات البائع) */
   totalVendorOwes: number;
   totalFine: number;
   /** إجمالي عدد الطلبات في الدورة (من الفاتورة الشاملة) */
@@ -131,7 +131,7 @@ export interface FinancialKpis {
   lateSellersCount: number;
   /** نسبة مستحق البائعين من الإجمالي (%) */
   dueSellerPct: number;
-  /** نسبة هامش هوميكس من الإجمالي (%) */
+  /** نسبة المستحق لهوميكس من الإجمالي (%) */
   dueCompPct: number;
 }
 

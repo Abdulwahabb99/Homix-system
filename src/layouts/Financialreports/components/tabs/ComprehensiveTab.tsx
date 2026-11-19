@@ -14,8 +14,7 @@ import SettlementSection from "../SettlementSection";
 import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import { LineStateTag } from "../LiveAmountCell";
 import LiveAmountCell from "../LiveAmountCell";
-import { companyDueCells } from "../CompanyDueCells";
-import { MARGIN_LABEL, MARGIN_TIP, OWES_LABEL, OWES_TIP } from "../../utils/companyDue";
+import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "../../utils/companyDue";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import ComprehensiveSummary from "../ComprehensiveSummary";
@@ -69,8 +68,7 @@ export default function ComprehensiveTab({
   const renderCells = (_s: SettlementSeller, t: SellerTotals): React.ReactNode[] => [
     <Amount key="orders">{arNum(t.orders)} طلبات</Amount>,
     <Amount key="seller" tone="green">{money(t.dueSeller)}</Amount>,
-    <Amount key="margin" tone="accent">{money(t.homixMargin)}</Amount>,
-    <Amount key="owes" tone="accent">{money(t.vendorOwes)}</Amount>,
+    <Amount key="company" tone="accent">{money(t.dueComp)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
   ];
 
@@ -90,29 +88,23 @@ export default function ComprehensiveTab({
           { label: "رقم الطلب" },
           { label: "كود المنتج" },
           { label: "المستحق للبائع", tone: "green" },
-          { label: MARGIN_LABEL, tone: "accent", tip: MARGIN_TIP },
-          { label: OWES_LABEL, tone: "accent", tip: OWES_TIP },
+          { label: COMPANY_DUE_LABEL, tone: "accent", tip: COMPANY_DUE_TIP },
           { label: "الغرامات" },
         ]}
-        rows={s.row.orders.map((order) => {
-          const [margin, owes] = companyDueCells(s, order);
-          return [
+        rows={s.row.orders.map((order) => [
           <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
           <Muted key="order" to={`/orders/${order.orderId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
           <LiveAmountCell key="vendor" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
-          <React.Fragment key="margin">{margin}</React.Fragment>,
-          <React.Fragment key="owes">{owes}</React.Fragment>,
+          <LiveAmountCell key="company" seller={s} order={order} field="companyDueOverride" tone="accent" bold />,
           <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
-          ];
-        })}
+        ])}
       />
       <ComprehensiveSummary
         items={[
           { label: "عدد الطلبات", value: arNum(t.orders) },
           { label: "إجمالي مستحق البائع", value: money(t.dueSeller), tone: "green" },
-          { label: MARGIN_LABEL, value: money(t.homixMargin), tone: "accent" },
-          { label: OWES_LABEL, value: money(t.vendorOwes), tone: "accent" },
+          { label: "إجمالي المستحق لهوميكس", value: money(t.dueComp), tone: "accent" },
           { label: "إجمالي الغرامات", value: money(t.fine), tone: "red" },
           // تعديلات الفاتورة اليدوية موجودة في الأرشيف — نعرضها هنا كي لا يختلف الصافي بين العرضين
           ...(s.invoice && s.invoice.adjustmentsTotal !== 0
@@ -135,7 +127,7 @@ export default function ComprehensiveTab({
         header={[
           { label: "" }, { label: "الصانع" },
           { label: "عدد الطلبات", align: "end" }, { label: "المستحق للبائع", align: "end" },
-          { label: MARGIN_LABEL, align: "end", tip: MARGIN_TIP }, { label: OWES_LABEL, align: "end", tip: OWES_TIP },
+          { label: COMPANY_DUE_LABEL, align: "end", tip: COMPANY_DUE_TIP },
           { label: "الغرامات", align: "end" }, { label: "" },
         ]}
         renderCells={renderCells}

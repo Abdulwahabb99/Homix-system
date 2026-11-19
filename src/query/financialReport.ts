@@ -54,9 +54,9 @@ export interface FinancialTopSummary {
   vendorDue: number;
   companyDue: number;
   fines: number;
-  /** Σ هامش هوميكس (تسليمات المخزن) */
+  /** Σ حصة هوميكس (تسليمات المخزن) */
   homixMargin: number;
-  /** Σ مستحق على الصانع (تسليمات البائع) */
+  /** Σ ما يسدّده الصانع لهوميكس (تسليمات البائع) */
   vendorOwes: number;
   vendorsCount: number;
 }
@@ -79,7 +79,7 @@ export interface FinancialVendorItem {
 export interface FinancialOrderItem {
   collectionTotal: number;
   companyDue: number;
-  /** margin = هامش هوميكس (تسليم المخزن) · vendorOwes = مستحق على الصانع (تسليم البائع) */
+  /** margin = تسليم المخزن · vendorOwes = تسليم البائع */
   companyDueKind?: "margin" | "vendorOwes";
   fines: number;
   id: number;

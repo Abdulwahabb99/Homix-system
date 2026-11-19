@@ -171,7 +171,7 @@ export function overlayKpis(
   const totalVendorOwes = round2(kpis.totalVendorOwes + delta((r) => r.vendorOwes));
   return {
     ...kpis,
-    dueCompPct: pct(totalHomixMargin, totalSales),
+    dueCompPct: pct(totalDueComp, totalSales),
     dueSellerPct: pct(totalDueSeller, totalSales),
     lateSellersCount: after.filter((seller) => seller.row.fines > 0).length,
     ordersCount: kpis.ordersCount + delta((r) => r.ordersCount),

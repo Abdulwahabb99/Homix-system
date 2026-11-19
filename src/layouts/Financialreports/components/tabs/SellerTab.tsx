@@ -12,7 +12,7 @@ import { downloadOrderInvoicePdf, printElementNatively } from "layouts/Orders/ut
 import SettlementSection from "../SettlementSection";
 import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
-import { OWES_LABEL, OWES_TIP } from "../../utils/companyDue";
+import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "../../utils/companyDue";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
@@ -68,7 +68,7 @@ export default function SellerTab({
     <Amount key="collect">{money(t.collect)}</Amount>,
     <Amount key="shipping">{money(t.vendorShippingCost)}</Amount>,
     <Amount key="due" tone="green">{money(t.dueSeller)}</Amount>,
-    <Amount key="company" tone="accent">{money(t.vendorOwes)}</Amount>,
+    <Amount key="company" tone="accent">{money(t.dueComp)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
   ];
 
@@ -92,7 +92,7 @@ export default function SellerTab({
           { label: "المبلغ المطلوب تحصيله" },
           { label: "طريقة الدفع" },
           { label: "المستحق للبائع" },
-          { label: OWES_LABEL, tip: OWES_TIP },
+          { label: COMPANY_DUE_LABEL, tip: COMPANY_DUE_TIP },
           { label: "الغرامات" },
         ]}
         rows={s.row.orders.map((order) => [
@@ -114,7 +114,7 @@ export default function SellerTab({
           { label: "إجمالي تكلفة المنتجات", value: money(t.cost) },
           { label: "إجمالي شحن البائع", value: money(t.vendorShippingCost) },
           { label: "المستحق للبائع", value: money(t.dueSeller), tone: "green" },
-          { label: OWES_LABEL, value: money(t.vendorOwes), tone: "accent" },
+          { label: COMPANY_DUE_LABEL, value: money(t.dueComp), tone: "accent" },
           { label: "الغرامات", value: money(t.fine), tone: "red" },
         ]}
       />
@@ -130,7 +130,7 @@ export default function SellerTab({
           { label: "" }, { label: "الصانع" },
           { label: "عدد الطلبات", align: "end" }, { label: "إجمالي التحصيل", align: "end" },
           { label: "إجمالي شحن البائع", align: "end" },
-          { label: "المستحق للبائع", align: "end" }, { label: OWES_LABEL, align: "end", tip: OWES_TIP },
+          { label: "المستحق للبائع", align: "end" }, { label: COMPANY_DUE_LABEL, align: "end", tip: COMPANY_DUE_TIP },
           { label: "الغرامات", align: "end" }, { label: "" },
         ]}
         renderCells={renderCells}

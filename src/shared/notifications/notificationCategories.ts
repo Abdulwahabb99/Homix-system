@@ -86,6 +86,8 @@ const TITLE_PREFIXES = [
   // shipments (backend: src/modules/shipments/shipment.notifications.ts)
   "تم تغيير حالة الشحنة",
   "تم جدولة الشحنة",
+  "تم تغيير حالة جدولة الشحنة",
+  "تم إلغاء حالة جدولة الشحنة",
   // tickets (backend: src/modules/tickets/ticket.notifications.ts)
   "تم إنشاء تذكرة جديدة",
   "تم إسناد التذكرة",
@@ -94,7 +96,8 @@ const TITLE_PREFIXES = [
 ];
 
 // Aggregated bulk text: "تم تغيير حالة 5 شحنة إلى …" (the count is part of the leading phrase).
-const TITLE_PATTERNS = [/^تم تغيير حالة \d+ شحنة/];
+// Schedule-status bulk: "تم تغيير حالة جدولة 5 شحنة إلى …" / "تم إلغاء حالة جدولة 5 شحنة".
+const TITLE_PATTERNS = [/^تم تغيير حالة \d+ شحنة/, /^تم تغيير حالة جدولة \d+ شحنة/, /^تم إلغاء حالة جدولة \d+ شحنة/];
 
 const FALLBACK_TITLES: Record<NotificationCategory, string> = {
   orders: "إشعار طلب",

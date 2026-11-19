@@ -109,7 +109,7 @@ export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: 
       ordersCount: fullInvoice.summary.ordersCount,
       lateSellersCount: fullInvoice.items.filter((i) => i.fines > 0).length,
       dueSellerPct: pct(summary.vendorDue, summary.totalSales),
-      dueCompPct: pct(summary.homixMargin, summary.totalSales),
+      dueCompPct: pct(summary.companyDue, summary.totalSales),
     };
 
     const sections: Record<SettlementTabKey, SettlementSeller[]> = {

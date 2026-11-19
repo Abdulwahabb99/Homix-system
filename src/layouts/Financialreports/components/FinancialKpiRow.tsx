@@ -30,10 +30,10 @@ export default function FinancialKpiRow({ kpis, archive = false }: { kpis: Finan
     },
     {
       icon: <AccountBalanceOutlinedIcon />, iconBg: HX.accentLight, iconColor: HX.accent,
-      topRight: "هامش هوميكس",
-      value: arNum(kpis.totalHomixMargin), valueColor: HX.accent,
-      label: "هامش هوميكس من تسليمات المخزن (ج.م)",
-      badge: [kpis.totalSales > 0 ? `${arNum(kpis.dueCompPct)}٪ من الإجمالي` : "—", kpis.totalVendorOwes > 0 ? `مستحق على الصانع ${arNum(kpis.totalVendorOwes)} ج.م` : ""].filter(Boolean).join(" • "), badgeBg: HX.accentLight, badgeColor: HX.accent,
+      topRight: "المستحق لهوميكس",
+      value: arNum(kpis.totalDueComp), valueColor: HX.accent,
+      label: "إجمالي المستحق لهوميكس (ج.م)",
+      badge: kpis.totalSales > 0 ? `${arNum(kpis.dueCompPct)}٪ من الإجمالي` : "—", badgeBg: HX.accentLight, badgeColor: HX.accent,
     },
     {
       icon: <WarningAmberOutlinedIcon />, iconBg: HX.redLight, iconColor: HX.red,

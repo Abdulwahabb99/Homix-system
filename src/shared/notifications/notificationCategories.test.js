@@ -56,6 +56,12 @@ describe("notification categories", () => {
     expect(getNotificationTitle({ text: "تم تغيير حالة الشحنة #SH12273 إلى تم التسليم", entityType: "shipment" })).toBe("تم تغيير حالة الشحنة");
     expect(getNotificationTitle({ text: "تم تغيير حالة 5 شحنة إلى تم التسليم", entityType: "shipment" })).toBe("تم تغيير حالة 5 شحنة");
     expect(getNotificationTitle({ text: "تم جدولة الشحنة #SH1 بتاريخ 2026-12-01", entityType: "shipment" })).toBe("تم جدولة الشحنة");
+    expect(getNotificationTitle({ text: "تم تغيير حالة جدولة الشحنة #SH12273 إلى لا يوجد رد (محاولة أولى)", entityType: "shipment" }))
+      .toBe("تم تغيير حالة جدولة الشحنة");
+    expect(getNotificationTitle({ text: "تم إلغاء حالة جدولة الشحنة #SH12273", entityType: "shipment" })).toBe("تم إلغاء حالة جدولة الشحنة");
+    expect(getNotificationTitle({ text: "تم تغيير حالة جدولة 5 شحنة إلى مجدول", entityType: "shipment" })).toBe("تم تغيير حالة جدولة 5 شحنة");
+    expect(getNotificationTitle({ text: "تم إلغاء حالة جدولة 3 شحنة", entityType: "shipment" })).toBe("تم إلغاء حالة جدولة 3 شحنة");
+    expect(getNotificationTitle({ text: "تم تغيير حالة 5 شحنة إلى تم التسليم", entityType: "shipment" })).toBe("تم تغيير حالة 5 شحنة");
     expect(getNotificationTitle({ text: "تم إنشاء تذكرة جديدة رقم #12", entityType: "ticket" })).toBe("تم إنشاء تذكرة جديدة");
     expect(getNotificationTitle({ text: "تم إسناد التذكرة رقم #12 إليك", entityType: "ticket" })).toBe("تم إسناد التذكرة");
     expect(getNotificationTitle({ text: "تم تغيير حالة التذكرة رقم #12 إلى مغلقة", entityType: "ticket" })).toBe("تم تغيير حالة التذكرة");

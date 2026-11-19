@@ -36,6 +36,7 @@ import {
   ReceiptDocument as DocumentData,
 } from "query/shipmentReceipts";
 import ReceiptDocumentDialog from "./ReceiptDocument";
+import { cairoDay, manufactureToReceiptDays, receiptDateBounds, shortDateLabel } from "./receiptDates";
 
 const FONT = "'Cairo', sans-serif";
 const PAGE_SIZE = 20;
@@ -60,8 +61,7 @@ const filterFieldSx = {
 } as const;
 
 const today = () => moment().tz("Africa/Cairo").format("YYYY-MM-DD");
-const dateLabel = (value: string | null) =>
-  value ? moment(value).tz("Africa/Cairo").format("DD/MM/YY") : "—";
+const dateLabel = shortDateLabel;
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
@@ -150,19 +150,27 @@ function NoteInput({ value, onCommit, disabled }: { value: string; onCommit: (ne
   );
 }
 
-/** حقل تاريخ يُحفظ عند مغادرته فقط (تجنباً لمسح التاريخ أثناء التحرير الجزئي). */
-function DateCommitInput({ value, max, onCommit }: { value: string; max?: string; onCommit: (next: string | null) => void }) {
+/** حقل تاريخ الاستلام: يُحفظ عند التغيير/المغادرة، Escape يلغي، ويتعطل أثناء الحفظ. */
+function DateCommitInput({ value, min, max, saving, onCommit }: {
+  value: string; min?: string; max?: string; saving?: boolean; onCommit: (next: string) => void;
+}) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
+  const commit = (next: string) => { if (next && next !== value) onCommit(next); };
   return (
     <input
       type="date"
-      aria-label="تاريخ التصنيع"
-      style={{ ...INLINE_CTRL, width: 125 }}
+      aria-label="تاريخ الاستلام"
+      style={{ ...INLINE_CTRL, width: 125, opacity: saving ? 0.6 : 1 }}
       value={text}
+      min={min}
       max={max}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={() => { if (text !== value) onCommit(text || null); }}
+      disabled={saving}
+      onChange={(e) => { setText(e.target.value); commit(e.target.value); }}
+      onBlur={() => commit(text)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") { setText(value); (e.target as HTMLInputElement).blur(); }
+      }}
     />
   );
 }
@@ -170,7 +178,7 @@ function DateCommitInput({ value, max, onCommit }: { value: string; max?: string
 /** مدة التصنيع حتى الاستلام: أخضر ≤7 أيام، كهرماني ≤14، أحمر بعدها، وتحذير إن سبق التصنيعُ الاستلامَ. */
 function DaysBadge({ days }: { days: number | null }) {
   if (days == null) {
-    return <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT }}>حدد تاريخ التصنيع</Box>;
+    return <Box component="span" sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT }}>—</Box>;
   }
   const tone = days < 0
     ? { bg: HX.redLight, color: "#991b1b", text: "التصنيع بعد الاستلام" }
@@ -193,6 +201,7 @@ function ItemTable({
   onCancel,
   onUpdate,
   onPrint,
+  savingOrderId,
 }: {
   items: ReceiptItem[];
   selected: ReceiptItem[];
@@ -200,9 +209,11 @@ function ItemTable({
   mode: "received" | "candidates";
   onDocument?: (number: string) => void;
   onCancel?: (item: ReceiptItem) => void;
-  /** تعديل مباشر لتاريخ التصنيع / الملاحظات (يتطلب ship_edit) */
-  onUpdate?: (item: ReceiptItem, patch: { notes?: string; manufactureDate?: string | null }) => void;
+  /** تعديل مباشر لتاريخ الاستلام / الملاحظات (يتطلب ship_edit) */
+  onUpdate?: (item: ReceiptItem, patch: { notes?: string; receiptDate?: string }) => void;
   onPrint?: (item: ReceiptItem) => void;
+  /** الصنف الجاري حفظ تعديله حاليًا */
+  savingOrderId?: number | null;
 }) {
   const has = (item: ReceiptItem) => selected.some((entry) => entry.orderId === item.orderId);
   const all = items.length > 0 && items.every(has);
@@ -268,21 +279,22 @@ function ItemTable({
                 </td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.vendorName || "—"}</Box></td>
                 <td style={{ ...TD, textAlign: "center" }}>{item.quantity}</td>
-                <td style={TD}>
-                  {mode === "received" && onUpdate ? (
-                    <DateCommitInput
-                      value={item.manufactureDate ? moment(item.manufactureDate).tz("Africa/Cairo").format("YYYY-MM-DD") : ""}
-                      max={item.receivedDate ? moment(item.receivedDate).tz("Africa/Cairo").format("YYYY-MM-DD") : undefined}
-                      onCommit={(next) => onUpdate(item, { manufactureDate: next })}
-                    />
-                  ) : (
-                    <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.manufactureDate)}</Box>
-                  )}
-                </td>
+                <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.manufactureDate)}</Box></td>
                 {mode === "received" && (
                   <>
-                    <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.receivedDate)}</Box></td>
-                    <td style={TD}><DaysBadge days={item.manufactureDays} /></td>
+                    <td style={TD}>
+                      {onUpdate ? (
+                        <DateCommitInput
+                          value={cairoDay(item.receivedDate)}
+                          {...receiptDateBounds(item.manufactureDate)}
+                          saving={savingOrderId === item.orderId}
+                          onCommit={(next) => onUpdate(item, { receiptDate: next })}
+                        />
+                      ) : (
+                        <Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{dateLabel(item.receivedDate)}</Box>
+                      )}
+                    </td>
+                    <td style={TD}><DaysBadge days={manufactureToReceiptDays(item.manufactureDate, item.receivedDate) ?? item.manufactureDays} /></td>
                     <td style={TD}><Box component="span" sx={{ fontSize: "12px", color: HX.tx2 }}>{item.receiverName || "—"}</Box></td>
                     <td style={{ ...TD, maxWidth: 200, whiteSpace: "normal" }}>
                       {onUpdate ? (
@@ -443,9 +455,9 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
     combined.mutate([item.orderId], { onSuccess: setDocuments, onError: (failure) => setError(receiptError(failure)) });
   };
 
-  const editItem = (item: ReceiptItem, patch: { notes?: string; manufactureDate?: string | null }) => {
+  const editItem = (item: ReceiptItem, patch: { notes?: string; receiptDate?: string }) => {
     setError("");
-    updateReceipt.mutate({ orderId: item.orderId, ...patch }, { onError: (failure) => setError(receiptError(failure)) });
+    updateReceipt.mutate({ orderId: item.orderId, ...patch }, { onError: (failure) => toast.error(receiptError(failure)) });
   };
 
   const start = () => {
@@ -657,7 +669,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
       ) : (
         <>
           <Box sx={{ opacity: list.isFetching ? 0.7 : 1, transition: "opacity .2s" }}>
-            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? openCancel : undefined} onUpdate={canEdit ? editItem : undefined} onPrint={canEdit ? printItem : undefined} />
+            <ItemTable items={items} selected={selected} onSelect={(next) => select(next)} mode="received" onDocument={showDocument} onCancel={canEdit ? openCancel : undefined} onUpdate={canEdit ? editItem : undefined} onPrint={canEdit ? printItem : undefined} savingOrderId={updateReceipt.isPending ? updateReceipt.variables?.orderId : null} />
           </Box>
           {totalPages > 1 && (
             <Box sx={{ ...cardSx, overflow: "hidden" }}>

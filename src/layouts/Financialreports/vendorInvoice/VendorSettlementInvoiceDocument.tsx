@@ -3,7 +3,7 @@
  * فاتورة تسوية المورّد (الفاتورة الشاملة) — يُلتقط إلى PDF عبر html2pdf.
  * تُملأ من بيانات تبويب «الفاتورة الشاملة»؛ بيانات هوميكس/البنك من `vendorInvoiceConstants`.
  */
-import { MARGIN_LABEL, OWES_LABEL, companyDueKindOf } from "../utils/companyDue";
+import { COMPANY_DUE_LABEL } from "../utils/companyDue";
 import React from "react";
 import logo from "../../../assets/images/homix.png";
 import { money } from "../utils/calc";
@@ -102,8 +102,7 @@ const VendorSettlementInvoiceDocument = React.forwardRef<
               <th className={styles.th}>رقم الطلب</th>
               <th className={styles.th}>كود المنتج</th>
               <th className={`${styles.th} ${styles.c}`}>التفصيل</th>
-              <th className={`${styles.th} ${styles.c}`}>{MARGIN_LABEL}</th>
-              <th className={`${styles.th} ${styles.c}`}>{OWES_LABEL}</th>
+              <th className={`${styles.th} ${styles.c}`}>{COMPANY_DUE_LABEL}</th>
               <th className={styles.th}>مستحق البائع</th>
               <th className={`${styles.th} ${styles.c} ${styles.thLast}`}>الغرامات</th>
             </tr>
@@ -124,13 +123,11 @@ const VendorSettlementInvoiceDocument = React.forwardRef<
                       {isWarehouse ? "مخزن" : "بائع"}
                     </span>
                   </td>
-                  {([ "margin", "vendorOwes" ] as const).map((kind) => (
-                    <td key={kind} className={`${styles.td} ${styles.c}`}>
-                      {companyDueKindOf(order) === kind && order.companyDue > 0
-                        ? <span className={styles.dueH}>{money(order.companyDue)}</span>
-                        : <span className={`${styles.c} ${styles.dash}`}>—</span>}
-                    </td>
-                  ))}
+                  <td className={`${styles.td} ${styles.c}`}>
+                    {order.companyDue > 0
+                      ? <span className={styles.dueH}>{money(order.companyDue)}</span>
+                      : <span className={`${styles.c} ${styles.dash}`}>—</span>}
+                  </td>
                   <td className={styles.td}>
                     {order.vendorDue > 0
                       ? <span className={styles.dueV}>{money(order.vendorDue)}</span>
@@ -151,12 +148,8 @@ const VendorSettlementInvoiceDocument = React.forwardRef<
         <div className={styles.totalsArea}>
           <div className={styles.totalsBox}>
             <div className={styles.tRow}>
-              <span className={styles.tLbl}>{MARGIN_LABEL}</span>
-              <span className={`${styles.tVal} ${styles.tValBlue}`}>{money(totals.homixMargin)}</span>
-            </div>
-            <div className={styles.tRow}>
-              <span className={styles.tLbl}>{OWES_LABEL}</span>
-              <span className={`${styles.tVal} ${styles.tValBlue}`}>{money(totals.vendorOwes)}</span>
+              <span className={styles.tLbl}>{COMPANY_DUE_LABEL}</span>
+              <span className={`${styles.tVal} ${styles.tValBlue}`}>{money(totals.dueComp)}</span>
             </div>
             <div className={styles.tRow}>
               <span className={styles.tLbl}>مستحق البائع (إجمالي)</span>

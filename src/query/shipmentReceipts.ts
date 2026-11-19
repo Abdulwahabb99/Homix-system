@@ -118,11 +118,11 @@ export function useReceiveItems() {
     },
   });
 }
-/** تعديل ملاحظات الاستلام و/أو تاريخ التصنيع لصنف مستلم (PATCH /shipments/receipts/:orderId) */
+/** تعديل ملاحظات الاستلام و/أو تاريخ الاستلام لصنف مستلم (PATCH /shipments/receipts/:orderId) */
 export function useUpdateReceipt() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { orderId: number; notes?: string; manufactureDate?: string | null }) => {
+    mutationFn: async (vars: { orderId: number; notes?: string; receiptDate?: string }) => {
       const { orderId, ...body } = vars;
       return (await axiosRequest.patch(`/shipments/receipts/${orderId}`, body)).data.data;
     },

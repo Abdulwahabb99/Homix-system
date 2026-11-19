@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { companyDueKindOf, splitCompanyDue, MARGIN_LABEL, OWES_LABEL } from "./companyDue";
+import { companyDueKindOf, sumCompanyDue, COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "./companyDue";
 import { overlayKpis, overlaySections } from "./liveOverlay";
 import { sellerTotals } from "./calc";
 
@@ -43,13 +43,13 @@ describe("company due kinds", () => {
     expect(overlayKpis(kpis, base.comprehensive, out.comprehensive)).toMatchObject({ totalHomixMargin: 1099, totalVendorOwes: 50, totalDueComp: 1149 });
   });
 
-  it("splits invoice lines by stored kind (counted lines only)", () => {
-    expect(splitCompanyDue([
-      { companyDue: 100, companyDueKind: "margin", state: "included" },
-      { companyDue: 40, companyDueKind: "vendorOwes", state: "included" },
-      { companyDue: 999, companyDueKind: "margin", state: "frozen" },
-      { companyDue: 7, isWarehouseDelivery: true },
-    ])).toEqual({ homixMargin: 107, vendorOwes: 40 });
+  it("sums the company due of counted invoice lines only", () => {
+    expect(sumCompanyDue([
+      { companyDue: 100, state: "included" },
+      { companyDue: 40, state: "included" },
+      { companyDue: 999, state: "frozen" },
+      { companyDue: 7 },
+    ])).toBe(147);
   });
 });
 
@@ -63,21 +63,41 @@ describe("no combined total anywhere in the Financial Reports sources", () => {
   });
   walk(root);
 
-  it("never uses totalCombined / «الإجمالي الكلي» / the ambiguous «المستحق للشركة» label", () => {
+  const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
+  const extract = (text, from, to) => text.slice(text.indexOf(from), text.indexOf(to));
+  const inOrder = (text, items) => {
+    let at = -1;
+    items.forEach((item) => {
+      const next = text.indexOf(item, at + 1);
+      expect(`${item}:${next > at}`).toBe(`${item}:true`);
+      at = next;
+    });
+  };
+
+  it("never uses the old labels / totalCombined in the Financial Reports sources", () => {
     expect(sources.length).toBeGreaterThan(20);
+    const forbidden = ["totalCombined", "هامش هوميكس", "مستحق على الصانع", "الإجمالي الكلي", "المستحق للشركة", "مستحق الشركة"];
     sources.forEach((file) => {
       const text = fs.readFileSync(file, "utf8");
-      expect(`${path.basename(file)}:${text.includes("totalCombined")}`).toBe(`${path.basename(file)}:false`);
-      expect(`${path.basename(file)}:${text.includes("الإجمالي الكلي")}`).toBe(`${path.basename(file)}:false`);
-      expect(`${path.basename(file)}:${/المستحق للشركة|مستحق الشركة/.test(text.replace("هامش هوميكس / مستحق على الصانع", ""))}`).toBe(`${path.basename(file)}:false`);
+      forbidden.forEach((word) => expect(`${path.basename(file)}:${word}:${text.includes(word)}`).toBe(`${path.basename(file)}:${word}:false`));
     });
   });
 
-  it("the comprehensive footer lists the agreed items only", () => {
-    const text = fs.readFileSync(path.join(root, "components/tabs/ComprehensiveTab.tsx"), "utf8");
-    const footer = text.slice(text.indexOf("<ComprehensiveSummary"), text.indexOf("note={COMPREHENSIVE_NOTE}"));
-    ["عدد الطلبات", "إجمالي مستحق البائع", "MARGIN_LABEL", "OWES_LABEL", "إجمالي الغرامات"].forEach((item) => expect(footer).toContain(item));
-    expect(MARGIN_LABEL).toBe("هامش هوميكس");
-    expect(OWES_LABEL).toBe("مستحق على الصانع");
+  it("uses one company column named «المستحق لهوميكس» with the agreed tooltip", () => {
+    expect(COMPANY_DUE_LABEL).toBe("المستحق لهوميكس");
+    expect(COMPANY_DUE_TIP).toBe("ما تستحقه هوميكس = التحصيل − التكلفة (تسليمات المخزن)، أو ما يسدّده الصانع لهوميكس (تسليمات البائع)");
+  });
+
+  it("comprehensive tab: main row, detail table (6 columns) and footer lists", () => {
+    const text = read("components/tabs/ComprehensiveTab.tsx");
+    inOrder(extract(text, "header={[", "renderCells={renderCells}"), ['"الصانع"', '"عدد الطلبات"', '"المستحق للبائع"', "COMPANY_DUE_LABEL", '"الغرامات"']);
+    inOrder(extract(text, "columns={[", "rows={"), ['"رقم العملية"', '"رقم الطلب"', '"كود المنتج"', '"المستحق للبائع"', "COMPANY_DUE_LABEL", '"الغرامات"']);
+    expect(extract(text, "columns={[", "rows={").match(/label:/g)).toHaveLength(6);
+    inOrder(extract(text, "<ComprehensiveSummary", "note={COMPREHENSIVE_NOTE}"), ['"عدد الطلبات"', '"إجمالي مستحق البائع"', '"إجمالي المستحق لهوميكس"', '"إجمالي الغرامات"']);
+  });
+
+  it("seller tab, archive dialog, prints and invoiced orders use the same single column", () => {
+    ["components/tabs/SellerTab.tsx", "invoices/InvoiceDetailDialog.tsx", "invoices/InvoicedOrdersView.tsx", "invoices/InvoiceDocument.tsx", "vendorInvoice/VendorSettlementInvoiceDocument.tsx", "vendorInvoice/SellerSettlementInvoiceDocument.tsx"]
+      .forEach((file) => expect(`${file}:${read(file).includes("COMPANY_DUE_LABEL")}`).toBe(`${file}:true`));
   });
 });
