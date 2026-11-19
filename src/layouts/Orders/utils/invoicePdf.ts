@@ -172,9 +172,15 @@ export interface InvoicePdfOptions {
   quality?: number;
   /** دقّة ثابتة بدل المحسوبة من الجهاز (الموبايل يبقى محدوداً بميزانيته) */
   scale?: number;
+  /**
+   * أوضاع html2pdf للفواصل. الافتراضي avoid-all (فواتير الطلبات). كشف التسوية يقسّم نفسه إلى عناصر
+   * `.page` بارتفاع A4 بالضبط، فيكفيه "css": مع avoid-all كان الجذر (أطول من صفحة) يُدفع لصفحة ثانية
+   * فتخرج صفحة أولى فارغة وثالثة بسطر تذييل واحد.
+   */
+  pagebreakMode?: Array<"avoid-all" | "css" | "legacy">;
 }
 
-export const STATEMENT_PDF_OPTIONS: InvoicePdfOptions = { marginMm: 0, imageType: "jpeg", quality: 0.92, scale: 2.5 };
+export const STATEMENT_PDF_OPTIONS: InvoicePdfOptions = { marginMm: 0, imageType: "jpeg", quality: 0.92, scale: 2.5, pagebreakMode: ["css"] };
 
 function buildOptions(filename: string, scale: number, options: InvoicePdfOptions = {}) {
   const margin = options.marginMm ?? 5;
@@ -193,7 +199,7 @@ function buildOptions(filename: string, scale: number, options: InvoicePdfOption
       /* مهم: scale في onclone يفسد أشكال الحروف على canvas */
     },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] as const },
+    pagebreak: { mode: options.pagebreakMode ?? (["avoid-all", "css", "legacy"] as const) },
   };
 }
 

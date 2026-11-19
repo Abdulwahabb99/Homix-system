@@ -12,7 +12,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { exportFinancialReport, type FinancialDateRange } from "query/financialReport";
-import { useCycleInvoices, useGenerateInvoices, useLiveLineEdit } from "query/financialInvoices";
+import { useCycleInvoices, useGenerateInvoices, useLiveLineEdit, useReviewLiveAll } from "query/financialInvoices";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { usePermissions } from "shared/permissions";
 
@@ -23,6 +23,7 @@ import { BillingDay, SettlementTabKey } from "./utils/types";
 import { currentMonthCairo, cycleRange, formatCycleRange, getCycleLabel, monthPickerValue, pastMonthFromPicker } from "./utils/cycle";
 import { arNum } from "./utils/format";
 import { overlayKpis, overlaySections, type LiveCycleState } from "./utils/liveOverlay";
+import { reviewAllToast, REVIEW_ALL_LABEL, CYCLE_OPEN_TOOLTIP } from "./utils/liveReview";
 import { LiveInvoiceProvider, type LiveInvoiceContextValue } from "./components/LiveInvoice";
 
 import FinancialPeriodBar from "./components/FinancialPeriodBar";
@@ -82,6 +83,7 @@ export default function Financialreports() {
   /** الإجراءات الكتابية للمالية فقط — البائع قراءة فقط حتى لو وصلته الصلاحية */
   const canSettle = can("finance_settle") && !isVendor;
   const generate = useGenerateInvoices();
+  const reviewAll = useReviewLiveAll();
 
   const currentMonth = currentMonthCairo();
   const shownMonth = monthPickerValue(pastMonth);
@@ -154,6 +156,16 @@ export default function Financialreports() {
     });
   };
 
+  const handleReviewAll = () => {
+    if (!cycle?.endDate || reviewAll.isPending || cycleClosed === false) return;
+    const pending = sections.comprehensive.filter((seller) => seller.row.vendorId && seller.row.ordersCount > 0
+      && !["reviewed", "frozen", "transferred"].includes(seller.invoice?.status ?? "")).length;
+    if (!window.confirm(`مراجعة فواتير ${pending} صانع لهذه الدورة؟ (تُصدر المسودات وتُراجع وتُقفل الأرقام؛ الصنّاع المُراجَعون مسبقاً يُتخطّون)`)) return;
+    reviewAll.mutate({ billingDay, referenceDate: cairoDay(cycle.endDate) }, {
+      onSuccess: (res) => { const toast = reviewAllToast(res); NotificationMeassage(toast.type, toast.message); },
+    });
+  };
+
   const actions = (
     <Box sx={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
       {canSettle && (
@@ -186,6 +198,13 @@ export default function Financialreports() {
       {canGenerate && (
         <Box component="button" type="button" onClick={handleGenerate} disabled={generate.isPending} sx={{ ...ghostBtnSx, opacity: generate.isPending ? 0.6 : 1 }}>
           إصدار فواتير الدورة
+        </Box>
+      )}
+      {canGenerate && (
+        <Box component="button" type="button" onClick={handleReviewAll} disabled={reviewAll.isPending || !cycleClosed}
+          title={cycleClosed ? "يُصدر ويراجع فواتير كل صنّاع الدورة" : CYCLE_OPEN_TOOLTIP}
+          sx={{ ...ghostBtnSx, opacity: reviewAll.isPending || !cycleClosed ? 0.55 : 1, cursor: !cycleClosed ? "not-allowed" : "pointer" }}>
+          {reviewAll.isPending ? "جارٍ المراجعة..." : REVIEW_ALL_LABEL}
         </Box>
       )}
       {canSettle && (
@@ -297,7 +316,7 @@ export default function Financialreports() {
 
                 {canSettle && cycleState === "billing" && (
                   <Box sx={{ fontSize: "11.5px", color: HX.tx2, px: "4px" }}>
-                    ✎ الأرقام ذات الخط المنقّط قابلة للتعديل (سعر التكلفة، التحصيل، الغرامة، المستحقات) — اضغط الرقم، Enter أو الخروج من الحقل يحفظ، Escape يلغي. تُصدر مسودة الفاتورة تلقائياً عند أول تعديل، وبعد المراجعة تُقفل الأرقام.
+                    ✎ الأرقام ذات الخط المنقّط قابلة للتعديل (سعر التكلفة، التحصيل، الغرامة، المستحقات) — اضغط الرقم، Enter أو الخروج من الحقل يحفظ، Escape يلغي. تُصدر مسودة الفاتورة تلقائياً عند أول تعديل. بعد انتهاء الدورة اضغط «تمت المراجعة» على الصانع (أو «مراجعة الكل») وبعدها تُقفل الأرقام ويظهر التحويل/التجميد/الإيصال من الفاتورة.
                   </Box>
                 )}
                 <Box sx={tabsWrapSx}>

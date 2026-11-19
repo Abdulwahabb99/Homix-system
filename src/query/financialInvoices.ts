@@ -291,6 +291,18 @@ export const useGenerateInvoices = () =>
     unwrap<{ invoices: Array<{ created: boolean; added: number; vendorId: number; invoiceId: number }> }>(
       await axiosRequest.post(`${INVOICES_PATH}/generate`, vars)));
 
+/** مراجعة صانع واحد من التقرير الحي: يُنشئ/يعيد استخدام المسودة ثم يراجعها في معاملة واحدة */
+export const useReviewLive = () =>
+  useInvoiceMutation(async (vars: { billingDay: 13 | 28; referenceDate: string; vendorId: number }) =>
+    unwrap<{ alreadyReviewed: boolean; invoice: InvoiceSummary; vendorId: number }>(
+      await axiosRequest.post(`${INVOICES_PATH}/review-live`, vars)), "تمت مراجعة الفاتورة");
+
+/** مراجعة كل صنّاع الدورة (نتيجة لكل صانع؛ الفشل الجزئي لا يوقف الباقي) */
+export const useReviewLiveAll = () =>
+  useInvoiceMutation(async (vars: { billingDay: 13 | 28; referenceDate: string }) =>
+    unwrap<{ failed: number; succeeded: number; results: Array<{ vendorId: number; ok: boolean; invoiceId?: number; alreadyReviewed?: boolean; error?: string }> }>(
+      await axiosRequest.post(`${INVOICES_PATH}/review-live-all`, vars)));
+
 export const useTransitionInvoice = () =>
   useInvoiceMutation(async (vars: { id: number; to: InvoiceStatus; transferAmount?: number }) =>
     unwrap<InvoiceSummary>(await axiosRequest.post(`${INVOICES_PATH}/${vars.id}/transition`, { to: vars.to, transferAmount: vars.transferAmount })));

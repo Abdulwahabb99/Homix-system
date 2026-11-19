@@ -2,6 +2,7 @@
    بدون letter-spacing في هذا الملف: html2canvas يفكّك الحروف العربية معه.
    print-color-adjust: exact ضروري للطباعة الأصلية وإلا تُطبع الترويسة الكحلية بيضاء. */
 
+.root { width: 794px; background: #fff; margin: 0; padding: 0; }
 .page {
   --gold-bar: #b7873b;
   --navy: #013247;
@@ -14,8 +15,15 @@
   --ink: #121d22;
   --hairline: #e5e9ec;
 
+  /* ارتفاع ثابت = صفحة A4 بالضبط (لا min-height ولا حشوة تتجاوزه). كل صفحة عنصر مستقل،
+     وبين الصفحات فاصل break-after لـ html2pdf وللطباعة الأصلية. */
+  /* 1120 لا 1122: html2pdf يحسب حشوة الفاصل = ارتفاع الصفحة − (القاع mod ارتفاع الصفحة)، فلو كان
+     القاع مضاعفاً تماماً لارتفاع الصفحة (1122) تُضاف صفحة كاملة فارغة بين كل صفحتين. */
   width: 794px;
-  min-height: 1122px;
+  height: 1120px;
+  overflow: hidden;
+  break-after: page;
+  page-break-after: always;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -29,6 +37,10 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+/* حدّ أبيض 2px داخل ارتفاع كل صفحة تالية (لا margin: أي إزاحة تغيّر حساب حشوة html2pdf وتولّد صفحة فارغة):
+   شريحة html2pdf أطول من الصفحة بنحو 0.8px فيتسرّب إليها حدّ شريط الصفحة التالية الذهبي. */
+.page:not(:first-child) { border-top: 2px solid #fff; }
+.page:last-child { break-after: auto; page-break-after: auto; }
 .page * { box-sizing: border-box; margin: 0; padding: 0; }
 
 .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
@@ -124,12 +136,12 @@
   border-bottom: 2px solid var(--navy);
   line-height: 1.5;
 }
-.table td { padding: 0 8px; height: 40px; text-align: right; font-size: 11px; vertical-align: middle; border-bottom: 1px solid #e9edf0; }
+.table td { white-space: nowrap; padding: 0 8px; height: 40px; text-align: right; font-size: 11px; vertical-align: middle; border-bottom: 1px solid #e9edf0; }
 .row { break-inside: avoid; page-break-inside: avoid; }
 .emptyRow td { height: 67px; text-align: center; font-size: 12.5px; color: var(--muted-2); }
 .op { font-weight: 800; color: var(--navy); }
 .onum { color: var(--muted); font-weight: 600; }
-.pcode { display: inline-block; padding: 1px 8px; border-radius: 6px; background: #f1f3f4; font-size: 10.5px; color: var(--text-2); direction: ltr; unicode-bidi: isolate; }
+.pcode { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; padding: 1px 6px; border-radius: 6px; background: #f1f3f4; font-size: 10.5px; color: var(--text-2); direction: ltr; unicode-bidi: isolate; }
 .chip { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 10.5px; font-weight: 700; }
 .chipHomix { background: #e3edf2; color: var(--navy); }
 .chipVendor { background: #f5eddc; color: var(--gold-label); }
@@ -139,7 +151,7 @@
 
 /* ── الأسفل: بيانات البنك + الإجماليات + الختم ── */
 .bottom {
-  margin: 24px 46px 24px;
+  margin: 24px 46px 8px;
   flex: none;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -164,6 +176,10 @@
 .netNum { font-size: 20px; font-weight: 900; color: var(--navy); line-height: 1.2; }
 .stampWrap { display: flex; justify-content: center; margin-top: 10px; height: 170px; }
 .stampWrap canvas { display: block; }
+/* وضع التوفير: الختم تحت صندوق البنك في العمود الأيمن (فراغ بجانب الإجماليات) حين لا يتسع تحت الإجماليات */
+.bankCol { display: flex; flex-direction: column; }
+.stampBeside { display: flex; justify-content: center; height: 150px; margin-top: 4px; }
+.stampBeside canvas { display: block; margin: -10px 0; }
 
 /* ── التذييل ── */
 .footer {
@@ -179,3 +195,10 @@
   color: var(--muted-2);
 }
 .footBrand strong { font-size: 11px; font-weight: 700; color: var(--navy); }
+
+/* ── صفحات المتابعة ── */
+.contBar { height: 56px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 46px; background: var(--navy); color: #fff; }
+.contBar svg { display: block; }
+.contInfo { display: flex; flex-direction: column; align-items: flex-start; font-size: 12px; font-weight: 600; line-height: 1.4; direction: rtl; }
+.contMore { font-size: 10.5px; font-weight: 400; color: #b8cddb; }
+.tableCont { margin-top: 24px; }

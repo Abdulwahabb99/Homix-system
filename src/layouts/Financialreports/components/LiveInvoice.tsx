@@ -6,12 +6,20 @@ import React, { createContext, useContext } from "react";
 import { Box } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { useRefreshDraft } from "query/financialInvoices";
+import { useRefreshDraft, useReviewLive } from "query/financialInvoices";
 import type { LiveLineEditVars } from "query/financialInvoices";
 import { FONT } from "../utils/styles";
 import type { LiveEditContext } from "../utils/liveOverlay";
 import type { BillingDay, SettlementSeller } from "../utils/types";
 import { STATUS_META } from "../invoices/shared";
+import { liveInvoiceChipMeta, reviewButtonState, REVIEW_LABEL, type LiveChipTone } from "../utils/liveReview";
+
+const TONE_COLORS: Record<LiveChipTone, { color: string; bg: string }> = {
+  pending: { color: HX.tx2, bg: HX.surface3 },
+  reviewed: STATUS_META.reviewed,
+  frozen: STATUS_META.frozen,
+  transferred: STATUS_META.transferred,
+};
 
 export interface LiveInvoiceContextValue extends LiveEditContext {
   billingDay: BillingDay;
@@ -55,14 +63,36 @@ export default function LiveInvoiceChip({ seller }: { seller: SettlementSeller }
   if (invoicesState === "loading") return <Box component="span" sx={chipSx(HX.tx3, HX.surface2, true)}>جارٍ التحميل...</Box>;
   if (invoicesState === "error") return <Box component="span" sx={chipSx(HX.red, HX.redLight, true)} title="تعذّر تحميل حالة الفواتير">الحالة غير متاحة</Box>;
   const invoice = seller.invoice;
-  if (!invoice) return <Box component="span" sx={chipSx(HX.tx3, HX.surface2, true)} title="لم تُصدر فاتورة هذا الصانع لهذه الدورة بعد">لم تُصدر بعد</Box>;
-  const meta = STATUS_META[invoice.status];
+  const chip = liveInvoiceChipMeta(invoice?.status);
+  const tone = TONE_COLORS[chip.tone];
+  if (!invoice) return <Box component="span" sx={chipSx(tone.color, tone.bg, true)} title={chip.tooltip}>{chip.label}</Box>;
   return (
-    <Box component="button" type="button" title={`فتح الفاتورة${invoice.code ? ` ${invoice.code}` : ""}`}
+    <Box component="button" type="button" title={chip.tooltip || `فتح الفاتورة${invoice.code ? ` ${invoice.code}` : ""}`}
       onClick={(e: React.MouseEvent) => { e.stopPropagation(); openInvoice(invoice.id); }}
-      sx={{ ...chipSx(meta.color, meta.bg), cursor: "pointer", "&:hover": { borderColor: meta.color }, "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 } }}>
-      {meta.label}
+      sx={{ ...chipSx(tone.color, tone.bg), cursor: "pointer", "&:hover": { borderColor: tone.color }, "&:focus-visible": { outline: `2px solid ${HX.accent}`, outlineOffset: 2 } }}>
+      {chip.label}
       {cycleOpen && invoice.status === "draft" && <Box component="span" sx={{ marginInlineStart: "6px", fontWeight: 600, opacity: 0.8 }}>• دورة جارية</Box>}
+    </Box>
+  );
+}
+
+/** زر «تمت المراجعة» الأساسي: يُنشئ المسودة ويراجعها بخطوة واحدة؛ معطّل أثناء الدورة الجارية؛ لا يظهر للبائع */
+export function LiveReviewButton({ seller }: { seller: SettlementSeller }) {
+  const { billingDay, canSettle, cycleEndDay, cycleOpen, cycleState, invoicesState, isVendor } = useLiveInvoice();
+  const review = useReviewLive();
+  const state = reviewButtonState({ canSettle, cycleOpen, cycleState, invoiceStatus: seller.invoice?.status, invoicesState, isVendor });
+  const vendorId = Number(seller.row.vendorId);
+  if (!state.visible || !cycleEndDay || !vendorId) return null;
+  const disabled = state.disabled || review.isPending;
+  return (
+    <Box component="button" type="button" disabled={disabled} title={state.tooltip || "يُصدر الفاتورة ويراجعها (تُقفل الأرقام بعدها)"}
+      onClick={(e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (disabled) return;
+        review.mutate({ billingDay, referenceDate: cycleEndDay, vendorId });
+      }}
+      sx={{ ...chipSx("#fff", HX.accent), cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.55 : 1, border: "none", "&:hover": { filter: disabled ? "none" : "brightness(.95)" } }}>
+      {review.isPending ? "جارٍ المراجعة..." : REVIEW_LABEL}
     </Box>
   );
 }
@@ -76,6 +106,7 @@ export function LiveInvoiceHeaderStatus({ seller }: { seller: SettlementSeller }
   return (
     <>
       <LiveInvoiceChip seller={seller} />
+      <LiveReviewButton seller={seller} />
       {canRefresh && invoice && (
         <Box component="button" type="button" disabled={refresh.isPending} title="يعيد حساب أرقام النظام ويحتفظ بتعديلاتك اليدوية"
           onClick={() => {

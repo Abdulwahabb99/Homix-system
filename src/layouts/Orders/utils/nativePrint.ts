@@ -33,15 +33,14 @@ export function buildNativePrintCss(
   fullBleed: boolean = false
 ): string {
   const pagePadding = fullBleed ? 0 : PRINT_PAGE_PADDING_MM;
-  /* بدون exact يطبع كروم الخلفيات بيضاء فيختفي النص الأبيض على الترويسة الكحلية. وmin-height أقل
-     بقليل من 297mm كي لا تتولّد صفحة ثانية فارغة. */
+  /* بدون exact يطبع كروم الخلفيات بيضاء فيختفي النص الأبيض على الترويسة الكحلية. كل صفحة من الكشف
+     ارتفاعها 1122px (≤ 297mm) وبينها break-after، فلا min-height هنا (كان يولّد صفحة فارغة). */
   const fullBleedCss = fullBleed
     ? `
       .${targetClass}, .${targetClass} * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-      }
-      .${targetClass} { min-height: 296mm !important; }`
+      }`
     : "";
   return `
     @media print {

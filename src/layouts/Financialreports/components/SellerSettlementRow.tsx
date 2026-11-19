@@ -8,7 +8,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { sellerRowSx, sellerAvSx, expandIconSx, detailWrapSx, FONT } from "../utils/styles";
 import { SettlementSeller } from "../utils/types";
-import LiveInvoiceChip from "./LiveInvoice";
+import LiveInvoiceChip, { LiveReviewButton } from "./LiveInvoice";
 
 interface SellerSettlementRowProps {
   seller: SettlementSeller;
@@ -33,6 +33,7 @@ export default function SellerSettlementRow({
           <Box sx={{ fontSize: "11px", color: HX.tx3, fontFamily: FONT, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             {seller.cat}
             <LiveInvoiceChip seller={seller} />
+            <LiveReviewButton seller={seller} />
           </Box>
         </Box>
         {cells.map((c, i) => (
