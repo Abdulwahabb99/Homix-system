@@ -22,6 +22,7 @@ import ShipmentsBulkEditModal from "./components/ShipmentsBulkEditModal";
 import ShipmentsBulkBar from "./components/ShipmentsBulkBar";
 import ShipmentTrackingModal from "./components/ShipmentTrackingModal";
 import GroupedShipmentModal from "./components/GroupedShipmentModal";
+import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import { useBulkUpdateShipmentsMutation, type BulkUpdateShipmentPayload } from "query/shipmentEdit";
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
 import {
@@ -364,6 +365,7 @@ export default function Shipments() {
   const [shipmentSelectionModel, setShipmentSelectionModel] = useState<number[]>([]);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const bulkUpdateShipmentsMutation = useBulkUpdateShipmentsMutation();
+  const { confirmable: confirmBulk, dialogProps: regressionDialogProps } = useRegressionConfirm();
 
   const toggleShipmentSelect = React.useCallback((id: number) => {
     setShipmentSelectionModel((current) =>
@@ -428,31 +430,32 @@ export default function Shipments() {
         const { shipmentStatus: _skip, ...rest } = bulkData;
         const others = shipmentSelectionModel.filter((id) => !reassignedSelectedIds.includes(id));
         if (others.length > 0) {
-          await bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: others });
+          await confirmBulk((confirmRegression) => bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: others, confirmRegression }));
         }
         if (Object.keys(rest).length > 0) {
-          await bulkUpdateShipmentsMutation.mutateAsync({ data: rest, shipmentIds: reassignedSelectedIds });
+          await confirmBulk((confirmRegression) => bulkUpdateShipmentsMutation.mutateAsync({ data: rest, shipmentIds: reassignedSelectedIds, confirmRegression }));
         }
       } else {
-        await bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: shipmentSelectionModel });
+        await confirmBulk((confirmRegression) => bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: shipmentSelectionModel, confirmRegression }));
       }
       onDone();
       setShipmentSelectionModel([]);
     } catch {
-      /* الخطأ يُعرض من onError في الـ mutation */
+      /* الخطأ يُعرض من onError في الـ mutation، والإلغاء من نافذة التأكيد صامت */
     }
   };
 
   const handleBulkEditShipments = (bulkData: BulkUpdateShipmentPayload) => {
-    bulkUpdateShipmentsMutation.mutate(
-      { data: bulkData, shipmentIds: shipmentSelectionModel },
-      {
-        onSuccess: () => {
-          setIsBulkEditModalOpen(false);
-          setShipmentSelectionModel([]);
-        },
-      }
-    );
+    confirmBulk((confirmRegression) =>
+      bulkUpdateShipmentsMutation.mutateAsync({ data: bulkData, shipmentIds: shipmentSelectionModel, confirmRegression })
+    )
+      .then(() => {
+        setIsBulkEditModalOpen(false);
+        setShipmentSelectionModel([]);
+      })
+      .catch(() => {
+        /* الخطأ يُعرض من onError في الـ mutation، والإلغاء من نافذة التأكيد صامت */
+      });
   };
 
   // طباعة الشحنات المحددة كفاتورة واحدة — شحنة = صف طلب، فتُجلب بنفس نقطة
@@ -1019,6 +1022,7 @@ export default function Shipments() {
       </Dialog>
       <ShipmentTrackingModal shipment={trackShipment} onClose={() => setTrackShipment(null)} />
       <GroupedShipmentModal shipment={groupedShipment} onClose={() => setGroupedShipment(null)} />
+      <RegressionConfirmDialog {...regressionDialogProps} />
       <ReassignmentModal source={reassignSource} onClose={() => setReassignSource(null)} onSuccess={() => setActiveTab("reassignments")} />
     </DashboardLayout>
   );

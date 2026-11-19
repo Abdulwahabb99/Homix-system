@@ -3,6 +3,7 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { shipmentKeys } from "./keys";
+import { isRegressionConflict, withConfirmRegression } from "shared/regressionConfirm/regressionConfirm";
 
 export interface ReturnItem {
   /** المرتجع هو طلب بحالة شحن مرتجع، لذلك هذا هو order.id دائمًا. */
@@ -122,17 +123,18 @@ export interface UpdateCustomerReturnPayload {
 
 export async function putCustomerReturn(
   returnId: number | string,
-  body: UpdateCustomerReturnPayload
+  body: UpdateCustomerReturnPayload,
+  confirmRegression = false
 ): Promise<void> {
-  await axiosRequest.put(`/shipments/returns/customer/${returnId}`, body);
+  await axiosRequest.put(`/shipments/returns/customer/${returnId}`, withConfirmRegression(body, confirmRegression));
 }
 
 export function useUpdateCustomerReturnMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (vars: { returnId: number | string; body: UpdateCustomerReturnPayload }) =>
-      putCustomerReturn(vars.returnId, vars.body),
+    mutationFn: (vars: { returnId: number | string; body: UpdateCustomerReturnPayload; confirmRegression?: boolean }) =>
+      putCustomerReturn(vars.returnId, vars.body, vars.confirmRegression),
     onSuccess: async () => {
       // يشمل قوائم المرتجعات وعدّادات التبويبات في الـ meta
       await Promise.all([
@@ -142,6 +144,7 @@ export function useUpdateCustomerReturnMutation() {
       NotificationMeassage("success", "تم تحديث حالة المرتجع");
     },
     onError: (error) => {
+      if (isRegressionConflict(error)) return; /* نافذة التأكيد تتولّاه */
       NotificationMeassage("error", getReturnUpdateErrorMessage(error));
     },
   });
@@ -152,17 +155,18 @@ export type UpdateVendorReturnPayload = UpdateCustomerReturnPayload;
 
 export async function putVendorReturn(
   returnId: number | string,
-  body: UpdateVendorReturnPayload
+  body: UpdateVendorReturnPayload,
+  confirmRegression = false
 ): Promise<void> {
-  await axiosRequest.put(`/shipments/returns/vendor/${returnId}`, body);
+  await axiosRequest.put(`/shipments/returns/vendor/${returnId}`, withConfirmRegression(body, confirmRegression));
 }
 
 export function useUpdateVendorReturnMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (vars: { returnId: number | string; body: UpdateVendorReturnPayload }) =>
-      putVendorReturn(vars.returnId, vars.body),
+    mutationFn: (vars: { returnId: number | string; body: UpdateVendorReturnPayload; confirmRegression?: boolean }) =>
+      putVendorReturn(vars.returnId, vars.body, vars.confirmRegression),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: shipmentKeys.returnsRoot() }),
@@ -171,6 +175,7 @@ export function useUpdateVendorReturnMutation() {
       NotificationMeassage("success", "تم تحديث حالة المرتجع");
     },
     onError: (error) => {
+      if (isRegressionConflict(error)) return; /* نافذة التأكيد تتولّاه */
       NotificationMeassage("error", getReturnUpdateErrorMessage(error));
     },
   });

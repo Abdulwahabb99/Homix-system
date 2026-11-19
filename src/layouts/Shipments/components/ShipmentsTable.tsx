@@ -5,6 +5,7 @@ import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
 import { useInlineUpdateShipmentMutation } from "query/shipmentEdit";
+import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import type { ShipmentsMeta } from "query/shipmentsMeta";
 import ShipmentsListHeader from "./ShipmentsListHeader";
 import ShippingCompanySelect from "./ShipmentEdit/ShippingCompanySelect";
@@ -302,10 +303,15 @@ export default function ShipmentsTable({
     />
   );
   const inlineMut = useInlineUpdateShipmentMutation();
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const schedStatuses = meta?.scheduleStatuses ?? [];
   const canEditInline = !isVendor;
-  const save = (id: number, body: Parameters<typeof inlineMut.mutate>[0]["body"]) =>
-    inlineMut.mutate({ id, body });
+  /* الحقول المعروضة مضبوطة من بيانات الخادم، فإلغاء التأكيد أو فشل الطلب يُبقي القيمة السابقة. */
+  const save = (id: number, body: Parameters<typeof inlineMut.mutate>[0]["body"]) => {
+    confirmable((confirmRegression) => inlineMut.mutateAsync({ id, body, confirmRegression })).catch(() => {
+      /* الخطأ يُعرض من onError في الـ mutation، والإلغاء صامت */
+    });
+  };
   const onSchedDateChange = (s: ShipmentItem, v: string) => {
     const body: Parameters<typeof inlineMut.mutate>[0]["body"] = { scheduledDeliveryDate: v ? cairoDayStartIso(v) : null };
     // كما في التصميم: تحديد موعد بدون حالة يضبط الحالة «مجدول» إن وُجدت.
@@ -359,6 +365,7 @@ export default function ShipmentsTable({
 
   return (
     <Box sx={{ ...cardSx, opacity: isFetching && !isLoading ? 0.7 : 1, transition: "opacity .2s" }}>
+      <RegressionConfirmDialog {...regressionDialogProps} />
       {listHeader}
       <Box sx={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", direction: "rtl", fontSize: 12, minWidth: 2000 }}>

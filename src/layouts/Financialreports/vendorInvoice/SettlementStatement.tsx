@@ -68,7 +68,7 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
       <header className={styles.header}>
         <div className={styles.brand}>
           <HomixWordmark />
-          <div className={styles.subtitle}>كشف تسوية مورد</div>
+          <div className={styles.subtitle}>{data.title}</div>
         </div>
         <div className={styles.numBlock}>
           <div className={styles.numLabel}>رقم الفاتورة</div>
@@ -204,6 +204,12 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
               <span className={styles.tLabel}>الغرامات</span>
               <Money value={data.finesTotal} className={`${styles.tNum} ${styles.red}`} />
             </div>
+            {data.extraTotals.map((row) => (
+              <div key={row.label} className={styles.tRow}>
+                <span className={styles.tLabel}>{row.label}</span>
+                <Money value={row.value} className={styles.tNum} />
+              </div>
+            ))}
             {adj !== null && (
               <div className={styles.tRow}>
                 <span className={styles.tLabel}>تعديلات يدوية</span>

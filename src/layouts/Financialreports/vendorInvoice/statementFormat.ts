@@ -23,7 +23,13 @@ export interface StatementLine {
   fines: number;
 }
 
+export interface StatementExtraTotal { label: string; value: number }
+
 export interface StatementData {
+  /** عنوان المستند تحت الشعار */
+  title: string;
+  /** صفوف إجماليات إضافية تُعرض قبل صافي المستحق (مثلاً إجمالي التحصيل للبائع) */
+  extraTotals: StatementExtraTotal[];
   /** مع «#» في البداية — نفس النص في الترويسة والتذييل */
   number: string;
   cycleLabel: string;
@@ -107,9 +113,9 @@ export const cycleNumberOf = (billingDay: number | null | undefined): string =>
   billingDay === 13 ? "1" : billingDay === 28 ? "2" : "-";
 
 /** «#V{المورد}-{MM}-C{n}» — مشتق، لا يوجد ترقيم مركزي للفاتورة الحية. */
-export function buildDerivedNumber(vendorId: string | number, day: string | null, billingDay: number | null | undefined): string {
+export function buildDerivedNumber(vendorId: string | number, day: string | null, billingDay: number | null | undefined, prefix = "V"): string {
   const mm = day ? day.slice(5, 7) : "--";
-  return `#V${vendorId}-${mm}-C${cycleNumberOf(billingDay)}`;
+  return `#${prefix}${vendorId}-${mm}-C${cycleNumberOf(billingDay)}`;
 }
 
 const countDistinct = (values: string[]): number => new Set(values).size;
@@ -117,7 +123,15 @@ const countDistinct = (values: string[]): number => new Set(values).size;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** الفاتورة الحية (تبويب الفاتورة الشاملة) — الطلبات المحسوبة فقط (يمرّرها `forPrint`). */
-export function statementFromLive(seller: SettlementSeller, totals: SellerTotals, cycle: FinancialCycle | null): StatementData {
+export type StatementKind = "vendor" | "seller";
+
+export const STATEMENT_TITLES: Record<StatementKind, string> = { vendor: "كشف تسوية مورد", seller: "كشف تسوية بائع" };
+
+/**
+ * `kind: "seller"` = تبويب «تسويات البائع» (تسليمات البائع): نفس التصميم، العنوان «كشف تسوية بائع»،
+ * الرقم #S…، والصافي = «المستحق للبائع» كما يعرضه التبويب، مع إجمالي التحصيل وشحن البائع كصفين إضافيين.
+ */
+export function statementFromLive(seller: SettlementSeller, totals: SellerTotals, cycle: FinancialCycle | null, kind: StatementKind = "vendor"): StatementData {
   const lines: StatementLine[] = seller.row.orders.map((order) => ({
     key: order.id,
     operationNumber: order.operationNumber || `OP-${order.id}`,
@@ -132,7 +146,11 @@ export function statementFromLive(seller: SettlementSeller, totals: SellerTotals
   const issueDay = cairoDay(cycle?.endDate) ?? monthDay;
   const status: StatementStatus = seller.invoice?.status ?? "open";
   return {
-    number: buildDerivedNumber(seller.id, monthDay, cycle?.billingDay),
+    title: STATEMENT_TITLES[kind],
+    extraTotals: kind === "seller"
+      ? [{ label: "إجمالي التحصيل", value: totals.collect }, { label: "إجمالي شحن البائع", value: totals.vendorShippingCost }]
+      : [],
+    number: buildDerivedNumber(seller.id, monthDay, cycle?.billingDay, kind === "seller" ? "S" : "V"),
     cycleLabel: cycle?.billingDay ? `دورة ${cycle.billingDay}` : "—",
     monthLabel: formatMonthLabel(monthDay),
     issueDateLabel: formatIssueDate(issueDay),
@@ -147,7 +165,7 @@ export function statementFromLive(seller: SettlementSeller, totals: SellerTotals
     companyDueTotal: totals.dueComp,
     finesTotal: totals.fine,
     adjustmentsTotal: null,
-    net: totals.netRequired,
+    net: kind === "seller" ? totals.dueSeller : totals.netRequired,
     netOwedToHomix: false,
     stampDate: STAMPED_STATUSES.has(status) ? issueDay : null,
   };
@@ -171,6 +189,8 @@ export function statementFromInvoice(detail: InvoiceDetail): StatementData {
   const status = invoice.status;
   const adjustments = round2(Number(invoice.adjustmentsTotal) || 0);
   return {
+    title: STATEMENT_TITLES.vendor,
+    extraTotals: [],
     number: invoice.code ? `#${invoice.code}` : buildDerivedNumber(invoice.vendorId, issueDay, invoice.billingDay),
     cycleLabel: `دورة ${invoice.billingDay}`,
     monthLabel: formatMonthLabel(issueDay),

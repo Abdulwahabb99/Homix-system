@@ -10,6 +10,7 @@ import { useShipmentsMetaQuery, type ShipmentsMetaOption } from "query/shipments
 
 import { FONT } from "./constants";
 import { useUpdateShipmentStatus } from "./hooks/useUpdateShipmentStatus";
+import { RegressionConfirmDialog } from "shared/regressionConfirm";
 import { useAddShipmentNote } from "./hooks/useAddShipmentNote";
 import CenterState from "./components/CenterState";
 import ShipmentBreadcrumb from "./components/ShipmentBreadcrumb";
@@ -99,6 +100,7 @@ function LoadedShipmentDetails({
     <>
       {/* الحاوية الأم (صفحة الشحنات) تعرض الإشعارات عند التضمين — حاوية ثانية تكرّرها. */}
       {!embedded && <ToastContainer />}
+      <RegressionConfirmDialog {...status.regressionDialogProps} />
       <div
         aria-hidden
         style={{ position: "fixed", left: "-10000px", top: 0, width: 800, zIndex: -1, pointerEvents: "none", overflow: "hidden", background: "#fff" }}

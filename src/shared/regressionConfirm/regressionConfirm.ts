@@ -96,3 +96,21 @@ export function getRegressionAwareErrorMessage(error: any, fallback: string): st
     fallback
   );
 }
+
+/** true عند 409 REGRESSION_NEEDS_CONFIRMATION (يُعالَج بنافذة التأكيد فلا يُعرض كخطأ). */
+export function isRegressionConflict(error: unknown): boolean {
+  return parseRegressionConflict(error) !== null;
+}
+
+/**
+ * رسالة toast للخطأ: لـ 403 REGRESSION_FORBIDDEN رسالة الـ API العربية، وإلا `fallback`.
+ * تُرجع null عند 409 (نافذة التأكيد تتولّاه) فلا يُعرض شيء.
+ */
+export function getRegressionToastMessage(error: unknown, fallback: string): string | null {
+  if (isRegressionConflict(error)) return null;
+  if (isRegressionForbidden(error)) {
+    const message = (error as any)?.response?.data?.message;
+    if (typeof message === "string" && message !== "") return message;
+  }
+  return fallback;
+}

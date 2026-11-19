@@ -4,6 +4,12 @@ import { toast } from "react-toastify";
 import axiosRequest from "shared/functions/axiosRequest";
 import { orderKeys, shipmentKeys } from "query/keys";
 import type { ShipmentDetailInfo } from "query/shipmentDetail";
+import {
+  getRegressionToastMessage,
+  isRegressionCancelled,
+  useRegressionConfirm,
+  withConfirmRegression,
+} from "shared/regressionConfirm";
 
 /**
  * Manages the "تحديث الحالة" card: holds the locally-selected status and
@@ -11,6 +17,7 @@ import type { ShipmentDetailInfo } from "query/shipmentDetail";
  */
 export function useUpdateShipmentStatus(shipmentDetailId: string, shipment: ShipmentDetailInfo) {
   const queryClient = useQueryClient();
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const [statusValue, setStatusValue] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -29,8 +36,9 @@ export function useUpdateShipmentStatus(shipmentDetailId: string, shipment: Ship
       deliveryDate: shipment.deliveryDate,
     };
     setSaving(true);
-    axiosRequest
-      .put(`/shipments/${shipment.id}`, body)
+    confirmable((confirm) =>
+      axiosRequest.put(`/shipments/${shipment.id}`, withConfirmRegression(body, confirm))
+    )
       .then(() => {
         setSaved(true);
         queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(shipmentDetailId) });
@@ -40,9 +48,16 @@ export function useUpdateShipmentStatus(shipmentDetailId: string, shipment: Ship
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         setTimeout(() => setSaved(false), 2000);
       })
-      .catch(() => toast.error("تعذّر حفظ التغييرات"))
+      .catch((error) => {
+        /* الإلغاء من نافذة التأكيد: ارجع للحالة المحفوظة بصمت. */
+        if (isRegressionCancelled(error)) {
+          setStatusValue("");
+          return;
+        }
+        toast.error(getRegressionToastMessage(error, "تعذّر حفظ التغييرات") ?? "تعذّر حفظ التغييرات");
+      })
       .finally(() => setSaving(false));
   };
 
-  return { statusValue, setStatusValue, currentStatus, saving, saved, save };
+  return { regressionDialogProps, statusValue, setStatusValue, currentStatus, saving, saved, save };
 }

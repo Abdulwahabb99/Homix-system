@@ -39,6 +39,7 @@ import {
 import { FONT } from "../ShipmentDetails/constants";
 import DetailCard from "../ShipmentDetails/components/DetailCard";
 import ShippingCompanySelect from "./ShippingCompanySelect";
+import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 
 type Option = { value: string | number; label: string };
 
@@ -135,6 +136,7 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
   const { data, isLoading, isError } = useShipmentDetailQuery(shipmentId);
   const { data: meta } = useShipmentsMetaQuery();
   const updateMutation = useUpdateShipmentMutation(shipmentId || undefined);
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
 
   // --- form state ---
   const [shipmentStatus, setShipmentStatus] = useState<number | "">("");
@@ -326,7 +328,12 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
       NotificationMeassage("error", "اختر حالة الشحنة");
       return;
     }
-    updateMutation.mutate(buildPayload(), { onSuccess: goToShipmentsList });
+    const payload = buildPayload();
+    confirmable((confirmRegression) => updateMutation.mutateAsync({ ...payload, confirmRegression }))
+      .then(goToShipmentsList)
+      .catch(() => {
+        /* الخطأ يُعرض من onError في الـ mutation، والإلغاء من نافذة التأكيد صامت */
+      });
   };
 
   // --- header (breadcrumb + cancel/save actions) ---
@@ -396,6 +403,7 @@ export default function ShipmentEdit({ shipmentId: shipmentIdProp, embedded = fa
     <>
       {/* عند التضمين تعرض صفحة الشحنات الإشعارات — حاوية ثانية تكرّرها. */}
       {!embedded && <ToastContainer />}
+      <RegressionConfirmDialog {...regressionDialogProps} />
       <Box sx={{ fontFamily: FONT, mt: "12px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: 920, mx: "auto", pb: "24px" }}>
         {embedded && <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>{actions}</Box>}
         {/* Back + read-only identity */}

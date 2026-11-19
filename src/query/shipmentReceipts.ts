@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { orderKeys, shipmentKeys } from "./keys";
+import { withConfirmRegression } from "shared/regressionConfirm/regressionConfirm";
 import { normalizePrintedDocuments } from "layouts/Shipments/components/receipts/receiptDocuments";
 
 export interface ReceiptItem {
@@ -108,8 +109,11 @@ export function useReceiveItems() {
       receivedDate: string;
       senderName: string;
       notes: string;
-    }): Promise<{ orderIds: number[]; receiverName: string }> =>
-      (await axiosRequest.post("/shipments/receipts", body)).data.data,
+      confirmRegression?: boolean;
+    }): Promise<{ orderIds: number[]; receiverName: string }> => {
+      const { confirmRegression, ...rest } = body;
+      return (await axiosRequest.post("/shipments/receipts", withConfirmRegression(rest, Boolean(confirmRegression)))).data.data;
+    },
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: shipmentKeys.all() }),
@@ -122,9 +126,11 @@ export function useReceiveItems() {
 export function useUpdateReceipt() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { orderId: number; notes?: string; receiptDate?: string }) => {
-      const { orderId, ...body } = vars;
-      return (await axiosRequest.patch(`/shipments/receipts/${orderId}`, body)).data.data;
+    mutationFn: async (vars: { orderId: number; notes?: string; receiptDate?: string; confirmRegression?: boolean }) => {
+      const { orderId, confirmRegression, ...body } = vars;
+      return (
+        await axiosRequest.patch(`/shipments/receipts/${orderId}`, withConfirmRegression(body, Boolean(confirmRegression)))
+      ).data.data;
     },
     onSuccess: () => client.invalidateQueries({ queryKey: shipmentKeys.all() }),
   });
@@ -132,7 +138,13 @@ export function useUpdateReceipt() {
 export function useCancelReceipt() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (orderId: number) => (await axiosRequest.post(`/shipments/receipts/${orderId}/cancel`)).data.data,
+    mutationFn: async (vars: { orderId: number; confirmRegression?: boolean }) =>
+      (
+        await axiosRequest.post(
+          `/shipments/receipts/${vars.orderId}/cancel`,
+          vars.confirmRegression ? withConfirmRegression({}, true) : undefined
+        )
+      ).data.data,
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: shipmentKeys.all() }),

@@ -1,6 +1,8 @@
 import {
   formatRegressionChange,
   getRegressionAwareErrorMessage,
+  getRegressionToastMessage,
+  isRegressionConflict,
   isRegressionForbidden,
   parseRegressionConflict,
   withConfirmRegression,
@@ -71,5 +73,24 @@ describe("withConfirmRegression (retry payload)", () => {
     const out = withConfirmRegression({ orderIds: [1, 2], orderData: { status: 1 } }, true);
     expect(out.confirmRegression).toBe(true);
     expect(out.orderData).toEqual({ status: 1 });
+  });
+});
+
+describe("isRegressionConflict / getRegressionToastMessage", () => {
+  const conflict = { response: { status: 409, data: body409 } };
+  const forbidden = { response: { status: 403, data: { code: "REGRESSION_FORBIDDEN", message: "غير مسموح" } } };
+  const other = { response: { status: 500, data: { message: "x" } } };
+
+  it("detects only the 409 confirmation conflict", () => {
+    expect(isRegressionConflict(conflict)).toBe(true);
+    expect(isRegressionConflict(forbidden)).toBe(false);
+    expect(isRegressionConflict(other)).toBe(false);
+  });
+
+  it("is silent on 409, shows API Arabic message on 403, fallback otherwise", () => {
+    expect(getRegressionToastMessage(conflict, "fb")).toBeNull();
+    expect(getRegressionToastMessage(forbidden, "fb")).toBe("غير مسموح");
+    expect(getRegressionToastMessage(other, "fb")).toBe("fb");
+    expect(getRegressionToastMessage(new Error("net"), "fb")).toBe("fb");
   });
 });

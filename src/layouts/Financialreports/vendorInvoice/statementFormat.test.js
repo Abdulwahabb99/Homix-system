@@ -78,4 +78,19 @@ describe("statementFromLive", () => {
     expect(d.ordersCount).toBe(1);
     expect(d.stampDate).toBe("2026-11-13");
   });
+
+  it("seller kind: same design, #S number, seller title, net = المستحق للبائع, collection/shipping extra rows", () => {
+    const t = { dueSeller: 700, dueComp: 40, fine: 10, netRequired: 123, collect: 1000, vendorShippingCost: 90 };
+    const s = { ...seller, id: "4", invoice: null };
+    const d = statementFromLive(s, t, { billingDay: 28, referenceDate: "2026-11-28", endDate: "2026-11-28", startDate: null, mode: null }, "seller");
+    expect(d.number).toBe("#S4-11-C2");
+    expect(d.title).toBe("كشف تسوية بائع");
+    expect(d.net).toBe(700);
+    expect(d.vendorDueTotal).toBe(700);
+    expect(d.extraTotals).toEqual([{ label: "إجمالي التحصيل", value: 1000 }, { label: "إجمالي شحن البائع", value: 90 }]);
+    const v = statementFromLive(s, t, null);
+    expect(v.title).toBe("كشف تسوية مورد");
+    expect(v.extraTotals).toEqual([]);
+    expect(v.net).toBe(123);
+  });
 });

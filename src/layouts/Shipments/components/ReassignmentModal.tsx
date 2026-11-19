@@ -7,6 +7,7 @@ import { ShipmentItem } from "query/shipmentsList";
 import { ReassignmentCandidate, useReassignmentCandidates } from "query/reassignmentCandidates";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { orderKeys, shipmentKeys } from "query/keys";
+import { isRegressionConflict, RegressionConfirmDialog, useRegressionConfirm, withConfirmRegression } from "shared/regressionConfirm";
 import { reassignmentKey } from "./panels/ReassignmentsPanel";
 
 const REASONS = [
@@ -32,15 +33,16 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
   const [customReason, setCustomReason] = useState("");
   const [notes, setNotes] = useState("");
   const client = useQueryClient();
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const save = useMutation({
-    mutationFn: async () => axiosRequest.post("/shipments/reassignments", {
+    mutationFn: async (confirmRegression: boolean = false) => axiosRequest.post("/shipments/reassignments", withConfirmRegression({
       sourceOrderId: source?.id,
       ...(picked && picked.operationNumber === targetOperationNumber.trim()
         ? { targetOrderId: picked.id }
         : { targetOperationNumber: targetOperationNumber.trim() }),
       reason: reason === "سبب آخر" ? customReason.trim() : reason,
       notes: notes.trim(),
-    }),
+    }, confirmRegression)),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: reassignmentKey });
       await client.invalidateQueries({ queryKey: shipmentKeys.all() });
@@ -50,9 +52,9 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
       onSuccess();
       onClose();
     },
-    onError: (error: any) => NotificationMeassage("error", error?.response?.data?.message || "تعذرت إعادة التخصيص"),
+    onError: (error: any) => isRegressionConflict(error) ? undefined : NotificationMeassage("error", error?.response?.data?.message || "تعذرت إعادة التخصيص"),
   });
-  return <Dialog open={Boolean(source)} onClose={save.isPending ? undefined : onClose} dir="rtl" fullWidth maxWidth="sm">
+  return <><Dialog open={Boolean(source)} onClose={save.isPending ? undefined : onClose} dir="rtl" fullWidth maxWidth="sm">
     <DialogTitle sx={{ fontFamily: "Cairo", fontWeight: 800 }}>إعادة تخصيص الصنف</DialogTitle>
     <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "18px !important" }}>
       <Box sx={{ fontSize: 13, lineHeight: 1.9 }}>
@@ -111,6 +113,6 @@ export default function ReassignmentModal({ source, onClose, onSuccess }: { sour
       {reason === "إعادة تخصيص - العميل لسه محتاج الطلب" && <Box sx={{ bgcolor: "#fff7e6", color: "#92400e", p: 1.5, borderRadius: 2, fontSize: 12 }}>الحالة المختارة ستُبقي الطلب الأصلي «معلقًا» تلقائيًا.</Box>}
       <Box sx={{ bgcolor: "#e6f7ef", color: "#087446", p: 1.5, borderRadius: 2, fontSize: 12 }}>الطلب الجديد يصبح «في المخزن». لا تُنقل كمية المخزون ولا تتغير المبالغ والمدفوعات.</Box>
     </DialogContent>
-    <DialogActions sx={{ p: 2 }}><Button onClick={onClose} disabled={save.isPending}>إلغاء</Button><Button variant="contained" disabled={save.isPending || !targetOperationNumber.trim() || (reason === "سبب آخر" && customReason.trim().length < 2)} onClick={() => save.mutate()}>تأكيد إعادة التخصيص</Button></DialogActions>
-  </Dialog>;
+    <DialogActions sx={{ p: 2 }}><Button onClick={onClose} disabled={save.isPending}>إلغاء</Button><Button variant="contained" disabled={save.isPending || !targetOperationNumber.trim() || (reason === "سبب آخر" && customReason.trim().length < 2)} onClick={() => { confirmable((confirmRegression) => save.mutateAsync(confirmRegression)).catch(() => { /* الخطأ يُعرض من onError، والإلغاء صامت */ }); }}>تأكيد إعادة التخصيص</Button></DialogActions>
+  </Dialog><RegressionConfirmDialog {...regressionDialogProps} /></>;
 }

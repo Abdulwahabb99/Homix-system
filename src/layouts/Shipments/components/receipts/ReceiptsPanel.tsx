@@ -35,6 +35,7 @@ import {
   useUpdateReceipt,
   ReceiptDocument as DocumentData,
 } from "query/shipmentReceipts";
+import { isRegressionCancelled, RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import ReceiptDocumentDialog from "./ReceiptDocument";
 import { cairoDay, manufactureToReceiptDays, receiptDateBounds, shortDateLabel } from "./receiptDates";
 
@@ -402,6 +403,7 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
     return () => onExporterChange?.(null);
   }, [exportCurrentView, onExporterChange]);
   const candidates = useReceiptList("candidates", candidatePage, "", "", open, candidateFilters);
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const receive = useReceiveItems();
   const cancel = useCancelReceipt();
   const updateReceipt = useUpdateReceipt();
@@ -413,14 +415,15 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
   const confirmCancel = () => {
     if (!cancelItem) return;
     setCancelError("");
-    cancel.mutate(cancelItem.orderId, {
-      onSuccess: () => {
+    confirmable((confirmRegression) => cancel.mutateAsync({ orderId: cancelItem.orderId, confirmRegression }))
+      .then(() => {
         closeCancel();
         setSelected((current) => current.filter((entry) => entry.orderId !== cancelItem.orderId));
         toast.success("تم إلغاء الاستلام وإرجاع الحالة السابقة والكمية للمخزن");
-      },
-      onError: (failure) => setCancelError(receiptError(failure)),
-    });
+      })
+      .catch((failure) => {
+        if (!isRegressionCancelled(failure)) setCancelError(receiptError(failure));
+      });
   };
   const combined = useReceiptDocument();
 
@@ -457,7 +460,10 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
 
   const editItem = (item: ReceiptItem, patch: { notes?: string; receiptDate?: string }) => {
     setError("");
-    updateReceipt.mutate({ orderId: item.orderId, ...patch }, { onError: (failure) => toast.error(receiptError(failure)) });
+    confirmable((confirmRegression) => updateReceipt.mutateAsync({ orderId: item.orderId, ...patch, confirmRegression }))
+      .catch((failure) => {
+        if (!isRegressionCancelled(failure)) toast.error(receiptError(failure));
+      });
   };
 
   const start = () => {
@@ -482,17 +488,20 @@ export default function ReceiptsPanel({ onExporterChange }: ReceiptsPanelProps) 
       setFormError("أدخل تاريخ استلام صالحًا لا يتجاوز اليوم");
       return;
     }
-    receive.mutate(
-      { orderIds: chosen.map((item) => item.orderId), receivedDate, senderName, notes },
-      {
-        onSuccess: () => { setOpen(false); setSelected([]); setPage(1); },
-        onError: (failure) => { setFormError(receiptError(failure)); void candidates.refetch(); },
-      }
-    );
+    confirmable((confirmRegression) =>
+      receive.mutateAsync({ orderIds: chosen.map((item) => item.orderId), receivedDate, senderName, notes, confirmRegression })
+    )
+      .then(() => { setOpen(false); setSelected([]); setPage(1); })
+      .catch((failure) => {
+        if (isRegressionCancelled(failure)) return;
+        setFormError(receiptError(failure));
+        void candidates.refetch();
+      });
   };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px" }} dir="rtl">
+      <RegressionConfirmDialog {...regressionDialogProps} />
       {/* شريط البحث والإجراءات */}
       <Box sx={{ ...cardSx, p: "12px 14px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
         <TextField

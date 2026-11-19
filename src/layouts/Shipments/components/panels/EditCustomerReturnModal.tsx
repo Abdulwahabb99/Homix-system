@@ -6,6 +6,7 @@ import AssignmentReturnOutlinedIcon from "@mui/icons-material/AssignmentReturnOu
 import moment from "moment";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
 import {
   useUpdateCustomerReturnMutation,
@@ -165,6 +166,7 @@ export default function EditCustomerReturnModal({
   const customerMutation = useUpdateCustomerReturnMutation();
   const vendorMutation = useUpdateVendorReturnMutation();
   const updateMutation = returnKind === "vendor" ? vendorMutation : customerMutation;
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
 
   const initial = useMemo(
     () => ({
@@ -204,12 +206,19 @@ export default function EditCustomerReturnModal({
     const iso = toIsoUtc(returnDate);
     if (iso) body.returnDate = iso;
 
-    updateMutation.mutate({ returnId: item.id, body }, { onSuccess: onClose });
+    confirmable((confirmRegression) =>
+      updateMutation.mutateAsync({ returnId: item.id, body, confirmRegression })
+    )
+      .then(onClose)
+      .catch(() => {
+        /* الخطأ يُعرض من onError في الـ mutation، والإلغاء من نافذة التأكيد صامت */
+      });
   };
 
   const canSave = !isPending && isDirty && status !== "";
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={isPending ? undefined : onClose}
@@ -398,5 +407,7 @@ export default function EditCustomerReturnModal({
         </Box>
       </Box>
     </Dialog>
+    <RegressionConfirmDialog {...regressionDialogProps} />
+    </>
   );
 }
