@@ -20,6 +20,7 @@ import moment from "moment";
 import { PAYMENT_STATUS, statusoptions } from "../utils/constants";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { manufactureStatusOptions } from "shared/utils/constants";
+import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import { DELIVERY_STATUS, PRIORITY_VALUES } from "../utils/constants";
 import {
   useOrderDetailQuery,
@@ -151,7 +152,8 @@ function OrderEdit() {
   const orderId = id ?? "";
 
   const { data: order, isLoading, isError, error } = useOrderDetailQuery(orderId || undefined);
-  const updateMutation = useUpdateOrderMutation(orderId || undefined);
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
+  const updateMutation = useUpdateOrderMutation(orderId || undefined, confirmable);
 
   const [orderStatus, setOrderStatus] = useState<number | "">("");
   const [paymentStatus, setPaymentStatus] = useState<number | "">("");
@@ -232,6 +234,7 @@ function OrderEdit() {
   return (
     <DashboardLayout>
       <ToastContainer />
+      <RegressionConfirmDialog {...regressionDialogProps} />
       <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
         <IconButton sx={{ color: "#344767" }} onClick={() => navigate(`/orders/${id}`)}>
           <ArrowNextIcon />

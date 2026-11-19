@@ -11,6 +11,7 @@ import OrderDetailsSkeleton from "./components/OrderDetailsSkeleton";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
 import OrderDetailsView from "./orderDetail/OrderDetailsView";
 import OrderDetailsLayoutHeader from "./orderDetail/OrderDetailsLayoutHeader";
+import { RegressionConfirmDialog } from "shared/regressionConfirm";
 import { useOrderDetailsPage } from "./orderDetail/useOrderDetailsPage";
 
 export type OrderDetailsProps = {
@@ -74,6 +75,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
     handleAddComment,
     handleFileChange,
     handleRemoveFile,
+    regressionDialogProps,
   } = useOrderDetailsPage(orderId);
 
   const handleDownloadInvoice = async () => {
@@ -244,6 +246,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
           )}
         </Box>
       </DashboardLayout>}
+      <RegressionConfirmDialog {...regressionDialogProps} />
     </>
   );
   return body;

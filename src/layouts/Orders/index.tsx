@@ -12,6 +12,13 @@ import { useSelector } from "react-redux";
 import axiosRequest from "shared/functions/axiosRequest";
 import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import ConfirmDeleteModal from "layouts/Orders/components/ConfirmDeleteModal";
+import {
+  getRegressionAwareErrorMessage,
+  isRegressionCancelled,
+  RegressionConfirmDialog,
+  useRegressionConfirm,
+  withConfirmRegression,
+} from "shared/regressionConfirm";
 import BulkEditModal from "layouts/Orders/components/BulkEditModal";
 import EditOrdarModal from "layouts/Orders/components/EditOrderModal";
 import CombinedOrderInvoiceDocument from "layouts/Orders/orderInvoice/CombinedOrderInvoiceDocument";
@@ -174,6 +181,7 @@ function Orders() {
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const { user, token } = useSelector((state: any) => state.auth);
   const isVendor = user.userType === "2";
 
@@ -398,8 +406,8 @@ function Orders() {
     orderSource: any, deliveryBy: any, confirmationStatus: any
   ) => {
     setIsSubmitting(true);
-    axiosRequest
-      .put(`${baseURI}/orders/${id}`, {
+    confirmable((confirm) => axiosRequest
+      .put(`${baseURI}/orders/${id}`, withConfirmRegression({
         ...(orderSt && { status: orderSt }),
         ...(expectedDeliveryDate && expectedDeliveryDate !== "Invalid date" && { expectedDeliveryDate }),
         ...(selectedV && { vendorId: selectedV }),
@@ -409,14 +417,18 @@ function Orders() {
         ...(confirmationStatus !== "" && confirmationStatus != null && { confirmationStatus }),
         commission, paymentStatus: pay, downPayment, shippingFees,
         toBeCollected, totalVendorDue, totalCompanyDue,
-      })
+      }, confirm)))
       .then(() => {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         /* حالة الطلب/التأكيد تحرّك حالة الشحنة في الباك إند — حدّث قوائم الشحنات أيضاً. */
         queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
-      .catch(() => NotificationMeassage("error", "حدث خطأ"))
+      .catch((error) => {
+        if (!isRegressionCancelled(error)) {
+          NotificationMeassage("error", getRegressionAwareErrorMessage(error, "حدث خطأ"));
+        }
+      })
       .finally(() => { setIsSubmitting(false); setIsEditModalOpen(false); });
   };
 
@@ -510,8 +522,8 @@ function Orders() {
 
   const bulkEdit = (orderSt: any, pay: any, deliveryBy: any, assigneeId: any, orderSource: any, confirmationStatus: any) => {
     const orderIds = [...new Set(selectedRows.map((o: any) => o.orderId))];
-    axiosRequest
-      .put(`${baseURI}/orders/bulk-update`, {
+    confirmable((confirm) => axiosRequest
+      .put(`${baseURI}/orders/bulk-update`, withConfirmRegression({
         orderIds,
         orderData: {
           ...(orderSt && { status: orderSt }),
@@ -521,14 +533,18 @@ function Orders() {
           ...(orderSource && { orderSource }),
           ...(confirmationStatus && { confirmationStatus }),
         },
-      })
+      }, confirm)))
       .then(() => {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() });
         /* حالة الطلب/التأكيد تحرّك حالة الشحنة في الباك إند — حدّث قوائم الشحنات أيضاً. */
         queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         NotificationMeassage("success", "تم التعديل بنجاح");
       })
-      .catch(() => NotificationMeassage("error", "حدث خطأ"));
+      .catch((error) => {
+        if (!isRegressionCancelled(error)) {
+          NotificationMeassage("error", getRegressionAwareErrorMessage(error, "حدث خطأ"));
+        }
+      });
     setIsBulkEditModalOpen(false);
   };
 
@@ -674,6 +690,7 @@ function Orders() {
           isSubmitting={isSubmitting}
         />
       )}
+      <RegressionConfirmDialog {...regressionDialogProps} />
       {isDeleteModalOpen && selectedEditOrder && (
         <ConfirmDeleteModal
           title="الطلب"

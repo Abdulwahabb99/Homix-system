@@ -6,6 +6,12 @@ import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { normalizeOrderDetailPayload } from "./orderDetailNormalize";
 import { getDerivedStatusChanges } from "./derivedStatusChanges";
+import {
+  getRegressionAwareErrorMessage,
+  isRegressionCancelled,
+  useRegressionConfirm,
+  withConfirmRegression,
+} from "shared/regressionConfirm";
 
 /** يستخرج رسالة الخطأ من رد الـ API إن وُجدت، وإلا الرسالة الافتراضية */
 function getApiErrorMessage(error: any, fallback: string): string {
@@ -21,6 +27,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
   const { id: routeId } = useParams();
   const id = orderId == null ? routeId : String(orderId);
   const queryClient = useQueryClient();
+  const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const [isLoading, setIsLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [manufactureStatus, setManufactureStatus] = useState<number | null>(null);
@@ -49,10 +56,12 @@ export function useOrderDetailsPage(orderId?: string | number) {
   const changeManufactureStatus = useCallback(
     (status: number | null) => {
       if (status == null || orderDetails?.id == null) return;
-      axiosRequest
-        .put(`/orders/${orderDetails.id}`, {
-          manufactureStatus: status,
-        })
+      confirmable((confirm) =>
+        axiosRequest.put(
+          `/orders/${orderDetails.id}`,
+          withConfirmRegression({ manufactureStatus: status }, confirm)
+        )
+      )
         .then(() => {
           NotificationMeassage("success", "تم التعديل بنجاح");
           setManufactureStatus(status);
@@ -60,11 +69,12 @@ export function useOrderDetailsPage(orderId?: string | number) {
           queryClient.invalidateQueries({ queryKey: orderKeys.all() });
           queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
         })
-        .catch(() => {
-          NotificationMeassage("error", "حدث خطأ");
+        .catch((error) => {
+          if (isRegressionCancelled(error)) return;
+          NotificationMeassage("error", getRegressionAwareErrorMessage(error, "حدث خطأ"));
         });
     },
-    [orderDetails?.id, queryClient]
+    [orderDetails?.id, queryClient, confirmable]
   );
 
   /* تحديث متفائل لحقل واحد من الطلب (حالة الطلب/التسليم/المسؤول/مكان التسليم…):
@@ -76,8 +86,9 @@ export function useOrderDetailsPage(orderId?: string | number) {
       if (orderDetails?.id == null) return;
       const prev = orderDetails;
       setOrderDetails((o: any) => ({ ...o, ...patch }));
-      axiosRequest
-        .put(`/orders/${orderDetails.id}`, patch)
+      confirmable((confirm) =>
+        axiosRequest.put(`/orders/${orderDetails.id}`, withConfirmRegression(patch, confirm))
+      )
         .then((response) => {
           NotificationMeassage("success", "تم التعديل بنجاح");
           /* القوائم والملخصات تعرض حالات قد يكون الباك إند حرّكها تلقائياً. */
@@ -94,10 +105,11 @@ export function useOrderDetailsPage(orderId?: string | number) {
         })
         .catch((error) => {
           setOrderDetails(prev);
+          if (isRegressionCancelled(error)) return;
           NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
         });
     },
-    [orderDetails, queryClient]
+    [orderDetails, queryClient, confirmable]
   );
 
   const changeOrderStatus = useCallback(
@@ -175,8 +187,9 @@ export function useOrderDetailsPage(orderId?: string | number) {
       if (orderDetails?.id == null) return;
       const prev = orderDetails;
       setOrderDetails((o: any) => ({ ...o, ...patch }));
-      axiosRequest
-        .put(`/orders/${orderDetails.id}`, patch)
+      confirmable((confirm) =>
+        axiosRequest.put(`/orders/${orderDetails.id}`, withConfirmRegression(patch, confirm))
+      )
         .then(() => axiosRequest.get(`/orders/${orderDetails.id}`))
         .then(({ data: res }) => {
           const normalized = normalizeOrderDetailPayload(res);
@@ -193,10 +206,11 @@ export function useOrderDetailsPage(orderId?: string | number) {
         })
         .catch((error) => {
           setOrderDetails(prev);
+          if (isRegressionCancelled(error)) return;
           NotificationMeassage("error", getApiErrorMessage(error, "حدث خطأ"));
         });
     },
-    [orderDetails, queryClient]
+    [orderDetails, queryClient, confirmable]
   );
 
   const changeShippingFees = useCallback(
@@ -505,6 +519,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
 
   return {
     id,
+    regressionDialogProps,
     isLoading,
     orderDetails,
     manufactureStatus,

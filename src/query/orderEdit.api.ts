@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { orderKeys, shipmentKeys } from "query/keys";
+import {
+  getRegressionAwareErrorMessage,
+  isRegressionCancelled,
+  withConfirmRegression,
+} from "shared/regressionConfirm";
 import { normalizeOrderDetailPayload } from "layouts/Orders/orderDetail/orderDetailNormalize";
 
 const baseURI = `${process.env.REACT_APP_API_URL}`;
@@ -37,15 +42,21 @@ export function useOrderDetailQuery(orderId: string | undefined) {
   });
 }
 
-export async function putOrder(orderId: string, body: UpdateOrderPayload) {
-  await axiosRequest.put(`${baseURI}/orders/${orderId}`, body);
+export async function putOrder(orderId: string, body: UpdateOrderPayload, confirmRegression = false) {
+  await axiosRequest.put(`${baseURI}/orders/${orderId}`, withConfirmRegression(body, confirmRegression));
 }
 
-export function useUpdateOrderMutation(orderId: string | undefined) {
+/** `confirmable` من useRegressionConfirm: يعالج 409 ويعيد الإرسال بعد التأكيد. */
+type Confirmable = <T>(send: (confirm: boolean) => Promise<T>) => Promise<T>;
+
+export function useUpdateOrderMutation(orderId: string | undefined, confirmable?: Confirmable) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: UpdateOrderPayload) => putOrder(orderId!, body),
+    mutationFn: (body: UpdateOrderPayload) =>
+      confirmable
+        ? confirmable((confirm) => putOrder(orderId!, body, confirm))
+        : putOrder(orderId!, body),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId!) });
       await queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
@@ -54,8 +65,12 @@ export function useUpdateOrderMutation(orderId: string | undefined) {
       await queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
       NotificationMeassage("success", "تم تعديل الطلب");
     },
-    onError: () => {
-      NotificationMeassage("error", "حدث خطأ أثناء حفظ التعديلات");
+    onError: (error) => {
+      if (isRegressionCancelled(error)) return;
+      NotificationMeassage(
+        "error",
+        getRegressionAwareErrorMessage(error, "حدث خطأ أثناء حفظ التعديلات")
+      );
     },
   });
 }
