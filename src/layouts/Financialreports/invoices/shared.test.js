@@ -23,6 +23,9 @@ describe("describeEventDetail", () => {
     expect(describeEventDetail({ operationNumber: "OP-1", changes: { warehouseCostOverride: { from: null, to: 1000 }, finesOverride: { from: 50, to: 0 } } }))
       .toBe("OP-1 — سعر التكلفة: تلقائي ← 1000 ج.م — الغرامة: 50 ج.م ← 0 ج.م");
   });
+  it("labels a vendor shipping change", () => {
+    expect(describeEventDetail({ changes: { vendorShippingCostOverride: { from: null, to: 120 } } })).toBe("شحن البائع: تلقائي ← 120 ج.م");
+  });
   it("renders a reset as automatic", () => {
     expect(describeEventDetail({ changes: { vendorDueOverride: { from: 700, to: null } } })).toBe("مستحق البائع: 700 ج.م ← تلقائي");
   });

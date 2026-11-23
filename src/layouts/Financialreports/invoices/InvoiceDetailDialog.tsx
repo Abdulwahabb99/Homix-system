@@ -24,7 +24,7 @@ import {
   ACTION_LABELS, EmptyState, FORMULA_NOTE, RECEIPT_ACCEPT, validateReceiptFile, ModalShell, describeEventDetail, StatusPill, btnDangerSx, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDateTime, inputSx, tdSx, thSx,
 } from "./shared";
 
-type OverrideField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride";
+type OverrideField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride" | "vendorShippingCostOverride";
 
 const ORIGINAL_KEY: Record<OverrideField, keyof InvoiceLine> = {
   collectionOverride: "originalCollection",
@@ -32,6 +32,7 @@ const ORIGINAL_KEY: Record<OverrideField, keyof InvoiceLine> = {
   finesOverride: "originalFines",
   vendorDueOverride: "originalVendorDue",
   warehouseCostOverride: "originalWarehouseCost",
+  vendorShippingCostOverride: "originalVendorShippingCost",
 };
 
 const LINE_ACTIONS_BY_STATE: Record<string, Array<{ action: LineAction; label: string; danger?: boolean }>> = {
@@ -251,7 +252,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
             <Box sx={{ overflowX: "auto" }}>
               <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr>
-                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : [COMPANY_DUE_LABEL]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}
+                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["شحن البائع", "التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : [COMPANY_DUE_LABEL]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}
                 </tr></thead>
                 <tbody>
                   {lines.length === 0 && <tr><Box component="td" colSpan={11} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
@@ -267,6 +268,13 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
                           {editableCell(line, "warehouseCostOverride", line.warehouseCost, line.warehouseCostOverride != null)}
                           {!(line.warehouseCost > 0) && line.warehouseCostOverride == null && <CostWarning />}
                         </Box>
+                        {!isVendor && (
+                          <Box component="td" sx={tdSx}>
+                            {line.companyDueKind === "vendorOwes" || (line.companyDueKind == null && !line.isWarehouseDelivery)
+                              ? editableCell(line, "vendorShippingCostOverride", line.vendorShippingCost, line.vendorShippingCostOverride != null)
+                              : money(line.vendorShippingCost)}
+                          </Box>
+                        )}
                         {!isVendor && <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>{editableCell(line, "collectionOverride", line.collectionTotal, line.collectionOverride != null)}</Box>}
                         <Box component="td" sx={{ ...tdSx, color: line.fines > 0 ? HX.red : HX.tx3 }}>{editableCell(line, "finesOverride", line.fines, line.finesOverride != null)}</Box>
                         <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{editableCell(line, "vendorDueOverride", line.vendorDue, line.vendorDueOverride != null)}</Box>

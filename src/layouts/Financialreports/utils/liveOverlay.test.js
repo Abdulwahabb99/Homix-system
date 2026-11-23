@@ -1,4 +1,5 @@
 import { forPrint, liveEditState, overlayKpis, overlaySections } from "./liveOverlay";
+import { sellerTotals } from "./calc";
 
 const order = (orderId, o = {}) => ({
   collectionTotal: 1000, companyDue: 200, fines: 0, id: orderId, operationNumber: `OP-${orderId}`, orderId, orderNumber: String(orderId),
@@ -78,6 +79,34 @@ describe("overlaySections", () => {
     expect(out.comprehensive[0].row.orders.map((o) => o.orderId)).toEqual([100, 300]);
     expect(out.seller[0].row.orders.map((o) => o.orderId)).toEqual([100]);
     expect(out.warehouse[0].row.warehouseCost).toBe(1100);
+  });
+});
+
+describe("vendor shipping (شحن البائع) override", () => {
+  const vendorOrder = (id, o = {}) => order(id, { companyDueKind: "vendorOwes", vendorShippingCost: 50, vendorDue: 0, companyDue: 350, ...o });
+  const shipLine = (o = {}) => line({ orderId: 100, id: 11, vendorShippingCost: 120, vendorShippingCostOverride: 120, originalVendorShippingCost: 50, companyDue: 280, vendorDue: 0, ...o });
+
+  it("replaces the report's shipping on the live row and flows into the seller totals", () => {
+    const out = overlaySections(sections([vendorOrder(100), vendorOrder(101)]), overview({ lines: [shipLine({ companyDueKind: "vendorOwes" })] }), false);
+    const s = out.seller[0];
+    expect(s.row.orders[0]).toMatchObject({ vendorShippingCost: 120, companyDue: 280 });
+    expect(s.row.orders[0].invoiceLine).toMatchObject({ vendorShippingCostOverride: 120, originalVendorShippingCost: 50 });
+    expect(s.row.orders[1].vendorShippingCost).toBe(50);
+    expect(sellerTotals(s).vendorShippingCost).toBe(170);
+    expect(s.row.companyDue).toBe(630);
+  });
+
+  it("an invoice line without a shipping override leaves the report value alone", () => {
+    const out = overlaySections(sections([vendorOrder(100)]), overview({ lines: [shipLine({ vendorShippingCostOverride: null, vendorShippingCost: 999, finesOverride: 0 })] }), false);
+    expect(out.seller[0].row.orders[0].vendorShippingCost).toBe(50);
+  });
+
+  it("is editable only under the same rules as fines (draft, finance_settle, billing cycle)", () => {
+    const s = seller([vendorOrder(100)]);
+    const ctx = { cycleState: "billing", canSettle: true, isVendor: false, invoicesState: "ready" };
+    expect(liveEditState({ ...s, invoice: invoice() }, s.row.orders[0], ctx).editable).toBe(true);
+    expect(liveEditState({ ...s, invoice: invoice({ status: "reviewed" }) }, s.row.orders[0], ctx).editable).toBe(false);
+    expect(liveEditState({ ...s, invoice: invoice() }, s.row.orders[0], { ...ctx, isVendor: true }).editable).toBe(false);
   });
 });
 

@@ -13,6 +13,7 @@ import CustomerInfoCard from "./components/CustomerInfoCard";
 import FinancialDetailsCard from "./components/FinancialDetailsCard";
 import QuickActionsCard from "./components/QuickActionsCard";
 import OrderTimelineCard from "./components/OrderTimelineCard";
+import InvoiceNotesCard from "./components/InvoiceNotesCard";
 
 export type OrderDetailsViewProps = {
   orderDetails: any;
@@ -51,6 +52,7 @@ export type OrderDetailsViewProps = {
   changeDiscount: (totalDiscounts: number) => void;
   changeCostPrice: (costPrice: number) => void;
   changePriority: (priority: number | null) => void;
+  changeInvoiceNotes: (invoiceNotes: string) => void;
   updateCustomer: (values: CustomerFormValues) => Promise<unknown>;
   isUpdatingCustomer: boolean;
   updateComment: (noteId: number | string) => void;
@@ -95,6 +97,7 @@ export default function OrderDetailsView({
   changeDiscount,
   changeCostPrice,
   changePriority,
+  changeInvoiceNotes,
   updateCustomer,
   isUpdatingCustomer,
   updateComment,
@@ -215,6 +218,9 @@ export default function OrderDetailsView({
             />
 
             <OrderTimelineCard timeline={orderDetails.timeline} />
+
+            {/* مسودة ملاحظات الفاتورة: للموظفين فقط (البائع لا يراها ولا يعدّلها) */}
+            {!isVendor && <InvoiceNotesCard orderDetails={orderDetails} changeInvoiceNotes={changeInvoiceNotes} />}
           </Stack>
         </Box>
       </Box>

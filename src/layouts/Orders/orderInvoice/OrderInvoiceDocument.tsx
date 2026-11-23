@@ -15,6 +15,7 @@ import {
 } from "./invoiceConstants";
 import styles from "./OrderInvoice.module.css";
 import { shouldHideInvoiceCustomerContact } from "./invoicePrivacy";
+import { getInvoiceNotes } from "./invoiceNotes";
 
 function formatDateArabic(value: string | null | undefined): string {
   if (value == null || value === "") return "—";
@@ -86,6 +87,8 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
     // «المتبقّي» = المبلغ المطلوب تحصيله من الـ API (financial.amountToCollect) —
     // نفس قيمة «المبلغ المطلوب تحصيله» في بطاقة التفاصيل المالية، لا حساب total − paid.
     const remaining = Number(orderDetails?.toBeCollected ?? 0);
+    // «مسودة ملاحظات» — تُطبع فقط عند وجود نص.
+    const invoiceNotes = getInvoiceNotes(orderDetails);
 
     return (
       <div className={styles.invoiceRoot}>
@@ -231,6 +234,14 @@ const OrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orderDetails: an
               </div>
             </div>
           </div>
+
+          {/* NOTES — فقط عند وجود مسودة ملاحظات */}
+          {invoiceNotes ? (
+            <div className={styles.notesWrap} data-testid="invoice-notes">
+              <div className={styles.notesTitle}>ملاحظات</div>
+              <div className={styles.notesText}>{invoiceNotes}</div>
+            </div>
+          ) : null}
 
           {/* DECLARATION */}
           <div className={styles.declWrap}>

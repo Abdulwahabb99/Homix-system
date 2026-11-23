@@ -110,6 +110,7 @@ export const OVERRIDE_FIELD_LABELS: Record<string, string> = {
   finesOverride: "الغرامة",
   vendorDueOverride: "مستحق البائع",
   warehouseCostOverride: "سعر التكلفة",
+  vendorShippingCostOverride: "شحن البائع",
 };
 
 const showValue = (value: unknown): string => (value === null || value === undefined ? "تلقائي" : `${value} ج.م`);

@@ -1,9 +1,10 @@
 /* eslint-disable react/prop-types */
 import React from "react";
-import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, Chip, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onDuplicate = null }) => {
   const navigate = useNavigate();
   const navigateToProduct = () => {
     navigate(`/products/${product.id}`);
@@ -154,6 +155,20 @@ const ProductCard = ({ product }) => {
         >
           {product.vendor?.name}
         </Typography>
+        {onDuplicate && (
+          <Button
+            size="small"
+            startIcon={<ContentCopyOutlinedIcon sx={{ fontSize: 14 }} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate(product);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+            sx={{ mt: 0.5, fontSize: "0.7rem", p: "2px 6px", minWidth: 0 }}
+          >
+            نسخ وتعديل
+          </Button>
+        )}
         {product?.type?.name && (
           <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 0.5, width: "100%" }}>
             <Chip

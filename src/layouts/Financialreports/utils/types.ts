@@ -71,10 +71,12 @@ export interface LiveLineInfo {
   companyDueOverride: number | null;
   warehouseCostOverride: number | null;
   collectionOverride: number | null;
+  vendorShippingCostOverride: number | null;
   /** سبب التعديل / سبب حالة البند — للموظفين فقط */
   reason?: string | null;
   /** القيم قبل التعديل (للموظفين) — تظهر في تلميح الخلية */
   originalFines?: number;
+  originalVendorShippingCost?: number;
   originalWarehouseCost?: number;
   originalCollection?: number;
   originalVendorDue?: number;

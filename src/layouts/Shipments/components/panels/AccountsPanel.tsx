@@ -3,6 +3,7 @@ import { Box, Button, Checkbox, IconButton, MenuItem, Select, Typography } from 
 import SearchIcon from "@mui/icons-material/Search";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import DateRangePickerWrapper from "components/DateRangePickerWrapper/DateRangePickerWrapper";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -15,6 +16,7 @@ import EditExpenseModal from "./EditExpenseModal";
 import BulkEditExpenseModal from "./BulkEditExpenseModal";
 import AddExpenseForm from "./AddExpenseForm";
 import { fmtCairoDate, fromPickerDate, toPickerDate } from "./accountsDates";
+import { RECEIVED_AMOUNT_ERRORS, parseReceivedAmount, shouldCommitReceivedAmount } from "./receivedAmountEdit";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import {
@@ -25,7 +27,7 @@ import {
   exportDeliveryAccounts,
   exportExpenseAccounts,
   useDeliveryAccountsQuery,
-  useUpdateDeliveryAccountMutation,
+  useUpdateReceivedAmountMutation,
   useHideDeliveryAccountMutation,
   useBulkHideDeliveryAccountsMutation,
   useDeleteExpenseMutation,
@@ -72,6 +74,76 @@ function MoneyCell({ amount }: { amount: number | null }) {
       {Number(amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}
       <Box component="span" sx={{ fontSize: "10px", color: HX.tx3, mr: "3px" }}>ج.م</Box>
     </Box>
+  );
+}
+
+/**
+ * «المبلغ المستلم» قابل للتعديل مباشرة: يُحفظ عند الخروج من الحقل أو Enter، Escape يلغي،
+ * ويتعطّل الحقل أثناء الحفظ. القيمة المعروضة أثناء الحفظ هي المُدخلة (تفاؤلياً) ثم يعيد
+ * الجلب ضبطها من الخادم؛ عند الفشل ترجع للقيمة المخزَّنة.
+ */
+function ReceivedAmountCell({ item, saving, onSave }: {
+  item: DeliveryAccountItem;
+  saving: boolean;
+  onSave: (orderId: number, amount: number) => Promise<unknown>;
+}) {
+  const stored = item.receivedAmount ?? 0;
+  const [draft, setDraft] = useState(String(stored));
+  const [focused, setFocused] = useState(false);
+  const skipBlurRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!focused && !saving) setDraft(String(stored));
+  }, [stored, focused, saving]);
+
+  const commit = () => {
+    const parsed = parseReceivedAmount(draft);
+    if (!parsed.ok) {
+      NotificationMeassage("error", RECEIVED_AMOUNT_ERRORS[parsed.reason]);
+      setDraft(String(stored));
+      return;
+    }
+    if (!shouldCommitReceivedAmount(draft, stored)) {
+      setDraft(String(stored));
+      return;
+    }
+    setDraft(String(parsed.value));
+    onSave(item.id, parsed.value).catch(() => setDraft(String(stored)));
+  };
+
+  return (
+    <Box
+      component="input"
+      type="number"
+      aria-label="المبلغ المستلم"
+      min={0}
+      step="0.01"
+      value={draft}
+      disabled={saving}
+      onFocus={() => setFocused(true)}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        if (skipBlurRef.current) { skipBlurRef.current = false; return; }
+        commit();
+      }}
+      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          skipBlurRef.current = true;
+          setDraft(String(stored));
+          e.currentTarget.blur();
+        }
+      }}
+      sx={{
+        width: 96, textAlign: "center", fontFamily: FONT, fontSize: "12.5px", fontWeight: 700,
+        color: HX.tx, bgcolor: HX.surface2, border: `0.5px solid ${HX.border}`, borderRadius: "7px",
+        padding: "4px 6px", outline: "none",
+        "&:focus": { borderColor: HX.accent, boxShadow: `0 0 0 2px ${HX.accentLight}` },
+        "&:disabled": { opacity: 0.6, cursor: "progress" },
+      }}
+    />
   );
 }
 
@@ -377,6 +449,11 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   const { data: meta } = useShipmentsMetaQuery();
   const { data, isLoading, isFetching, isError } = useDeliveryAccountsQuery({ page, ...appliedFilters });
   const hideMutation = useHideDeliveryAccountMutation();
+  const receivedAmountMutation = useUpdateReceivedAmountMutation();
+  const { can } = usePermissions();
+  /* نفس صلاحية مسار الحفظ بالخادم (finance_settle)؛ الخادم هو الحَكَم، وهذا لإخفاء الحقل فقط. */
+  const canEditReceivedAmount = can("finance_settle") && user?.userType !== "2";
+  const savingReceivedAmountId = receivedAmountMutation.isPending ? receivedAmountMutation.variables?.orderId : undefined;
   const bulkHideMutation = useBulkHideDeliveryAccountsMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -564,7 +641,17 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
                 <td style={TD}><Box component="span" sx={{ fontSize: "11px", fontWeight: 600, color: HX.tx2 }}>{item.paymentMethodLabel || "—"}</Box></td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.costPrice} /></td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amountToCollect} /></td>
-                <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.receivedAmount} /></td>
+                <td style={{ ...TD, textAlign: "center" }}>
+                  {canEditReceivedAmount ? (
+                    <ReceivedAmountCell
+                      item={item}
+                      saving={savingReceivedAmountId === item.id}
+                      onSave={(orderId, receivedAmount) => receivedAmountMutation.mutateAsync({ orderId, receivedAmount })}
+                    />
+                  ) : (
+                    <MoneyCell amount={item.receivedAmount} />
+                  )}
+                </td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
                 <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.accountingDate)}</Box></td>
                 <td style={TD}><ReferenceCell reference={item.reference} /></td>
@@ -611,15 +698,31 @@ function DeliveriesTab({ onExporterChange }: AccountsPanelProps) {
   );
 }
 
+interface ExpenseFilterState {
+  accountingStatus: string;
+  settledDateFrom: string;
+  settledDateTo: string;
+  disbursementDateFrom: string;
+  disbursementDateTo: string;
+}
+
+const EMPTY_EXPENSE_FILTERS: ExpenseFilterState = {
+  accountingStatus: "",
+  settledDateFrom: "",
+  settledDateTo: "",
+  disbursementDateFrom: "",
+  disbursementDateTo: "",
+};
+
 function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
   const [page, setPage] = useState(1);
-  const [dates, setDates] = useState({ settledDateFrom: "", settledDateTo: "" });
-  const [appliedDates, setAppliedDates] = useState({ settledDateFrom: "", settledDateTo: "" });
+  const [filters, setFilters] = useState<ExpenseFilterState>(EMPTY_EXPENSE_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<ExpenseFilterState>(EMPTY_EXPENSE_FILTERS);
   const [editItem, setEditItem] = useState<ExpenseItem | null>(null);
   const [selectionModel, setSelectionModel] = useState<number[]>([]);
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const { data: meta } = useShipmentsMetaQuery();
-  const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page, ...appliedDates });
+  const { data, isLoading, isFetching, isError } = useExpenseAccountsQuery({ page, ...appliedFilters });
   const deleteMutation = useDeleteExpenseMutation();
   const items      = data?.items      ?? [];
   const totalCount = data?.totalCount ?? 0;
@@ -643,7 +746,7 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
     });
   };
 
-  const exportCurrentView = useCallback(() => exportExpenseAccounts(appliedDates), [appliedDates]);
+  const exportCurrentView = useCallback(() => exportExpenseAccounts(appliedFilters), [appliedFilters]);
 
   useEffect(() => {
     onExporterChange?.({ run: exportCurrentView, successMessage: "تم تصدير المصروفات" });
@@ -657,18 +760,31 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
       </Box>
 
       <AccountsFilterBar
-        activeCount={appliedDates.settledDateFrom || appliedDates.settledDateTo ? 1 : 0}
-        onApply={() => { setPage(1); setAppliedDates(dates); }}
-        onReset={() => {
-          const empty = { settledDateFrom: "", settledDateTo: "" };
-          setPage(1); setDates(empty); setAppliedDates(empty);
-        }}
+        activeCount={[
+          appliedFilters.accountingStatus,
+          appliedFilters.settledDateFrom || appliedFilters.settledDateTo,
+          appliedFilters.disbursementDateFrom || appliedFilters.disbursementDateTo,
+        ].filter(Boolean).length}
+        onApply={() => { setPage(1); setAppliedFilters(filters); }}
+        onReset={() => { setPage(1); setFilters(EMPTY_EXPENSE_FILTERS); setAppliedFilters(EMPTY_EXPENSE_FILTERS); }}
       >
+        <FilterSelect
+          label="حالة المحاسبة"
+          value={filters.accountingStatus}
+          options={meta?.accountingStatuses ?? []}
+          onChange={(value) => setFilters((c) => ({ ...c, accountingStatus: value }))}
+        />
         <DateRangeFilter
           label="تاريخ المحاسبة"
-          from={dates.settledDateFrom}
-          to={dates.settledDateTo}
-          onChange={(from, to) => setDates({ settledDateFrom: from, settledDateTo: to })}
+          from={filters.settledDateFrom}
+          to={filters.settledDateTo}
+          onChange={(from, to) => setFilters((c) => ({ ...c, settledDateFrom: from, settledDateTo: to }))}
+        />
+        <DateRangeFilter
+          label="تاريخ الصرف"
+          from={filters.disbursementDateFrom}
+          to={filters.disbursementDateTo}
+          onChange={(from, to) => setFilters((c) => ({ ...c, disbursementDateFrom: from, disbursementDateTo: to }))}
         />
       </AccountsFilterBar>
 
@@ -721,6 +837,7 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
               <th style={TH}>السبب</th>
               <th style={{ ...TH, textAlign: "center" }}>المبلغ</th>
               <th style={TH}>حالة المحاسبة</th>
+              <th style={TH}>تاريخ الصرف</th>
               <th style={{ ...TH, width: 80 }} />
             </tr>
           </thead>
@@ -744,6 +861,7 @@ function ExpensesTab({ onExporterChange }: AccountsPanelProps) {
                 </td>
                 <td style={{ ...TD, textAlign: "center" }}><MoneyCell amount={item.amount} /></td>
                 <td style={TD}><StatusBadge label={item.accountingStatusLabel} /></td>
+                <td style={TD}><Box component="span" sx={{ fontSize: "11.5px", color: HX.tx2 }}>{fmtDate(item.disbursementDate)}</Box></td>
                 <td style={TD}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: "2px" }}>
                     <IconButton

@@ -8,8 +8,10 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
+import AppDatePicker from "components/AppDatePicker/AppDatePicker";
 import { useCreateExpenseMutation, useUpdateExpenseTypesMutation } from "query/shipmentsAccounts";
 import ExpenseTypesModal from "./ExpenseTypesModal";
+import { cairoDayStartIsoOrNull } from "./accountsDates";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -35,6 +37,7 @@ export default function AddExpenseForm() {
   const [reason, setReason] = useState("");
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
   const [accountingDate, setAccountingDate] = useState("");
+  const [disbursementDate, setDisbursementDate] = useState("");
   const [typesModalOpen, setTypesModalOpen] = useState(false);
 
   // الخيارات تصل بعد الـ meta، فنضبط القيم الافتراضية عند وصولها
@@ -66,6 +69,7 @@ export default function AddExpenseForm() {
       {
         ...(accountingDate ? { accountingDate: new Date(accountingDate).toISOString() } : {}),
         ...(accountingStatus !== "" ? { accountingStatus: Number(accountingStatus) } : {}),
+        ...(disbursementDate ? { disbursementDate: cairoDayStartIsoOrNull(disbursementDate) } : {}),
         amount: numericAmount,
         reason: reason.trim(),
         type: Number(type),
@@ -75,6 +79,7 @@ export default function AddExpenseForm() {
           setAmount("");
           setReason("");
           setAccountingDate("");
+          setDisbursementDate("");
         },
       }
     );
@@ -171,6 +176,18 @@ export default function AddExpenseForm() {
           InputLabelProps={{ shrink: true }}
           sx={fieldSx}
         />
+
+        {/* تاريخ الصرف — المنتقي العربي المشترك (القيمة YYYY-MM-DD، تُحفظ كبداية اليوم المصري) */}
+        <Box>
+          <Typography component="label" sx={{ display: "block", mb: "4px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", fontWeight: 600 }}>
+            تاريخ الصرف
+          </Typography>
+          <AppDatePicker
+            value={disbursementDate}
+            onChange={setDisbursementDate}
+            sx={{ "& .MuiOutlinedInput-root": { height: 40, borderRadius: "10px" } }}
+          />
+        </Box>
       </Box>
 
       <Box sx={{ mt: "12px", display: "flex", justifyContent: "flex-end" }}>

@@ -18,7 +18,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 import axiosRequest from "shared/functions/axiosRequest";
 
-const AddProductModal = ({ open, onClose, onConfirm, product }) => {
+const AddProductModal = ({ open, onClose, onConfirm, product, onCreateNew, onDuplicate }) => {
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(product);
@@ -75,6 +75,11 @@ const AddProductModal = ({ open, onClose, onConfirm, product }) => {
       </DialogTitle>
 
       <DialogContent>
+        {onCreateNew && (
+          <Button variant="outlined" size="small" onClick={onCreateNew} sx={{ mb: 1 }}>
+            + إضافة منتج جديد
+          </Button>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -130,7 +135,12 @@ const AddProductModal = ({ open, onClose, onConfirm, product }) => {
                     style={{ borderRadius: 4 }}
                     loading="lazy"
                   />
-                  <Typography sx={{ fontSize: "15px", color: "#000" }}>{product.title}</Typography>
+                  <Typography sx={{ fontSize: "15px", color: "#000", flex: 1 }}>{product.title}</Typography>
+                  {onDuplicate && (
+                    <Button size="small" onClick={() => onDuplicate(product)}>
+                      نسخ وتعديل
+                    </Button>
+                  )}
                 </Box>
                 <Box mt={1} pl={4}>
                   {product.variants.map((variant) => (
@@ -205,6 +215,13 @@ AddProductModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onConfirm: PropTypes.func.isRequired,
   product: PropTypes.bool,
+  onCreateNew: PropTypes.func,
+  onDuplicate: PropTypes.func,
+};
+
+AddProductModal.defaultProps = {
+  onCreateNew: undefined,
+  onDuplicate: undefined,
 };
 
 export default AddProductModal;

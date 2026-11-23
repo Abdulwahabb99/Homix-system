@@ -67,6 +67,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
     changeDiscount,
     changeCostPrice,
     changePriority,
+    changeInvoiceNotes,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,
@@ -149,7 +150,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
               changeConfirmationStatus={changeConfirmationStatus}
               changeDeliveryStatus={changeDeliveryStatus} changeAssignee={changeAssignee} changeDeliveryBy={changeDeliveryBy}
               changeShipmentType={changeShipmentType} changeDownPayment={changeDownPayment} changeShippingFees={changeShippingFees}
-              changeDiscount={changeDiscount} changeCostPrice={changeCostPrice} changePriority={changePriority}
+              changeDiscount={changeDiscount} changeCostPrice={changeCostPrice} changePriority={changePriority} changeInvoiceNotes={changeInvoiceNotes}
               updateCustomer={updateCustomer} isUpdatingCustomer={isUpdatingCustomer} updateComment={updateComment}
               handleFileChange={handleFileChange} handleRemoveFile={handleRemoveFile} handleAddComment={handleAddComment}
               setPendingDeleteNoteId={setPendingDeleteNoteId} handleDownloadInvoice={handleDownloadInvoice}
@@ -234,6 +235,7 @@ function OrderDetails({ orderId, embedded = false, onRequestEdit }: OrderDetails
               changeDiscount={changeDiscount}
               changeCostPrice={changeCostPrice}
               changePriority={changePriority}
+              changeInvoiceNotes={changeInvoiceNotes}
               updateCustomer={updateCustomer}
               isUpdatingCustomer={isUpdatingCustomer}
               updateComment={updateComment}

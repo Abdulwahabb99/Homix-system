@@ -18,10 +18,12 @@ const VALUE_OF: Record<LiveField, (order: SettlementOrder) => number> = {
   finesOverride: (order) => order.fines,
   vendorDueOverride: (order) => order.vendorDue,
   warehouseCostOverride: (order) => order.warehouseCost,
+  vendorShippingCostOverride: (order) => order.vendorShippingCost,
 };
 const ORIGINAL_OF: Record<LiveField, (order: SettlementOrder) => number | undefined> = {
   collectionOverride: (order) => order.invoiceLine?.originalCollection,
   warehouseCostOverride: (order) => order.invoiceLine?.originalWarehouseCost,
+  vendorShippingCostOverride: (order) => order.invoiceLine?.originalVendorShippingCost,
   companyDueOverride: (order) => order.invoiceLine?.originalCompanyDue,
   finesOverride: (order) => order.invoiceLine?.originalFines,
   vendorDueOverride: (order) => order.invoiceLine?.originalVendorDue,

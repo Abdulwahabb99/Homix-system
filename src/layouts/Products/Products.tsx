@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Box, Grid, Pagination, Typography } from "@mui/material";
+import { Box, Button, Grid, Pagination, Typography } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import HomixSearchInput from "components/HomixSearchInput/HomixSearchInput";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import ProductCard from "./components/ProductCard";
+import ProductFormDialog from "./components/ProductFormDialog";
+import { usePermissions } from "shared/permissions";
 import {
   ProductsFilterDialog,
   ProductsFilterTriggerButton,
@@ -18,6 +21,7 @@ const ITEMS_PER_PAGE = 16;
 function Products() {
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user.userType === "1";
+  const isVendor = user.userType === "2";
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -25,6 +29,10 @@ function Products() {
   const [loading, setLoading] = useState(false);
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
+  const { can } = usePermissions();
+  const canEditProducts = can("products_edit") && !isVendor;
+  // undefined = closed, null = brand-new product, object = duplicate-from this product
+  const [formSource, setFormSource] = useState(undefined);
 
   const page = parseInt(searchParams.get("page"), 10) || 1;
   const searchQueryParam = searchParams.get("searchQuery") || "";
@@ -175,6 +183,16 @@ function Products() {
                 onClick={() => setFilterDialogOpen(true)}
                 activeCount={filterActiveCount}
               />
+              {canEditProducts && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setFormSource(null)}
+                  sx={{ color: "#fff", whiteSpace: "nowrap", flexShrink: 0 }}
+                >
+                  منتج جديد
+                </Button>
+              )}
             </Box>
 
             <ProductsFilterDialog
@@ -188,6 +206,18 @@ function Products() {
               onApply={handleApplyFilters}
               onReset={handleResetFilters}
             />
+
+            {canEditProducts && (
+              <ProductFormDialog
+                open={formSource !== undefined}
+                source={formSource ?? null}
+                onClose={() => setFormSource(undefined)}
+                onSaved={() => {
+                  setFormSource(undefined);
+                  fetchProducts();
+                }}
+              />
+            )}
 
             {products.length === 0 ? (
               <Box
@@ -208,7 +238,7 @@ function Products() {
               <Grid container spacing={2}>
                 {products.map((product) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                    <ProductCard product={product} />
+                    <ProductCard product={product} onDuplicate={canEditProducts ? setFormSource : null} />
                   </Grid>
                 ))}
               </Grid>

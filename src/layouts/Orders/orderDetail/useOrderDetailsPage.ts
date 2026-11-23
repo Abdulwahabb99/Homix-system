@@ -236,6 +236,14 @@ export function useOrderDetailsPage(orderId?: string | number) {
     [updateFinancialField]
   );
 
+  /* «مسودة ملاحظات» تُطبع في الفاتورة — نص فارغ يمسحها. */
+  const changeInvoiceNotes = useCallback(
+    (invoiceNotes: string) => {
+      updateOrderField({ invoiceNotes });
+    },
+    [updateOrderField]
+  );
+
   const changePriority = useCallback(
     (priority: number | null) => {
       if (priority == null) return;
@@ -564,6 +572,7 @@ export function useOrderDetailsPage(orderId?: string | number) {
     changeDiscount,
     changeCostPrice,
     changePriority,
+    changeInvoiceNotes,
     updateCustomer,
     isUpdatingCustomer,
     onEdit,

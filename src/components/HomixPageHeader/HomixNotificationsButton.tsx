@@ -25,10 +25,12 @@ import type {
   NotificationTab,
 } from "shared/notifications/notificationCategories";
 import {
-  markCategoryReadRequest,
+  markAllLabel,
+  markAllRead,
   markNotificationReadRequest,
 } from "shared/notifications/notificationsApi";
-import { markCategoryRead, markNotificationRead } from "store/slices/notificationsSlice";
+import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
+import { markNotificationRead } from "store/slices/notificationsSlice";
 
 const FONT = "'Cairo',sans-serif";
 const PANEL_WIDTH = 390;
@@ -101,8 +103,9 @@ function HomixNotificationsButton() {
 
   const markAll = useCallback(() => {
     const category = tab === "all" ? undefined : tab;
-    dispatch(markCategoryRead(category));
-    markCategoryReadRequest(category).catch(() => {});
+    markAllRead(dispatch, category).catch(() => {
+      NotificationMeassage("error", "تعذّر تحديد الإشعارات كمقروءة");
+    });
   }, [dispatch, tab]);
 
   const openItem = (n: NotificationItem) => {
@@ -227,7 +230,7 @@ function HomixNotificationsButton() {
               "&.Mui-disabled": { color: HX.tx3 },
             }}
           >
-            تحديد الكل كمقروء
+            {markAllLabel(tab)}
           </ButtonBase>
         </Box>
 

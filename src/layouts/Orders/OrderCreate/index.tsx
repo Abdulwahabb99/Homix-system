@@ -4,6 +4,8 @@ import { ToastContainer } from "react-toastify";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import HomixPageHeader from "components/HomixPageHeader/HomixPageHeader";
 import AddProductModal from "layouts/Orders/components/AddOrderModal/AddProductModal";
+import ProductFormDialog from "layouts/Products/components/ProductFormDialog";
+import { usePermissions } from "shared/permissions";
 import { FONT } from "./constants";
 import { useOrderCreateForm, productToLineItem } from "./hooks/useOrderCreateForm";
 import OrderCreateBreadcrumb from "./components/OrderCreateBreadcrumb";
@@ -23,6 +25,10 @@ export default function OrderCreate() {
   const form = useOrderCreateForm();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const { can } = usePermissions();
+  const canEditProducts = can("products_edit");
+  /* undefined = مغلق، null = منتج جديد، كائن = نسخ وتعديل من هذا المنتج */
+  const [productFormSource, setProductFormSource] = useState<any>(undefined);
 
   /* لقطة من الطلب قيد الإنشاء تُمرَّر لحوار الفاتورة (قبل الحفظ).
      مُذكَّرة حتى لا يُعاد بناؤها مع كل ضغطة مفتاح في نموذج الطلب. */
@@ -54,6 +60,12 @@ export default function OrderCreate() {
   );
 
   const handlePickProduct = useCallback((product: any) => {
+    if (product) form.addLineItem(productToLineItem(product));
+    setIsPickerOpen(false);
+  }, [form.addLineItem]);
+
+  const handleProductCreated = useCallback((product: any) => {
+    setProductFormSource(undefined);
     if (product) form.addLineItem(productToLineItem(product));
     setIsPickerOpen(false);
   }, [form.addLineItem]);
@@ -101,6 +113,17 @@ export default function OrderCreate() {
           onClose={closePicker}
           onConfirm={handlePickProduct}
           product={null}
+          onCreateNew={canEditProducts ? () => setProductFormSource(null) : undefined}
+          onDuplicate={canEditProducts ? (source: any) => setProductFormSource(source) : undefined}
+        />
+      )}
+
+      {canEditProducts && (
+        <ProductFormDialog
+          open={productFormSource !== undefined}
+          source={productFormSource ?? null}
+          onClose={() => setProductFormSource(undefined)}
+          onSaved={handleProductCreated}
         />
       )}
 

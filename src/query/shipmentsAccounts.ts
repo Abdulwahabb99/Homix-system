@@ -29,6 +29,8 @@ export interface ExpenseItem {
   accountingStatus: number;
   accountingStatusLabel: string;
   amount: number;
+  /** تاريخ الصرف — لحظة ISO لبداية اليوم المصري، أو null */
+  disbursementDate: string | null;
   reason: string;
   type: number;
   typeLabel: string;
@@ -48,6 +50,9 @@ export interface AccountsParams {
   /** نطاق تاريخ التسليم الفعلي (YYYY-MM-DD، شامل الطرفين) — غير «تاريخ المحاسبة» */
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
+  /** نطاق تاريخ الصرف للمصروفات (YYYY-MM-DD، شامل الطرفين) */
+  disbursementDateFrom?: string;
+  disbursementDateTo?: string;
 }
 
 function buildQuery(p: AccountsParams): string {
@@ -63,6 +68,8 @@ function buildQuery(p: AccountsParams): string {
   if (p.settledDateTo)    query.set("settledDateTo", p.settledDateTo);
   if (p.deliveryDateFrom) query.set("deliveryDateFrom", p.deliveryDateFrom);
   if (p.deliveryDateTo)   query.set("deliveryDateTo", p.deliveryDateTo);
+  if (p.disbursementDateFrom) query.set("disbursementDateFrom", p.disbursementDateFrom);
+  if (p.disbursementDateTo)   query.set("disbursementDateTo", p.disbursementDateTo);
   return query.toString();
 }
 
@@ -168,6 +175,30 @@ export function useUpdateDeliveryAccountMutation() {
   });
 }
 
+/**
+ * تعديل «المبلغ المستلم» لصف واحد من الجدول مباشرة. نفس نقطة النهاية، لكن برسالة نجاح خاصة
+ * وبإعادة جلب الجدول وبطاقات الملخّص (meta) ليعكس الإجماليات فور الحفظ.
+ */
+export function useUpdateReceivedAmountMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: { orderId: number; receivedAmount: number }) =>
+      putDeliveryAccount(vars.orderId, { receivedAmount: vars.receivedAmount }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.accountsRoot() }),
+        queryClient.invalidateQueries({ queryKey: shipmentKeys.meta() }),
+      ]);
+      NotificationMeassage("success", "تم تحديث المبلغ المستلم");
+    },
+    onError: (error: any) => {
+      const forbidden = error?.response?.status === 403;
+      NotificationMeassage("error", forbidden ? "ليست لديك صلاحية تعديل المبلغ المستلم" : "تعذّر تحديث المبلغ المستلم");
+    },
+  });
+}
+
 /** يخفي تسليمًا عن تبويب الحسابات فقط — لا يمسّ الطلب أو الشحنة نفسها في أي مكان آخر. */
 export function useHideDeliveryAccountMutation() {
   const queryClient = useQueryClient();
@@ -265,6 +296,8 @@ export interface ExpenseMutationPayload {
   accountingDate?: string | null;
   accountingStatus?: number;
   amount: number;
+  /** تاريخ الصرف — لحظة ISO لبداية اليوم المصري، أو null للمسح */
+  disbursementDate?: string | null;
   reason: string;
   type: number;
 }

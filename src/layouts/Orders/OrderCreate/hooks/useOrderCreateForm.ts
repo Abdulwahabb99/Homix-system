@@ -4,6 +4,7 @@ import { useCreateOrderFormMutation } from "query/orderCreateForm.api";
 import { DEFAULT_DELIVERY_BY, DEFAULT_PAYMENT_STATUS } from "../constants";
 import type { CustomerForm, OrderLineItem, OrderTotals } from "../types";
 import type { CustomerListItem } from "query/customers";
+import { orderProductKey, orderVariantKey } from "layouts/Products/productForm";
 import {
   buildOrderPayload,
   itemsTotal,
@@ -23,8 +24,9 @@ export function productToLineItem(product: any): OrderLineItem {
     title: product?.title ?? "",
     price: toNumber(variant.price),
     quantity: 1,
-    productId: product?.shopifyId ?? "",
-    variantId: variant.shopifyId ?? variant.id ?? "",
+    /* منتجات النظام بلا Shopify id: المفتاح `local:<id>` ومعرّف الخيار المحلي. */
+    productId: orderProductKey(product),
+    variantId: orderVariantKey(variant),
     image: product?.image ?? null,
     sku: variant.sku,
     productCode: variant.sku ?? product?.code,

@@ -16,7 +16,8 @@ import {
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useUpdateExpenseMutation, type ExpenseItem } from "query/shipmentsAccounts";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
-import { toCairoYmd } from "./accountsDates";
+import AppDatePicker from "components/AppDatePicker/AppDatePicker";
+import { cairoDayStartIsoOrNull, toCairoYmd } from "./accountsDates";
 
 const FONT = "'Cairo', sans-serif";
 
@@ -43,6 +44,7 @@ export default function EditExpenseModal({ open, onClose, item, typeOptions, sta
   const [reason, setReason] = useState("");
   const [accountingStatus, setAccountingStatus] = useState<number | "">("");
   const [accountingDate, setAccountingDate] = useState("");
+  const [disbursementDate, setDisbursementDate] = useState("");
 
   const updateMutation = useUpdateExpenseMutation();
 
@@ -53,6 +55,7 @@ export default function EditExpenseModal({ open, onClose, item, typeOptions, sta
     setReason(item.reason ?? "");
     setAccountingStatus(item.accountingStatus ?? "");
     setAccountingDate(toYmd(item.accountingDate));
+    setDisbursementDate(toYmd(item.disbursementDate));
   }, [open, item]);
 
   const handleSave = () => {
@@ -76,6 +79,7 @@ export default function EditExpenseModal({ open, onClose, item, typeOptions, sta
         body: {
           accountingDate: accountingDate ? new Date(accountingDate).toISOString() : null,
           ...(accountingStatus !== "" ? { accountingStatus: Number(accountingStatus) } : {}),
+          disbursementDate: cairoDayStartIsoOrNull(disbursementDate),
           amount: numericAmount,
           reason: reason.trim(),
           type: Number(type),
@@ -162,8 +166,13 @@ export default function EditExpenseModal({ open, onClose, item, typeOptions, sta
           value={accountingDate}
           onChange={(e) => setAccountingDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
-          sx={fieldSx}
+          sx={{ ...fieldSx, mb: 2 }}
         />
+
+        <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary", mb: "4px" }}>
+          تاريخ الصرف
+        </Typography>
+        <AppDatePicker value={disbursementDate} onChange={setDisbursementDate} />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={updateMutation.isPending}>

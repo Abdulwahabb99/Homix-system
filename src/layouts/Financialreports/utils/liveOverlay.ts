@@ -13,7 +13,7 @@ import { companyDueKindOf } from "./companyDue";
 
 /** billing = دورة فوترة (مغلقة أو جارية — لكليهما مسودات)، custom = فترة مخصصة بلا فواتير */
 export type LiveCycleState = "billing" | "custom";
-export type LiveField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride";
+export type LiveField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride" | "vendorShippingCostOverride";
 
 const round2 = (value: number): number => Math.round((Number(value) || 0) * 100) / 100;
 
@@ -29,16 +29,18 @@ const infoOf = (line: CycleOverlayLine): LiveLineInfo => ({
   originalCollection: line.originalCollection,
   originalCompanyDue: line.originalCompanyDue,
   originalFines: line.originalFines,
+  originalVendorShippingCost: line.originalVendorShippingCost,
   originalVendorDue: line.originalVendorDue,
   originalWarehouseCost: line.originalWarehouseCost,
   reason: line.overrideReason ?? line.stateReason ?? null,
   state: line.state,
   vendorDueOverride: line.vendorDueOverride ?? null,
+  vendorShippingCostOverride: line.vendorShippingCostOverride ?? null,
   warehouseCostOverride: line.warehouseCostOverride ?? null,
 });
 
 const blankInfo = (invoiceId: number, state: LiveLineState): LiveLineInfo => ({
-  collectionOverride: null, companyDueOverride: null, finesOverride: null, invoiceId, lineId: null, state, vendorDueOverride: null, warehouseCostOverride: null,
+  collectionOverride: null, companyDueOverride: null, finesOverride: null, invoiceId, lineId: null, state, vendorDueOverride: null, vendorShippingCostOverride: null, warehouseCostOverride: null,
 });
 
 /** سعر التكلفة غير مسجّل (0) — رقم مستحق الصانع لا يُعتمد عليه بصمت */
@@ -126,6 +128,8 @@ function overlaySeller(tab: SettlementTabKey, seller: SettlementSeller, overview
         // cost / collection only follow the invoice when they were overridden there (the live row keeps the report's own basis otherwise)
         collectionTotal: line.collectionOverride != null ? line.collectionTotal : order.collectionTotal,
         companyDue: line.companyDue, fines: line.fines, invoiceLine: info, vendorDue: line.vendorDue,
+        // vendor shipping likewise: only an override replaces the report's own value
+        vendorShippingCost: line.vendorShippingCostOverride != null ? line.vendorShippingCost : order.vendorShippingCost,
         warehouseCost: line.warehouseCostOverride != null ? line.warehouseCost : order.warehouseCost,
       });
     } else {

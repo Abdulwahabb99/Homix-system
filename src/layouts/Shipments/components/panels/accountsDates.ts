@@ -45,3 +45,8 @@ export function cairoDayStartIso(ymd: string | null | undefined): string {
 export function cairoMonthKey(now: Date | string = new Date()): string {
   return moment(now).tz(CAIRO_TZ).locale("en").format("YYYY-MM");
 }
+
+/** قيمة حقل «تاريخ الصرف» (YYYY-MM-DD) → لحظة ISO لبداية اليوم المصري، أو null للمسح/غير الصالح. */
+export function cairoDayStartIsoOrNull(ymd: string | null | undefined): string | null {
+  return cairoDayStartIso(ymd) || null;
+}

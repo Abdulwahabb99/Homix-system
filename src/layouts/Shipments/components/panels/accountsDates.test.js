@@ -48,3 +48,17 @@ describe("Cairo day helpers for the bulk bar / inline editors / fines", () => {
     expect(cairoMonthKey("2026-10-31T21:30:00.000Z")).toBe("2026-10");
   });
 });
+
+describe("disbursement date payload", () => {
+  const { cairoDayStartIsoOrNull, toCairoYmd } = require("./accountsDates");
+
+  it("sends Cairo midnight for a picked day and null for empty/invalid", () => {
+    expect(cairoDayStartIsoOrNull("2026-07-01")).toBe("2026-06-30T21:00:00.000Z");
+    expect(cairoDayStartIsoOrNull("")).toBeNull();
+    expect(cairoDayStartIsoOrNull("nope")).toBeNull();
+  });
+
+  it("shows back the same Cairo day that was stored", () => {
+    expect(toCairoYmd(cairoDayStartIsoOrNull("2026-11-14"))).toBe("2026-11-14");
+  });
+});

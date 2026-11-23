@@ -72,12 +72,15 @@ export interface InvoiceLine {
   companyDueOverride?: number | null;
   warehouseCostOverride?: number | null;
   collectionOverride?: number | null;
+  /** شحن البائع المعدّل على الفاتورة (استبدال لقيمة النظام) */
+  vendorShippingCostOverride?: number | null;
   /** نوع المستحق لهوميكس: margin (تسليم المخزن) أو vendorOwes (تسليم البائع) */
   companyDueKind?: "margin" | "vendorOwes";
   /** القيم الأصلية قبل التعديل — لا تصل إلى البائع */
   originalWarehouseCost?: number;
   originalCollection?: number;
   originalFines?: number;
+  originalVendorShippingCost?: number;
   originalVendorDue?: number;
   originalCompanyDue?: number;
   overrideReason?: string | null;
@@ -330,6 +333,7 @@ export interface LineOverridePatch {
   finesOverride?: number | null;
   vendorDueOverride?: number | null;
   companyDueOverride?: number | null;
+  vendorShippingCostOverride?: number | null;
   reason?: string;
 }
 export const useSetLineOverride = () =>

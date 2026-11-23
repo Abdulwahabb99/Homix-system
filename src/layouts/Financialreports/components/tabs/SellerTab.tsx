@@ -12,7 +12,7 @@ import { STATEMENT_PDF_OPTIONS, downloadOrderInvoicePdf, printElementNatively } 
 import SettlementSection from "../SettlementSection";
 import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
-import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "../../utils/companyDue";
+import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP, companyDueKindOf } from "../../utils/companyDue";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
@@ -100,7 +100,10 @@ export default function SellerTab({
           <Muted key="order" to={`/orders/${order.orderId || order.id}`}>#{order.orderNumber || order.id}</Muted>,
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
           <LiveAmountCell key="cost" seller={s} order={order} field="warehouseCostOverride" />,
-          <Money key="shipping" value={order.vendorShippingCost} />,
+          // شحن البائع ينطبق على تسليمات البائع فقط — تسليم المخزن يبقى للقراءة
+          companyDueKindOf(order) === "vendorOwes"
+            ? <LiveAmountCell key="shipping" seller={s} order={order} field="vendorShippingCostOverride" />
+            : <Money key="shipping" value={order.vendorShippingCost} />,
           <LiveAmountCell key="collection" seller={s} order={order} field="collectionOverride" bold />,
           <PayBadge key="payment" pay={order.paymentStatus === 1 ? "cod" : "online"} />,
           <LiveAmountCell key="vendorDue" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
