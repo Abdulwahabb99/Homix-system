@@ -46,7 +46,6 @@ function useThumbnails(invoiceId: number, receipts: InvoiceReceipt[]): Record<nu
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId, key]);
 
   useEffect(() => () => { created.current.forEach((url) => URL.revokeObjectURL(url)); created.current = []; }, [invoiceId]);
