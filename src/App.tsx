@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense, useCallback } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -87,6 +87,23 @@ export default function App() {
   const reduxDispatch = useDispatch();
   const queryClient = useQueryClient();
 
+  /* Socket events can arrive in bursts (bulk edits, imports). Each invalidation re-runs the sidebar counters query on
+     the server, so coalesce them into one refetch per 2 s (trailing, so the last change is always reflected). */
+  const navigationCountsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const invalidateNavigationCounts = useCallback(() => {
+    if (navigationCountsTimer.current) return;
+    navigationCountsTimer.current = setTimeout(() => {
+      navigationCountsTimer.current = null;
+      void queryClient.invalidateQueries({ queryKey: navigationCountKeys.all });
+    }, 2000);
+  }, [queryClient]);
+  useEffect(
+    () => () => {
+      if (navigationCountsTimer.current) clearTimeout(navigationCountsTimer.current);
+    },
+    []
+  );
+
   const isVendor = user?.userType === "2";
   const isAdmin = user?.userType === "1";
   const isOperations = user?.userType === "3";
@@ -117,7 +134,7 @@ export default function App() {
     user?.id != null ? Number(user.id) : undefined,
     (data) => {
       if (data?.message === "Successfully subscribed to notifications") return;
-      void queryClient.invalidateQueries({ queryKey: navigationCountKeys.all });
+      invalidateNavigationCounts();
       if (isUserInteracted) {
         playNotificationSound();
       }
@@ -127,9 +144,7 @@ export default function App() {
       fetchNotifications(reduxDispatch).catch(() => {});
       NotificationMeassage("info", "لديك إشعار جديد");
     },
-    () => {
-      void queryClient.invalidateQueries({ queryKey: navigationCountKeys.all });
-    },
+    invalidateNavigationCounts,
   );
 
   const getRoutes = (allRoutes) =>

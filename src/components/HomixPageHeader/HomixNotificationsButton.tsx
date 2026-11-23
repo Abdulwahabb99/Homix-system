@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Box, ButtonBase, IconButton, Popover, Typography } from "@mui/material";
@@ -12,7 +12,6 @@ import {
   CATEGORY_LABELS,
   NOTIFICATION_TABS,
   countUnread,
-  filterByTab,
   formatBadge,
   formatRelativeTime,
   getNotificationCategory,
@@ -21,16 +20,33 @@ import {
 } from "shared/notifications/notificationCategories";
 import type {
   NotificationCategory,
+  NotificationCounts,
   NotificationItem,
   NotificationTab,
 } from "shared/notifications/notificationCategories";
+import type { NotificationCursor } from "shared/notifications/notificationsApi";
 import {
+  fetchNotifications,
+  loadMoreNotifications,
   markAllLabel,
   markAllRead,
   markNotificationReadRequest,
 } from "shared/notifications/notificationsApi";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { markNotificationRead } from "store/slices/notificationsSlice";
+
+type NotificationPage = {
+  items: NotificationItem[];
+  hasMore: boolean;
+  nextCursor: NotificationCursor | null;
+  loaded: boolean;
+};
+
+type NotificationsState = {
+  counts: { orders: number; shipments: number; tickets: number; total: number } | null;
+  loadingMore: NotificationTab | null;
+  pages: Record<NotificationTab, NotificationPage>;
+};
 
 const FONT = "'Cairo',sans-serif";
 const PANEL_WIDTH = 390;
@@ -90,12 +106,38 @@ function HomixNotificationsButton() {
   const [tab, setTab] = useState<NotificationTab>("all");
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const notifications = useSelector(
-    (s: { notifications: NotificationItem[] }) => s.notifications
-  ) as NotificationItem[];
+  const { counts: serverCounts, loadingMore, pages } = useSelector(
+    (s: { notifications: NotificationsState }) => s.notifications
+  ) as NotificationsState;
+  const page = pages[tab];
+  const list = page.items;
 
-  const counts = useMemo(() => countUnread(notifications), [notifications]);
-  const list = useMemo(() => filterByTab(notifications, tab), [notifications, tab]);
+  /* Badges come from the server (all unread rows); the loaded page is only a window of the history, so counting
+     it would under-report. The local count is only a fallback until the first response arrives. */
+  const counts = useMemo<NotificationCounts>(() => {
+    if (serverCounts) {
+      return {
+        all: serverCounts.total,
+        orders: serverCounts.orders,
+        shipments: serverCounts.shipments,
+        tickets: serverCounts.tickets,
+      };
+    }
+    return countUnread(pages.all.items);
+  }, [serverCounts, pages.all.items]);
+
+  // A category tab is its own server-side page, fetched the first time it is opened.
+  useEffect(() => {
+    if (anchorEl && tab !== "all" && !pages[tab].loaded) {
+      fetchNotifications(dispatch, tab).catch(() => {});
+    }
+  }, [anchorEl, tab, pages, dispatch]);
+
+  const loadMore = useCallback(() => {
+    loadMoreNotifications(dispatch, tab, page.nextCursor).catch(() => {
+      NotificationMeassage("error", "تعذّر تحميل المزيد من الإشعارات");
+    });
+  }, [dispatch, tab, page.nextCursor]);
   const who = useMemo(getLoggedInUser, [anchorEl]);
   const whoLabel = [who.name, who.role].filter(Boolean).join(" — ");
 
@@ -387,6 +429,24 @@ function HomixNotificationsButton() {
                 </Box>
               );
             })
+          )}
+          {page.hasMore && (
+            <ButtonBase
+              onClick={loadMore}
+              disabled={loadingMore !== null}
+              sx={{
+                width: "100%",
+                py: "11px",
+                fontFamily: FONT,
+                fontSize: 12,
+                fontWeight: 700,
+                color: HX.accent,
+                "&:hover": { bgcolor: HX.surface2 },
+                "&.Mui-disabled": { color: HX.tx3 },
+              }}
+            >
+              {loadingMore !== null ? "جارٍ التحميل..." : "عرض المزيد"}
+            </ButtonBase>
           )}
         </Box>
       </Popover>

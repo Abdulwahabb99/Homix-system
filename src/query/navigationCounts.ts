@@ -31,13 +31,21 @@ async function fetchNavigationCounts(): Promise<NavigationCounts> {
   };
 }
 
+/**
+ * Sidebar badges. The server caches the counters for 60 s, so asking more often only costs database time:
+ * with `staleTime: 0` + refetch "always" on mount/focus every page navigation and tab switch re-ran the
+ * count query (~620k runs, ~2.7 h of DB time). Now a fresh result is reused for 60 s across navigations;
+ * real changes still arrive through the socket event, which invalidates the query (see App.tsx).
+ */
+export const NAVIGATION_COUNTS_STALE_MS = 60_000;
+
 export function useNavigationCounts() {
   return useQuery({
     queryKey: navigationCountKeys.all,
     queryFn: fetchNavigationCounts,
-    refetchOnMount: "always",
-    refetchOnReconnect: "always",
-    refetchOnWindowFocus: "always",
-    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
+    staleTime: NAVIGATION_COUNTS_STALE_MS,
   });
 }
