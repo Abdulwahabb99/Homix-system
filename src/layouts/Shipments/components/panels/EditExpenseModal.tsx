@@ -16,7 +16,6 @@ import {
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useUpdateExpenseMutation, type ExpenseItem } from "query/shipmentsAccounts";
 import type { ShipmentsMetaOption } from "query/shipmentsMeta";
-import AppDatePicker from "components/AppDatePicker/AppDatePicker";
 import { cairoDayStartIsoOrNull, toCairoYmd } from "./accountsDates";
 
 const FONT = "'Cairo', sans-serif";
@@ -169,10 +168,16 @@ export default function EditExpenseModal({ open, onClose, item, typeOptions, sta
           sx={{ ...fieldSx, mb: 2 }}
         />
 
-        <Typography sx={{ fontFamily: FONT, fontSize: "12px", color: "text.secondary", mb: "4px" }}>
-          تاريخ الصرف
-        </Typography>
-        <AppDatePicker value={disbursementDate} onChange={setDisbursementDate} />
+        <TextField
+          label="تاريخ الصرف"
+          type="date"
+          size="small"
+          fullWidth
+          value={disbursementDate}
+          onChange={(e) => setDisbursementDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={fieldSx}
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={updateMutation.isPending}>

@@ -10,6 +10,9 @@ import { ToastContainer } from "react-toastify";
 import ProductPayment from "./ProductPayment";
 import CustomerDetails from "./CustomerDetails";
 import AddProductModal from "./AddProductModal";
+import ProductFormDialog from "layouts/Products/components/ProductFormDialog";
+import { shipmentLineItem } from "./shipmentLineItem";
+import { usePermissions } from "shared/permissions";
 import { customerDetailsReducer } from "layouts/Orders/utils/reducers";
 import { customerInitialState } from "layouts/Orders/utils/constants";
 import AddOrderDetails from "./AddOrderDetails";
@@ -25,6 +28,10 @@ function AddOrderModal() {
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
+  const { can } = usePermissions();
+  const canEditProducts = can("products_edit");
+  /* undefined = مغلق، null = منتج جديد، كائن = نسخ وتعديل من هذا المنتج */
+  const [productFormSource, setProductFormSource] = useState<any>(undefined);
 
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(customerDetailsReducer, customerInitialState);
@@ -35,6 +42,12 @@ function AddOrderModal() {
 
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
+    setIsProductModalOpen(false);
+  };
+  const handleProductCreated = (product: any) => {
+    setProductFormSource(undefined);
+    /* الشحنة بمنتج واحد: يُختار أول خيار من المنتج الجديد (يمكن تغييره من «تغيير»). */
+    if (product?.variants?.length) setSelectedProduct({ ...product, variants: [product.variants[0]] });
     setIsProductModalOpen(false);
   };
   const handleCustomerDetailsChange = (order) => {
@@ -49,7 +62,6 @@ function AddOrderModal() {
   };
 
   const addNewOrder = () => {
-    const variant = selectedProduct?.variants?.[0] ?? {};
     const toStr = (v) => (v === undefined || v === null || v === "" ? undefined : String(v));
     const body = {
       customer: {
@@ -57,14 +69,7 @@ function AddOrderModal() {
         last_name: state.lastName,
         phone: state.phone,
       },
-      line_items: [
-        {
-          title: selectedProduct?.title,
-          price: toStr(variant.price),
-          quantity: 1,
-          variant_id: toStr(variant.shopifyId),
-        },
-      ],
+      line_items: [shipmentLineItem(selectedProduct)],
       shippingCompany: orderDetails?.shippingCompany,
       governorate: toStr(orderDetails?.governorate),
       shipmentStatus: toStr(orderDetails?.shipmentStatus),
@@ -120,6 +125,16 @@ function AddOrderModal() {
           onClose={() => setIsProductModalOpen(false)}
           onConfirm={handleProductSelect}
           product={selectedProduct}
+          onCreateNew={canEditProducts ? () => setProductFormSource(null) : undefined}
+          onDuplicate={canEditProducts ? (source: any) => setProductFormSource(source) : undefined}
+        />
+      )}
+      {canEditProducts && (
+        <ProductFormDialog
+          open={productFormSource !== undefined}
+          source={productFormSource ?? null}
+          onClose={() => setProductFormSource(undefined)}
+          onSaved={handleProductCreated}
         />
       )}
       {isOrderDetailsModalOpen && (

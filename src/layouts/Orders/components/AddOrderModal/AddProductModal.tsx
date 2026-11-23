@@ -18,6 +18,14 @@ import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 import axiosRequest from "shared/functions/axiosRequest";
 
+/** ألوان واضحة (الثيم يجعل أزرار MUI outlined/text باهتة جدًا) */
+const accentButtonSx = {
+  color: "#6366f1",
+  borderColor: "#6366f1",
+  fontWeight: 700,
+  "&:hover": { borderColor: "#4f46e5", color: "#4f46e5", backgroundColor: "rgba(99,102,241,0.08)" },
+};
+
 const AddProductModal = ({ open, onClose, onConfirm, product, onCreateNew, onDuplicate }) => {
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
@@ -76,7 +84,7 @@ const AddProductModal = ({ open, onClose, onConfirm, product, onCreateNew, onDup
 
       <DialogContent>
         {onCreateNew && (
-          <Button variant="outlined" size="small" onClick={onCreateNew} sx={{ mb: 1 }}>
+          <Button variant="outlined" size="small" onClick={onCreateNew} sx={{ ...accentButtonSx, mb: 1 }}>
             + إضافة منتج جديد
           </Button>
         )}
@@ -137,7 +145,7 @@ const AddProductModal = ({ open, onClose, onConfirm, product, onCreateNew, onDup
                   />
                   <Typography sx={{ fontSize: "15px", color: "#000", flex: 1 }}>{product.title}</Typography>
                   {onDuplicate && (
-                    <Button size="small" onClick={() => onDuplicate(product)}>
+                    <Button size="small" onClick={() => onDuplicate(product)} sx={accentButtonSx}>
                       نسخ وتعديل
                     </Button>
                   )}

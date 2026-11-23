@@ -18,7 +18,15 @@ import SearchIcon from "@mui/icons-material/Search";
 import PropTypes from "prop-types";
 import axiosRequest from "shared/functions/axiosRequest";
 
-const AddProductModal = ({ open, onClose, onConfirm, product }) => {
+/** ألوان واضحة (الثيم يجعل أزرار MUI outlined/text باهتة جدًا) */
+const accentButtonSx = {
+  color: "#6366f1",
+  borderColor: "#6366f1",
+  fontWeight: 700,
+  "&:hover": { borderColor: "#4f46e5", color: "#4f46e5", backgroundColor: "rgba(99,102,241,0.08)" },
+};
+
+const AddProductModal = ({ open, onClose, onConfirm, product, onCreateNew, onDuplicate }) => {
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(product);
@@ -75,6 +83,11 @@ const AddProductModal = ({ open, onClose, onConfirm, product }) => {
       </DialogTitle>
 
       <DialogContent>
+        {onCreateNew && (
+          <Button variant="outlined" size="small" onClick={onCreateNew} sx={{ ...accentButtonSx, mb: 1 }}>
+            + منتج جديد
+          </Button>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -130,7 +143,12 @@ const AddProductModal = ({ open, onClose, onConfirm, product }) => {
                     style={{ borderRadius: 4 }}
                     loading="lazy"
                   />
-                  <Typography sx={{ fontSize: "15px", color: "#000" }}>{product.title}</Typography>
+                  <Typography sx={{ fontSize: "15px", color: "#000", flex: 1 }}>{product.title}</Typography>
+                  {onDuplicate && (
+                    <Button size="small" onClick={() => onDuplicate(product)} sx={accentButtonSx}>
+                      نسخ وتعديل
+                    </Button>
+                  )}
                 </Box>
                 <Box mt={1} pl={4}>
                   {product.variants.map((variant) => (
@@ -205,6 +223,13 @@ AddProductModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onConfirm: PropTypes.func.isRequired,
   product: PropTypes.bool,
+  onCreateNew: PropTypes.func,
+  onDuplicate: PropTypes.func,
+};
+
+AddProductModal.defaultProps = {
+  onCreateNew: undefined,
+  onDuplicate: undefined,
 };
 
 export default AddProductModal;

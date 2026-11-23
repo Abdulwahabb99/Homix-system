@@ -8,7 +8,6 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { useShipmentsMetaQuery } from "query/shipmentsMeta";
-import AppDatePicker from "components/AppDatePicker/AppDatePicker";
 import { useCreateExpenseMutation, useUpdateExpenseTypesMutation } from "query/shipmentsAccounts";
 import ExpenseTypesModal from "./ExpenseTypesModal";
 import { cairoDayStartIsoOrNull } from "./accountsDates";
@@ -177,17 +176,15 @@ export default function AddExpenseForm() {
           sx={fieldSx}
         />
 
-        {/* تاريخ الصرف — المنتقي العربي المشترك (القيمة YYYY-MM-DD، تُحفظ كبداية اليوم المصري) */}
-        <Box>
-          <Typography component="label" sx={{ display: "block", mb: "4px", color: HX.tx2, fontFamily: FONT, fontSize: "11px", fontWeight: 600 }}>
-            تاريخ الصرف
-          </Typography>
-          <AppDatePicker
-            value={disbursementDate}
-            onChange={setDisbursementDate}
-            sx={{ "& .MuiOutlinedInput-root": { height: 40, borderRadius: "10px" } }}
-          />
-        </Box>
+        <TextField
+          label="تاريخ الصرف"
+          type="date"
+          size="small"
+          value={disbursementDate}
+          onChange={(e) => setDisbursementDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={fieldSx}
+        />
       </Box>
 
       <Box sx={{ mt: "12px", display: "flex", justifyContent: "flex-end" }}>
