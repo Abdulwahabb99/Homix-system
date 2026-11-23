@@ -35,11 +35,20 @@ export type StampMode = "below" | "beside" | "none";
 const totalsHeight = (totalRows: number) => Math.ceil(totalRows * TOTAL_ROW_H) + NET_H;
 
 /** ارتفاع كتلة الأسفل (بنك + إجماليات + ختم) بما فيها هامشها العلوي */
-export function bottomBlockHeight(totalRows: number, stamp: StampMode): number {
+export function bottomBlockHeight(totalRows: number, stamp: StampMode, bankH: number = BANK_H): number {
   const totals = totalsHeight(totalRows);
-  if (stamp === "below") return BOTTOM_MARGIN + Math.max(BANK_H, totals + STAMP_BELOW_H);
-  if (stamp === "beside") return BOTTOM_MARGIN + Math.max(totals, BANK_H + STAMP_BESIDE_H);
-  return BOTTOM_MARGIN + Math.max(BANK_H, totals);
+  if (stamp === "below") return BOTTOM_MARGIN + Math.max(bankH, totals + STAMP_BELOW_H);
+  if (stamp === "beside") return BOTTOM_MARGIN + Math.max(totals, bankH + STAMP_BESIDE_H);
+  return BOTTOM_MARGIN + Math.max(bankH, totals);
+}
+
+/**
+ * ارتفاع صندوق التحويل: العنوان + صفوف البيانات (22px) + ملاحظة اختيارية؛ لا ينزل عن ارتفاع الصندوق القياسي.
+ * `rowCount = 0` وبلا ملاحظة = لا صندوق (الصافي صفر) ← ارتفاع 0.
+ */
+export function bankBoxHeight(rowCount: number, hasNote: boolean): number {
+  if (rowCount <= 0 && !hasNote) return 0;
+  return Math.max(BANK_H, 14 + 16 + 6 + rowCount * 22 + (hasNote ? 40 : 0) + 8);
 }
 
 export interface PagePlan {
@@ -55,14 +64,14 @@ export interface PagePlan {
  * `totalRows` = صفوف الإجماليات (3 + الإضافية + التعديلات). عند عدم وجود بنود تبقى صفحة واحدة بحالة «لا بنود».
  * في الصفحة الأخيرة نفضّل وضع الختم المعتمد (below) ثم beside ثم نرحّل الكتلة إلى صفحة جديدة.
  */
-export function planPages(lineCount: number, totalRows: number, hasStamp: boolean): PagePlan[] {
+export function planPages(lineCount: number, totalRows: number, hasStamp: boolean, bankH: number = BANK_H): PagePlan[] {
   const top = (page: number) => (page === 0 ? FIRST_ROWS_TOP : CONT_ROWS_TOP);
   const cap = (page: number, bottomHeight: number) => Math.max(0, Math.floor((LIMIT - top(page) - bottomHeight) / ROW_H));
   const modes: StampMode[] = hasStamp ? ["below", "beside"] : ["none"];
   const plans: PagePlan[] = [];
   let remaining = Math.max(0, lineCount);
   for (let page = 0; ; page += 1) {
-    const mode = modes.find((m) => remaining <= cap(page, bottomBlockHeight(totalRows, m)));
+    const mode = modes.find((m) => remaining <= cap(page, bottomBlockHeight(totalRows, m, bankH)));
     if (mode) {
       plans.push({ rows: remaining, hasBottom: true, stampMode: mode });
       return plans;

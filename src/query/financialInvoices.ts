@@ -33,11 +33,12 @@ export interface InvoiceSummary {
   vendorDueTotal: number;
   companyDueTotal: number;
   adjustmentsTotal: number;
-  /** الصافي الموقّع: ≥ 0 مستحق للبائع، < 0 مستحق لهوميكس */
+  /** الصافي الموقّع = مستحق البائع − مستحق هوميكس − الغرامات (+ تعديلات): > 0 مستحق للبائع، < 0 مستحق لهوميكس، 0 لا مستحقات */
   netAmount: number;
   /** المبلغ المعروض: مبلغ التحويل الفعلي إن حُوّلت وإلا |الصافي| */
   amount: number;
-  dueParty: "vendor" | "homix";
+  /** يُشتق من إشارة الصافي: null = الصافي صفر */
+  dueParty: "vendor" | "homix" | null;
   reviewedAt: string | null;
   frozenAt: string | null;
   transferredAt: string | null;
@@ -66,6 +67,8 @@ export interface InvoiceLine {
   fines: number;
   vendorDue: number;
   companyDue: number;
+  /** صافي البند الموقّع = مستحق البائع − مستحق هوميكس (تسليمات البائع) − الغرامات */
+  netAmount?: number;
   /** حقول التعديل لا تصل إلى البائع إطلاقاً (undefined) — اختبرها بـ `!= null` */
   finesOverride?: number | null;
   vendorDueOverride?: number | null;
@@ -97,10 +100,21 @@ export interface InvoiceAdjustment {
   createdAt: string | null;
 }
 
+/** بيانات حساب البائع (للموظف finance_settle وللبائع نفسه فقط) */
+export interface VendorBank {
+  bankName: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
+  walletNumber: string | null;
+  instaPayNumber: string | null;
+}
+
 export interface InvoiceDetail {
   invoice: InvoiceSummary;
   lines: InvoiceLine[];
   adjustments: InvoiceAdjustment[];
+  /** undefined = غير مسموح لهذا المستخدم، null = لم تُسجَّل بيانات بنكية */
+  vendorBank?: VendorBank | null;
 }
 
 export interface InvoiceListParams {
@@ -381,6 +395,40 @@ export const useLiveLineEdit = () =>
     if (line.state !== "included") throw liveEditError("هذا الطلب غير محسوب في الفاتورة — أعده إليها أولاً من الأرشيف");
     return unwrap(await axiosRequest.patch(`${INVOICES_PATH}/${invoiceId}/lines/${line.id}`, vars.patch));
   });
+
+/** مسودة (صانع + دورة) تُحدَّد من الصف الحي — الخادم ينشئ المسودة أولاً إن لم توجد ثم يطبّق الإجراء في معاملة واحدة */
+export interface LiveDraftTarget {
+  vendorId: number;
+  billingDay: 13 | 28;
+  /** يوم نهاية الدورة (YYYY-MM-DD بتوقيت القاهرة) */
+  cycleEndDay: string;
+}
+
+export const liveDraftPayload = (target: LiveDraftTarget) => ({
+  billingDay: target.billingDay, referenceDate: target.cycleEndDay, vendorId: target.vendorId,
+});
+
+/** تجميد / فك تجميد / تحويل لدورة أخرى / حذف / إرجاع لطلب من الصف الحي (يُنشئ المسودة تلقائياً) */
+export const useLiveLineAction = () =>
+  useInvoiceMutation(async (vars: LiveDraftTarget & { orderId: number; action: LineAction; reason?: string }) =>
+    unwrap<{ state: LineState; netAmount: number; created: boolean; invoiceId: number }>(
+      await axiosRequest.post(`${INVOICES_PATH}/live/line-action`, { ...liveDraftPayload(vars), orderId: vars.orderId, action: vars.action, reason: vars.reason })));
+
+/** «إضافة طلب» من قسم الصانع الحي (يُنشئ المسودة تلقائياً) */
+export const useLiveAddOrder = () =>
+  useInvoiceMutation(async (vars: LiveDraftTarget & { orderId: number }) =>
+    unwrap<{ netAmount: number; created: boolean; invoiceId: number; alreadyIncluded: boolean }>(
+      await axiosRequest.post(`${INVOICES_PATH}/live/lines`, { ...liveDraftPayload(vars), orderId: vars.orderId })));
+
+/** منتقي الطلبات للصف الحي: يبحث بالصانع (لا يحتاج فاتورة موجودة) */
+export function useLiveOrderCandidates(vendorId: number | null, q: string) {
+  return useQuery({
+    queryKey: [...financialKeys.invoices(), "live-candidates", vendorId, q] as const,
+    queryFn: async () => unwrap<Array<{ id: number; code: string | null; orderNumber: string | null }>>(
+      await axiosRequest.get(`${INVOICES_PATH}/live/order-candidates?${serializeParams({ q, vendorId })}`)),
+    enabled: vendorId !== null && q.trim().length >= 2,
+  });
+}
 
 /** تحديث المسودة: يعيد حساب أرقام النظام للبنود الحالية ويحتفظ بكل التعديلات اليدوية */
 export const useRefreshDraft = () =>

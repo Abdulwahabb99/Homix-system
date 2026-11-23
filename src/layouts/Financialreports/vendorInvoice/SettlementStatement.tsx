@@ -10,26 +10,21 @@ import {
   STATEMENT_DELIVERY_LABEL,
   STATEMENT_STATUS_COLORS,
   fmtLatin,
+  statementEquation,
   type StatementData,
 } from "./statementFormat";
 import {
-  HOMIX_BANK_DETAILS,
   HOMIX_ISSUER_NAME,
   HOMIX_MARKETPLACE_LABEL,
   HOMIX_TAGLINE,
   HOMIX_WEBSITE,
   VENDOR_INVOICE_FOOTER_NOTE,
 } from "./vendorInvoiceConstants";
-import { planPages } from "./statementPagination";
+import { bankBoxHeight, planPages } from "./statementPagination";
 import styles from "./SettlementStatement.module.css";
 
 
-const BANK_ROWS: Array<[string, string]> = [
-  ["البنك", HOMIX_BANK_DETAILS.bank],
-  ["رقم الحساب", HOMIX_BANK_DETAILS.accountNumber],
-  ["اسم الحساب", HOMIX_BANK_DETAILS.accountName],
-  ["InstaPay", HOMIX_BANK_DETAILS.instapay],
-];
+const NET_TONE_CLASS = { vendor: "green", homix: "red", settled: "grey" } as const;
 
 function Money({ value, className }: { value: number; className?: string }) {
   return (
@@ -46,9 +41,12 @@ function Cell({ value, tone }: { value: number; tone: string }) {
 
 const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementData }>(({ data }, ref) => {
   const pill = STATEMENT_STATUS_COLORS[data.overdue ? "overdue" : data.status];
-  const adj = data.adjustmentsTotal;
-  const totalRows = 3 + data.extraTotals.length + (adj !== null ? 1 : 0);
-  const plans = planPages(data.lines.length, totalRows, Boolean(data.stampDate));
+  const equation = statementEquation(data);
+  const totalRows = equation.length + data.extraTotals.length;
+  const transfer = data.transfer;
+  const bankH = transfer.kind === "none" ? 0 : bankBoxHeight(transfer.rows.length, Boolean(transfer.note));
+  const plans = planPages(data.lines.length, totalRows, Boolean(data.stampDate), bankH);
+  const netTone = styles[NET_TONE_CLASS[data.netDirection]];
   const pageCount = plans.length;
   let cursor = 0;
 
@@ -110,9 +108,8 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
             <Money value={data.finesTotal} className={`${styles.cardNum} ${styles.red}`} />
           </div>
           <div className={`${styles.card} ${styles.cardNet}`}>
-            <div className={`${styles.cardLabel} ${styles.gold}`}>صافي المستحق</div>
-            <Money value={data.net} className={`${styles.cardNumNet} ${styles.navy}`} />
-            {data.netOwedToHomix && <div className={styles.netNote}>مستحق لهوميكس</div>}
+            <div className={`${styles.cardLabel} ${styles.gold}`}>{data.netLabel}</div>
+            <Money value={Math.abs(data.net)} className={`${styles.cardNumNet} ${netTone}`} />
           </div>
         </section>
 
@@ -194,55 +191,40 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
             {plan.hasBottom && (
         <section className={styles.bottom}>
           <div className={styles.bankCol}>
-          <div className={styles.bank}>
-            <div className={styles.bankTitle}>بيانات التحويل البنكي — {HOMIX_ISSUER_NAME}</div>
-            {BANK_ROWS.map(([label, value]) => (
-              <div key={label} className={styles.bankRow}>
-                <span className={styles.bankLabel}>{label}</span>
-                <span className={styles.bankValue}>{value}</span>
-              </div>
-            ))}
-          </div>
+          {transfer.kind !== "none" && (
+            <div className={styles.bank} data-transfer={transfer.kind}>
+              <div className={styles.bankTitle}>{transfer.title}</div>
+              {transfer.rows.map(([label, value]) => (
+                <div key={label} className={styles.bankRow}>
+                  <span className={styles.bankLabel}>{label}</span>
+                  <span className={styles.bankValue}>{value}</span>
+                </div>
+              ))}
+              {transfer.note && <p className={styles.bankNote}>{transfer.note}</p>}
+            </div>
+          )}
           {data.stampDate && plan.stampMode === "beside" && (
             <div className={styles.stampBeside}><StatementStamp date={data.stampDate} /></div>
           )}
           </div>
           <div className={styles.totalsCol}>
             <div className={styles.totals}>
-              <div className={styles.tRow}>
-                <span className={styles.tLabel}>مستحق البائع (إجمالي)</span>
-                <Money value={data.vendorDueTotal} className={`${styles.tNum} ${styles.green}`} />
-              </div>
-              <div className={styles.tRow}>
-                <span className={styles.tLabel}>مستحق هوميكس</span>
-                <Money value={data.companyDueTotal} className={`${styles.tNum} ${styles.navy}`} />
-              </div>
-              <div className={styles.tRow}>
-                <span className={styles.tLabel}>الغرامات</span>
-                <Money value={data.finesTotal} className={`${styles.tNum} ${styles.red}`} />
-              </div>
               {data.extraTotals.map((row) => (
                 <div key={row.label} className={styles.tRow}>
                   <span className={styles.tLabel}>{row.label}</span>
                   <Money value={row.value} className={styles.tNum} />
                 </div>
               ))}
-              {adj !== null && (
-                <div className={styles.tRow}>
-                  <span className={styles.tLabel}>تعديلات يدوية</span>
-                  <span className={styles.money}>
-                    <span className={`${styles.tNum} ${styles.ltr}`}>{adj > 0 ? "+" : "−"}{fmtLatin(Math.abs(adj))}</span>
-                    <span className={styles.cur}>ج.م</span>
-                  </span>
+              {equation.map((row) => (
+                <div key={row.kind} className={styles.tRow} data-eq={row.kind}>
+                  <span className={styles.tLabel}><i className={styles.sg}>{row.sign}</i>{row.label}</span>
+                  <Money value={row.value} className={`${styles.tNum} ${row.tone === "plain" ? styles.ltr : styles[row.tone]}`} />
                 </div>
-              )}
+              ))}
               <div className={styles.netRule} />
               <div className={styles.netRow}>
-                <span className={styles.netLabel}>
-                  صافي المستحق
-                  {data.netOwedToHomix && <span className={styles.netSub}>مستحق لهوميكس</span>}
-                </span>
-                <Money value={data.net} className={styles.netNum} />
+                <span className={styles.netLabel}>{data.netLabel}</span>
+                <Money value={Math.abs(data.net)} className={`${styles.netNum} ${netTone}`} />
               </div>
             </div>
             {data.stampDate && plan.stampMode === "below" && (

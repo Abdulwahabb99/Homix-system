@@ -24,8 +24,9 @@ export const STATUS_META: Record<InvoiceStatus, { label: string; color: string; 
   transferred: { label: "تم التحويل", color: "#065f46", bg: HX.greenLight },
 };
 
-export function StatusPill({ status, overdue }: { status: InvoiceStatus; overdue?: boolean }) {
-  const meta = STATUS_META[status];
+/** `label` = تسمية الـ BE التي تتبع اتجاه الصافي (تم التحويل للبائع / تم استلام التحويل من البائع) */
+export function StatusPill({ status, overdue, label }: { status: InvoiceStatus; overdue?: boolean; label?: string }) {
+  const meta = { ...STATUS_META[status], label: label || STATUS_META[status].label };
   return (
     <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
       <Box component="span" sx={{ px: "10px", py: "2px", borderRadius: "20px", fontSize: "11px", fontWeight: 700, fontFamily: FONT, color: meta.color, bgcolor: meta.bg }}>
@@ -88,7 +89,7 @@ export function EmptyState({ text }: { text: string }) {
 }
 
 /** صيغة الاستحقاق — تظهر للمستخدم تحت الجدول وفي المستند المطبوع */
-export const FORMULA_NOTE = "مستحق الصانع = سعر التكلفة − الغرامة (لا يقل عن صفر) • المستحق لهوميكس = التحصيل − سعر التكلفة (تسليمات المخزن) أو ما يسدّده الصانع لهوميكس (تسليمات البائع) • لا يدخل في الصافي • أي رقم معدّل يدوياً يتقدّم على الحساب التلقائي";
+export const FORMULA_NOTE = "تسليم هوميكس: مستحق البائع = سعر التكلفة (إجمالي قبل الغرامات) • تسليم البائع: التحصيل − التكلفة − شحن البائع، الموجب «مستحق هوميكس» والسالب «مستحق البائع» • الغرامات عمود مستقل تُخصم مرة واحدة من الصافي • الصافي = مستحق البائع − مستحق هوميكس − الغرامات (± التعديلات)، السالب = البائع مدين لهوميكس • أي رقم معدّل يدوياً يتقدّم على الحساب التلقائي";
 
 export const RECEIPT_ACCEPT = "image/jpeg,image/png,image/gif,application/pdf";
 export const RECEIPT_MAX_BYTES = 16 * 1024 * 1024;

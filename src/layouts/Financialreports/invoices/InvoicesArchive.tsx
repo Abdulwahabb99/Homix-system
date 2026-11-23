@@ -184,8 +184,8 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
                     <Box component="td" sx={tdSx}>دورة {inv.billingDay}</Box>
                     <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{inv.code ?? "—"}</Box>
                     <Box component="td" sx={tdSx}>
-                      <Box component="span" sx={{ fontWeight: 800, color: inv.dueParty === "vendor" ? HX.green : HX.accent }}>{money(inv.amount)}</Box>
-                      <Box component="span" sx={{ display: "block", fontSize: "10.5px", color: HX.tx3 }}>{inv.dueParty === "vendor" ? "مستحق للصانع" : "مستحق لهوميكس"}</Box>
+                      <Box component="span" data-testid="archive-amount" sx={{ fontWeight: 800, color: inv.dueParty === "vendor" ? HX.green : inv.dueParty === "homix" ? HX.red : HX.tx3 }}>{money(inv.amount)}</Box>
+                      <Box component="span" sx={{ display: "block", fontSize: "10.5px", color: HX.tx3 }}>{inv.dueParty === "vendor" ? "مستحق للصانع" : inv.dueParty === "homix" ? "مستحق لهوميكس" : "لا يوجد مستحق"}</Box>
                     </Box>
                     <Box component="td" sx={tdSx}>{fmtDate(inv.transferredAt)}</Box>
                     <Box component="td" sx={{ ...tdSx, color: inv.isOverdue ? HX.red : HX.tx, fontWeight: inv.isOverdue ? 700 : 400 }}>
@@ -198,7 +198,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
                         <Box component="span" sx={{ color: HX.amber, fontWeight: 700, fontSize: "11.5px" }}>ناقص</Box>
                       )}
                     </Box>
-                    <Box component="td" sx={tdSx}><StatusPill status={inv.status} overdue={inv.isOverdue} /></Box>
+                    <Box component="td" sx={tdSx}><StatusPill status={inv.status} overdue={inv.isOverdue} label={inv.statusLabel} /></Box>
                   </Box>
                 ))}
               </tbody>

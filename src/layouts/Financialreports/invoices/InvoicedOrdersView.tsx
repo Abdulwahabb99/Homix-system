@@ -8,8 +8,9 @@ import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useInvoicedLines, useVendorOptions } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import { arNum } from "../utils/format";
-import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "../utils/companyDue";
+import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP, countsTowardCompanyDue } from "../utils/companyDue";
 import { FONT } from "../utils/styles";
+import { NetValue } from "../components/SettlementCells";
 import { EmptyState, StatusPill, btnGhostSx, cardBoxSx, fmtDate, tdSx, thSx } from "./shared";
 import { DebouncedTextField, VendorSelect } from "./FilterFields";
 
@@ -57,7 +58,7 @@ export default function InvoicedOrdersView({ onOpenInvoice, isVendor = false }: 
         ) : (
           <Box sx={{ overflowX: "auto" }}>
             <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["الصانع", "الفاتورة", "تاريخ الفاتورة", "رقم العملية", "رقم الطلب", "كود المنتج", "المستحق للبائع", COMPANY_DUE_LABEL, "الغرامات", "الحالة"].map((h) => <Box component="th" key={h} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}</tr></thead>
+              <thead><tr>{["الصانع", "الفاتورة", "تاريخ الفاتورة", "رقم العملية", "رقم الطلب", "كود المنتج", "مستحق البائع", COMPANY_DUE_LABEL, "الغرامات", "الصافي", "الحالة"].map((h) => <Box component="th" key={h} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}</tr></thead>
               <tbody>
                 {items.map((row) => (
                   <tr key={`${row.invoiceCode}-${row.id}`}>
@@ -70,9 +71,10 @@ export default function InvoicedOrdersView({ onOpenInvoice, isVendor = false }: 
                     <Box component="td" sx={{ ...tdSx, color: HX.tx2 }}>#{row.orderNumber}</Box>
                     <Box component="td" sx={tdSx}>{row.productCode || "—"}</Box>
                     <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{money(row.vendorDue)}</Box>
-                    <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{money(row.companyDue)}</Box>
+                    <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{countsTowardCompanyDue(row) ? money(row.companyDue) : "—"}</Box>
                     <Box component="td" sx={{ ...tdSx, color: row.fines > 0 ? HX.red : HX.tx3 }}>{row.fines > 0 ? money(row.fines) : "لا يوجد"}</Box>
-                    <Box component="td" sx={tdSx}><StatusPill status={row.invoiceStatus} /></Box>
+                    <Box component="td" sx={tdSx}><NetValue value={row.netAmount ?? (row.vendorDue - (countsTowardCompanyDue(row) ? row.companyDue : 0) - row.fines)} /></Box>
+                    <Box component="td" sx={tdSx}><StatusPill status={row.invoiceStatus} label={row.invoiceStatusLabel} /></Box>
                   </tr>
                 ))}
               </tbody>

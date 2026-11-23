@@ -3,7 +3,8 @@
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React, { useEffect, useRef, useState } from "react";
-import { money } from "../../utils/calc";
+import { money, orderNet } from "../../utils/calc";
+import { netLabelOf, netToneOf } from "../../utils/netDirection";
 import { arNum } from "../../utils/format";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
@@ -13,13 +14,14 @@ import SettlementSection from "../SettlementSection";
 import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
+import { LiveOrderMenu } from "../LiveOrderActions";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, Muted, OpId, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Muted, NetValue, OpId, ProdCode } from "../SettlementCells";
 import WarehouseSettlementInvoiceDocument from "../../vendorInvoice/WarehouseSettlementInvoiceDocument";
 
-const GRID = "34px 1fr 120px 120px 120px 40px";
+const GRID = "34px 1fr 120px 120px 120px 130px 40px";
 
 export default function WarehouseTab({
   sellers, billingDay, cycle, referenceDate, range,
@@ -66,6 +68,7 @@ export default function WarehouseTab({
     <Amount key="orders">{arNum(t.orders)} طلبات</Amount>,
     <Amount key="cost">{money(t.cost)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
+    <Amount key="net"><NetValue value={t.net} /></Amount>,
   ];
 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
@@ -85,6 +88,8 @@ export default function WarehouseTab({
           { label: "كود المنتج" },
           { label: "سعر التكلفة" },
           { label: "الغرامات" },
+          { label: "الصافي" },
+          { label: "" },
         ]}
         rows={s.row.orders.map((order) => [
           <OpId key="operation" to={`/shipments/${order.shipmentId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
@@ -92,6 +97,8 @@ export default function WarehouseTab({
           <ProdCode key="product" to={order.productId ? `/products/${order.productId}` : undefined}>{order.productCode || "—"}</ProdCode>,
           <LiveAmountCell key="cost" seller={s} order={order} field="warehouseCostOverride" bold />,
           <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
+          isCounted(order) ? <NetValue key="net" value={orderNet(order)} /> : <Muted key="net">—</Muted>,
+          <LiveOrderMenu key="actions" seller={s} order={order} />,
         ])}
       />
       <DetailTotalsRow
@@ -99,7 +106,7 @@ export default function WarehouseTab({
           { label: "عدد الطلبات", value: arNum(t.orders) },
           { label: "إجمالي التكلفة", value: money(t.cost) },
           { label: "إجمالي الغرامات", value: money(t.fine), tone: "red" },
-          { label: "الصافي المطلوب", value: money(t.netRequired), tone: "accent" },
+          { label: netLabelOf(t.net), value: money(Math.abs(t.net)), tone: netToneOf(t.net) },
         ]}
       />
     </>
@@ -113,7 +120,7 @@ export default function WarehouseTab({
         header={[
           { label: "" }, { label: "الصانع" },
           { label: "عدد الطلبات", align: "end" }, { label: "سعر التكلفة", align: "end" },
-          { label: "الغرامات", align: "end" }, { label: "" },
+          { label: "الغرامات", align: "end" }, { label: "الصافي", align: "end", tip: "سعر التكلفة − الغرامات" }, { label: "" },
         ]}
         renderCells={renderCells}
         renderDetail={renderDetail}

@@ -3,6 +3,7 @@
  * نصوص/حالات الشارة + شروط ظهور زر «تمت المراجعة» (دوال نقية قابلة للاختبار).
  */
 import type { InvoiceStatus } from "query/financialInvoices";
+import { transferredLabelOf } from "./netDirection";
 
 export const REVIEW_LABEL = "تمت المراجعة";
 export const REVIEW_ALL_LABEL = "مراجعة الكل";
@@ -14,11 +15,12 @@ export const DRAFT_TOOLTIP = "فاتورة معلّقة — لم تتم مراج
 export type LiveChipTone = "pending" | "reviewed" | "frozen" | "transferred";
 
 /** شارة صف الصانع الحي: «لم تُراجع» للبلا فاتورة/المسودة، وحالات المراجعة اللاحقة كما هي */
-export function liveInvoiceChipMeta(status: InvoiceStatus | null | undefined): { label: string; tone: LiveChipTone; tooltip: string } {
+/** `net` (صافي الفاتورة الموقّع) يحدد اتجاه «تم التحويل»: للبائع / استلام من البائع */
+export function liveInvoiceChipMeta(status: InvoiceStatus | null | undefined, net?: number): { label: string; tone: LiveChipTone; tooltip: string } {
   switch (status) {
     case "reviewed": return { label: "تمت المراجعة", tone: "reviewed", tooltip: "" };
     case "frozen": return { label: "مجمّدة", tone: "frozen", tooltip: "" };
-    case "transferred": return { label: "تم التحويل", tone: "transferred", tooltip: "" };
+    case "transferred": return { label: net === undefined ? "تم التحويل" : transferredLabelOf(net), tone: "transferred", tooltip: "" };
     case "draft": return { label: NOT_REVIEWED_LABEL, tone: "pending", tooltip: DRAFT_TOOLTIP };
     default: return { label: NOT_REVIEWED_LABEL, tone: "pending", tooltip: NOT_REVIEWED_TOOLTIP };
   }

@@ -5,7 +5,8 @@ import React from "react";
 import { Box } from "@mui/material";
 import { Link } from "react-router-dom";
 import { HX } from "layouts/Orders/ordersHomixTheme";
-import { money } from "../utils/calc";
+import { money, signedMoney } from "../utils/calc";
+import { netToneOf } from "../utils/netDirection";
 import { PAY_LABELS } from "../utils/constants";
 import { opIdSx, prodCodeSx, payBadgeSx, amountCellSx, toneColor, Tone, FONT } from "../utils/styles";
 import { PayMethod } from "../utils/types";
@@ -68,5 +69,20 @@ export function FineCell({ value }: { value: number }) {
     <Box component="span" sx={{ color: HX.red, fontWeight: 700 }}>{money(value)}</Box>
   ) : (
     <Box component="span" sx={{ color: HX.tx3 }}>—</Box>
+  );
+}
+
+/** صافي موقّع بلون الاتجاه: أخضر للبائع، أحمر لهوميكس، رمادي عند الصفر */
+export function NetValue({ value, bold = true, cell = false }: { value: number; bold?: boolean; cell?: boolean }) {
+  const tone = netToneOf(value);
+  const color = tone === "default" ? HX.tx3 : toneColor(tone);
+  return (
+    <Box
+      component="span"
+      data-testid="net-value"
+      sx={{ color, fontWeight: bold ? 800 : 400, ...(cell ? { fontSize: "13px", textAlign: "end", fontFamily: FONT, display: "block" } : {}) }}
+    >
+      {signedMoney(value)}
+    </Box>
   );
 }

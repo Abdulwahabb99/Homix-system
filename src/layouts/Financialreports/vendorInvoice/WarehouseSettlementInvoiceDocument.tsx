@@ -7,6 +7,7 @@ import React from "react";
 import logo from "../../../assets/images/homix.png";
 import { money } from "../utils/calc";
 import { SellerTotals, SettlementSeller } from "../utils/types";
+import { netLabelOf } from "../utils/netDirection";
 import type { FinancialCycle } from "query/financialReport";
 import {
   HOMIX_BANK_DETAILS,
@@ -143,10 +144,10 @@ const WarehouseSettlementInvoiceDocument = React.forwardRef<
             </div>
             <div className={styles.tFinal}>
               <div>
-                <div className={styles.tfLabel}>الصافي المطلوب</div>
-                <div className={styles.tfSub}>التكلفة بعد خصم الغرامات</div>
+                <div className={styles.tfLabel}>{totals.net < 0 ? netLabelOf(totals.net) : "الصافي المطلوب"}</div>
+                <div className={styles.tfSub}>التكلفة − الغرامات</div>
               </div>
-              <div className={styles.tfVal}>{money(totals.netRequired)}</div>
+              <div className={styles.tfVal}>{money(Math.abs(totals.net))}</div>
             </div>
           </div>
         </div>

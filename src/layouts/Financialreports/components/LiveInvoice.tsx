@@ -12,6 +12,7 @@ import { FONT } from "../utils/styles";
 import type { LiveEditContext } from "../utils/liveOverlay";
 import type { BillingDay, SettlementSeller } from "../utils/types";
 import { STATUS_META } from "../invoices/shared";
+import { LiveAddOrderButton } from "./LiveOrderActions";
 import { liveInvoiceChipMeta, reviewButtonState, REVIEW_LABEL, type LiveChipTone } from "../utils/liveReview";
 
 const TONE_COLORS: Record<LiveChipTone, { color: string; bg: string }> = {
@@ -63,7 +64,7 @@ export default function LiveInvoiceChip({ seller }: { seller: SettlementSeller }
   if (invoicesState === "loading") return <Box component="span" sx={chipSx(HX.tx3, HX.surface2, true)}>جارٍ التحميل...</Box>;
   if (invoicesState === "error") return <Box component="span" sx={chipSx(HX.red, HX.redLight, true)} title="تعذّر تحميل حالة الفواتير">الحالة غير متاحة</Box>;
   const invoice = seller.invoice;
-  const chip = liveInvoiceChipMeta(invoice?.status);
+  const chip = liveInvoiceChipMeta(invoice?.status, invoice?.netAmount);
   const tone = TONE_COLORS[chip.tone];
   if (!invoice) return <Box component="span" sx={chipSx(tone.color, tone.bg, true)} title={chip.tooltip}>{chip.label}</Box>;
   return (
@@ -107,6 +108,7 @@ export function LiveInvoiceHeaderStatus({ seller }: { seller: SettlementSeller }
     <>
       <LiveInvoiceChip seller={seller} />
       <LiveReviewButton seller={seller} />
+      <LiveAddOrderButton seller={seller} />
       {canRefresh && invoice && (
         <Box component="button" type="button" disabled={refresh.isPending} title="يعيد حساب أرقام النظام ويحتفظ بتعديلاتك اليدوية"
           onClick={() => {

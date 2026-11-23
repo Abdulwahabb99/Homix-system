@@ -6,6 +6,7 @@ import React from "react";
 import type { LineOverridePatch } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import EditableAmountCell from "../invoices/EditableAmountCell";
+import { companyDueKindOf } from "../utils/companyDue";
 import { isCostMissing, liveEditState, type LiveField } from "../utils/liveOverlay";
 import type { SettlementOrder, SettlementSeller } from "../utils/types";
 import type { Tone } from "../utils/styles";
@@ -33,6 +34,8 @@ export default function LiveAmountCell({ seller, order, field, tone, bold }: {
   seller: SettlementSeller; order: SettlementOrder; field: LiveField; tone?: Tone; bold?: boolean;
 }) {
   const ctx = useLiveInvoice();
+  // تسليم المخزن: لا «مستحق لهوميكس» — خلية بلا قيمة ولا تعديل (التعديلات المخزّنة تبقى في القاعدة دون عرض)
+  if (field === "companyDueOverride" && companyDueKindOf(order) !== "vendorOwes") return <span aria-label="لا ينطبق">—</span>;
   const value = VALUE_OF[field](order);
   const display = field === "finesOverride" ? <FineCell value={value} /> : <Money value={value} tone={tone} bold={bold} />;
   const info = order.invoiceLine;

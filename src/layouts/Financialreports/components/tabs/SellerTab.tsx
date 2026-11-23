@@ -3,7 +3,8 @@
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React, { useEffect, useRef, useState } from "react";
-import { money } from "../../utils/calc";
+import { money, orderNet } from "../../utils/calc";
+import { netLabelOf, netToneOf } from "../../utils/netDirection";
 import { arNum } from "../../utils/format";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
 import { exportFinancialReport, type FinancialCycle, type FinancialDateRange } from "query/financialReport";
@@ -14,13 +15,14 @@ import { LiveInvoiceHeaderStatus } from "../LiveInvoice";
 import LiveAmountCell, { LineStateTag } from "../LiveAmountCell";
 import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP, companyDueKindOf } from "../../utils/companyDue";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
+import { LiveOrderMenu } from "../LiveOrderActions";
 import DetailHeaderBar from "../DetailHeaderBar";
 import DetailTotalsRow from "../DetailTotalsRow";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, Money, Muted, OpId, PayBadge, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Money, Muted, NetValue, OpId, PayBadge, ProdCode } from "../SettlementCells";
 import SellerSettlementInvoiceDocument from "../../vendorInvoice/SellerSettlementInvoiceDocument";
 
-const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 40px";
+const GRID = "34px 1fr 100px 120px 115px 115px 115px 100px 130px 40px";
 
 export default function SellerTab({
   sellers, billingDay, cycle, referenceDate, range,
@@ -70,6 +72,7 @@ export default function SellerTab({
     <Amount key="due" tone="green">{money(t.dueSeller)}</Amount>,
     <Amount key="company" tone="accent">{money(t.dueComp)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
+    <Amount key="net"><NetValue value={t.net} /></Amount>,
   ];
 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
@@ -91,9 +94,11 @@ export default function SellerTab({
           { label: "شحن البائع" },
           { label: "المبلغ المطلوب تحصيله" },
           { label: "طريقة الدفع" },
-          { label: "المستحق للبائع" },
+          { label: "مستحق البائع" },
           { label: COMPANY_DUE_LABEL, tip: COMPANY_DUE_TIP },
           { label: "الغرامات" },
+          { label: "الصافي" },
+          { label: "" },
         ]}
         rows={s.row.orders.map((order) => [
           <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
@@ -109,6 +114,8 @@ export default function SellerTab({
           <LiveAmountCell key="vendorDue" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
           <LiveAmountCell key="companyDue" seller={s} order={order} field="companyDueOverride" tone="accent" bold />,
           <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
+          isCounted(order) ? <NetValue key="net" value={orderNet(order)} /> : <Muted key="net">—</Muted>,
+          <LiveOrderMenu key="actions" seller={s} order={order} />,
         ])}
       />
       <DetailTotalsRow
@@ -116,9 +123,10 @@ export default function SellerTab({
           { label: "إجمالي التحصيل", value: money(t.collect) },
           { label: "إجمالي تكلفة المنتجات", value: money(t.cost) },
           { label: "إجمالي شحن البائع", value: money(t.vendorShippingCost) },
-          { label: "المستحق للبائع", value: money(t.dueSeller), tone: "green" },
+          { label: "مستحق البائع", value: money(t.dueSeller), tone: "green" },
           { label: COMPANY_DUE_LABEL, value: money(t.dueComp), tone: "accent" },
           { label: "الغرامات", value: money(t.fine), tone: "red" },
+          { label: netLabelOf(t.net), value: money(Math.abs(t.net)), tone: netToneOf(t.net) },
         ]}
       />
     </>
@@ -133,8 +141,8 @@ export default function SellerTab({
           { label: "" }, { label: "الصانع" },
           { label: "عدد الطلبات", align: "end" }, { label: "إجمالي التحصيل", align: "end" },
           { label: "إجمالي شحن البائع", align: "end" },
-          { label: "المستحق للبائع", align: "end" }, { label: COMPANY_DUE_LABEL, align: "end", tip: COMPANY_DUE_TIP },
-          { label: "الغرامات", align: "end" }, { label: "" },
+          { label: "مستحق البائع", align: "end" }, { label: COMPANY_DUE_LABEL, align: "end", tip: COMPANY_DUE_TIP },
+          { label: "الغرامات", align: "end" }, { label: "الصافي", align: "end", tip: "مستحق البائع − مستحق هوميكس − الغرامات (أخضر: للبائع، أحمر: لهوميكس)" }, { label: "" },
         ]}
         renderCells={renderCells}
         renderDetail={renderDetail}

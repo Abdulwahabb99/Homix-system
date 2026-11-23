@@ -48,6 +48,7 @@
 .navy { color: var(--navy); }
 .red { color: var(--red); }
 .gold { color: var(--gold-label); }
+.grey { color: var(--muted); }
 .dash { color: #e5e7eb; }
 
 /* ── الترويسة ── */
@@ -160,9 +161,11 @@
   break-inside: avoid;
   page-break-inside: avoid;
 }
-.bank { margin-top: -1px; height: 140px; padding: 14px 18px 0; border: 1px solid var(--hairline); border-radius: 14px; background: #fff; }
+.bank { margin-top: -1px; min-height: 140px; padding: 14px 18px 8px; border: 1px solid var(--hairline); border-radius: 14px; background: #fff; }
 .bankTitle { font-size: 10.5px; font-weight: 600; color: var(--gold-label); line-height: 1.5; margin-bottom: 6px; }
 .bankRow { display: flex; justify-content: space-between; align-items: center; height: 22px; }
+.bankNote { margin: 6px 0 0; font-size: 10px; line-height: 1.5; color: var(--muted); }
+.sg { display: inline-block; width: 14px; font-style: normal; font-weight: 700; color: var(--muted); }
 .bankLabel { font-size: 12px; color: var(--muted); }
 .bankValue { font-size: 11.5px; font-weight: 700; color: var(--ink); direction: ltr; unicode-bidi: isolate; }
 .totalsCol { display: flex; flex-direction: column; }

@@ -15,14 +15,19 @@ import {
   useTransitionInvoice, useUploadReceipt,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
-import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP, sumCompanyDue } from "../utils/companyDue";
+import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP, countsTowardCompanyDue, sumCompanyDue } from "../utils/companyDue";
 import { FONT } from "../utils/styles";
+import { netLabelOf, transferredLabelOf } from "../utils/netDirection";
+import { NetValue } from "../components/SettlementCells";
 import { CostWarning } from "../components/LiveAmountCell";
 import EditableAmountCell from "./EditableAmountCell";
 import InvoiceDocument from "./InvoiceDocument";
 import {
   ACTION_LABELS, EmptyState, FORMULA_NOTE, RECEIPT_ACCEPT, validateReceiptFile, ModalShell, describeEventDetail, StatusPill, btnDangerSx, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDateTime, inputSx, tdSx, thSx,
 } from "./shared";
+
+/** أخضر للبائع، أحمر لهوميكس، رمادي عند الصفر */
+const netColor = (net: number): string => (net > 0 ? HX.green : net < 0 ? HX.red : HX.tx3);
 
 type OverrideField = "finesOverride" | "vendorDueOverride" | "companyDueOverride" | "warehouseCostOverride" | "collectionOverride" | "vendorShippingCostOverride";
 
@@ -125,7 +130,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
 
   const askTransfer = () => {
     if (!invoice) return;
-    const raw = window.prompt(`مبلغ التحويل الفعلي (المحسوب: ${Math.round(Math.abs(invoice.netAmount))} ج.م):`, String(Math.abs(invoice.netAmount)));
+    const raw = window.prompt(`${invoice.netAmount < 0 ? "مبلغ التحويل المستلم من البائع" : "مبلغ التحويل الفعلي للبائع"} (المحسوب: ${Math.round(Math.abs(invoice.netAmount))} ج.م):`, String(Math.abs(invoice.netAmount)));
     if (raw === null) return;
     const amount = Number(raw);
     if (!Number.isFinite(amount) || amount < 0) { NotificationMeassage("error", "مبلغ غير صالح"); return; }
@@ -188,7 +193,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
       onClose={onClose}
       maxWidth="lg"
       title={invoice ? (<Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-        {invoice.vendorName} — {invoice.code ?? "مسودة"} <StatusPill status={invoice.status} overdue={invoice.isOverdue} />
+        {invoice.vendorName} — {invoice.code ?? "مسودة"} <StatusPill status={invoice.status} overdue={invoice.isOverdue} label={invoice.statusLabel} />
       </Box>) : "فاتورة"}
     >
       {isError ? <EmptyState text="تعذّر تحميل الفاتورة." /> : isLoading || !invoice || !data ? <EmptyState text="جارٍ التحميل..." /> : (
@@ -207,7 +212,7 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
               <Box component="button" type="button" disabled={transition.isPending} onClick={() => doTransition("reviewed", "تأكيد المراجعة؟ الأرقام هتتقفل من التعديل.")} sx={btnPrimarySx}>تمت المراجعة</Box>
             </>)}
             {staff && invoice.status === "reviewed" && (<>
-              <Box component="button" type="button" disabled={transition.isPending} onClick={askTransfer} sx={btnPrimarySx}>تم التحويل</Box>
+              <Box component="button" type="button" disabled={transition.isPending} onClick={askTransfer} sx={btnPrimarySx}>{transferredLabelOf(invoice.netAmount)}</Box>
               <Box component="button" type="button" disabled={transition.isPending} onClick={() => doTransition("frozen", "تجميد الفاتورة؟ عداد الأيام هيقف.")} sx={btnGhostSx}>تجميد</Box>
               <Box component="button" type="button" disabled={transition.isPending} onClick={() => doTransition("draft", "إرجاع الفاتورة لمعلّقة؟")} sx={btnGhostSx}>رجوع لمعلّقة</Box>
             </>)}
@@ -252,10 +257,10 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
             <Box sx={{ overflowX: "auto" }}>
               <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><tr>
-                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["شحن البائع", "التحصيل"]), "الغرامات", "المستحق للبائع", ...(isVendor ? [] : [COMPANY_DUE_LABEL]), ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}
+                  {["رقم العملية", "رقم الطلب", "كود المنتج", "سعر التكلفة", ...(isVendor ? [] : ["شحن البائع", "التحصيل"]), "الغرامات", "مستحق البائع", ...(isVendor ? [] : [COMPANY_DUE_LABEL]), "الصافي", ...(editable || staff ? ["الحالة", ""] : [])].map((h, i) => <Box component="th" key={`${h}-${i}`} title={h === COMPANY_DUE_LABEL ? COMPANY_DUE_TIP : undefined} sx={thSx}>{h}</Box>)}
                 </tr></thead>
                 <tbody>
-                  {lines.length === 0 && <tr><Box component="td" colSpan={11} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
+                  {lines.length === 0 && <tr><Box component="td" colSpan={12} sx={{ ...tdSx, textAlign: "center", color: HX.tx3 }}>لا توجد طلبات.</Box></tr>}
                   {lines.map((line) => {
                     const tag = STATE_TAGS[line.state];
                     const muted = line.state !== "included";
@@ -278,7 +283,8 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
                         {!isVendor && <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>{editableCell(line, "collectionOverride", line.collectionTotal, line.collectionOverride != null)}</Box>}
                         <Box component="td" sx={{ ...tdSx, color: line.fines > 0 ? HX.red : HX.tx3 }}>{editableCell(line, "finesOverride", line.fines, line.finesOverride != null)}</Box>
                         <Box component="td" sx={{ ...tdSx, color: HX.green, fontWeight: 700 }}>{editableCell(line, "vendorDueOverride", line.vendorDue, line.vendorDueOverride != null)}</Box>
-                        {!isVendor && <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride != null)}</Box>}
+                        {!isVendor && <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{countsTowardCompanyDue(line) ? editableCell(line, "companyDueOverride", line.companyDue, line.companyDueOverride != null) : "—"}</Box>}
+                        <Box component="td" sx={tdSx}>{line.state === "included" ? <NetValue value={line.netAmount ?? (line.vendorDue - (countsTowardCompanyDue(line) ? line.companyDue : 0) - line.fines)} /> : "—"}</Box>
                         {(editable || staff) && (
                           <Box component="td" sx={tdSx}>
                             {tag && <Box component="span" sx={{ color: tag.color, fontSize: "11px", fontWeight: 700 }}>{tag.label}</Box>}
@@ -329,8 +335,8 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
               <Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                 <Box component="input" placeholder="الوصف" value={adjLabel} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdjLabel(e.target.value)} sx={{ ...inputSx, flex: 1, minWidth: 160 }} />
                 <Box component="select" value={adjKind} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAdjKind(e.target.value as "addition" | "deduction")} sx={inputSx}>
-                  <option value="deduction">خصم (يقلّل مستحق الصانع)</option>
-                  <option value="addition">إضافة (يزوّد مستحق الصانع)</option>
+                  <option value="deduction">خصم (يقلّل الصافي للصانع)</option>
+                  <option value="addition">إضافة (يزوّد الصافي للصانع)</option>
                 </Box>
                 <Box component="input" type="number" min={0} placeholder="المبلغ ج.م" value={adjAmount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdjAmount(e.target.value)} sx={{ ...inputSx, width: 120 }} />
                 <Box component="button" type="button" disabled={addAdjustment.isPending} onClick={submitAdjustment} sx={btnPrimarySx}>إضافة</Box>
@@ -341,13 +347,13 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
           {/* الإجماليات */}
           <Box sx={{ ...cardBoxSx, p: "12px 16px", display: "flex", gap: "22px", flexWrap: "wrap", alignItems: "center", bgcolor: HX.accentLight }}>
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>عدد الطلبات</Box><b>{invoice.ordersCount}</b></Box>
-            <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>مستحق البائع</Box><b style={{ color: HX.green }}>{money(invoice.vendorDueTotal)}</b></Box>
+            <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>مستحق البائع (إجمالي)</Box><b style={{ color: HX.green }}>{money(invoice.vendorDueTotal)}</b></Box>
             {!isVendor && <Box title={COMPANY_DUE_TIP}><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>إجمالي المستحق لهوميكس</Box><b style={{ color: HX.accent }}>{money(companyDueTotal)}</b></Box>}
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>الغرامات</Box><b style={{ color: HX.red }}>{money(invoice.finesTotal)}</b></Box>
             <Box><Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>التعديلات</Box><b>{money(invoice.adjustmentsTotal)}</b></Box>
             <Box sx={{ marginInlineStart: "auto", textAlign: "end" }}>
-              <Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>{invoice.dueParty === "vendor" ? "الصافي المستحق للصانع" : "الصافي المستحق لهوميكس"}</Box>
-              <b style={{ fontSize: 18 }}>{money(Math.abs(invoice.netAmount))}</b>
+              <Box sx={{ fontSize: "10.5px", color: HX.tx3 }}>{netLabelOf(invoice.netAmount)}</Box>
+              <b data-testid="invoice-net" style={{ fontSize: 18, color: netColor(invoice.netAmount) }}>{money(Math.abs(invoice.netAmount))}</b>
             </Box>
           </Box>
 

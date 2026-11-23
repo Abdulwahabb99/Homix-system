@@ -6,7 +6,7 @@
 /** طريقة الدفع لكل طلب (تبقى للخلايا العامة القابلة لإعادة الاستخدام) */
 export type PayMethod = "cod" | "online";
 
-import type { CycleInvoiceRef } from "query/financialInvoices";
+import type { CycleInvoiceRef, VendorBank } from "query/financialInvoices";
 
 /** يوم الفوترة المتاح من الـ BE */
 export type BillingDay = 13 | 28;
@@ -31,6 +31,8 @@ export interface VendorRow {
   homixMargin: number;
   /** Σ ما يسدّده الصانع لهوميكس في تسليمات البائع */
   vendorOwes: number;
+  /** بيانات حساب البائع — تصل للموظف (finance_settle) وللبائع نفسه فقط؛ undefined = غير مسموح، null = لم تُسجَّل */
+  vendorBank?: VendorBank | null;
   orders: SettlementOrder[];
 }
 
@@ -113,7 +115,9 @@ export interface SellerTotals {
   vendorOwes: number;
   /** إجمالي قيمة الشحن المحفوظة على المورد لطلبات تسليم البائع */
   vendorShippingCost: number;
-  /** الصافي المطلوب (تسويات المخزن) = Σ max(0، التكلفة − الغرامة) لكل طلب */
+  /** صافي المستحق الموقّع = مستحق البائع (إجمالي) − مستحق هوميكس − الغرامات (السالب = البائع مدين لهوميكس) */
+  net: number;
+  /** اسم قديم لنفس `net` (تسويات المخزن: Σ التكلفة − الغرامات) */
   netRequired: number;
 }
 
@@ -128,6 +132,8 @@ export interface FinancialKpis {
   /** ما يسدّده الصانع لهوميكس (تسليمات البائع) */
   totalVendorOwes: number;
   totalFine: number;
+  /** الصافي الموقّع لكل البائعين = المستحق للبائعين − المستحق لهوميكس − الغرامات */
+  totalNet: number;
   /** إجمالي عدد الطلبات في الدورة (من الفاتورة الشاملة) */
   ordersCount: number;
   lateSellersCount: number;

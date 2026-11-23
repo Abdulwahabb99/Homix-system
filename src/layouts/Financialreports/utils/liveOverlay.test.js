@@ -9,7 +9,7 @@ const seller = (orders, vendorId = 5) => ({
   id: String(vendorId), name: "ركة", cat: "", color: "", initials: "ر",
   row: {
     vendorId, vendorName: "ركة", ordersCount: orders.length, warehouseCost: 600 * orders.length, collectionTotal: 1000 * orders.length,
-    fines: orders.reduce((t, x) => t + x.fines, 0), vendorDue: orders.reduce((t, x) => t + x.vendorDue, 0), companyDue: 200 * orders.length, orders,
+    fines: orders.reduce((t, x) => t + x.fines, 0), vendorDue: orders.reduce((t, x) => t + x.vendorDue, 0), companyDue: orders.reduce((t, x) => t + (x.companyDueKind === "margin" ? 0 : x.companyDue), 0), orders,
   },
 });
 const sections = (orders, vendorId) => ({ warehouse: [seller(orders, vendorId)], seller: [seller(orders, vendorId)], comprehensive: [seller(orders, vendorId)] });
@@ -170,22 +170,24 @@ describe("liveEditState", () => {
 describe("invariants: warehouse tab net == invoice vendor due (cost based)", () => {
   const { sellerTotals } = require("./calc");
   const { isCostMissing } = require("./liveOverlay");
-  // Homix-delivered orders as the BE now reports them: vendorDue = max(0, cost - fines), companyDue = collection - cost
+  // Homix-delivered orders as the BE now reports them: vendorDue = cost (gross), companyDue = 0, fines in their own column
   const homix = (id, cost, fines, collection) => order(id, {
-    collectionTotal: collection, companyDue: collection - cost, fines, shipmentId: id, vendorDue: Math.max(cost - fines, 0), warehouseCost: cost,
+    collectionTotal: collection, companyDue: 0, companyDueKind: "margin", fines, shipmentId: id, vendorDue: cost, warehouseCost: cost,
   });
   const orders = () => [homix(1, 1200, 100, 2299), homix(2, 500, 800, 900), homix(3, 0, 0, 400)];
 
-  it("client example: 1,200 cost - 100 fines = 1,100 on both the warehouse tab and the invoice", () => {
+  it("client example: 1,200 cost - 100 fines = net 1,100 (vendor due stays the gross 1,200)", () => {
     const s = seller([homix(1, 1200, 100, 2299)]);
+    expect(sellerTotals(s).net).toBe(1100);
     expect(sellerTotals(s).netRequired).toBe(1100);
-    expect(s.row.vendorDue).toBe(1100);
+    expect(s.row.vendorDue).toBe(1200);
   });
 
-  it("holds per order (fines above cost never go negative) with no overrides", () => {
+  it("net = sum of cost - fines with no per-order floor (fines above cost make that order negative)", () => {
     const base = sections(orders());
     const out = overlaySections(base, overview({ includedOrderIds: { 1: [1, 2, 3] } }), false);
-    expect(sellerTotals(out.warehouse[0]).netRequired).toBe(1100);
+    // (1200-100) + (500-800) + 0 = 800
+    expect(sellerTotals(out.warehouse[0]).net).toBe(800);
     expect(out.warehouse[0].row.vendorDue).toBe(out.comprehensive[0].row.vendorDue);
   });
 

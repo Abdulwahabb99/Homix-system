@@ -73,13 +73,13 @@ describe("page geometry guards (html2pdf blank-page regression)", () => {
   it("renders one .page element per planned page", () => {
     const base = {
       title: "t", extraTotals: [], number: "#V1-11-C1", cycleLabel: "", monthLabel: "", issueDateLabel: "", status: "open", statusLabel: "مفتوحة", overdue: false,
-      vendorName: "x", ordersCount: 0, operationsCount: 0, vendorDueTotal: 0, companyDueTotal: 0, finesTotal: 0, adjustmentsTotal: null, net: 0, netOwedToHomix: false, stampDate: null,
+      vendorName: "x", ordersCount: 0, operationsCount: 0, vendorDueTotal: 0, companyDueTotal: 0, finesTotal: 0, adjustmentsTotal: null, net: 0, netDirection: "settled", netLabel: "لا يوجد مستحق", transfer: { kind: "none", title: "", rows: [], note: "" }, stampDate: null,
     };
     for (const n of [0, 3, 9, 20, 40]) {
       const lines = Array.from({ length: n }, (_, i) => ({ key: i, operationNumber: `OP-${i}`, orderNumber: String(i), productCode: "", homixDelivery: false, companyDue: 0, vendorDue: 1, fines: 0 }));
       const html = renderToStaticMarkup(<SettlementStatement data={{ ...base, lines }} />);
-      expect((html.match(/class="page"/g) || []).length).toBe(planPages(n, 3, false).length);
-      expect((html.match(/<footer/g) || []).length).toBe(planPages(n, 3, false).length);
+      expect((html.match(/class="page"/g) || []).length).toBe(planPages(n, 3, false, 0).length);
+      expect((html.match(/<footer/g) || []).length).toBe(planPages(n, 3, false, 0).length);
     }
   });
 });

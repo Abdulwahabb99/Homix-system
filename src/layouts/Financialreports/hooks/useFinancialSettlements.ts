@@ -51,6 +51,7 @@ function toSeller(item: FinancialVendorItem, index: number): SettlementSeller {
       companyDue: item.companyDue,
       homixMargin: item.homixMargin,
       vendorOwes: item.vendorOwes,
+      vendorBank: item.vendorBank,
       orders: item.orders,
     },
   };
@@ -72,6 +73,7 @@ const EMPTY_KPIS: FinancialKpis = {
   totalHomixMargin: 0,
   totalVendorOwes: 0,
   totalFine: 0,
+  totalNet: 0,
   ordersCount: 0,
   lateSellersCount: 0,
   dueSellerPct: 0,
@@ -106,6 +108,7 @@ export function useFinancialSettlements(billingDay: BillingDay, referenceDate?: 
       totalHomixMargin: summary.homixMargin,
       totalVendorOwes: summary.vendorOwes,
       totalFine: summary.fines,
+      totalNet: summary.netAmount,
       ordersCount: fullInvoice.summary.ordersCount,
       lateSellersCount: fullInvoice.items.filter((i) => i.fines > 0).length,
       dueSellerPct: pct(summary.vendorDue, summary.totalSales),

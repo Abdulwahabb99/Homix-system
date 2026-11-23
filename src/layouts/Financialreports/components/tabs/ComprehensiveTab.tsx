@@ -3,7 +3,8 @@
  * عند التوسيع يعرض الطلبات الفعلية التابعة للصانع خلال دورة الفوترة.
  */
 import React, { useEffect, useRef, useState } from "react";
-import { money } from "../../utils/calc";
+import { money, orderNet, signedMoney } from "../../utils/calc";
+import { netLabelOf, netToneOf } from "../../utils/netDirection";
 import { arNum } from "../../utils/format";
 import { COMPREHENSIVE_NOTE } from "../../utils/constants";
 import { BillingDay, SellerTotals, SettlementSeller } from "../../utils/types";
@@ -16,13 +17,14 @@ import { LineStateTag } from "../LiveAmountCell";
 import LiveAmountCell from "../LiveAmountCell";
 import { COMPANY_DUE_LABEL, COMPANY_DUE_TIP } from "../../utils/companyDue";
 import { forPrint, isCounted } from "../../utils/liveOverlay";
+import { LiveOrderMenu } from "../LiveOrderActions";
 import DetailHeaderBar from "../DetailHeaderBar";
 import ComprehensiveSummary from "../ComprehensiveSummary";
 import DetailTable from "../DetailTable";
-import { Amount, AmountFine, Muted, OpId, ProdCode } from "../SettlementCells";
+import { Amount, AmountFine, Muted, NetValue, OpId, ProdCode } from "../SettlementCells";
 import VendorSettlementInvoiceDocument from "../../vendorInvoice/VendorSettlementInvoiceDocument";
 
-const GRID = "34px 1fr 100px 120px 120px 120px 110px 40px";
+const GRID = "34px 1fr 100px 120px 120px 120px 110px 130px 40px";
 
 export default function ComprehensiveTab({
   sellers, billingDay, cycle, referenceDate, range,
@@ -70,6 +72,7 @@ export default function ComprehensiveTab({
     <Amount key="seller" tone="green">{money(t.dueSeller)}</Amount>,
     <Amount key="company" tone="accent">{money(t.dueComp)}</Amount>,
     <AmountFine key="fine" value={t.fine} />,
+    <Amount key="net"><NetValue value={t.net} /></Amount>,
   ];
 
   const renderDetail = (s: SettlementSeller, t: SellerTotals) => (
@@ -87,9 +90,11 @@ export default function ComprehensiveTab({
           { label: "رقم العملية" },
           { label: "رقم الطلب" },
           { label: "كود المنتج" },
-          { label: "المستحق للبائع", tone: "green" },
+          { label: "مستحق البائع", tone: "green" },
           { label: COMPANY_DUE_LABEL, tone: "accent", tip: COMPANY_DUE_TIP },
           { label: "الغرامات" },
+          { label: "الصافي" },
+          { label: "" },
         ]}
         rows={s.row.orders.map((order) => [
           <OpId key="operation" to={`/orders/${order.orderId || order.id}`}>{order.operationNumber || `OP-${order.id}`}</OpId>,
@@ -98,21 +103,24 @@ export default function ComprehensiveTab({
           <LiveAmountCell key="vendor" seller={s} order={order} field="vendorDueOverride" tone="green" bold />,
           <LiveAmountCell key="company" seller={s} order={order} field="companyDueOverride" tone="accent" bold />,
           <LiveAmountCell key="fine" seller={s} order={order} field="finesOverride" />,
+          isCounted(order) ? <NetValue key="net" value={orderNet(order)} /> : <Muted key="net">—</Muted>,
+          <LiveOrderMenu key="actions" seller={s} order={order} />,
         ])}
       />
       <ComprehensiveSummary
         items={[
           { label: "عدد الطلبات", value: arNum(t.orders) },
-          { label: "إجمالي مستحق البائع", value: money(t.dueSeller), tone: "green" },
-          { label: "إجمالي المستحق لهوميكس", value: money(t.dueComp), tone: "accent" },
-          { label: "إجمالي الغرامات", value: money(t.fine), tone: "red" },
+          { label: "مستحق البائع (إجمالي)", value: money(t.dueSeller), tone: "green" },
+          { label: "مستحق هوميكس", value: money(t.dueComp), tone: "accent" },
+          { label: "الغرامات", value: money(t.fine), tone: "red" },
           // تعديلات الفاتورة اليدوية موجودة في الأرشيف — نعرضها هنا كي لا يختلف الصافي بين العرضين
           ...(s.invoice && s.invoice.adjustmentsTotal !== 0
-            ? [
-              { label: "تعديلات يدوية على الفاتورة", value: money(s.invoice.adjustmentsTotal) },
-              { label: "صافي مستحق الصانع بعد التعديلات", value: money(t.dueSeller + s.invoice.adjustmentsTotal), tone: "green" as const },
-            ]
+            ? [{ label: "تعديلات يدوية على الفاتورة", value: signedMoney(s.invoice.adjustmentsTotal) }]
             : []),
+          (() => {
+            const net = t.net + (s.invoice?.adjustmentsTotal ?? 0);
+            return { label: netLabelOf(net), value: money(Math.abs(net)), tone: netToneOf(net) };
+          })(),
         ]}
         note={COMPREHENSIVE_NOTE}
       />
@@ -126,9 +134,9 @@ export default function ComprehensiveTab({
         gridTemplate={GRID}
         header={[
           { label: "" }, { label: "الصانع" },
-          { label: "عدد الطلبات", align: "end" }, { label: "المستحق للبائع", align: "end" },
+          { label: "عدد الطلبات", align: "end" }, { label: "مستحق البائع", align: "end" },
           { label: COMPANY_DUE_LABEL, align: "end", tip: COMPANY_DUE_TIP },
-          { label: "الغرامات", align: "end" }, { label: "" },
+          { label: "الغرامات", align: "end" }, { label: "الصافي", align: "end", tip: "مستحق البائع − مستحق هوميكس − الغرامات (أخضر: للبائع، أحمر: لهوميكس)" }, { label: "" },
         ]}
         renderCells={renderCells}
         renderDetail={renderDetail}

@@ -8,8 +8,8 @@
  */
 import type { CycleOverlayLine, CycleOverview } from "query/financialInvoices";
 import type { FinancialKpis, LiveLineInfo, LiveLineState, SettlementOrder, SettlementSeller, SettlementTabKey, VendorRow } from "./types";
-import { pct } from "./calc";
-import { companyDueKindOf } from "./companyDue";
+import { pct, rowNet } from "./calc";
+import { companyDueKindOf, countsTowardCompanyDue } from "./companyDue";
 
 /** billing = دورة فوترة (مغلقة أو جارية — لكليهما مسودات)، custom = فترة مخصصة بلا فواتير */
 export type LiveCycleState = "billing" | "custom";
@@ -75,7 +75,8 @@ export function recomputeRow(row: VendorRow, orders: SettlementOrder[]): VendorR
   return {
     ...row,
     collectionTotal: sum((o) => o.collectionTotal),
-    companyDue: sum((o) => o.companyDue),
+    // «مستحق هوميكس» = بنود تسليم البائع فقط (vendorOwes)
+    companyDue: sum((o) => (countsTowardCompanyDue(o) ? o.companyDue : 0)),
     homixMargin: sum((o) => (companyDueKindOf(o) === "margin" ? o.companyDue : 0)),
     vendorOwes: sum((o) => (companyDueKindOf(o) === "vendorOwes" ? o.companyDue : 0)),
     fines: sum((o) => o.fines),
@@ -184,6 +185,7 @@ export function overlayKpis(
     totalVendorOwes,
     totalDueSeller,
     totalFine: round2(kpis.totalFine + delta((r) => r.fines)),
+    totalNet: round2(kpis.totalNet + delta((r) => rowNet(r))),
     totalSales,
   };
 }

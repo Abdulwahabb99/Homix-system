@@ -12,6 +12,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { exportFinancialReport, type FinancialDateRange } from "query/financialReport";
+import { useInvoiceIssues } from "query/financialInvoiceIssues";
 import { useCycleInvoices, useGenerateInvoices, useLiveLineEdit, useReviewLiveAll } from "query/financialInvoices";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { usePermissions } from "shared/permissions";
@@ -35,13 +36,15 @@ import SellerTab from "./components/tabs/SellerTab";
 import ComprehensiveTab from "./components/tabs/ComprehensiveTab";
 import InvoicesArchive from "./invoices/InvoicesArchive";
 import InvoicedOrdersView from "./invoices/InvoicedOrdersView";
+import InvoiceIssuesView from "./invoices/InvoiceIssuesView";
+import { ISSUES_TAB_LABEL, issuesBadgeCount } from "./utils/invoiceIssues";
 import InvoiceDetailDialog from "./invoices/InvoiceDetailDialog";
 import ManualAdjustmentDialog from "./invoices/ManualAdjustmentDialog";
 import ActivityLogDialog from "./invoices/ActivityLogDialog";
 import ReconciliationDialog from "./invoices/ReconciliationDialog";
 import { cairoDay, inputSx } from "./invoices/shared";
 
-type PageView = "current" | "archive" | "invoiced";
+type PageView = "current" | "archive" | "invoiced" | "issues";
 
 const ghostBtnSx = {
   display: "inline-flex", alignItems: "center", gap: "6px", height: 34, px: "14px",
@@ -83,6 +86,8 @@ export default function Financialreports() {
   /** الإجراءات الكتابية للمالية فقط — البائع قراءة فقط حتى لو وصلته الصلاحية */
   const canSettle = can("finance_settle") && !isVendor;
   const generate = useGenerateInvoices();
+  /** شارة «أخطاء وتصحيحات»: فحص الشهر الحالي (نفس مفتاح الشاشة فيتشارك الكاش) */
+  const issuesBadge = useInvoiceIssues({ month: currentMonthCairo() }, canSettle);
   const reviewAll = useReviewLiveAll();
 
   const currentMonth = currentMonthCairo();
@@ -232,7 +237,8 @@ export default function Financialreports() {
     { key: "current", label: "الفواتير الجارية", count: view === "current" && !isLoading ? counts.comprehensive : null },
     { key: "archive", label: "الأرشيف", count: null },
     { key: "invoiced", label: "الطلبات المفوترة", count: null },
-  ] as const;
+    ...(canSettle ? [{ key: "issues", label: ISSUES_TAB_LABEL, count: issuesBadgeCount(issuesBadge.data) }] : []),
+  ] as Array<{ key: PageView; label: string; count: number | null }>;
 
   const periodControls = (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", p: "12px 16px", bgcolor: HX.surface, border: `1px solid ${HX.border}`, borderRadius: "12px" }}>
@@ -303,6 +309,7 @@ export default function Financialreports() {
           <InvoicesArchive isVendor={isVendor} canSettle={canSettle} onOpen={setOpenInvoiceId} />
         )}
         {view === "invoiced" && <InvoicedOrdersView isVendor={isVendor} onOpenInvoice={setOpenInvoiceId} />}
+        {view === "issues" && canSettle && <InvoiceIssuesView onOpenInvoice={setOpenInvoiceId} />}
 
         {view === "current" && (
           <>

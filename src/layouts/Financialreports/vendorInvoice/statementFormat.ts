@@ -4,9 +4,11 @@
  * `SettlementStatement`. بلا React ولا DOM فيُختبر مباشرة.
  */
 import type { FinancialCycle } from "query/financialReport";
-import type { InvoiceDetail, InvoiceStatus } from "query/financialInvoices";
+import type { InvoiceDetail, InvoiceStatus, VendorBank } from "query/financialInvoices";
 import { MONTHS_AR } from "../utils/cycle";
-import { sumCompanyDue } from "../utils/companyDue";
+import { countsTowardCompanyDue, sumCompanyDue } from "../utils/companyDue";
+import { netDirectionOf, netLabelOf, roundMoney, transferredLabelOf, type NetDirection } from "../utils/netDirection";
+import { HOMIX_BANK_DETAILS } from "./vendorInvoiceConstants";
 import type { SellerTotals, SettlementSeller } from "../utils/types";
 
 export type StatementStatus = "open" | InvoiceStatus;
@@ -24,6 +26,18 @@ export interface StatementLine {
 }
 
 export interface StatementExtraTotal { label: string; value: number }
+
+/** صندوق بيانات التحويل أسفل الكشف — يتبع إشارة الصافي */
+export interface StatementTransfer {
+  /** vendor = بيانات حساب البائع (الصافي له) · homix = حساب هوميكس (الصافي عليه) · none = لا صندوق (صفر / غير مسموح) */
+  kind: "vendor" | "homix" | "none";
+  title: string;
+  rows: Array<[string, string]>;
+  note: string;
+}
+
+/** سطر في معادلة الإجماليات المطبوعة؛ sign: "" للأول، "+" أو "−" للباقي */
+export interface StatementEquationRow { label: string; sign: "" | "+" | "−"; value: number; tone: "green" | "navy" | "red" | "plain"; kind: "vendor" | "company" | "fines" | "adjustments" }
 
 export interface StatementData {
   /** عنوان المستند تحت الشعار */
@@ -47,10 +61,14 @@ export interface StatementData {
   finesTotal: number;
   /** صافي التعديلات اليدوية للفواتير المحفوظة فقط؛ null = لا صف */
   adjustmentsTotal: number | null;
-  /** القيمة المطلقة للصافي المستحق */
+  /** الصافي الموقّع = مستحق البائع (إجمالي) − مستحق هوميكس − الغرامات (+ التعديلات): السالب = مستحق لهوميكس. يُعرض بقيمته المطلقة */
   net: number;
-  /** الصافي مستحق لهوميكس (فواتير محفوظة فقط) */
-  netOwedToHomix: boolean;
+  /** اتجاه الصافي (للألوان والتسميات) */
+  netDirection: NetDirection;
+  /** «صافي المستحق للبائع» / «صافي المستحق لهوميكس» / «لا يوجد مستحق» */
+  netLabel: string;
+  /** صندوق بيانات التحويل بحسب إشارة الصافي */
+  transfer: StatementTransfer;
   /** تاريخ الختم YYYY-MM-DD، أو null = بلا ختم */
   stampDate: string | null;
 }
@@ -65,6 +83,71 @@ export const STATEMENT_STATUS_LABEL: Record<StatementStatus, string> = {
   frozen: "مجمدة",
   transferred: "تم التحويل",
 };
+
+/** تسمية الحالة: «تم التحويل» تتبع الاتجاه (للبائع / استلام من البائع) */
+export const statementStatusLabel = (status: StatementStatus, net: number): string =>
+  status === "transferred" ? transferredLabelOf(net) : STATEMENT_STATUS_LABEL[status];
+
+export const TRANSFER_NOTES = {
+  homix: "يُرجى تحويل الصافي المستحق لهوميكس وإرسال صورة إيصال التحويل.",
+  vendor: "سيتم تحويل الصافي المستحق للبائع على الحساب الموضح وفق دورة السداد.",
+  vendorMissing: "لم تُسجَّل بيانات بنكية لهذا البائع بعد.",
+} as const;
+
+/**
+ * صندوق التحويل بحسب إشارة الصافي: الصافي > 0 ← حساب البائع (من `vendorBank`)، < 0 ← حساب هوميكس، 0 ← بلا صندوق.
+ * `vendorBank`: undefined = المستخدم غير مسموح له برؤية بيانات البائع (لا صندوق)، null = لم تُسجَّل بيانات.
+ */
+export function buildTransfer(net: number, vendorName: string, vendorBank: VendorBank | null | undefined): StatementTransfer {
+  const direction = netDirectionOf(net);
+  if (direction === "homix") {
+    return {
+      kind: "homix",
+      title: "بيانات التحويل البنكي — هوميكس",
+      rows: [["البنك", HOMIX_BANK_DETAILS.bank], ["رقم الحساب", HOMIX_BANK_DETAILS.accountNumber], ["اسم الحساب", HOMIX_BANK_DETAILS.accountName], ["InstaPay", HOMIX_BANK_DETAILS.instapay]],
+      note: TRANSFER_NOTES.homix,
+    };
+  }
+  if (direction === "vendor" && vendorBank !== undefined) {
+    const rows: Array<[string, string]> = vendorBank
+      ? ([
+        ["البنك", vendorBank.bankName],
+        ["رقم الحساب", vendorBank.accountNumber],
+        ["اسم الحساب", vendorBank.accountHolder],
+        ["المحفظة", vendorBank.walletNumber],
+        ["InstaPay", vendorBank.instaPayNumber],
+      ] as Array<[string, string | null]>).filter((row): row is [string, string] => Boolean(row[1]))
+      : [];
+    return {
+      kind: "vendor",
+      title: `بيانات حساب البائع — ${vendorName}`,
+      rows,
+      note: rows.length > 0 ? TRANSFER_NOTES.vendor : TRANSFER_NOTES.vendorMissing,
+    };
+  }
+  return { kind: "none", title: "", rows: [], note: "" };
+}
+
+/**
+ * سطور معادلة الإجماليات المطبوعة: الصافي ≥ 0 ← مستحق البائع (إجمالي) − مستحق هوميكس − الغرامات؛
+ * الصافي < 0 ← مستحق هوميكس + الغرامات − مستحق البائع (إجمالي). التعديلات اليدوية (إن وُجدت) تُعرض بإشارة تجعل المعادلة تُجمع تماماً.
+ */
+export function statementEquation(data: Pick<StatementData, "vendorDueTotal" | "companyDueTotal" | "finesTotal" | "adjustmentsTotal" | "net">): StatementEquationRow[] {
+  const toHomix = roundMoney(data.net) < 0;
+  const adjustments = data.adjustmentsTotal ?? 0;
+  const vendor: StatementEquationRow = { label: "مستحق البائع (إجمالي)", sign: "", value: data.vendorDueTotal, tone: "green", kind: "vendor" };
+  const company: StatementEquationRow = { label: "مستحق هوميكس", sign: "", value: data.companyDueTotal, tone: "navy", kind: "company" };
+  const fines: StatementEquationRow = { label: "الغرامات", sign: "", value: data.finesTotal, tone: "red", kind: "fines" };
+  const rows = toHomix
+    ? [{ ...company }, { ...fines, sign: "+" as const }, { ...vendor, sign: "−" as const }]
+    : [{ ...vendor }, { ...company, sign: "−" as const }, { ...fines, sign: "−" as const }];
+  if (adjustments !== 0) {
+    // الصافي الموقّع = بائع − هوميكس − غرامات + تعديلات؛ في العرض المعكوس نطرح التعديلات من |الصافي|
+    const signedForView = toHomix ? -adjustments : adjustments;
+    rows.push({ label: "تعديلات يدوية", sign: signedForView > 0 ? "+" : "−", value: Math.abs(adjustments), tone: "plain", kind: "adjustments" });
+  }
+  return rows;
+}
 
 /** ألوان شارة الحالة على الترويسة الكحلية (الخلفية / النص) */
 export const STATEMENT_STATUS_COLORS: Record<StatementStatus | "overdue", { bg: string; fg: string }> = {
@@ -122,6 +205,13 @@ const countDistinct = (values: string[]): number => new Set(values).size;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const netFields = (net: number, _status: StatementStatus, vendorName: string, vendorBank: VendorBank | null | undefined) => ({
+  net,
+  netDirection: netDirectionOf(net),
+  netLabel: netLabelOf(net),
+  transfer: buildTransfer(net, vendorName, vendorBank),
+});
+
 /** الفاتورة الحية (تبويب الفاتورة الشاملة) — الطلبات المحسوبة فقط (يمرّرها `forPrint`). */
 export type StatementKind = "vendor" | "seller";
 
@@ -138,13 +228,17 @@ export function statementFromLive(seller: SettlementSeller, totals: SellerTotals
     orderNumber: String(order.orderNumber || order.id),
     productCode: order.productCode || "",
     homixDelivery: order.shipmentId != null,
-    companyDue: order.companyDue,
+    // تسليم المخزن لا مستحق لهوميكس فيه: صفر ← الخلية «—»
+    companyDue: countsTowardCompanyDue(order) ? order.companyDue : 0,
     vendorDue: order.vendorDue,
     fines: order.fines,
   }));
   const monthDay = cairoDay(cycle?.referenceDate) ?? cairoDay(cycle?.endDate);
   const issueDay = cairoDay(cycle?.endDate) ?? monthDay;
   const status: StatementStatus = seller.invoice?.status ?? "open";
+  const companyDueTotal = sumCompanyDue(seller.row.orders.map((order) => ({ ...order, state: "included" })));
+  // الصافي من نفس الأرقام المطبوعة كي تُجمع المعادلة تماماً (بائع − هوميكس − غرامات)
+  const net = round2(totals.dueSeller - companyDueTotal - totals.fine);
   return {
     title: STATEMENT_TITLES[kind],
     extraTotals: kind === "seller"
@@ -155,18 +249,18 @@ export function statementFromLive(seller: SettlementSeller, totals: SellerTotals
     monthLabel: formatMonthLabel(monthDay),
     issueDateLabel: formatIssueDate(issueDay),
     status,
-    statusLabel: STATEMENT_STATUS_LABEL[status],
+    statusLabel: statementStatusLabel(status, net),
     overdue: false,
     vendorName: seller.name || "—",
     ordersCount: countDistinct(lines.map((l) => l.orderNumber)),
     operationsCount: countDistinct(lines.map((l) => l.operationNumber)),
     lines,
     vendorDueTotal: totals.dueSeller,
-    companyDueTotal: totals.dueComp,
+    // نفس قاعدة الخلايا: بنود تسليم البائع فقط
+    companyDueTotal,
     finesTotal: totals.fine,
     adjustmentsTotal: null,
-    net: kind === "seller" ? totals.dueSeller : totals.netRequired,
-    netOwedToHomix: false,
+    ...netFields(net, status, seller.name, seller.row.vendorBank),
     stampDate: STAMPED_STATUSES.has(status) ? issueDay : null,
   };
 }
@@ -181,13 +275,16 @@ export function statementFromInvoice(detail: InvoiceDetail): StatementData {
     orderNumber: String(line.orderNumber || line.orderId),
     productCode: line.productCode || "",
     homixDelivery: line.isWarehouseDelivery,
-    companyDue: line.companyDue,
+    companyDue: countsTowardCompanyDue(line) ? line.companyDue : 0,
     vendorDue: line.vendorDue,
     fines: line.fines,
   }));
   const issueDay = cairoDay(invoice.periodEnd);
   const status = invoice.status;
   const adjustments = round2(Number(invoice.adjustmentsTotal) || 0);
+  const companyDueTotal = sumCompanyDue(counted);
+  // الصافي من نفس الأرقام المطبوعة (مطابق لـ netAmount المحفوظ لأي فاتورة حُسبت بالنموذج الحالي)
+  const net = round2(invoice.vendorDueTotal - companyDueTotal - invoice.finesTotal + adjustments);
   return {
     title: STATEMENT_TITLES.vendor,
     extraTotals: [],
@@ -196,18 +293,17 @@ export function statementFromInvoice(detail: InvoiceDetail): StatementData {
     monthLabel: formatMonthLabel(issueDay),
     issueDateLabel: formatIssueDate(issueDay),
     status,
-    statusLabel: STATEMENT_STATUS_LABEL[status],
+    statusLabel: statementStatusLabel(status, net),
     overdue: Boolean(invoice.isOverdue),
     vendorName: invoice.vendorName || "—",
     ordersCount: invoice.ordersCount,
     operationsCount: countDistinct(lines.map((l) => l.operationNumber)),
     lines,
     vendorDueTotal: invoice.vendorDueTotal,
-    companyDueTotal: sumCompanyDue(counted),
+    companyDueTotal,
     finesTotal: invoice.finesTotal,
     adjustmentsTotal: adjustments === 0 ? null : adjustments,
-    net: Math.abs(invoice.netAmount),
-    netOwedToHomix: invoice.dueParty === "homix",
+    ...netFields(net, status, invoice.vendorName || "—", detail.vendorBank),
     stampDate: STAMPED_STATUSES.has(status) ? cairoDay(invoice.reviewedAt) ?? issueDay : null,
   };
 }

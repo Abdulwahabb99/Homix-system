@@ -15,6 +15,7 @@ import { downloadBlobResponse } from "shared/functions/downloadBlobResponse";
 import { forceLogoutAndNavigate } from "shared/functions/sessionGuard";
 import { financialKeys } from "query/keys";
 import { BillingDay } from "layouts/Financialreports/utils/types";
+import type { VendorBank } from "query/financialInvoices";
 
 export const FINANCIAL_REPORT_PATH = "/orders/financialReport";
 export const FINANCIAL_REPORT_EXPORT_PATH = `${FINANCIAL_REPORT_PATH}/export`;
@@ -58,6 +59,8 @@ export interface FinancialTopSummary {
   homixMargin: number;
   /** Σ ما يسدّده الصانع لهوميكس (تسليمات البائع) */
   vendorOwes: number;
+  /** الصافي الموقّع = مستحق البائعين − المستحق لهوميكس − الغرامات */
+  netAmount: number;
   vendorsCount: number;
 }
 
@@ -73,6 +76,10 @@ export interface FinancialVendorItem {
   companyDue: number;
   homixMargin: number;
   vendorOwes: number;
+  /** الصافي الموقّع للمورّد (للقراءة؛ الواجهة تعيد حسابه بعد التراكب) */
+  netAmount: number;
+  /** بيانات حساب البائع — للموظف (finance_settle) والبائع نفسه فقط */
+  vendorBank?: VendorBank | null;
   orders: FinancialOrderItem[];
 }
 
@@ -103,6 +110,7 @@ export interface FinancialSectionSummary {
   fines: number;
   homixMargin: number;
   vendorOwes: number;
+  netAmount: number;
   ordersCount: number;
   vendorDue: number;
   warehouseCost: number;
@@ -151,8 +159,24 @@ function normalizeVendorItem(raw: any): FinancialVendorItem {
     companyDue: num(raw?.companyDue),
     homixMargin: num(raw?.homixMargin),
     vendorOwes: num(raw?.vendorOwes),
+    netAmount: num(raw?.netAmount),
+    // undefined (مفتاح غائب) ≠ null (لا بيانات مسجّلة)
+    vendorBank: "vendorBank" in (raw ?? {}) ? normalizeVendorBank(raw.vendorBank) : undefined,
     orders: Array.isArray(raw?.orders) ? raw.orders.map(normalizeOrderItem) : [],
   };
+}
+
+export function normalizeVendorBank(raw: any): VendorBank | null {
+  if (!raw || typeof raw !== "object") return null;
+  const text = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v.trim() : null);
+  const bank: VendorBank = {
+    accountHolder: text(raw.accountHolder),
+    accountNumber: text(raw.accountNumber),
+    bankName: text(raw.bankName),
+    instaPayNumber: text(raw.instaPayNumber),
+    walletNumber: text(raw.walletNumber),
+  };
+  return Object.values(bank).some((v) => v !== null) ? bank : null;
 }
 
 function normalizeOrderItem(raw: any): FinancialOrderItem {
@@ -183,6 +207,7 @@ function normalizeSectionSummary(raw: any): FinancialSectionSummary {
     fines: num(raw?.fines),
     homixMargin: num(raw?.homixMargin),
     vendorOwes: num(raw?.vendorOwes),
+    netAmount: num(raw?.netAmount),
     ordersCount: num(raw?.ordersCount),
     vendorDue: num(raw?.vendorDue),
     warehouseCost: num(raw?.warehouseCost),
@@ -214,18 +239,19 @@ function normalizeTopSummary(raw: any): FinancialTopSummary {
     fines: num(raw?.fines),
     homixMargin: num(raw?.homixMargin),
     vendorOwes: num(raw?.vendorOwes),
+    netAmount: num(raw?.netAmount),
     vendorsCount: num(raw?.vendorsCount),
   };
 }
 
 export const EMPTY_SECTION: FinancialSection = {
-  summary: { collectionTotal: 0, companyDue: 0, fines: 0, homixMargin: 0, ordersCount: 0, vendorDue: 0, vendorOwes: 0, warehouseCost: 0 },
+  summary: { collectionTotal: 0, companyDue: 0, fines: 0, homixMargin: 0, netAmount: 0, ordersCount: 0, vendorDue: 0, vendorOwes: 0, warehouseCost: 0 },
   items: [],
 };
 
 export const EMPTY_REPORT: FinancialReport = {
   cycle: { billingDay: 0, startDate: null, endDate: null, referenceDate: null, mode: null },
-  summary: { totalSales: 0, vendorDue: 0, companyDue: 0, fines: 0, homixMargin: 0, vendorOwes: 0, vendorsCount: 0 },
+  summary: { totalSales: 0, vendorDue: 0, companyDue: 0, fines: 0, homixMargin: 0, vendorOwes: 0, netAmount: 0, vendorsCount: 0 },
   fullInvoice: EMPTY_SECTION,
   vendorDeliveries: EMPTY_SECTION,
   warehouseDeliveries: EMPTY_SECTION,
