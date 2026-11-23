@@ -418,6 +418,21 @@ export function useOrderDetailsPage(orderId?: string | number) {
           await axiosRequest.post(`/orders/${orderDetails.id}/notes/${realId}/upload`, formData);
           NotificationMeassage("success", "تم إضافة التعليق والمرفقات بنجاح");
         } catch (uploadErr) {
+          if (!text) {
+            // ملاحظة بلا نص وبلا مرفق = فقاعة فاضية: نتراجع عنها ونُرجع الملف للمحاولة مرة تانية
+            try {
+              await axiosRequest.delete(`/orders/${orderDetails.id}/notes/${realId}`);
+              setComments((prev) => prev.filter((c) => c.id !== realId));
+              setSelectedFiles(files);
+              NotificationMeassage(
+                "error",
+                getApiErrorMessage(uploadErr, "تعذّر رفع المرفق — لم تُضَف الملاحظة، جرّب تاني")
+              );
+              return;
+            } catch {
+              /* لو تعذّر الحذف نُبقي الملاحظة ونُظهر الخطأ كالمعتاد */
+            }
+          }
           // التعليق أُنشئ بنجاح لكن رفع المرفقات فشل — نُبقي التعليق ونُظهر الخطأ فقط
           NotificationMeassage(
             "error",
