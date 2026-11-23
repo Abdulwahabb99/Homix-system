@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import homixLogoWhite from "assets/images/homix-logo-white.png";
 import { NavLink, useNavigate } from "react-router-dom";
 import { ListItemIcon, Menu, MenuItem } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -288,9 +289,7 @@ export function HomixSidenavPanel({ role, onNavigate }: PanelProps) {
       <div className="h-brand">
         <div className="h-brand-mark">{brandIcon()}</div>
         <div>
-          <div className="h-brand-name">
-            HOMI<span>X</span>
-          </div>
+          <img className="h-brand-logo" src={homixLogoWhite} alt="HOMIX" />
           <div className="h-brand-badge">Marketplace Admin</div>
         </div>
       </div>

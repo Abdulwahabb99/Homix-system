@@ -177,6 +177,13 @@
 .h-brand-name span {
   color: #818cf8;
 }
+/* لوجو أبيض شفاف: يُستخدم على خلفية القائمة الداكنة (--sb) فقط، وليس على خلفية فاتحة */
+.h-brand-logo {
+  display: block;
+  height: 16px;
+  width: auto;
+  margin-bottom: 3px;
+}
 .h-brand-badge {
   font-size: 9px;
   color: rgba(255, 255, 255, 0.3);
