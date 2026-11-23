@@ -351,9 +351,9 @@ function Orders() {
   /** true only on the very first load (no cached data yet) */
   const isInitialLoad   = ordersFetching && !ordersListData;
 
-  /* ── Vendors query (unchanged) ── */
+  /* ── Vendors options query — مفتاح مستقل: يخزّن {label,value} وليس كائنات الموردين الكاملة ── */
   const { data: vendors = [] } = useQuery({
-    queryKey: vendorKeys.list(),
+    queryKey: vendorKeys.options(),
     queryFn: async () => {
       const { data: body } = await axiosRequest.get("/vendors");
       return [

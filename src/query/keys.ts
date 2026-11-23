@@ -19,6 +19,8 @@ export const orderKeys = {
 export const vendorKeys = {
   all: () => ["vendors"],
   list: () => [...vendorKeys.all(), "list"],
+  /** قائمة اختيارات {label,value} (+ «هوميكس») — مفتاح مستقل كي لا تُفسد كاش `list` (كائنات الموردين الكاملة). */
+  options: () => [...vendorKeys.all(), "options"],
 };
 
 export const userKeys = {
