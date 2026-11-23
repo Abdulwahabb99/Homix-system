@@ -33,6 +33,49 @@ interface OrderNotesCardProps {
   setPendingDeleteNoteId: (v: any) => void;
 }
 
+
+/** مرفق ملاحظة: صورة تُعرض، وإن لم يُحمَّل الملف (حُذف من الخادم) أو كان PDF يظهر اسمه بدل فقاعة فاضية. */
+function NoteAttachment({ attachment }: { attachment: any }) {
+  const [broken, setBroken] = React.useState(false);
+  const url = resolveAttachmentUrl(attachment?.url);
+  const name = String(attachment?.name || attachment?.file?.name || "مرفق");
+  // المعاينة المتفائلة (قبل الرفع) تحمل الملف نفسه وروابطها blob: بلا امتداد
+  const isImage =
+    String(attachment?.file?.type ?? "").startsWith("image/") ||
+    /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(String(attachment?.url || attachment?.name || ""));
+  if (!url) return null;
+  if (isImage && !broken) {
+    return (
+      <Box mt={0.75}>
+        <a href={url} target="_blank" rel="noreferrer">
+          <Box
+            component="img"
+            src={url}
+            alt={name}
+            onError={() => setBroken(true)}
+            sx={{ maxHeight: 200, borderRadius: "8px", maxWidth: "100%" }}
+          />
+        </a>
+      </Box>
+    );
+  }
+  return (
+    <Box mt={0.75}>
+      <Chip
+        size="small"
+        icon={<AttachFileIcon sx={{ fontSize: 14 }} />}
+        label={broken ? `${name} — المرفق غير متاح` : name}
+        component="a"
+        href={broken ? undefined : url}
+        target="_blank"
+        rel="noreferrer"
+        clickable={!broken}
+        sx={{ fontSize: "0.7rem", opacity: broken ? 0.6 : 1 }}
+      />
+    </Box>
+  );
+}
+
 export default function OrderNotesCard({
   comments,
   users,
@@ -77,7 +120,8 @@ export default function OrderNotesCard({
             {comments.map((comment, index) => {
               const commentMaker = resolveCommenterName(comment, users);
               const initials = getInitials(commentMaker);
-              const imageUrl = resolveAttachmentUrl(comment?.attachments?.[0]?.url);
+              const attachments: any[] = Array.isArray(comment?.attachments) ? comment.attachments : [];
+              const hasText = String(comment?.text ?? "").trim() !== "";
               const grad = COMMENT_AVATAR_GRADIENTS[index % 2];
 
               return (
@@ -163,8 +207,12 @@ export default function OrderNotesCard({
                             </Button>
                           </Stack>
                         </>
-                      ) : (
+                      ) : hasText ? (
                         comment.text
+                      ) : attachments.length > 0 ? (
+                        <span style={{ opacity: 0.7 }}>مرفق</span>
+                      ) : (
+                        <span style={{ opacity: 0.5 }}>—</span>
                       )}
                     </Box>
                     <Stack
@@ -200,13 +248,11 @@ export default function OrderNotesCard({
                         </Stack>
                       )}
                     </Stack>
-                    {imageUrl && editingIndex !== index ? (
-                      <Box mt={0.75}>
-                        <a href={imageUrl} target="_blank" rel="noreferrer">
-                          <Box component="img" src={imageUrl} alt="" sx={{ maxHeight: 200, borderRadius: "8px", maxWidth: "100%" }} />
-                        </a>
-                      </Box>
-                    ) : null}
+                    {editingIndex !== index
+                      ? attachments.map((attachment, attachmentIndex) => (
+                          <NoteAttachment key={attachment?.id ?? attachmentIndex} attachment={attachment} />
+                        ))
+                      : null}
                   </Box>
                 </Stack>
               );
