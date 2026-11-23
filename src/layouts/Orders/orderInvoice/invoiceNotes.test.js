@@ -8,6 +8,7 @@ import {
   getInvoiceNotes,
   isInvoiceNotesDirty,
   normalizeInvoiceNotesDraft,
+  getCombinedInvoiceNotes,
 } from "./invoiceNotes";
 
 jest.mock("../../../assets/images/homix.png", () => "homix.png");
@@ -51,5 +52,27 @@ describe("invoice document notes block", () => {
   it.each([undefined, null, "", "   "])("omits the block when notes are %p", (invoiceNotes) => {
     const html = render({ ...baseOrder, invoiceNotes });
     expect(html).not.toContain("data-testid=\"invoice-notes\"");
+  });
+});
+
+describe("getCombinedInvoiceNotes", () => {
+  const ref = (o) => o.name;
+  it("is empty when no order has a note", () => {
+    expect(getCombinedInvoiceNotes([{ name: "1" }, { name: "2", invoiceNotes: "  " }], ref)).toEqual([]);
+  });
+  it("lists only orders that have a note, with their order number", () => {
+    expect(getCombinedInvoiceNotes([{ name: "1", invoiceNotes: "اتصل قبل التوصيل" }, { name: "2" }], ref)).toEqual([
+      { ref: "1", text: "اتصل قبل التوصيل" },
+    ]);
+  });
+  it("prints identical notes of all orders once without a number", () => {
+    expect(
+      getCombinedInvoiceNotes([{ name: "1", invoiceNotes: "نفس الملاحظة" }, { name: "2", invoiceNotes: "نفس الملاحظة" }], ref)
+    ).toEqual([{ ref: "", text: "نفس الملاحظة" }]);
+  });
+  it("does not repeat an order that appears twice (several lines)", () => {
+    expect(
+      getCombinedInvoiceNotes([{ name: "1", invoiceNotes: "أ" }, { name: "1", invoiceNotes: "أ" }, { name: "2", invoiceNotes: "ب" }], ref)
+    ).toEqual([{ ref: "1", text: "أ" }, { ref: "2", text: "ب" }]);
   });
 });

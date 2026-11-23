@@ -16,6 +16,7 @@ import {
 } from "./invoiceConstants";
 import styles from "./OrderInvoice.module.css";
 import { shouldHideInvoiceCustomerContact } from "./invoicePrivacy";
+import { getCombinedInvoiceNotes } from "./invoiceNotes";
 
 function formatDateArabic(value: string | null | undefined): string {
   if (value == null || value === "") return "—";
@@ -93,6 +94,9 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
     const paymentStatuses = new Set(orders.map((o) => o?.paymentStatus));
     const paymentLabel =
       paymentStatuses.size === 1 ? getOrderDetailPaymentLabel(firstOrder?.paymentStatus) || "—" : "متعددة";
+
+    // «مسودة ملاحظات» كل طلب — تُطبع فقط عند وجود نص.
+    const invoiceNotes = getCombinedInvoiceNotes(orders, orderRef);
 
     return (
       <div className={styles.invoiceRoot}>
@@ -238,6 +242,19 @@ const CombinedOrderInvoiceDocument = React.forwardRef<HTMLDivElement, { orders: 
               </div>
             </div>
           </div>
+
+          {/* NOTES — فقط عند وجود مسودة ملاحظات في أي من الطلبات */}
+          {invoiceNotes.length > 0 ? (
+            <div className={styles.notesWrap} data-testid="invoice-notes">
+              <div className={styles.notesTitle}>ملاحظات</div>
+              {invoiceNotes.map((note) => (
+                <div key={`${note.ref}-${note.text}`} className={styles.notesText}>
+                  {note.ref ? `طلب #${note.ref}: ` : ""}
+                  {note.text}
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           {/* DECLARATION */}
           <div className={styles.declWrap}>

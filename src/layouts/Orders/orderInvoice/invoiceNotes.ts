@@ -19,3 +19,27 @@ export function normalizeInvoiceNotesDraft(draft: string): string {
 export function isInvoiceNotesDirty(draft: string, saved: string): boolean {
   return normalizeInvoiceNotesDraft(draft) !== saved.trim();
 }
+
+export type CombinedInvoiceNote = { ref: string; text: string };
+
+/**
+ * ملاحظات الفاتورة المجمّعة: ملاحظة كل طلب (لو غير فارغة) مع رقم الطلب.
+ * لو كل الطلبات المحددة لها نفس النص تُطبع مرة واحدة بلا رقم طلب.
+ */
+export function getCombinedInvoiceNotes(
+  orders: Array<{ invoiceNotes?: unknown } | null | undefined>,
+  refOf: (order: any) => string
+): CombinedInvoiceNote[] {
+  // نفس الطلب قد يتكرر (عدة أصناف من نفس رقم الطلب): نحتفظ بأول ظهور فقط
+  const byRef = new Map<string, string>();
+  orders.forEach((order) => {
+    const ref = refOf(order);
+    if (!byRef.has(ref)) byRef.set(ref, getInvoiceNotes(order));
+  });
+  const notes = [...byRef.entries()]
+    .filter(([, text]) => text)
+    .map(([ref, text]) => ({ ref, text }));
+  const everyOrderHasSameNote =
+    notes.length > 1 && notes.length === byRef.size && new Set(notes.map((n) => n.text)).size === 1;
+  return everyOrderHasSameNote ? [{ ref: "", text: notes[0].text }] : notes;
+}
