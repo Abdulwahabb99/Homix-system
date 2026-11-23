@@ -5,7 +5,10 @@ import {
   orderVariantKey,
   productSaveErrorMessage,
   productToForm,
+  isDefaultProductImage,
+  productImageUploadErrorMessage,
   validateProductForm,
+  validateProductImageFile,
 } from "./productForm";
 
 const shopifyProduct = {
@@ -99,5 +102,36 @@ describe("productSaveErrorMessage", () => {
     expect(productSaveErrorMessage({ response: { status: 409, data: { message: "Resource conflict" } } })).toBe("كود المنتج مستخدم بالفعل");
     expect(productSaveErrorMessage({ response: { status: 403 } })).toBe("ليس لديك صلاحية لهذا الإجراء");
     expect(productSaveErrorMessage(new Error("x"))).toBe("حدث خطأ أثناء حفظ المنتج");
+  });
+});
+
+describe("product image upload helpers", () => {
+  it("accepts the four image types up to 5MB", () => {
+    for (const type of ["image/jpeg", "image/png", "image/webp", "image/gif"]) {
+      expect(validateProductImageFile({ type, size: 1024 })).toBeNull();
+    }
+    expect(validateProductImageFile({ type: "image/png", size: 5 * 1024 * 1024 })).toBeNull();
+  });
+  it("rejects other types, oversize files and no file, in Arabic", () => {
+    expect(validateProductImageFile({ type: "application/pdf", size: 10 })).toBe("الملف لازم يكون صورة (JPG/PNG/WEBP/GIF)");
+    expect(validateProductImageFile({ type: "image/svg+xml", size: 10 })).toBeTruthy();
+    expect(validateProductImageFile({ type: "image/png", size: 5 * 1024 * 1024 + 1 })).toBe("حجم الصورة أكبر من 5 ميجا");
+    expect(validateProductImageFile(null)).toBe("اختر صورة للرفع");
+  });
+  it("recognises the default placeholder image", () => {
+    expect(isDefaultProductImage("https://api.example.com/uploads/default-product.png")).toBe(true);
+    expect(isDefaultProductImage("https://api.example.com/uploads/products/a.png")).toBe(false);
+  });
+  it("maps upload failures to Arabic messages", () => {
+    expect(productImageUploadErrorMessage({ response: { status: 413, data: { message: "حجم الصورة أكبر من 5 ميجا" } } })).toBe("حجم الصورة أكبر من 5 ميجا");
+    expect(productImageUploadErrorMessage({ response: { status: 413, data: {} } })).toBe("حجم الصورة أكبر من 5 ميجا");
+    expect(productImageUploadErrorMessage({ response: { status: 403, data: {} } })).toBe("ليس لديك صلاحية لرفع الصور");
+    expect(productImageUploadErrorMessage({ response: { status: 400, data: {} } })).toBe("الملف لازم يكون صورة (JPG/PNG/WEBP/GIF)");
+    expect(productImageUploadErrorMessage(new Error("net"))).toBe("تعذر رفع الصورة");
+  });
+  it("sends the uploaded URL as image, and null when removed", () => {
+    const form = { ...emptyProductForm(), title: "x", vendorId: 4, image: "https://api.example.com/uploads/products/a.png", variants: [{ ...emptyProductForm().variants[0], price: "5" }] };
+    expect(buildProductPayload(form, { canEditFinancials: false }).image).toBe(form.image);
+    expect(buildProductPayload({ ...form, image: "" }, { canEditFinancials: false }).image).toBeNull();
   });
 });

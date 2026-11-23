@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
+import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { FONT } from "layouts/Orders/OrderCreate/constants";
 import { SelectInput, TextInput } from "layouts/Orders/OrderCreate/components/FormField";
@@ -9,15 +10,19 @@ import { NotificationMeassage } from "components/NotificationMeassage/Notificati
 import axiosRequest from "shared/functions/axiosRequest";
 import { usePermissions } from "shared/permissions";
 import { useVendorsQuery } from "query/vendors";
-import { createSystemProduct, duplicateProduct } from "query/productCreate.api";
+import { createSystemProduct, duplicateProduct, uploadProductImage } from "query/productCreate.api";
 import {
+  PRODUCT_IMAGE_ACCEPT,
   ProductForm,
   buildProductPayload,
   emptyProductForm,
   emptyVariant,
+  isDefaultProductImage,
+  productImageUploadErrorMessage,
   productSaveErrorMessage,
   productToForm,
   validateProductForm,
+  validateProductImageFile,
 } from "../productForm";
 
 export interface ProductFormDialogProps {
@@ -41,6 +46,9 @@ export default function ProductFormDialog({ open, onClose, onSaved, source = nul
   const [form, setForm] = useState<ProductForm>(emptyProductForm());
   const [showErrors, setShowErrors] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -72,9 +80,27 @@ export default function ProductFormDialog({ open, onClose, onSaved, source = nul
       variants: prev.variants.map((variant, i) => (i === index ? { ...variant, [key]: value } : variant)),
     }));
 
+  const handleImageFile = async (file: File | null | undefined) => {
+    const problem = validateProductImageFile(file);
+    if (problem || !file) {
+      NotificationMeassage("error", problem ?? "اختر صورة للرفع");
+      return;
+    }
+    setUploading(true);
+    try {
+      setField("image", await uploadProductImage(file));
+    } catch (error) {
+      NotificationMeassage("error", productImageUploadErrorMessage(error));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const hasImage = !!form.image && !isDefaultProductImage(form.image);
+
   const handleSave = async () => {
     setShowErrors(true);
-    if (Object.keys(errors).length > 0 || saving) return;
+    if (Object.keys(errors).length > 0 || saving || uploading) return;
     setSaving(true);
     try {
       const payload = buildProductPayload(form, { canEditFinancials });
@@ -111,7 +137,40 @@ export default function ProductFormDialog({ open, onClose, onSaved, source = nul
           </Box>
           <SelectInput label="نوع المنتج" value={form.typeId} options={typeOptions} onChange={(v) => setField("typeId", v)} />
         </Box>
-        <TextInput label="رابط الصورة (اختياري)" value={form.image} onChange={(v) => setField("image", v)} placeholder="https://..." />
+        <Box>
+          <Typography sx={{ fontFamily: FONT, fontWeight: 700, fontSize: "13px", mb: "6px" }}>صورة المنتج (اختياري)</Typography>
+          <input ref={fileInputRef} type="file" accept={PRODUCT_IMAGE_ACCEPT} hidden
+            onChange={(event) => { void handleImageFile(event.target.files?.[0]); event.target.value = ""; }} />
+          {hasImage ? (
+            <Box sx={{ alignItems: "center", display: "flex", gap: "12px" }}>
+              <Box component="img" src={form.image} alt="صورة المنتج"
+                sx={{ border: `0.5px solid ${HX.border}`, borderRadius: "10px", height: 96, objectFit: "cover", width: 96 }} />
+              <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <Button size="small" disabled={uploading} onClick={() => fileInputRef.current?.click()} sx={{ alignSelf: "flex-start", fontFamily: FONT }}>
+                  {uploading ? "جارٍ الرفع..." : "تغيير الصورة"}
+                </Button>
+                <Button size="small" color="error" disabled={uploading} startIcon={<CloseIcon />} onClick={() => setField("image", "")} sx={{ alignSelf: "flex-start", fontFamily: FONT }}>
+                  إزالة الصورة
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Box role="button" tabIndex={0} aria-label="رفع صورة المنتج"
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !uploading) fileInputRef.current?.click(); }}
+              onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(event) => { event.preventDefault(); setDragOver(false); if (!uploading) void handleImageFile(event.dataTransfer.files?.[0]); }}
+              sx={{
+                alignItems: "center", bgcolor: dragOver ? HX.surface2 : "transparent", border: `1px dashed ${HX.border}`, borderRadius: "10px",
+                color: HX.tx3, cursor: uploading ? "default" : "pointer", display: "flex", flexDirection: "column", fontFamily: FONT,
+                fontSize: "12px", gap: "4px", justifyContent: "center", py: "18px",
+              }}>
+              <AddPhotoAlternateOutlinedIcon />
+              {uploading ? "جارٍ رفع الصورة..." : "اسحب صورة هنا أو اضغط للاختيار (JPG / PNG / WEBP / GIF، حتى 5 ميجا)"}
+            </Box>
+          )}
+        </Box>
 
         <Typography sx={{ fontFamily: FONT, fontWeight: 700, fontSize: "13px" }}>الخيارات والأسعار</Typography>
         {form.variants.map((variant, index) => (
@@ -143,7 +202,7 @@ export default function ProductFormDialog({ open, onClose, onSaved, source = nul
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose} color="inherit" disabled={saving} sx={{ fontFamily: FONT }}>إلغاء</Button>
-        <Button onClick={handleSave} variant="contained" disabled={saving} sx={{ color: "#fff", fontFamily: FONT }}>
+        <Button onClick={handleSave} variant="contained" disabled={saving || uploading} sx={{ color: "#fff", fontFamily: FONT }}>
           {saving ? "جارٍ الحفظ..." : isDuplicate ? "حفظ النسخة" : "حفظ المنتج"}
         </Button>
       </DialogActions>

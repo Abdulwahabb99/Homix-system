@@ -194,12 +194,15 @@ export default function FinancialDetailsCard({
           ariaLabel="تعديل سعر التكلفة"
         />
       </FinancialRow>
-      <FinancialRow label="هامش الربح">
-        <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.81rem", color: margin >= 0 ? OD.green : OD.red }}>
-          {margin >= 0 ? "+" : ""}
-          {formatMoney(margin)} ج.م
-        </Typography>
-      </FinancialRow>
+      {/* هامش الربح هامش هوميكس: لا يظهر للبائع */}
+      {!isVendor && (
+        <FinancialRow label="هامش الربح">
+          <Typography component="span" sx={{ fontWeight: 700, fontSize: "0.81rem", color: margin >= 0 ? OD.green : OD.red }}>
+            {margin >= 0 ? "+" : ""}
+            {formatMoney(margin)} ج.م
+          </Typography>
+        </FinancialRow>
+      )}
       <FinancialRow label="تكلفة الشحن">
         <EditableMoneyValue
           edit={shipEdit}

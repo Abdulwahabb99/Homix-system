@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { orderKeys, shipmentKeys } from "./keys";
+import { getLinkedOrderIds, linkedOrdersToastMessage } from "shared/groupedShipment/linkedOrders";
 import { getRegressionToastMessage, withConfirmRegression } from "shared/regressionConfirm/regressionConfirm";
 
 /** PUT /shipments/{shipmentId} — partial update of the editable shipment fields. */
@@ -32,8 +33,15 @@ export interface UpdateShipmentPayload {
   customer?: UpdateShipmentCustomer;
 }
 
-export async function putShipment(shipmentId: string, body: UpdateShipmentPayload, confirmRegression = false) {
-  await axiosRequest.put(`/shipments/${shipmentId}`, withConfirmRegression(body, confirmRegression));
+/** يعيد معرّفات الطلبات المرتبطة التي تغيّر نوع شحنتها معه («توصيل مجمع»)، أو قائمة فارغة. */
+export async function putShipment(shipmentId: string, body: UpdateShipmentPayload, confirmRegression = false): Promise<number[]> {
+  const response = await axiosRequest.put(`/shipments/${shipmentId}`, withConfirmRegression(body, confirmRegression));
+  return getLinkedOrderIds(response?.data);
+}
+
+function notifyLinkedOrders(linkedOrderIds: number[] | undefined) {
+  const message = linkedOrdersToastMessage(linkedOrderIds?.length ?? 0);
+  if (message) NotificationMeassage("info", message);
 }
 
 /**
@@ -57,8 +65,9 @@ export async function putShipmentsBulk(
   shipmentIds: number[],
   data: BulkUpdateShipmentPayload,
   confirmRegression = false
-) {
-  await axiosRequest.put(`/shipments/bulk-update`, withConfirmRegression({ data, shipmentIds }, confirmRegression));
+): Promise<number[]> {
+  const response = await axiosRequest.put(`/shipments/bulk-update`, withConfirmRegression({ data, shipmentIds }, confirmRegression));
+  return getLinkedOrderIds(response?.data);
 }
 
 export function useBulkUpdateShipmentsMutation() {
@@ -67,7 +76,7 @@ export function useBulkUpdateShipmentsMutation() {
   return useMutation({
     mutationFn: (vars: { shipmentIds: number[]; data: BulkUpdateShipmentPayload; confirmRegression?: boolean }) =>
       putShipmentsBulk(vars.shipmentIds, vars.data, vars.confirmRegression),
-    onSuccess: async () => {
+    onSuccess: async (linkedOrderIds) => {
       /* نفس ما يمسّه تعديل شحنة واحدة — القائمة والملخّص والمرتجعات (قد ينقل
          شحنة من/إلى المرتجعات عند تغيير الحالة) والـ meta. */
       await Promise.all([
@@ -79,6 +88,7 @@ export function useBulkUpdateShipmentsMutation() {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنات المحددة");
+      notifyLinkedOrders(linkedOrderIds);
     },
     onError: (error) => {
       const message = getRegressionToastMessage(error, "حدث خطأ أثناء التعديل الجماعي");
@@ -95,7 +105,7 @@ export function useUpdateShipmentMutation(shipmentId: string | undefined) {
       const { confirmRegression, ...body } = vars;
       return putShipment(shipmentId!, body, confirmRegression);
     },
-    onSuccess: async () => {
+    onSuccess: async (linkedOrderIds) => {
       if (shipmentId) {
         await queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(shipmentId) });
       }
@@ -111,6 +121,7 @@ export function useUpdateShipmentMutation(shipmentId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنة");
+      notifyLinkedOrders(linkedOrderIds);
     },
     onError: (error) => {
       const message = getRegressionToastMessage(error, "حدث خطأ أثناء حفظ التعديلات");
@@ -126,7 +137,7 @@ export function useInlineUpdateShipmentMutation() {
   return useMutation({
     mutationFn: (vars: { id: number; body: UpdateShipmentPayload; confirmRegression?: boolean }) =>
       putShipment(String(vars.id), vars.body, vars.confirmRegression),
-    onSuccess: async (_d, vars) => {
+    onSuccess: async (linkedOrderIds, vars) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: shipmentKeys.detail(String(vars.id)) }),
         queryClient.invalidateQueries({ queryKey: shipmentKeys.lists() }),
@@ -135,6 +146,7 @@ export function useInlineUpdateShipmentMutation() {
         queryClient.invalidateQueries({ queryKey: orderKeys.all() }),
       ]);
       NotificationMeassage("success", "تم تعديل الشحنة");
+      notifyLinkedOrders(linkedOrderIds);
     },
     onError: (error) => {
       const message = getRegressionToastMessage(error, "حدث خطأ أثناء حفظ التعديل");

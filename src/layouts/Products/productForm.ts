@@ -122,3 +122,33 @@ export function productSaveErrorMessage(error: any): string {
   if (status === 400) return "تحقق من بيانات المنتج";
   return "حدث خطأ أثناء حفظ المنتج";
 }
+
+/* ---------- رفع صورة المنتج ---------- */
+
+export const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const PRODUCT_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+/** فحص سريع قبل الرفع (الخادم يعيد الفحص بمحتوى الملف). يرجع رسالة عربية أو null إن كان الملف مقبولاً. */
+export function validateProductImageFile(file: { type?: string; size?: number } | null | undefined): string | null {
+  if (!file) return "اختر صورة للرفع";
+  if (!IMAGE_TYPES.includes(String(file.type ?? "").toLowerCase())) return "الملف لازم يكون صورة (JPG/PNG/WEBP/GIF)";
+  if (Number(file.size) > PRODUCT_IMAGE_MAX_BYTES) return "حجم الصورة أكبر من 5 ميجا";
+  return null;
+}
+
+/** صورة المنتج الافتراضية (placeholder) لا تُعرض كصورة مرفوعة. */
+export function isDefaultProductImage(url: string): boolean {
+  return /\/uploads\/default-product\.png$/.test(url.trim());
+}
+
+/** رسالة خطأ عربية لفشل رفع الصورة (400 نوع، 413 حجم، 403 صلاحية). */
+export function productImageUploadErrorMessage(error: any): string {
+  const status = error?.response?.status;
+  const serverMessage = error?.response?.data?.message;
+  if ((status === 400 || status === 413 || status === 403) && serverMessage && /[؀-ۿ]/.test(serverMessage)) return serverMessage;
+  if (status === 413) return "حجم الصورة أكبر من 5 ميجا";
+  if (status === 403) return "ليس لديك صلاحية لرفع الصور";
+  if (status === 400) return "الملف لازم يكون صورة (JPG/PNG/WEBP/GIF)";
+  return "تعذر رفع الصورة";
+}

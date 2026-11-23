@@ -1,3 +1,4 @@
+import { getLinkedOrderIds, linkedOrdersToastMessage } from "shared/groupedShipment/linkedOrders";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
@@ -42,8 +43,10 @@ export function useOrderDetailQuery(orderId: string | undefined) {
   });
 }
 
-export async function putOrder(orderId: string, body: UpdateOrderPayload, confirmRegression = false) {
-  await axiosRequest.put(`${baseURI}/orders/${orderId}`, withConfirmRegression(body, confirmRegression));
+/** يعيد معرّفات الطلبات المرتبطة التي تغيّر نوع شحنتها معه («توصيل مجمع»)، أو قائمة فارغة. */
+export async function putOrder(orderId: string, body: UpdateOrderPayload, confirmRegression = false): Promise<number[]> {
+  const response = await axiosRequest.put(`${baseURI}/orders/${orderId}`, withConfirmRegression(body, confirmRegression));
+  return getLinkedOrderIds(response?.data);
 }
 
 /** `confirmable` من useRegressionConfirm: يعالج 409 ويعيد الإرسال بعد التأكيد. */
@@ -57,13 +60,15 @@ export function useUpdateOrderMutation(orderId: string | undefined, confirmable?
       confirmable
         ? confirmable((confirm) => putOrder(orderId!, body, confirm))
         : putOrder(orderId!, body),
-    onSuccess: async () => {
+    onSuccess: async (linkedOrderIds) => {
       await queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId!) });
       await queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       await queryClient.invalidateQueries({ queryKey: orderKeys.all() });
       /* حالة الطلب/التأكيد تحرّك حالة الشحنة في الباك إند. */
       await queryClient.invalidateQueries({ queryKey: shipmentKeys.all() });
       NotificationMeassage("success", "تم تعديل الطلب");
+      const linkedMessage = linkedOrdersToastMessage(linkedOrderIds?.length ?? 0);
+      if (linkedMessage) NotificationMeassage("info", linkedMessage);
     },
     onError: (error) => {
       if (isRegressionCancelled(error)) return;

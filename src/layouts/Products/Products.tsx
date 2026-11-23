@@ -4,6 +4,7 @@ import { Box, Button, Grid, Pagination, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import { buildProductSearchUpdate } from "./productSearch";
 import HomixSearchInput from "components/HomixSearchInput/HomixSearchInput";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import ProductCard from "./components/ProductCard";
@@ -36,6 +37,12 @@ function Products() {
 
   const page = parseInt(searchParams.get("page"), 10) || 1;
   const searchQueryParam = searchParams.get("searchQuery") || "";
+  const [searchDraft, setSearchDraft] = useState(searchQueryParam);
+
+  // keep the field in sync when the URL changes elsewhere (back/forward, reset filters)
+  useEffect(() => {
+    setSearchDraft(searchQueryParam);
+  }, [searchQueryParam]);
 
   const selectedVendors = useMemo(() => {
     const raw = searchParams.get("vendorsIds");
@@ -122,8 +129,14 @@ function Products() {
     getCategories();
   }, []);
 
-  const handleSearchChange = (value) => {
-    setParams({ searchQuery: value, page: "1" });
+  // typing only edits the draft; the URL (and so the fetch) changes on Enter / search button / clear
+  const handleSearchSubmit = () => {
+    setParams(buildProductSearchUpdate(searchDraft));
+  };
+
+  const handleSearchClear = () => {
+    setSearchDraft("");
+    setParams(buildProductSearchUpdate(""));
   };
 
   const handleApplyFilters = (vendorsList, categoryList) => {
@@ -175,8 +188,10 @@ function Products() {
               }}
             >
               <HomixSearchInput
-                value={searchQueryParam}
-                onChange={handleSearchChange}
+                value={searchDraft}
+                onChange={setSearchDraft}
+                onSubmit={handleSearchSubmit}
+                onClear={handleSearchClear}
                 placeholder="اسم المنتج…"
               />
               <ProductsFilterTriggerButton
