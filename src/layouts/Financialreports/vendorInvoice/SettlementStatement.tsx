@@ -10,8 +10,11 @@ import {
   STATEMENT_DELIVERY_LABEL,
   STATEMENT_STATUS_COLORS,
   fmtLatin,
+  isGroupRow,
+  isSpacerRow,
   statementEquation,
   type StatementData,
+  type StatementRow,
 } from "./statementFormat";
 import {
   HOMIX_ISSUER_NAME,
@@ -20,7 +23,7 @@ import {
   HOMIX_WEBSITE,
   VENDOR_INVOICE_FOOTER_NOTE,
 } from "./vendorInvoiceConstants";
-import { bankBoxHeight, planPages } from "./statementPagination";
+import { avoidOrphanGroupHeaders, bankBoxHeight, planPages } from "./statementPagination";
 import styles from "./SettlementStatement.module.css";
 
 
@@ -45,7 +48,12 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
   const totalRows = equation.length + data.extraTotals.length;
   const transfer = data.transfer;
   const bankH = transfer.kind === "none" ? 0 : bankBoxHeight(transfer.rows.length, Boolean(transfer.note));
-  const plans = planPages(data.lines.length, totalRows, Boolean(data.stampDate), bankH);
+  const { rows: allRows, plans } = avoidOrphanGroupHeaders<StatementRow>(
+    data.lines,
+    isGroupRow,
+    (index) => ({ spacer: true, key: `spacer-${index}` }),
+    (rowCount) => planPages(rowCount, totalRows, Boolean(data.stampDate), bankH),
+  );
   const netTone = styles[NET_TONE_CLASS[data.netDirection]];
   const pageCount = plans.length;
   let cursor = 0;
@@ -53,7 +61,7 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
   return (
     <div className={styles.root} ref={ref} dir="rtl" lang="ar">
       {plans.map((plan, index) => {
-        const rows = data.lines.slice(cursor, cursor + plan.rows);
+        const rows = allRows.slice(cursor, cursor + plan.rows);
         cursor += plan.rows;
         const first = index === 0;
         return (
@@ -166,11 +174,20 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
             </tr>
           </thead>
           <tbody>
-            {data.lines.length === 0 ? (
+            {allRows.length === 0 ? (
               <tr className={styles.emptyRow}>
                 <td colSpan={7}>لم تتم إضافة بنود بعد</td>
               </tr>
-            ) : rows.map((line) => (
+            ) : rows.map((line) => (isGroupRow(line) ? (
+              <tr key={line.key} className={`${styles.row} ${styles.groupRow}`} data-group={line.key}>
+                <td colSpan={7}>
+                  <span className={styles.groupTitle}>{line.label}</span>
+                  {line.sub && <span className={`${styles.groupSub} ${line.net > 0 ? styles.dueV : line.net < 0 ? styles.dueH : ""}`}>{line.sub}</span>}
+                </td>
+              </tr>
+            ) : isSpacerRow(line) ? (
+              <tr key={line.key} className={styles.row} aria-hidden="true"><td colSpan={7} /></tr>
+            ) : (
               <tr key={line.key} className={styles.row}>
                 <td><span className={styles.op}>{line.operationNumber}</span></td>
                 <td><span className={styles.onum}>#{line.orderNumber}</span></td>
@@ -184,7 +201,7 @@ const SettlementStatement = React.forwardRef<HTMLDivElement, { data: StatementDa
                 <td><Cell value={line.vendorDue} tone={styles.dueV} /></td>
                 <td><Cell value={line.fines} tone={styles.fine} /></td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
 

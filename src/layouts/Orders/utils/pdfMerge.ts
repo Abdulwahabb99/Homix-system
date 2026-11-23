@@ -141,6 +141,29 @@ export interface MergeDeps {
   imageToJpeg: (blob: Blob) => Promise<JpegResult>;
 }
 
+type PdfLib = typeof import("pdf-lib");
+type OutDoc = import("pdf-lib").PDFDocument;
+
+/** يضيف صفحات إيصال واحد إلى المستند (يرمي إن لم يُضَف شيء؛ لا يترك صفحات ناقصة عند الفشل). */
+async function appendOneReceipt(lib: PdfLib, out: OutDoc, receipt: Blob, deps: MergeDeps): Promise<void> {
+  const receiptBytes = await readBlobBytes(receipt);
+  const kind = sniffReceiptKind(receiptBytes);
+  if (!kind) throw new UnsupportedReceiptError();
+
+  if (kind === "pdf") {
+    const source = await lib.PDFDocument.load(receiptBytes, { ignoreEncryption: true });
+    // copyPages تنسخ كل الصفحات أولاً ثم نضيفها — فالفشل قبل الإضافة لا يترك شيئاً
+    const pages = await out.copyPages(source, source.getPageIndices());
+    pages.forEach((page) => out.addPage(page));
+  } else {
+    const jpeg = await deps.imageToJpeg(receipt);
+    const embedded = await out.embedJpg(jpeg.bytes);
+    const [pageW, pageH] = pageSizeForImage(jpeg.width, jpeg.height);
+    const page = out.addPage([pageW, pageH]);
+    page.drawImage(embedded, computeImagePlacement(jpeg.width, jpeg.height, pageW, pageH));
+  }
+}
+
 /**
  * يلحق الإيصال بنهاية PDF الفاتورة ويُرجع PDF واحداً (صفحات الفاتورة أولاً).
  * يرمي `UnsupportedReceiptError` لنوع غير معروف، وأي خطأ آخر (PDF تالف/مشفّر بكلمة مرور…)
@@ -151,26 +174,49 @@ export async function appendReceiptToPdf(
   receipt: Blob,
   deps: MergeDeps = { imageToJpeg }
 ): Promise<Blob> {
-  const receiptBytes = await readBlobBytes(receipt);
-  const kind = sniffReceiptKind(receiptBytes);
-  if (!kind) throw new UnsupportedReceiptError();
+  const lib = await import("pdf-lib");
+  const out = await lib.PDFDocument.load(await readBlobBytes(invoicePdf));
+  await appendOneReceipt(lib, out, receipt, deps);
+  return new Blob([await out.save()], { type: "application/pdf" });
+}
 
-  const { PDFDocument } = await import("pdf-lib");
-  const out = await PDFDocument.load(await readBlobBytes(invoicePdf));
+/** إيصال مرشّح للدمج: التحميل كسول كي لا يُحمَّل أكثر من واحد في الذاكرة في اللحظة الواحدة. */
+export interface ReceiptSource {
+  name: string;
+  load: () => Promise<Blob>;
+}
 
-  if (kind === "pdf") {
-    const source = await PDFDocument.load(receiptBytes, { ignoreEncryption: true });
-    const pages = await out.copyPages(source, source.getPageIndices());
-    pages.forEach((page) => out.addPage(page));
-  } else {
-    const jpeg = await deps.imageToJpeg(receipt);
-    const embedded = await out.embedJpg(jpeg.bytes);
-    const [pageW, pageH] = pageSizeForImage(jpeg.width, jpeg.height);
-    const page = out.addPage([pageW, pageH]);
-    const place = computeImagePlacement(jpeg.width, jpeg.height, pageW, pageH);
-    page.drawImage(embedded, place);
+export interface MultiMergeResult {
+  blob: Blob;
+  /** أسماء الإيصالات التي أُلحقت، بترتيب الرفع */
+  appended: string[];
+  /** إيصالات تعذّر دمجها (تُتخطّى والباقي يكمل) */
+  failed: Array<{ name: string; error: unknown }>;
+}
+
+/**
+ * يلحق كل الإيصالات بالترتيب (صور ← صفحات A4، PDF ← صفحاته) في PDF واحد بعد الفاتورة.
+ * المعالجة تسلسلية: إيصال واحد في الذاكرة في كل مرة (يُحمَّل ثم يُحوَّل ثم يُترك). إيصال تالف/غير مدعوم
+ * يُتخطّى ويُسجَّل في `failed` ولا يوقف الباقي. فشل قراءة PDF الفاتورة نفسه يصعد (المستدعي يحفظ الفاتورة وحدها).
+ * إن فشلت كل الإيصالات يرجع `appended` فارغاً و`blob` = الفاتورة كما هي.
+ */
+export async function appendReceiptsToPdf(
+  invoicePdf: Blob,
+  receipts: ReceiptSource[],
+  deps: MergeDeps = { imageToJpeg }
+): Promise<MultiMergeResult> {
+  const lib = await import("pdf-lib");
+  const out = await lib.PDFDocument.load(await readBlobBytes(invoicePdf));
+  const appended: string[] = [];
+  const failed: MultiMergeResult["failed"] = [];
+  for (const receipt of receipts) {
+    try {
+      await appendOneReceipt(lib, out, await receipt.load(), deps);
+      appended.push(receipt.name);
+    } catch (error) {
+      failed.push({ name: receipt.name, error });
+    }
   }
-
-  const merged = await out.save();
-  return new Blob([merged], { type: "application/pdf" });
+  if (appended.length === 0) return { blob: invoicePdf, appended, failed };
+  return { blob: new Blob([await out.save()], { type: "application/pdf" }), appended, failed };
 }

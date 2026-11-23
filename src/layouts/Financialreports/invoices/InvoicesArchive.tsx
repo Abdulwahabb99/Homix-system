@@ -7,20 +7,24 @@ import { Box } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import {
-  InvoiceListParams, InvoiceStatus, downloadReceipt, useBulkTransition, useInvoicesList, useVendorOptions,
+  InvoiceListParams, InvoiceStatus, downloadFirstReceipt, useBulkTransition, useInvoicesList, useVendorOptions,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import { arNum } from "../utils/format";
 import { FONT } from "../utils/styles";
 import {
-  EmptyState, StatusPill, STATUS_META, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDate, inputSx, tdSx, thSx,
+  ConsolidatedBadge, EmptyState, StatusPill, STATUS_META, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDate, inputSx, tdSx, thSx,
 } from "./shared";
 import { DebouncedTextField, VendorSelect } from "./FilterFields";
+import MergeInvoicesDialog from "./MergeInvoicesDialog";
 
 const PAGE_SIZE = 25;
 /** الأرشيف لا يعرض المسودات — تظهر في «الفواتير الجارية» فقط */
 export const ARCHIVE_STATUSES: InvoiceStatus[] = ["reviewed", "frozen", "transferred"];
 const STATUS_ORDER = ARCHIVE_STATUSES;
+/** عرض «الفواتير الشاملة» (kind = consolidated) — تشمل المعلّقة منها لأنها لا تظهر في الأرشيف قبل المراجعة */
+const CONSOLIDATED_VIEW = "consolidated" as const;
+const CONSOLIDATED_STATUSES: InvoiceStatus[] = ["draft", "reviewed", "frozen", "transferred"];
 
 interface Props {
   isVendor: boolean;
@@ -29,7 +33,8 @@ interface Props {
 }
 
 export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) {
-  const [status, setStatus] = useState<InvoiceStatus | "all">("all");
+  const [status, setStatus] = useState<InvoiceStatus | "all" | typeof CONSOLIDATED_VIEW>("all");
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [invoiceCode, setInvoiceCode] = useState("");
   const [vendorId, setVendorId] = useState("");
   const vendors = useVendorOptions(!isVendor);
@@ -45,7 +50,8 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
   const bulk = useBulkTransition();
 
   const params: InvoiceListParams = {
-    status: status === "all" ? ARCHIVE_STATUSES : [status],
+    status: status === CONSOLIDATED_VIEW ? CONSOLIDATED_STATUSES : status === "all" ? ARCHIVE_STATUSES : [status],
+    kind: status === CONSOLIDATED_VIEW ? "consolidated" : undefined,
     invoiceCode: invoiceCode.trim() || undefined,
     vendorId: !isVendor && vendorId ? Number(vendorId) : undefined,
     receipt: receipt || undefined,
@@ -90,7 +96,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
     });
   };
 
-  const chip = (key: InvoiceStatus | "all", label: string, count?: number) => {
+  const chip = (key: InvoiceStatus | "all" | typeof CONSOLIDATED_VIEW, label: string, count?: number) => {
     const active = status === key;
     return (
       <Box key={key} component="button" type="button" onClick={() => resetPage(setStatus)(key)}
@@ -106,6 +112,10 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
         <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
           {chip("all", "الكل", totalCount)}
           {visibleStatuses.map((s) => chip(s, STATUS_META[s].label, counts[s] ?? 0))}
+          {chip(CONSOLIDATED_VIEW, "الفواتير الشاملة")}
+          {canSettle && !isVendor && (
+            <Box component="button" type="button" onClick={() => setMergeOpen(true)} sx={{ ...btnPrimarySx, marginInlineStart: "auto" }}>دمج فواتير</Box>
+          )}
         </Box>
         <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
           <DebouncedTextField label="رقم الفاتورة" value={invoiceCode} onChange={onInvoiceCode} />
@@ -182,7 +192,9 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
                     <Box component="td" sx={{ ...tdSx, fontWeight: 700 }}>{inv.vendorName}</Box>
                     <Box component="td" sx={tdSx}>{fmtDate(inv.periodEnd)}</Box>
                     <Box component="td" sx={tdSx}>دورة {inv.billingDay}</Box>
-                    <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>{inv.code ?? "—"}</Box>
+                    <Box component="td" sx={{ ...tdSx, color: HX.accent, fontWeight: 700 }}>
+                      {inv.code ?? "—"} {inv.kind === "consolidated" && <ConsolidatedBadge />}
+                    </Box>
                     <Box component="td" sx={tdSx}>
                       <Box component="span" data-testid="archive-amount" sx={{ fontWeight: 800, color: inv.dueParty === "vendor" ? HX.green : inv.dueParty === "homix" ? HX.red : HX.tx3 }}>{money(inv.amount)}</Box>
                       <Box component="span" sx={{ display: "block", fontSize: "10.5px", color: HX.tx3 }}>{inv.dueParty === "vendor" ? "مستحق للصانع" : inv.dueParty === "homix" ? "مستحق لهوميكس" : "لا يوجد مستحق"}</Box>
@@ -193,7 +205,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
                     </Box>
                     <Box component="td" sx={tdSx} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       {inv.status !== "transferred" ? "—" : inv.hasReceipt ? (
-                        <Box component="button" type="button" onClick={() => downloadReceipt(inv.id, inv.receiptName).catch(() => NotificationMeassage("error", "تعذّر تحميل الإيصال"))} sx={{ ...btnGhostSx, height: 26, px: "9px", color: HX.green }}>عرض</Box>
+                        <Box component="button" type="button" onClick={() => downloadFirstReceipt(inv.id).catch(() => NotificationMeassage("error", "تعذّر تحميل الإيصال"))} sx={{ ...btnGhostSx, height: 26, px: "9px", color: HX.green }}>{(inv.receiptsCount ?? 1) > 1 ? `عرض (${inv.receiptsCount})` : "عرض"}</Box>
                       ) : (
                         <Box component="span" sx={{ color: HX.amber, fontWeight: 700, fontSize: "11.5px" }}>ناقص</Box>
                       )}
@@ -213,6 +225,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
           </Box>
         )}
       </Box>
+      {canSettle && !isVendor && <MergeInvoicesDialog open={mergeOpen} onClose={() => setMergeOpen(false)} onOpenInvoice={onOpen} />}
     </Box>
   );
 }

@@ -11,7 +11,9 @@ import { financialKeys } from "./keys";
 
 export const INVOICES_PATH = "/financial-invoices";
 
-export type InvoiceStatus = "draft" | "reviewed" | "frozen" | "transferred";
+export type InvoiceStatus = "draft" | "reviewed" | "frozen" | "transferred" | "consolidated" | "cancelled";
+/** standard = فاتورة دورة عادية، consolidated = «فاتورة شاملة» تضم فواتير مفتوحة لنفس الصانع */
+export type InvoiceKind = "standard" | "consolidated";
 export type LineState = "included" | "frozen" | "deferred" | "removed";
 export type LineAction = "defer" | "freeze" | "unfreeze" | "delete" | "restore";
 
@@ -47,9 +49,17 @@ export interface InvoiceSummary {
   isOverdue: boolean;
   overdueDays: number;
   hasReceipt: boolean;
+  /** عدد إيصالات التحويل (أكثر من إيصال للفاتورة) */
+  receiptsCount?: number;
   receiptName: string | null;
   receiptUploadedAt: string | null;
   createdAt: string | null;
+  kind?: InvoiceKind;
+  /** يمكن دمجها الآن في فاتورة شاملة (الخادم يعيد التحقق تحت قفل) */
+  mergeable?: boolean;
+  /** للفاتورة المدمجة: الفاتورة الشاملة التي ضُمّت إليها */
+  mergedIntoId?: number | null;
+  mergedCode?: string | null;
 }
 
 export interface InvoiceLine {
@@ -89,6 +99,8 @@ export interface InvoiceLine {
   overrideReason?: string | null;
   state: LineState;
   stateReason?: string | null;
+  /** في الفاتورة الشاملة: الفاتورة الأصلية التي جاء منها البند */
+  sourceInvoiceId?: number | null;
 }
 
 export interface InvoiceAdjustment {
@@ -109,8 +121,26 @@ export interface VendorBank {
   instaPayNumber: string | null;
 }
 
+/** فاتورة مجمّعة داخل فاتورة شاملة: الدورة/الشهر/الصافي لكلٍّ منها وقت الدمج */
+export interface MergedSource {
+  id: number;
+  code: string | null;
+  billingDay: number;
+  periodStart: string | null;
+  periodEnd: string | null;
+  /** YYYY-MM بتوقيت القاهرة */
+  month: string;
+  netAmount: number;
+  dueParty: "vendor" | "homix" | null;
+  ordersCount: number;
+  /** حالتها قبل الدمج (وإليها تعود عند فك الدمج) */
+  status: InvoiceStatus;
+}
+
 export interface InvoiceDetail {
   invoice: InvoiceSummary;
+  /** للفاتورة الشاملة فقط */
+  sources?: MergedSource[];
   lines: InvoiceLine[];
   adjustments: InvoiceAdjustment[];
   /** undefined = غير مسموح لهذا المستخدم، null = لم تُسجَّل بيانات بنكية */
@@ -123,6 +153,8 @@ export interface InvoiceListParams {
   search?: string;
   invoiceCode?: string;
   billingDay?: number;
+  /** consolidated = «الفواتير الشاملة» فقط */
+  kind?: InvoiceKind;
   invoiceFrom?: string;
   invoiceTo?: string;
   transferredFrom?: string;
@@ -163,6 +195,8 @@ export interface CycleInvoiceRef {
   statusLabel: string;
   adjustmentsTotal: number;
   netAmount: number;
+  mergedCode?: string | null;
+  mergedIntoId?: number | null;
 }
 
 /** بند فاتورة لا يستطيع التقرير الحي إعادة إنتاجه وحده (معدّل / غير محسوب / خارج نافذة الدورة) */
@@ -452,28 +486,64 @@ export function useOrderCandidates(invoiceId: number | null, q: string) {
   });
 }
 
-export const useUploadReceipt = () =>
-  useInvoiceMutation(async (vars: { id: number; file: File }) => {
+/** إيصال تحويل (يمكن أكثر من إيصال للفاتورة؛ id = 0 يعني الإيصال القديم الوحيد قبل الترحيل) */
+export interface InvoiceReceipt {
+  id: number;
+  name: string;
+  mime: string;
+  size: number | null;
+  uploadedAt: string | null;
+  /** للموظفين فقط */
+  uploadedBy?: number | null;
+}
+
+export function useInvoiceReceipts(invoiceId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: financialKeys.invoiceReceipts(invoiceId ?? 0),
+    queryFn: async () => unwrap<InvoiceReceipt[]>(await axiosRequest.get(`${INVOICES_PATH}/${invoiceId}/receipts`)),
+    enabled: enabled && invoiceId !== null,
+  });
+}
+
+/** رفع إيصال أو أكثر (حقل `files` المتكرر) */
+export const useUploadReceipts = () =>
+  useInvoiceMutation(async (vars: { id: number; files: File[] }) => {
     const form = new FormData();
-    form.append("files", vars.file);
-    return axiosRequest.post(`${INVOICES_PATH}/${vars.id}/receipt`, form);
-  }, "اترفع إيصال التحويل");
+    vars.files.forEach((file) => form.append("files", file));
+    return axiosRequest.post(`${INVOICES_PATH}/${vars.id}/receipts`, form);
+  }, "اترفعت الإيصالات");
 
 export const useRemoveReceipt = () =>
-  useInvoiceMutation(async (id: number) => axiosRequest.delete(`${INVOICES_PATH}/${id}/receipt`), "اتشال الإيصال");
+  useInvoiceMutation(async (vars: { id: number; receiptId: number }) => axiosRequest.delete(`${INVOICES_PATH}/${vars.id}/receipts/${vars.receiptId}`), "اتشال الإيصال");
+
+/** دمج فواتير مفتوحة (معلّقة/تمت المراجعة) لنفس الصانع في «فاتورة شاملة» */
+export const useConsolidateInvoices = () =>
+  useInvoiceMutation(async (vars: { invoiceIds: number[] }) =>
+    unwrap<{ invoice: InvoiceSummary; sources: MergedSource[] }>(await axiosRequest.post(`${INVOICES_PATH}/consolidate`, vars)), "تم دمج الفواتير في فاتورة شاملة");
+
+export const useUnconsolidateInvoice = () =>
+  useInvoiceMutation(async (id: number) =>
+    unwrap<{ cancelledId: number }>(await axiosRequest.post(`${INVOICES_PATH}/${id}/unconsolidate`)), "تم فك الدمج وأُعيدت الفواتير كما كانت");
 
 export const useRecordReconciliation = () =>
   useInvoiceMutation(async (vars: { bankTotal: number; from?: string; to?: string }) =>
     unwrap<{ count: number; systemTotal: number; bankTotal: number; difference: number }>(
       await axiosRequest.post(`${INVOICES_PATH}/reconciliation`, vars)));
 
-/** الإيصال يُقدَّم عبر endpoint موثّق فقط — نجلبه كـ blob (للتنزيل أو للدمج في PDF) */
-export async function fetchReceiptBlob(id: number): Promise<Blob> {
-  const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipt`, { responseType: "blob" });
+/** الإيصال يُقدَّم عبر endpoint موثّق فقط — نجلبه كـ blob (للتنزيل أو للدمج في PDF أو للمصغّرة) */
+export async function fetchReceiptBlob(id: number, receiptId: number): Promise<Blob> {
+  const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipts/${receiptId}`, { responseType: "blob" });
   return response.data as Blob;
 }
 
-export async function downloadReceipt(id: number, fileName: string | null): Promise<void> {
-  const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipt`, { responseType: "blob" });
-  downloadBlobResponse(response, fileName || `receipt-${id}`);
+export async function downloadReceipt(id: number, receiptId: number, fileName: string | null): Promise<void> {
+  const response = await axiosRequest.get(`${INVOICES_PATH}/${id}/receipts/${receiptId}`, { responseType: "blob" });
+  downloadBlobResponse(response, fileName || `receipt-${id}-${receiptId}`);
+}
+
+/** الإيصال الأول (للأرشيف: زر «عرض» السريع) — يقرأ القائمة ثم ينزّل الأول */
+export async function downloadFirstReceipt(id: number): Promise<void> {
+  const list = unwrap<InvoiceReceipt[]>(await axiosRequest.get(`${INVOICES_PATH}/${id}/receipts`));
+  if (!list.length) throw new Error("no receipt");
+  await downloadReceipt(id, list[0].id, list[0].name);
 }

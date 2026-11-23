@@ -12,7 +12,7 @@ export const NOT_REVIEWED_LABEL = "لم تُراجع";
 export const NOT_REVIEWED_TOOLTIP = "لم تتم مراجعة فاتورة هذا الصانع لهذه الدورة بعد";
 export const DRAFT_TOOLTIP = "فاتورة معلّقة — لم تتم مراجعتها بعد";
 
-export type LiveChipTone = "pending" | "reviewed" | "frozen" | "transferred";
+export type LiveChipTone = "pending" | "reviewed" | "frozen" | "transferred" | "merged";
 
 /** شارة صف الصانع الحي: «لم تُراجع» للبلا فاتورة/المسودة، وحالات المراجعة اللاحقة كما هي */
 /** `net` (صافي الفاتورة الموقّع) يحدد اتجاه «تم التحويل»: للبائع / استلام من البائع */
@@ -21,13 +21,14 @@ export function liveInvoiceChipMeta(status: InvoiceStatus | null | undefined, ne
     case "reviewed": return { label: "تمت المراجعة", tone: "reviewed", tooltip: "" };
     case "frozen": return { label: "مجمّدة", tone: "frozen", tooltip: "" };
     case "transferred": return { label: net === undefined ? "تم التحويل" : transferredLabelOf(net), tone: "transferred", tooltip: "" };
+    case "consolidated": return { label: "مدمجة في فاتورة شاملة", tone: "merged", tooltip: "فواتير هذا الصانع لهذه الدورة مدمجة في فاتورة شاملة — افتحها من الأرشيف" };
     case "draft": return { label: NOT_REVIEWED_LABEL, tone: "pending", tooltip: DRAFT_TOOLTIP };
     default: return { label: NOT_REVIEWED_LABEL, tone: "pending", tooltip: NOT_REVIEWED_TOOLTIP };
   }
 }
 
 export const isReviewedOrLater = (status: InvoiceStatus | null | undefined): boolean =>
-  status === "reviewed" || status === "frozen" || status === "transferred";
+  status === "reviewed" || status === "frozen" || status === "transferred" || status === "consolidated";
 
 export interface ReviewButtonInput {
   canSettle: boolean;

@@ -7,6 +7,7 @@ import type { FinancialCycle } from "query/financialReport";
 import type { InvoiceDetail, InvoiceStatus, VendorBank } from "query/financialInvoices";
 import { MONTHS_AR } from "../utils/cycle";
 import { countsTowardCompanyDue, sumCompanyDue } from "../utils/companyDue";
+import { sourceLabelOf } from "../invoices/consolidation";
 import { netDirectionOf, netLabelOf, roundMoney, transferredLabelOf, type NetDirection } from "../utils/netDirection";
 import { HOMIX_BANK_DETAILS } from "./vendorInvoiceConstants";
 import type { SellerTotals, SettlementSeller } from "../utils/types";
@@ -24,6 +25,26 @@ export interface StatementLine {
   vendorDue: number;
   fines: number;
 }
+
+/**
+ * رأس مجموعة داخل كشف الفاتورة الشاملة: صف واحد بارتفاع صف عادي (فلا يكسر قواعد الصفحة الواحدة)
+ * يعرّف الفاتورة الأصلية للبنود التالية (رقمها/دورتها/شهرها وصافيها وقت الدمج).
+ */
+export interface StatementGroupRow {
+  group: true;
+  key: string;
+  label: string;
+  sub: string;
+  net: number;
+}
+
+/** صف فارغ بارتفاع صف يدفع رأس مجموعة إلى أعلى الصفحة التالية بدل أن يبقى وحيداً أسفل صفحة */
+export interface StatementSpacerRow { spacer: true; key: string }
+
+export type StatementRow = StatementLine | StatementGroupRow | StatementSpacerRow;
+
+export const isGroupRow = (row: StatementRow): row is StatementGroupRow => "group" in row;
+export const isSpacerRow = (row: StatementRow): row is StatementSpacerRow => "spacer" in row;
 
 export interface StatementExtraTotal { label: string; value: number }
 
@@ -55,7 +76,8 @@ export interface StatementData {
   vendorName: string;
   ordersCount: number;
   operationsCount: number;
-  lines: StatementLine[];
+  /** بنود الكشف (وفي الفاتورة الشاملة تتخلّلها رؤوس مجموعات الفواتير الأصلية) */
+  lines: StatementRow[];
   vendorDueTotal: number;
   companyDueTotal: number;
   finesTotal: number;
@@ -82,6 +104,8 @@ export const STATEMENT_STATUS_LABEL: Record<StatementStatus, string> = {
   reviewed: "تمت المراجعة",
   frozen: "مجمدة",
   transferred: "تم التحويل",
+  consolidated: "مدمجة",
+  cancelled: "ملغاة",
 };
 
 /** تسمية الحالة: «تم التحويل» تتبع الاتجاه (للبائع / استلام من البائع) */
@@ -156,6 +180,8 @@ export const STATEMENT_STATUS_COLORS: Record<StatementStatus | "overdue", { bg: 
   reviewed: { bg: "#1F4A63", fg: "#CFE3F1" },
   frozen: { bg: "#2B4F66", fg: "#B9D6E8" },
   transferred: { bg: "#1F4D3A", fg: "#BFE8CF" },
+  consolidated: { bg: "#304643", fg: "#E5E1C9" },
+  cancelled: { bg: "#304643", fg: "#E5E1C9" },
   overdue: { bg: "#5A2A24", fg: "#F3C1B8" },
 };
 
@@ -216,6 +242,31 @@ const netFields = (net: number, _status: StatementStatus, vendorName: string, ve
 export type StatementKind = "vendor" | "seller";
 
 export const STATEMENT_TITLES: Record<StatementKind, string> = { vendor: "كشف تسوية مورد", seller: "كشف تسوية بائع" };
+export const CONSOLIDATED_STATEMENT_TITLE = "كشف تسوية شاملة";
+
+const NO_SOURCE_LABEL = "أُضيفت على الفاتورة الشاملة";
+
+/** «1,200 — مستحق لهوميكس» لصافي الفاتورة الأصلية وقت الدمج */
+const sourceNetText = (net: number): string =>
+  net === 0 ? "صافي الفاتورة: لا يوجد مستحق" : `صافي الفاتورة: ${fmtLatin(Math.abs(net))} ج.م — ${net > 0 ? "مستحق للبائع" : "مستحق لهوميكس"}`;
+
+/** يوزّع بنود الفاتورة الشاملة على مجموعات بحسب الفاتورة الأصلية (بترتيب الدورات) ويضع رأساً قبل كل مجموعة */
+function groupConsolidatedRows(lines: Array<{ line: StatementLine; sourceId: number | null }>, sources: NonNullable<InvoiceDetail["sources"]>): StatementRow[] {
+  const rows: StatementRow[] = [];
+  const known = new Set(sources.map((source) => source.id));
+  for (const source of sources) {
+    const own = lines.filter((item) => item.sourceId === source.id).map((item) => item.line);
+    if (own.length === 0) continue;
+    rows.push({ group: true, key: `group-${source.id}`, label: sourceLabelOf(source), sub: sourceNetText(source.netAmount), net: source.netAmount });
+    rows.push(...own);
+  }
+  const rest = lines.filter((item) => item.sourceId === null || !known.has(item.sourceId)).map((item) => item.line);
+  if (rest.length > 0) {
+    rows.push({ group: true, key: "group-extra", label: NO_SOURCE_LABEL, sub: "", net: 0 });
+    rows.push(...rest);
+  }
+  return rows;
+}
 
 /**
  * `kind: "seller"` = تبويب «تسويات البائع» (تسليمات البائع): نفس التصميم، العنوان «كشف تسوية بائع»،
@@ -269,16 +320,22 @@ export function statementFromLive(seller: SettlementSeller, totals: SellerTotals
 export function statementFromInvoice(detail: InvoiceDetail): StatementData {
   const { invoice } = detail;
   const counted = detail.lines.filter((line) => line.state === "included");
-  const lines: StatementLine[] = counted.map((line) => ({
-    key: line.id,
-    operationNumber: line.operationNumber || `OP-${line.orderId}`,
-    orderNumber: String(line.orderNumber || line.orderId),
-    productCode: line.productCode || "",
-    homixDelivery: line.isWarehouseDelivery,
-    companyDue: countsTowardCompanyDue(line) ? line.companyDue : 0,
-    vendorDue: line.vendorDue,
-    fines: line.fines,
+  const tagged = counted.map((line) => ({
+    sourceId: line.sourceInvoiceId ?? null,
+    line: {
+      key: line.id,
+      operationNumber: line.operationNumber || `OP-${line.orderId}`,
+      orderNumber: String(line.orderNumber || line.orderId),
+      productCode: line.productCode || "",
+      homixDelivery: line.isWarehouseDelivery,
+      companyDue: countsTowardCompanyDue(line) ? line.companyDue : 0,
+      vendorDue: line.vendorDue,
+      fines: line.fines,
+    } as StatementLine,
   }));
+  const lines: StatementLine[] = tagged.map((item) => item.line);
+  const consolidated = invoice.kind === "consolidated" && (detail.sources?.length ?? 0) > 0;
+  const rows: StatementRow[] = consolidated ? groupConsolidatedRows(tagged, detail.sources ?? []) : lines;
   const issueDay = cairoDay(invoice.periodEnd);
   const status = invoice.status;
   const adjustments = round2(Number(invoice.adjustmentsTotal) || 0);
@@ -286,10 +343,10 @@ export function statementFromInvoice(detail: InvoiceDetail): StatementData {
   // الصافي من نفس الأرقام المطبوعة (مطابق لـ netAmount المحفوظ لأي فاتورة حُسبت بالنموذج الحالي)
   const net = round2(invoice.vendorDueTotal - companyDueTotal - invoice.finesTotal + adjustments);
   return {
-    title: STATEMENT_TITLES.vendor,
+    title: consolidated ? CONSOLIDATED_STATEMENT_TITLE : STATEMENT_TITLES.vendor,
     extraTotals: [],
     number: invoice.code ? `#${invoice.code}` : buildDerivedNumber(invoice.vendorId, issueDay, invoice.billingDay),
-    cycleLabel: `دورة ${invoice.billingDay}`,
+    cycleLabel: consolidated ? `شاملة (${detail.sources?.length} فواتير)` : `دورة ${invoice.billingDay}`,
     monthLabel: formatMonthLabel(issueDay),
     issueDateLabel: formatIssueDate(issueDay),
     status,
@@ -298,7 +355,7 @@ export function statementFromInvoice(detail: InvoiceDetail): StatementData {
     vendorName: invoice.vendorName || "—",
     ordersCount: invoice.ordersCount,
     operationsCount: countDistinct(lines.map((l) => l.operationNumber)),
-    lines,
+    lines: rows,
     vendorDueTotal: invoice.vendorDueTotal,
     companyDueTotal,
     finesTotal: invoice.finesTotal,

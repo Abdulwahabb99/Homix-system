@@ -81,3 +81,30 @@ export function planPages(lineCount: number, totalRows: number, hasStamp: boolea
     remaining -= rows;
   }
 }
+
+/**
+ * يمنع بقاء رأس مجموعة وحيداً أسفل صفحة (والبنود في التالية): كلما وقع رأس في آخر صف لصفحة غير أخيرة
+ * نُدخل صفاً فارغاً قبله فيصعد الرأس إلى أعلى الصفحة التالية. الصف الفارغ بارتفاع صف عادي، والخطة تُعاد
+ * حسابها بعده، فتبقى كل صفحة داخل حدودها. دالة نقية.
+ */
+export function avoidOrphanGroupHeaders<T>(
+  rows: T[],
+  isHeader: (row: T) => boolean,
+  makeSpacer: (index: number) => T,
+  plan: (rowCount: number) => PagePlan[],
+): { rows: T[]; plans: PagePlan[] } {
+  let current = rows;
+  for (let guard = 0; guard <= rows.length; guard += 1) {
+    const plans = plan(current.length);
+    let cursor = 0;
+    let fix = -1;
+    for (let page = 0; page < plans.length - 1; page += 1) {
+      cursor += plans[page]!.rows;
+      const last = current[cursor - 1];
+      if (plans[page]!.rows > 1 && last !== undefined && isHeader(last)) { fix = cursor - 1; break; }
+    }
+    if (fix === -1) return { rows: current, plans };
+    current = [...current.slice(0, fix), makeSpacer(fix), ...current.slice(fix)];
+  }
+  return { rows: current, plans: plan(current.length) };
+}

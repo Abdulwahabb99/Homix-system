@@ -221,7 +221,9 @@ export function liveEditState(seller: SettlementSeller, order: SettlementOrder, 
     if (invoice.status !== "draft") {
       return {
         editable: false,
-        reason: invoice.status === "reviewed"
+        reason: invoice.status === "consolidated"
+          ? "فاتورة هذه الدورة مدمجة في فاتورة شاملة — عدّلها من هناك أو فُك الدمج أولاً"
+          : invoice.status === "reviewed"
           ? "الفاتورة تمت مراجعتها — استرجعها لمسودة للتعديل"
           : `الفاتورة ${invoice.statusLabel} — أرجعها إلى «معلّقة» أولاً للتعديل`,
       };

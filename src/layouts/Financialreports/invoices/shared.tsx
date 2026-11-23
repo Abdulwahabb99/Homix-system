@@ -22,7 +22,18 @@ export const STATUS_META: Record<InvoiceStatus, { label: string; color: string; 
   reviewed: { label: "تمت المراجعة", color: HX.accent, bg: HX.accentLight },
   frozen: { label: "مجمدة", color: HX.blue, bg: HX.blueLight },
   transferred: { label: "تم التحويل", color: "#065f46", bg: HX.greenLight },
+  consolidated: { label: "مدمجة في شاملة", color: HX.amber, bg: HX.surface3 },
+  cancelled: { label: "ملغاة", color: HX.tx3, bg: HX.surface3 },
 };
+
+/** شارة «شاملة» بجانب رقم الفاتورة الشاملة */
+export function ConsolidatedBadge() {
+  return (
+    <Box component="span" data-testid="consolidated-badge" sx={{ px: "8px", py: "1px", borderRadius: "20px", fontSize: "10.5px", fontWeight: 800, fontFamily: FONT, color: HX.accent, bgcolor: HX.accentLight, border: `0.5px solid ${HX.accentBorder}` }}>
+      شاملة
+    </Box>
+  );
+}
 
 /** `label` = تسمية الـ BE التي تتبع اتجاه الصافي (تم التحويل للبائع / تم استلام التحويل من البائع) */
 export function StatusPill({ status, overdue, label }: { status: InvoiceStatus; overdue?: boolean; label?: string }) {
@@ -128,6 +139,11 @@ export const describeEventDetail = (detail: Record<string, unknown>): string => 
       parts.push(`${OVERRIDE_FIELD_LABELS[field] ?? field}: ${showValue(change?.from)} ← ${showValue(change?.to)}`);
     });
   }
+  if (Array.isArray(detail.fileNames) && detail.fileNames.length > 0) parts.push(detail.fileNames.join("، "));
+  else if (typeof detail.fileName === "string") parts.push(detail.fileName);
+  if (Array.isArray(detail.sources) && detail.sources.length > 0) {
+    parts.push(`دمج ${detail.sources.length} فواتير${typeof detail.code === "string" ? ` في ${detail.code}` : ""}`);
+  } else if (typeof detail.consolidatedCode === "string") parts.push(`الفاتورة الشاملة ${detail.consolidatedCode}`);
   if (typeof detail.refreshed === "number") parts.push(`${detail.refreshed} طلب`);
   if (typeof detail.amount === "number") parts.push(`${detail.amount} ج.م`);
   if (typeof detail.transferAmount === "number") parts.push(`مبلغ التحويل ${detail.transferAmount} ج.م`);
@@ -157,7 +173,36 @@ export const ACTION_LABELS: Record<string, string> = {
   "line.unfreeze": "فك تجميد طلب",
   "line.delete": "حذف طلب نهائيًا",
   "line.restore": "إرجاع طلب للفاتورة",
+  "invoice.consolidated": "دمج في فاتورة شاملة",
+  "invoice.unconsolidated": "فك دمج الفاتورة الشاملة",
   "receipt.uploaded": "رفع إيصال تحويل",
   "receipt.removed": "حذف إيصال",
   "reconciliation.recorded": "تسوية بنكية",
 };
+
+export const RECEIPTS_MAX_PER_UPLOAD = 10;
+export const RECEIPTS_MAX_PER_INVOICE = 20;
+
+/** أنسب أيقونة نصية لنوع الإيصال (مصغّرة الصور تُحمَّل عند الحاجة فقط) */
+export const receiptKindOf = (mime: string, name = ""): "image" | "pdf" | "file" => {
+  if (/^image\//i.test(mime) || /\.(jpe?g|png|gif)$/i.test(name)) return "image";
+  if (/pdf/i.test(mime) || /\.pdf$/i.test(name)) return "pdf";
+  return "file";
+};
+
+/**
+ * يفرز ملفات الاختيار المتعدد: الصالحة (حتى سقف الطلب والفاتورة) والمرفوضة بسببها — دالة نقية.
+ * `existing` = عدد الإيصالات المرفوعة بالفعل.
+ */
+export function pickReceiptFiles<T extends { name: string; type: string; size: number }>(files: T[], existing: number): { accepted: T[]; rejected: Array<{ name: string; reason: string }> } {
+  const accepted: T[] = [];
+  const rejected: Array<{ name: string; reason: string }> = [];
+  files.forEach((file) => {
+    const problem = validateReceiptFile(file);
+    if (problem) { rejected.push({ name: file.name, reason: problem }); return; }
+    if (accepted.length >= RECEIPTS_MAX_PER_UPLOAD) { rejected.push({ name: file.name, reason: `الحد الأقصى ${RECEIPTS_MAX_PER_UPLOAD} ملفات في المرة الواحدة` }); return; }
+    if (existing + accepted.length >= RECEIPTS_MAX_PER_INVOICE) { rejected.push({ name: file.name, reason: `الحد الأقصى ${RECEIPTS_MAX_PER_INVOICE} إيصال للفاتورة` }); return; }
+    accepted.push(file);
+  });
+  return { accepted, rejected };
+}

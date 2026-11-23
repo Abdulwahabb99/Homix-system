@@ -20,6 +20,7 @@ const TONE_COLORS: Record<LiveChipTone, { color: string; bg: string }> = {
   reviewed: STATUS_META.reviewed,
   frozen: STATUS_META.frozen,
   transferred: STATUS_META.transferred,
+  merged: STATUS_META.consolidated,
 };
 
 export interface LiveInvoiceContextValue extends LiveEditContext {

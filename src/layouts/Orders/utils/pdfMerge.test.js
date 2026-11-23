@@ -1,6 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import {
-  A4_PORTRAIT, UnsupportedReceiptError, appendReceiptToPdf, computeImagePlacement, fitWithinLimits, pageSizeForImage, sniffReceiptKind,
+  A4_PORTRAIT, UnsupportedReceiptError, appendReceiptToPdf, appendReceiptsToPdf, computeImagePlacement, fitWithinLimits, pageSizeForImage, sniffReceiptKind,
 } from "./pdfMerge";
 
 const JPEG_B64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAADAAQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDgqKKK8M/VD//Z";
@@ -80,5 +80,63 @@ describe("appendReceiptToPdf", () => {
     const inv = await makePdf([[595.28, 841.89]]);
     const bad = new Blob([Buffer.from("%PDF-1.4 garbage")], { type: "application/pdf" });
     await expect(appendReceiptToPdf(inv, bad)).rejects.toBeTruthy();
+  });
+});
+
+describe("appendReceiptsToPdf (several receipts)", () => {
+  const src = (name, blob, log) => ({ name, load: async () => { log?.push(`load:${name}`); return blob; } });
+  const img = (head) => new Blob([head], { type: "image/png" });
+
+  it("appends every receipt in the given (upload) order: pdf pages copied, images on A4 pages", async () => {
+    const inv = await makePdf([[595.28, 841.89]]);
+    const imageToJpeg = jest.fn().mockResolvedValue({ bytes: jpegBytes(), width: 4, height: 3 });
+    const result = await appendReceiptsToPdf(inv, [
+      src("a.pdf", await makePdf([[300, 400], [500, 200]])),
+      src("b.png", img(PNG_HEAD)),
+      src("c.pdf", await makePdf([[200, 200]])),
+    ], { imageToJpeg });
+    expect(result.appended).toEqual(["a.pdf", "b.png", "c.pdf"]);
+    expect(result.failed).toEqual([]);
+    const sizes = await pagesOf(result.blob);
+    expect(sizes).toHaveLength(1 + 2 + 1 + 1);
+    expect(sizes[1]).toEqual({ width: 300, height: 400 });
+    expect(sizes[2]).toEqual({ width: 500, height: 200 });
+    expect(sizes[3].width).toBeCloseTo(595.28, 1);
+    expect(sizes[4]).toEqual({ width: 200, height: 200 });
+  });
+
+  it("skips a broken or unsupported receipt, reports which one, and keeps the rest", async () => {
+    const inv = await makePdf([[595.28, 841.89]]);
+    const imageToJpeg = jest.fn().mockResolvedValue({ bytes: jpegBytes(), width: 4, height: 3 });
+    const result = await appendReceiptsToPdf(inv, [
+      src("ok1.pdf", await makePdf([[300, 400]])),
+      src("broken.pdf", new Blob([Buffer.from("%PDF-1.4 garbage")], { type: "application/pdf" })),
+      src("weird.bin", new Blob([Uint8Array.from([9, 9, 9, 9])], { type: "application/pdf" })),
+      src("loadfails.png", null),
+      src("ok2.png", img(PNG_HEAD)),
+    ].map((item) => (item.name === "loadfails.png" ? { name: item.name, load: async () => { throw new Error("network"); } } : item)), { imageToJpeg });
+    expect(result.appended).toEqual(["ok1.pdf", "ok2.png"]);
+    expect(result.failed.map((f) => f.name)).toEqual(["broken.pdf", "weird.bin", "loadfails.png"]);
+    expect(result.failed[1].error).toBeInstanceOf(UnsupportedReceiptError);
+    expect(await pagesOf(result.blob)).toHaveLength(3);
+  });
+
+  it("when every receipt fails the invoice comes back untouched (caller shows the invoice-only fallback)", async () => {
+    const inv = await makePdf([[595.28, 841.89]]);
+    const result = await appendReceiptsToPdf(inv, [src("x.bin", new Blob([Uint8Array.from([1, 2, 3, 4])]))]);
+    expect(result.appended).toEqual([]);
+    expect(result.blob).toBe(inv);
+  });
+
+  it("processes sequentially: a receipt is loaded only after the previous one is done (one in memory at a time)", async () => {
+    const inv = await makePdf([[595.28, 841.89]]);
+    const log = [];
+    const imageToJpeg = jest.fn().mockImplementation(async () => { log.push("convert"); return { bytes: jpegBytes(), width: 4, height: 3 }; });
+    await appendReceiptsToPdf(inv, [src("1.png", img(PNG_HEAD), log), src("2.png", img(PNG_HEAD), log)], { imageToJpeg });
+    expect(log).toEqual(["load:1.png", "convert", "load:2.png", "convert"]);
+  });
+
+  it("an unreadable invoice PDF still rejects", async () => {
+    await expect(appendReceiptsToPdf(new Blob([Uint8Array.from([1, 2, 3])]), [])).rejects.toBeTruthy();
   });
 });
