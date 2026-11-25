@@ -69,3 +69,39 @@ export function useInvoiceIssues(params: InvoiceIssuesParams, enabled = true) {
     staleTime: 60 * 1000,
   });
 }
+
+export interface PendingShipmentOrder {
+  id: number;
+  code: string | null;
+  orderNumber: string | null;
+  deliveryDate: string | null;
+  shipmentStatus: number | null;
+  shipmentStatusLabel: string;
+  totalPrice: number | string | null;
+  vendorId: number | null;
+  vendorName: string | null;
+}
+
+export interface PendingShipmentsResult {
+  count: number;
+  orders: PendingShipmentOrder[];
+  truncated: boolean;
+}
+
+/**
+ * طلبات متسلّمة (حالة الطلب) بتوصيل هوميكس وحالة شحنتها مش «تم التسليم» — مش بتتفوتر لحد ما حالة الشحنة تتصلّح.
+ * GET /financial-invoices/issues/pending-shipments (موظفو المالية فقط). التواريخ YYYY-MM-DD بتوقيت القاهرة.
+ */
+export function usePendingShipments(params: { startDate?: string; endDate?: string; vendorId?: number }, enabled = true) {
+  const key = serializeParams({ ...params });
+  return useQuery({
+    queryKey: [...financialKeys.invoices(), "issues", "pending-shipments", key] as const,
+    queryFn: async () => {
+      const response = await axiosRequest.get(`${INVOICES_PATH}/issues/pending-shipments?${key}`);
+      return response.data?.data as PendingShipmentsResult;
+    },
+    enabled: enabled && Boolean(params.startDate && params.endDate),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  });
+}

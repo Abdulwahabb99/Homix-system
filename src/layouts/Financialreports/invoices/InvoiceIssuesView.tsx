@@ -7,9 +7,9 @@ import React, { useState } from "react";
 import { Box } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useLineAction, useRefreshDraft, useVendorOptions } from "query/financialInvoices";
-import { useInvoiceIssues, type InvoiceIssue, type IssueOccurrence } from "query/financialInvoiceIssues";
+import { useInvoiceIssues, usePendingShipments, type InvoiceIssue, type IssueOccurrence } from "query/financialInvoiceIssues";
 import { arNum } from "../utils/format";
-import { currentMonthCairo } from "../utils/cycle";
+import { currentMonthCairo, cycleRange } from "../utils/cycle";
 import { FONT } from "../utils/styles";
 import { ISSUES_EMPTY_TEXT, SEVERITY_LABEL, fixesFor } from "../utils/invoiceIssues";
 import { EmptyState, btnDangerSx, btnGhostSx, cardBoxSx, inputSx, tdSx, thSx } from "./shared";
@@ -52,6 +52,44 @@ function OccurrenceFixes({ issue, occurrence, onOpenInvoice }: { issue: InvoiceI
   );
 }
 
+/** نافذة الفحص: الدورة المختارة، أو الدورتين معًا لو «كل الدورات»؛ بدون شهر = لا قسم */
+const pendingWindow = (month: string, billingDay: "" | "13" | "28") => {
+  if (!month) return {};
+  if (billingDay) return cycleRange(Number(billingDay) as 13 | 28, month);
+  return { startDate: cycleRange(13, month).startDate, endDate: cycleRange(28, month).endDate };
+};
+
+function PendingShipmentsSection({ month, billingDay, vendorId }: { month: string; billingDay: "" | "13" | "28"; vendorId: string }) {
+  const window_ = pendingWindow(month, billingDay);
+  const { data } = usePendingShipments({ ...window_, vendorId: vendorId ? Number(vendorId) : undefined });
+  if (!data || data.count === 0) return null;
+  return (
+    <Box sx={cardBoxSx}>
+      <Box sx={{ p: "12px 16px", fontSize: "13px", fontWeight: 700, color: "#b45309", fontFamily: FONT }}>
+        {arNum(data.count)} طلب متسلّم وحالة شحنته مش متسلّمة (توصيل هوميكس) — مش هيتفوتر لحد ما حالة الشحنة تتصلّح
+        {data.truncated ? " (أول 500 طلب)" : ""}
+      </Box>
+      <Box sx={{ overflowX: "auto" }}>
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
+          <thead>
+            <tr>{["رقم الطلب", "الكود", "الصانع", "حالة الشحنة"].map((label) => <Box component="th" key={label} sx={thSx}>{label}</Box>)}</tr>
+          </thead>
+          <tbody>
+            {data.orders.map((order) => (
+              <tr key={order.id}>
+                <Box component="td" sx={tdSx}>{order.orderNumber || "—"}</Box>
+                <Box component="td" sx={tdSx}>{order.code || "—"}</Box>
+                <Box component="td" sx={tdSx}>{order.vendorName || "—"}</Box>
+                <Box component="td" sx={tdSx}>{order.shipmentStatusLabel || "—"}</Box>
+              </tr>
+            ))}
+          </tbody>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export default function InvoiceIssuesView({ onOpenInvoice }: { onOpenInvoice: (id: number) => void }) {
   const [month, setMonth] = useState(currentMonthCairo());
   const [billingDay, setBillingDay] = useState<"" | "13" | "28">("");
@@ -88,6 +126,8 @@ export default function InvoiceIssuesView({ onOpenInvoice }: { onOpenInvoice: (i
       {data?.truncated && (
         <Box sx={{ fontSize: "12px", color: HX.red, px: "4px" }}>الفحص اقتصر على أحدث الفواتير بسبب الحجم — اختار شهر أو صانع لفحص كامل.</Box>
       )}
+
+      <PendingShipmentsSection month={month} billingDay={billingDay} vendorId={vendorId} />
 
       <Box sx={cardBoxSx}>
         {isLoading ? (
