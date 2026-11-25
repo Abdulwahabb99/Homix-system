@@ -159,7 +159,10 @@ export interface InvoiceListParams {
   invoiceTo?: string;
   transferredFrom?: string;
   transferredTo?: string;
-  dueParty?: "vendor" | "homix";
+  /** غياب القيمة (أو "both") = بلا فلتر اتجاه */
+  dueParty?: "vendor" | "homix" | "both";
+  /** شهر نهاية الدورة بتوقيت القاهرة YYYY-MM */
+  month?: string;
   receipt?: "uploaded" | "missing";
   overdue?: boolean;
   page?: number;
@@ -169,6 +172,8 @@ export interface InvoiceListParams {
 export interface InvoiceListResult {
   items: InvoiceSummary[];
   counts: Partial<Record<InvoiceStatus, number>>;
+  /** أعداد الحالات تحت كل الفلاتر عدا الحالة/الشاملة (أعداد الشرائح) */
+  filteredCounts?: Partial<Record<InvoiceStatus, number>>;
   page: number;
   size: number;
   total: number;
@@ -279,6 +284,17 @@ export interface InvoicedLinesParams {
   vendorId?: string;
   page?: number;
   size?: number;
+}
+
+export interface InvoiceMonth { month: string; count: number }
+
+/** شهور (بتوقيت القاهرة) التي بها فواتير في الأرشيف */
+export function useInvoiceMonths() {
+  return useQuery({
+    queryKey: financialKeys.invoiceMonths(),
+    queryFn: async () => unwrap<InvoiceMonth[]>(await axiosRequest.get(`${INVOICES_PATH}/months`)),
+    staleTime: 60 * 1000,
+  });
 }
 
 /** خيارات فلتر الصانع (للموظفين فقط) */

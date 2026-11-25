@@ -3,7 +3,8 @@ import React from "react";
 import { Box } from "@mui/material";
 import HomixPaginationBar from "components/HomixPaginationBar/HomixPaginationBar";
 import { HX, cardSx } from "layouts/Orders/ordersHomixTheme";
-import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge } from "./ShipmentsStatusChip";
+import { ShipmentStatusBadge, PaymentStatusBadge, DaysInTransitBadge, getShipmentStatusColors } from "./ShipmentsStatusChip";
+import { canEditShipmentStatusInline, normalizeShipmentStatusId } from "./shipmentStatusCell";
 import { useInlineUpdateShipmentMutation } from "query/shipmentEdit";
 import { RegressionConfirmDialog, useRegressionConfirm } from "shared/regressionConfirm";
 import type { ShipmentsMeta } from "query/shipmentsMeta";
@@ -208,6 +209,16 @@ const INLINE_CTRL: React.CSSProperties = {
   padding: "5px 7px",
 };
 
+/** قائمة حالة الشحنة المنسدلة — بلون الحالة الحالية (نفس ألوان الشارة). */
+function shipStateStyle(status: number): React.CSSProperties {
+  const { bg, color } = getShipmentStatusColors(status);
+  return {
+    fontFamily: FONT, fontSize: "11px", fontWeight: 700, borderRadius: 20,
+    padding: "4px 10px", border: `0.5px solid ${color}55`, background: bg, color,
+    cursor: "pointer", maxWidth: 200, accentColor: color,
+  };
+}
+
 /** ألوان حالة الجدولة حسب نص الحالة (المعرّفات ديناميكية من الـ meta) — .sched-state */
 function schedStateStyle(label: string): React.CSSProperties {
   const l = label || "";
@@ -306,6 +317,9 @@ export default function ShipmentsTable({
   const { confirmable, dialogProps: regressionDialogProps } = useRegressionConfirm();
   const schedStatuses = meta?.scheduleStatuses ?? [];
   const canEditInline = !isVendor;
+  const canEditStatus = canEditShipmentStatusInline(isVendor);
+  const shipStatuses = meta?.shipmentStatuses ?? [];
+  const shipStatusIds = shipStatuses.map((o) => Number(o.value));
   /* الحقول المعروضة مضبوطة من بيانات الخادم، فإلغاء التأكيد أو فشل الطلب يُبقي القيمة السابقة. */
   const save = (id: number, body: Parameters<typeof inlineMut.mutate>[0]["body"]) => {
     confirmable((confirmRegression) => inlineMut.mutateAsync({ id, body, confirmRegression })).catch(() => {
@@ -490,7 +504,26 @@ export default function ShipmentsTable({
 
                 {/* حالة الشحنة */}
                 <td style={TD}>
-                  <ShipmentStatusBadge status={s.shipmentStatus} label={s.shipmentStatusLabel} />
+                  {canEditStatus && shipStatuses.length > 0 ? (
+                    <select
+                      aria-label="حالة الشحنة"
+                      style={shipStateStyle(normalizeShipmentStatusId(s.shipmentStatus, shipStatusIds))}
+                      value={String(normalizeShipmentStatusId(s.shipmentStatus, shipStatusIds))}
+                      disabled={inlineMut.isPending}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        if (next === normalizeShipmentStatusId(s.shipmentStatus, shipStatusIds)) return;
+                        save(s.id, { shipmentStatus: next });
+                      }}
+                    >
+                      {shipStatuses.map((o) => <option key={o.value} value={String(o.value)}>{o.label}</option>)}
+                    </select>
+                  ) : (
+                    <ShipmentStatusBadge
+                      status={normalizeShipmentStatusId(s.shipmentStatus)}
+                      label={s.shipmentStatusLabel || undefined}
+                    />
+                  )}
                   {reassigned && (
                     <Box sx={{ mt: "3px", fontSize: "10.5px", fontWeight: 700, color: "#92400e", fontFamily: FONT }}>
                       نُقل إلى عملية #{s.reassignedToOperationNumber || "—"}

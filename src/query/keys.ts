@@ -80,6 +80,7 @@ export const financialKeys = {
   invoiceReceipts: (id: number | string) => [...financialKeys.invoices(), "receipts", String(id)] as const,
   /** حالة فواتير دورة واحدة + البنود المعدّلة (GET /financial-invoices/cycle) — يعتمد التقرير الحي عليها */
   invoiceCycle: (periodEnd: string) => [...financialKeys.invoices(), "cycle", periodEnd] as const,
+  invoiceMonths: () => [...financialKeys.invoices(), "months"] as const,
   vendorOptions: () => [...financialKeys.invoices(), "vendor-options"] as const,
   invoicedLines: (filtersKey: string) => [...financialKeys.invoices(), "lines", filtersKey] as const,
   invoiceActivity: (filtersKey: string) => [...financialKeys.invoices(), "activity", filtersKey] as const,

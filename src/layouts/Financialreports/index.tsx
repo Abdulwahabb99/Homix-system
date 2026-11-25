@@ -3,7 +3,8 @@
  * الصفحة رفيعة: تُنسّق الحالة (يوم الفوترة/التبويب) وتوزّع بيانات الـ BE على
  * المكوّنات المقسّمة عبر `useFinancialSettlements` (GET /orders/financialReport).
  */
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
@@ -68,7 +69,16 @@ const stateBoxSx = {
 export default function Financialreports() {
   const [billingDay, setBillingDay] = useState<BillingDay>(DEFAULT_BILLING_DAY);
   const [tab, setTab] = useState<SettlementTabKey>(DEFAULT_TAB);
-  const [view, setView] = useState<PageView>("current");
+  // العرض الحالي في الرابط (?view=archive) ليبقى الأرشيف وفلاتره بعد التحديث
+  const [pageParams, setPageParams] = useSearchParams();
+  const view: PageView = (["current", "archive", "invoiced", "issues"] as const).find((key) => key === pageParams.get("view")) ?? "current";
+  const setView = useCallback((next: PageView) => {
+    setPageParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (next === "current") params.delete("view"); else params.set("view", next);
+      return params;
+    }, { replace: true });
+  }, [setPageParams]);
   /** شهر دورة سابقة للتقرير الحي ("" = الدورة الأحدث) */
   const [pastMonth, setPastMonth] = useState("");
   const [customOpen, setCustomOpen] = useState(false);

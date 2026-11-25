@@ -70,3 +70,17 @@ export function VendorSelect({ value, onChange, options }: {
     </FilterField>
   );
 }
+
+/** قائمة اختيار عامة بخيارات {value,label}؛ الخيار الأول هو الافتراضي */
+export function OptionSelect({ label, value, onChange, options, maxWidth = 220 }: {
+  label: string; value: string; onChange: (value: string) => void; options: Array<{ value: string; label: string }>; maxWidth?: number;
+}) {
+  return (
+    <FilterField label={label} maxWidth={maxWidth}>
+      <Select value={value} onChange={(e) => onChange(String(e.target.value))} sx={selectSx} inputProps={{ "aria-label": label }}
+        MenuProps={{ PaperProps: { sx: { maxHeight: 320, direction: "rtl" } } }}>
+        {options.map((option) => <MenuItem key={option.value} value={option.value} sx={{ fontFamily: FONT, fontSize: "12px" }}>{option.label}</MenuItem>)}
+      </Select>
+    </FilterField>
+  );
+}

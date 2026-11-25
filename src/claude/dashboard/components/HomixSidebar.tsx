@@ -126,7 +126,7 @@ const adminManage: NavItem[] = [
   { to: "/factories", label: "الصُنّاع", icon: icons.makers, badgeKey: "factories", badgeType: "danger", perm: "factory_view" },
   { to: "/vendors", label: "الموردين", icon: icons.suppliers, perm: "vendors_view" },
   { to: "/users", label: "المستخدمين", icon: icons.users, perm: "users_view" },
-  { to: "/financialReports", label: "التقارير", icon: icons.reports, perm: "finance_view" },
+  { to: "/financialReports", label: "فواتير الصناع", icon: icons.reports, perm: "finance_view" },
   { to: "/fines", label: "الغرامات والقواعد", icon: icons.reports, perm: "finance_view" },
   { to: "/finance-dashboard", label: "الأرباح والخسائر", icon: icons.reports, perm: "finance_view" },
 ];

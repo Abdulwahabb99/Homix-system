@@ -65,6 +65,12 @@ function PillBadge({ label, bg, color, dot = true }: { label: string; bg: string
   );
 }
 
+/** ألوان شارة الحالة (تُستخدم أيضاً لتلوين القائمة المنسدلة). */
+export function getShipmentStatusColors(status: number): { bg: string; color: string } {
+  const cfg = STATUS_CFG[status];
+  return { bg: cfg?.bg ?? HX.surface3, color: cfg?.color ?? HX.tx2 };
+}
+
 export function ShipmentStatusBadge({ status, label }: { status: number; label?: string }) {
   const cfg = STATUS_CFG[status];
   if (!cfg && !label) return <span style={{ fontFamily: FONT, fontSize: "11px", color: HX.tx3 }}>—</span>;

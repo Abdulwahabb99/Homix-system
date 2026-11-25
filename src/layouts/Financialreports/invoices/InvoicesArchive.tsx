@@ -2,29 +2,36 @@
  * أرشيف فواتير الصناع (جدول) — فلاتر الحالة/الإيصال/المستحق/التواريخ + إجراءات جماعية.
  * البائع يرى فواتيره فقط (reviewed/transferred) والـ BE يفرض ذلك؛ الإجراءات الجماعية للمالية فقط.
  */
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import {
-  InvoiceListParams, InvoiceStatus, downloadFirstReceipt, useBulkTransition, useInvoicesList, useVendorOptions,
+  downloadFirstReceipt, useBulkTransition, useInvoiceMonths, useInvoicesList, useVendorOptions,
 } from "query/financialInvoices";
 import { money } from "../utils/calc";
 import { arNum } from "../utils/format";
 import { FONT } from "../utils/styles";
 import {
-  ConsolidatedBadge, EmptyState, StatusPill, STATUS_META, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDate, inputSx, tdSx, thSx,
+  ConsolidatedBadge, EmptyState, StatusPill, btnGhostSx, btnPrimarySx, cardBoxSx, fmtDate, inputSx, tdSx, thSx,
 } from "./shared";
-import { DebouncedTextField, VendorSelect } from "./FilterFields";
+import { DebouncedTextField, OptionSelect, VendorSelect } from "./FilterFields";
 import MergeInvoicesDialog from "./MergeInvoicesDialog";
+import {
+  ARCHIVE_STATUSES, ArchiveFilters, StatusChip, chipCounts, isFiltered, monthLabel, parseArchiveFilters, toListParams, writeArchiveFilters,
+} from "./archiveFilters";
+
+export { ARCHIVE_STATUSES };
 
 const PAGE_SIZE = 25;
-/** الأرشيف لا يعرض المسودات — تظهر في «الفواتير الجارية» فقط */
-export const ARCHIVE_STATUSES: InvoiceStatus[] = ["reviewed", "frozen", "transferred"];
-const STATUS_ORDER = ARCHIVE_STATUSES;
-/** عرض «الفواتير الشاملة» (kind = consolidated) — تشمل المعلّقة منها لأنها لا تظهر في الأرشيف قبل المراجعة */
-const CONSOLIDATED_VIEW = "consolidated" as const;
-const CONSOLIDATED_STATUSES: InvoiceStatus[] = ["draft", "reviewed", "frozen", "transferred"];
+
+const CYCLE_OPTIONS = [{ value: "", label: "كل الدورات" }, { value: "13", label: "دورة 13" }, { value: "28", label: "دورة 28" }];
+const DIRECTION_OPTIONS = [
+  { value: "both", label: "لهوميكس وللمورد" },
+  { value: "homix", label: "مستحق لهوميكس" },
+  { value: "vendor", label: "مستحق للمورد" },
+];
 
 interface Props {
   isVendor: boolean;
@@ -33,47 +40,36 @@ interface Props {
 }
 
 export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) {
-  const [status, setStatus] = useState<InvoiceStatus | "all" | typeof CONSOLIDATED_VIEW>("all");
+  // الرابط هو مصدر حالة الفلاتر الوحيد: التحديث/المشاركة يحفظان الفلتر
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseArchiveFilters(searchParams, isVendor), [searchParams, isVendor]);
   const [mergeOpen, setMergeOpen] = useState(false);
-  const [invoiceCode, setInvoiceCode] = useState("");
-  const [vendorId, setVendorId] = useState("");
-  const vendors = useVendorOptions(!isVendor);
-  const [receipt, setReceipt] = useState<"" | "uploaded" | "missing">("");
-  const [dueParty, setDueParty] = useState<"" | "vendor" | "homix">("");
-  const [invoiceFrom, setInvoiceFrom] = useState("");
-  const [invoiceTo, setInvoiceTo] = useState("");
-  const [transferredFrom, setTransferredFrom] = useState("");
-  const [transferredTo, setTransferredTo] = useState("");
-  const [overdue, setOverdue] = useState(false);
-  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const vendors = useVendorOptions(!isVendor);
+  const months = useInvoiceMonths();
   const bulk = useBulkTransition();
 
-  const params: InvoiceListParams = {
-    status: status === CONSOLIDATED_VIEW ? CONSOLIDATED_STATUSES : status === "all" ? ARCHIVE_STATUSES : [status],
-    kind: status === CONSOLIDATED_VIEW ? "consolidated" : undefined,
-    invoiceCode: invoiceCode.trim() || undefined,
-    vendorId: !isVendor && vendorId ? Number(vendorId) : undefined,
-    receipt: receipt || undefined,
-    dueParty: dueParty || undefined,
-    invoiceFrom: invoiceFrom || undefined,
-    invoiceTo: invoiceTo || undefined,
-    transferredFrom: transferredFrom || undefined,
-    transferredTo: transferredTo || undefined,
-    overdue: overdue || undefined,
-    page,
-    size: PAGE_SIZE,
-  };
+  /** أي تغيير في الفلتر يعيد الصفحة 1 ويمسح التحديد؛ تغيير الصفحة وحده يحتفظ بالباقي */
+  const update = useCallback((patch: Partial<ArchiveFilters>) => {
+    setSearchParams((prev) => {
+      const current = parseArchiveFilters(prev, isVendor);
+      return writeArchiveFilters(prev, { ...current, page: 1, ...patch });
+    }, { replace: true });
+    setSelected(new Set());
+  }, [setSearchParams, isVendor]);
+  const reset = () => update({ ...parseArchiveFilters(new URLSearchParams(), isVendor) });
+
+  const params = toListParams(filters, { isVendor, pageSize: PAGE_SIZE });
   const { data, isLoading, isError } = useInvoicesList(params);
   const items = data?.items ?? [];
-  const counts: Record<string, number> = { ...(data?.counts ?? {}) } as Record<string, number>;
-  const totalCount = ARCHIVE_STATUSES.reduce((total, key) => total + (counts[key] ?? 0), 0);
-  const pages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
-  const visibleStatuses = isVendor ? STATUS_ORDER.filter((s) => s === "reviewed" || s === "transferred") : STATUS_ORDER;
+  const chips = chipCounts(data?.filteredCounts);
+  const total = data?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const monthOptions = [{ value: "", label: "كل الشهور" }, ...(months.data ?? []).map((m) => ({ value: m.month, label: monthLabel(m.month) }))];
+  if (filters.month && !monthOptions.some((o) => o.value === filters.month)) monthOptions.push({ value: filters.month, label: monthLabel(filters.month) });
 
-  const onInvoiceCode = useCallback((value: string) => { setInvoiceCode(value); setPage(1); setSelected(new Set()); }, []);
-  const onVendorId = useCallback((value: string) => { setVendorId(value); setPage(1); setSelected(new Set()); }, []);
-  const resetPage = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); setSelected(new Set()); };
+  const onSearch = useCallback((value: string) => update({ search: value }), [update]);
+  const onVendorId = useCallback((value: string) => update({ vendorId: value }), [update]);
   const toggle = (id: number) => setSelected((prev) => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -96,10 +92,10 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
     });
   };
 
-  const chip = (key: InvoiceStatus | "all" | typeof CONSOLIDATED_VIEW, label: string, count?: number) => {
-    const active = status === key;
+  const chip = (key: StatusChip, label: string, count?: number) => {
+    const active = filters.chip === key;
     return (
-      <Box key={key} component="button" type="button" onClick={() => resetPage(setStatus)(key)}
+      <Box key={key} component="button" type="button" aria-pressed={active} onClick={() => update({ chip: key })}
         sx={{ ...btnGhostSx, height: 30, borderRadius: "20px", bgcolor: active ? HX.accent : HX.surface2, color: active ? "#fff" : HX.tx2, borderColor: active ? HX.accent : HX.border }}>
         {label}{count !== undefined ? ` (${arNum(count)})` : ""}
       </Box>
@@ -109,43 +105,46 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "12px", fontFamily: FONT }}>
       <Box sx={{ ...cardBoxSx, p: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <OptionSelect label="الشهر" value={filters.month} onChange={(month) => update({ month })} options={monthOptions} />
+          <OptionSelect label="الدورة" value={filters.cycle} onChange={(cycle) => update({ cycle: cycle as ArchiveFilters["cycle"] })} options={CYCLE_OPTIONS} />
+          <OptionSelect label="المستحق" value={filters.direction} onChange={(direction) => update({ direction: direction as ArchiveFilters["direction"] })} options={DIRECTION_OPTIONS} />
+          {!isVendor && <VendorSelect value={filters.vendorId} onChange={onVendorId} options={vendors.data ?? []} />}
+          <DebouncedTextField label="بحث" placeholder="ابحث باسم المورد أو رقم الفاتورة" value={filters.search} onChange={onSearch} />
+        </Box>
         <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-          {chip("all", "الكل", totalCount)}
-          {visibleStatuses.map((s) => chip(s, STATUS_META[s].label, counts[s] ?? 0))}
-          {chip(CONSOLIDATED_VIEW, "الفواتير الشاملة")}
+          {chip("all", "الكل", chips.all)}
+          {chip("open", "مفتوحة", chips.open)}
+          {chip("paid", "مسددة", chips.paid)}
+          {chip("consolidated", "الفواتير الشاملة")}
+          {isFiltered(filters) && (
+            <Box component="button" type="button" onClick={reset} sx={btnGhostSx}>إعادة ضبط</Box>
+          )}
           {canSettle && !isVendor && (
             <Box component="button" type="button" onClick={() => setMergeOpen(true)} sx={{ ...btnPrimarySx, marginInlineStart: "auto" }}>دمج فواتير</Box>
           )}
         </Box>
-        <Box sx={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <DebouncedTextField label="رقم الفاتورة" value={invoiceCode} onChange={onInvoiceCode} />
-          {!isVendor && <VendorSelect value={vendorId} onChange={onVendorId} options={vendors.data ?? []} />}
-        </Box>
         <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: HX.tx2 }}>
-          <Box component="select" value={dueParty} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetPage(setDueParty)(e.target.value as "" | "vendor" | "homix")} sx={inputSx}>
-            <option value="">كل المستحقات</option>
-            <option value="vendor">مستحق للصانع</option>
-            <option value="homix">مستحق لهوميكس</option>
-          </Box>
-          <Box component="select" value={receipt} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => resetPage(setReceipt)(e.target.value as "" | "uploaded" | "missing")} sx={inputSx}>
+          <Box component="select" value={filters.receipt} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update({ receipt: e.target.value as ArchiveFilters["receipt"] })} sx={inputSx}>
             <option value="">كل الإيصالات</option>
             <option value="uploaded">إيصال مرفوع</option>
             <option value="missing">إيصال ناقص</option>
           </Box>
           <label>تاريخ الفاتورة من</label>
-          <Box component="input" type="date" value={invoiceFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetPage(setInvoiceFrom)(e.target.value)} sx={inputSx} />
+          <Box component="input" type="date" value={filters.invoiceFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ invoiceFrom: e.target.value })} sx={inputSx} />
           <label>إلى</label>
-          <Box component="input" type="date" value={invoiceTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetPage(setInvoiceTo)(e.target.value)} sx={inputSx} />
+          <Box component="input" type="date" value={filters.invoiceTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ invoiceTo: e.target.value })} sx={inputSx} />
           <label>تاريخ المحاسبة من</label>
-          <Box component="input" type="date" value={transferredFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetPage(setTransferredFrom)(e.target.value)} sx={inputSx} />
+          <Box component="input" type="date" value={filters.transferredFrom} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ transferredFrom: e.target.value })} sx={inputSx} />
           <label>إلى</label>
-          <Box component="input" type="date" value={transferredTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => resetPage(setTransferredTo)(e.target.value)} sx={inputSx} />
+          <Box component="input" type="date" value={filters.transferredTo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update({ transferredTo: e.target.value })} sx={inputSx} />
           {!isVendor && (
             <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <input type="checkbox" checked={overdue} onChange={(e) => resetPage(setOverdue)(e.target.checked)} /> المتأخرة فقط
+              <input type="checkbox" checked={filters.overdue} onChange={(e) => update({ overdue: e.target.checked })} /> المتأخرة فقط
             </label>
           )}
         </Box>
+        <Box data-testid="archive-summary" sx={{ fontSize: "12px", color: HX.tx2, fontWeight: 700 }}>عدد الفواتير: {arNum(total)}</Box>
       </Box>
 
       {canSettle && selected.size > 0 && (
@@ -164,7 +163,7 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
         ) : isLoading ? (
           <EmptyState text="جارٍ التحميل..." />
         ) : items.length === 0 ? (
-          <EmptyState text={isVendor ? "لا توجد فواتير بعد." : "لا توجد فواتير. أصدر فواتير دورة مغلقة من «الفواتير الجارية» أولاً."} />
+          <EmptyState text={isFiltered(filters) ? "لا توجد فواتير تطابق الفلاتر." : isVendor ? "لا توجد فواتير بعد." : "لا توجد فواتير. أصدر فواتير دورة مغلقة من «الفواتير الجارية» أولاً."} />
         ) : (
           <Box sx={{ overflowX: "auto" }}>
             <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
@@ -219,9 +218,9 @@ export default function InvoicesArchive({ isVendor, canSettle, onOpen }: Props) 
         )}
         {pages > 1 && (
           <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", p: "10px", borderTop: `0.5px solid ${HX.border}`, fontSize: "12px" }}>
-            <Box component="button" type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} sx={btnGhostSx}>السابق</Box>
-            <span>{page} / {pages}</span>
-            <Box component="button" type="button" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} sx={btnGhostSx}>التالي</Box>
+            <Box component="button" type="button" disabled={filters.page <= 1} onClick={() => update({ page: filters.page - 1 })} sx={btnGhostSx}>السابق</Box>
+            <span>{filters.page} / {pages}</span>
+            <Box component="button" type="button" disabled={filters.page >= pages} onClick={() => update({ page: filters.page + 1 })} sx={btnGhostSx}>التالي</Box>
           </Box>
         )}
       </Box>

@@ -13,7 +13,7 @@ export const R = "14px";
 export const R_SM = "10px";
 
 /** عنوان الصفحة ووصفها (للشريط العلوي) */
-export const PAGE_TITLE = "التقارير المالية";
+export const PAGE_TITLE = "فواتير الصناع";
 export const PAGE_SUBTITLE = "الفواتير الدورية للصناع — يوم 13 ويوم 28 من كل شهر";
 
 /** دورة الفوترة — أزرار الاختيار (pills) حسب يوم الفوترة المتاح */
