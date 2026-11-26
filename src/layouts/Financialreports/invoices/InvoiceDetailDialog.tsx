@@ -22,6 +22,7 @@ import { NetValue } from "../components/SettlementCells";
 import { CostWarning } from "../components/LiveAmountCell";
 import EditableAmountCell from "./EditableAmountCell";
 import InvoiceDocument from "./InvoiceDocument";
+import OrderCandidateRows from "./OrderCandidateRows";
 import ReceiptsPanel from "./ReceiptsPanel";
 import { mergeFailureMessage, sourceLabelOf } from "./consolidation";
 import {
@@ -273,15 +274,9 @@ export default function InvoiceDetailDialog({ invoiceId, isVendor, canSettle, on
 
           {showAddOrder && editable && (
             <Box sx={{ ...cardBoxSx, p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
-              <Box component="input" placeholder="ابحث برقم العملية أو الطلب (طلبات مسلّمة لهذا الصانع غير مفوترة)" value={orderQuery}
+              <Box component="input" placeholder="ابحث برقم العملية أو رقم الطلب" value={orderQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOrderQuery(e.target.value)} sx={inputSx} />
-              {(candidates.data ?? []).map((c) => (
-                <Box key={c.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px" }}>
-                  <span>{c.code || `OP-${c.id}`} — #{c.orderNumber}</span>
-                  <Box component="button" type="button" disabled={addOrder.isPending} onClick={() => addOrder.mutate({ id: invoice.id, orderId: c.id })} sx={btnPrimarySx}>إضافة</Box>
-                </Box>
-              ))}
-              {orderQuery.trim().length >= 2 && candidates.data?.length === 0 && <Box sx={{ fontSize: "12px", color: HX.tx3 }}>لا توجد نتائج.</Box>}
+              <OrderCandidateRows candidates={candidates.data} pending={addOrder.isPending} query={orderQuery} onPick={(orderId) => addOrder.mutate({ id: invoice.id, orderId })} />
             </Box>
           )}
 

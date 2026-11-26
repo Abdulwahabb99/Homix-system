@@ -470,11 +470,23 @@ export const useLiveAddOrder = () =>
     unwrap<{ netAmount: number; created: boolean; invoiceId: number; alreadyIncluded: boolean }>(
       await axiosRequest.post(`${INVOICES_PATH}/live/lines`, { ...liveDraftPayload(vars), orderId: vars.orderId })));
 
+/** نتيجة بحث «إضافة طلب»: كل طلب للصانع مع حكم الإتاحة من الخادم */
+export interface OrderCandidate {
+  id: number;
+  code: string | null;
+  orderNumber: string | null;
+  status: number;
+  available: boolean;
+  reason?: "already_invoiced" | "order_not_delivered" | "shipment_not_delivered";
+  /** الفاتورة التي تحجز الطلب (reason = already_invoiced) */
+  invoice?: { id: number; code: string | null; status: string; periodEnd: string | null; lineState: string };
+}
+
 /** منتقي الطلبات للصف الحي: يبحث بالصانع (لا يحتاج فاتورة موجودة) */
 export function useLiveOrderCandidates(vendorId: number | null, q: string) {
   return useQuery({
     queryKey: [...financialKeys.invoices(), "live-candidates", vendorId, q] as const,
-    queryFn: async () => unwrap<Array<{ id: number; code: string | null; orderNumber: string | null }>>(
+    queryFn: async () => unwrap<OrderCandidate[]>(
       await axiosRequest.get(`${INVOICES_PATH}/live/order-candidates?${serializeParams({ q, vendorId })}`)),
     enabled: vendorId !== null && q.trim().length >= 2,
   });
@@ -496,7 +508,7 @@ export const useAddOrderToInvoice = () =>
 export function useOrderCandidates(invoiceId: number | null, q: string) {
   return useQuery({
     queryKey: [...financialKeys.invoices(), "candidates", invoiceId, q] as const,
-    queryFn: async () => unwrap<Array<{ id: number; code: string | null; orderNumber: string | null }>>(
+    queryFn: async () => unwrap<OrderCandidate[]>(
       await axiosRequest.get(`${INVOICES_PATH}/${invoiceId}/order-candidates?${serializeParams({ q })}`)),
     enabled: invoiceId !== null && q.trim().length >= 2,
   });

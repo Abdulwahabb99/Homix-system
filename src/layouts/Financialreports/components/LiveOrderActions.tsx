@@ -8,6 +8,7 @@ import { Box, Dialog, DialogContent, DialogTitle, Menu, MenuItem } from "@mui/ma
 import { NotificationMeassage } from "components/NotificationMeassage/NotificationMeassage";
 import { HX } from "layouts/Orders/ordersHomixTheme";
 import { useLiveAddOrder, useLiveLineAction, useLiveOrderCandidates } from "query/financialInvoices";
+import OrderCandidateRows from "../invoices/OrderCandidateRows";
 import { btnGhostSx, btnPrimarySx, inputSx } from "../invoices/shared";
 import { LIVE_ADD_ORDER_EXISTS_TOAST, LIVE_ADD_ORDER_TOAST, liveActionToast, liveActionsAvailability, liveActionsFor, type LiveActionItem } from "../utils/liveActions";
 import type { SettlementOrder, SettlementSeller } from "../utils/types";
@@ -77,15 +78,9 @@ export function LiveAddOrderButton({ seller }: { seller: SettlementSeller }) {
       <Dialog open={open} onClose={close} fullWidth maxWidth="xs" dir="rtl">
         <DialogTitle sx={{ fontSize: "14px", fontWeight: 800 }}>إضافة طلب — {seller.name}</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <Box component="input" autoFocus placeholder="ابحث برقم العملية أو الطلب (طلبات مسلّمة لهذا الصانع غير مفوترة)" value={query}
+          <Box component="input" autoFocus placeholder="ابحث برقم العملية أو رقم الطلب" value={query}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} sx={inputSx} />
-          {(candidates.data ?? []).map((c) => (
-            <Box key={c.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px" }}>
-              <span>{c.code || `OP-${c.id}`} — #{c.orderNumber}</span>
-              <Box component="button" type="button" disabled={add.isPending} onClick={() => pick(c.id)} sx={btnPrimarySx}>إضافة</Box>
-            </Box>
-          ))}
-          {query.trim().length >= 2 && candidates.data?.length === 0 && <Box sx={{ fontSize: "12px", color: HX.tx3 }}>لا توجد نتائج.</Box>}
+          <OrderCandidateRows candidates={candidates.data} pending={add.isPending} query={query} onPick={pick} />
         </DialogContent>
       </Dialog>
     </>
