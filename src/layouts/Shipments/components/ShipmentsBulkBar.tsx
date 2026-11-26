@@ -3,7 +3,7 @@
  * كل حقل اختياري ويُرسل فقط ما اختاره المستخدم عبر PUT /shipments/bulk-update.
  * خيارات القوائم تأتي من الـ meta فتظهر أي حالة جديدة تلقائياً.
  */
-import { cairoDayStartIso } from "./panels/accountsDates";
+import { BULK_CLEAR as CLEAR, buildShipmentsBulkPayload } from "./shipmentsBulkPayload";
 import React, { useState } from "react";
 import { Box } from "@mui/material";
 import { HX } from "layouts/Orders/ordersHomixTheme";
@@ -12,9 +12,6 @@ import type { BulkUpdateShipmentPayload } from "query/shipmentEdit";
 import type { ShipmentsMeta, ShipmentsMetaOption } from "query/shipmentsMeta";
 
 const FONT = "'Cairo', sans-serif";
-
-/** قيمة خاصة في القوائم تعني «تفريغ الحقل» (تُرسل null للخادم). */
-const CLEAR = "__clear__";
 
 const CTRL: React.CSSProperties = {
   fontFamily: FONT,
@@ -49,17 +46,14 @@ export default function ShipmentsBulkBar({
 }: ShipmentsBulkBarProps) {
   const [sched, setSched] = useState("");
   const [date, setDate] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
   const [carrier, setCarrier] = useState("");
   const [status, setStatus] = useState("");
 
   if (selectedCount === 0) return null;
 
   const handleApply = () => {
-    const data: BulkUpdateShipmentPayload = {};
-    if (sched) data.scheduleStatus = sched === CLEAR ? null : Number(sched);
-    if (date) data.scheduledDeliveryDate = cairoDayStartIso(date);
-    if (carrier) data.shippingCompany = carrier === CLEAR ? null : Number(carrier);
-    if (status) data.shipmentStatus = Number(status);
+    const data: BulkUpdateShipmentPayload = buildShipmentsBulkPayload({ sched, date, deliveryDate, carrier, status });
     if (Object.keys(data).length === 0) {
       NotificationMeassage("error", "اختر حاجة واحدة على الأقل لتطبيقها");
       return;
@@ -69,6 +63,7 @@ export default function ShipmentsBulkBar({
     const lines: string[] = [];
     if (sched) lines.push(`حالة الجدولة: ${sched === CLEAR ? "تفريغ" : label(meta?.scheduleStatuses, sched)}`);
     if (date) lines.push(`تاريخ الجدولة: ${date}`);
+    if (deliveryDate) lines.push(`تاريخ التوصيل: ${deliveryDate}`);
     if (carrier) lines.push(`شركة الشحن: ${carrier === CLEAR ? "بدون شركة" : label(meta?.shippingCompanies, carrier)}`);
     if (status) lines.push(`حالة الشحنة: ${label(meta?.shipmentStatuses, status)}`);
     const skipNote = status && reassignedSelectedCount
@@ -82,6 +77,7 @@ export default function ShipmentsBulkBar({
     onApply(data, () => {
       setSched("");
       setDate("");
+      setDeliveryDate("");
       setCarrier("");
       setStatus("");
     });
@@ -126,6 +122,13 @@ export default function ShipmentsBulkBar({
       <Box sx={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: HX.tx2, fontWeight: 700 }}>
         <span>تاريخ الجدولة</span>
         <input aria-label="تاريخ الجدولة" type="date" style={CTRL} value={date} onChange={(e) => setDate(e.target.value)} />
+      </Box>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: HX.tx2, fontWeight: 700 }}>
+          <span>تاريخ التوصيل</span>
+          <input aria-label="تاريخ التوصيل" type="date" style={CTRL} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+        </Box>
+        <Box component="span" sx={{ fontSize: "10.5px", color: HX.tx2, fontWeight: 400 }}>يحدد دورة الفاتورة للشحنات المتسلّمة</Box>
       </Box>
       <select aria-label="شركة الشحن" style={CTRL} value={carrier} onChange={(e) => setCarrier(e.target.value)}>
         <option value="">شركة الشحن…</option>

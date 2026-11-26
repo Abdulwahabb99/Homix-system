@@ -59,6 +59,8 @@ export interface BulkUpdateShipmentPayload {
   scheduleStatus?: number | null;
   /** ISO، أو `""` لمسح الموعد من كل الشحنات المحددة. */
   scheduledDeliveryDate?: string | "";
+  /** تاريخ التسليم الفعلي: لحظة ISO لبداية اليوم المصري. يحدد دورة الفاتورة للشحنات المتسلّمة. */
+  deliveryDate?: string;
 }
 
 export async function putShipmentsBulk(

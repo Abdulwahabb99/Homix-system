@@ -26,6 +26,8 @@ export const vendorKeys = {
 export const userKeys = {
   all: () => ["users"],
   list: () => [...userKeys.all(), "list"],
+  /** صفحة المستخدمين: الفريق + حسابات الموردين — مفتاح مستقل كي لا تختلط بقوائم الاختيار (الفريق فقط). */
+  listWithVendors: () => [...userKeys.all(), "list-with-vendors"],
   detail: (id: number | string) => [...userKeys.all(), "detail", String(id)],
 };
 

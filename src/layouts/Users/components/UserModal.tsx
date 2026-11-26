@@ -153,7 +153,7 @@ export default function UserModal({ open, editUser, onClose }: UserModalProps) {
         ? axiosRequest.put(`/users/${editUser!.id}`, payload)
         : axiosRequest.post(`/users`, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.list() });
+      queryClient.invalidateQueries({ queryKey: userKeys.all() });
       if (isEdit) queryClient.invalidateQueries({ queryKey: userKeys.detail(editUser!.id) });
       NotificationMeassage("success", isEdit ? "تم تعديل المستخدم بنجاح" : "تم اضافة مستخدم بنجاح");
       onClose();

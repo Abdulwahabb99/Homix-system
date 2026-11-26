@@ -66,7 +66,7 @@ export default function PermissionsEditModal({ open, onClose, userId, summary }:
       axiosRequest.put(`/users/${userId}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.detail(userId) });
-      queryClient.invalidateQueries({ queryKey: userKeys.list() });
+      queryClient.invalidateQueries({ queryKey: userKeys.all() });
       NotificationMeassage("success", "تم تحديث الصلاحيات بنجاح");
       onClose();
     },

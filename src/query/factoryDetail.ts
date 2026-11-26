@@ -7,6 +7,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import axiosRequest from "shared/functions/axiosRequest";
+import { resolveFileUrl } from "shared/functions/resolveFileUrl";
 import { factoryKeys } from "./keys";
 
 export interface FactoryDocument {
@@ -74,7 +75,7 @@ function normalizeDocument(raw: any): FactoryDocument {
     id: Number(raw?.id),
     name: str(raw?.name),
     description: str(raw?.description),
-    url: str(raw?.url),
+    url: resolveFileUrl(raw?.url),
     type: raw?.type != null ? Number(raw.type) : null,
     typeLabel: str(raw?.typeLabel),
     verificationStatus: raw?.verificationStatus != null ? Number(raw.verificationStatus) : null,

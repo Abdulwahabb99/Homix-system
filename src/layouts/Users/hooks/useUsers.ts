@@ -12,7 +12,7 @@ import { ALL_ROLES, PAGE_SIZE } from "../utils/constants";
 import { AppUser, RoleFilter } from "../utils/types";
 
 async function fetchUsers(): Promise<AppUser[]> {
-  const { data } = await axiosRequest.get("/users");
+  const { data } = await axiosRequest.get("/users", { params: { includeVendors: true } });
   const items: AppUser[] = Array.isArray(data?.data) ? data.data : [];
   return [...items].sort((a, b) => Number(a.id) - Number(b.id));
 }
@@ -29,7 +29,7 @@ export interface UsersKpis {
 export function useUsers() {
   const queryClient = useQueryClient();
   const { data: users = [], isLoading, isError } = useQuery({
-    queryKey: userKeys.list(),
+    queryKey: userKeys.listWithVendors(),
     queryFn: fetchUsers,
     staleTime: 60_000,
   });
@@ -78,7 +78,7 @@ export function useUsers() {
   const deleteMutation = useMutation({
     mutationFn: (id: number | string) => axiosRequest.delete(`/users/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.list() });
+      queryClient.invalidateQueries({ queryKey: userKeys.all() });
       NotificationMeassage("success", "تم حذف المستخدم");
     },
     onError: () => NotificationMeassage("error", "حدث خطأ"),
